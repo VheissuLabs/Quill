@@ -1,5 +1,8 @@
 {
     "preset": "laravel",
+    "notName": [
+        "_ide_helper*.php"
+    ],
     "rules": {
         "fully_qualified_strict_types": true,
         "new_expression_parentheses": true,
