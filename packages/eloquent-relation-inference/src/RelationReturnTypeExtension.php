@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Expr\MethodCall;
@@ -59,6 +60,12 @@ final class RelationReturnTypeExtension implements DynamicMethodReturnTypeExtens
         'hasOneThrough' => [HasOneThrough::class, true],
         'hasManyThrough' => [HasManyThrough::class, true],
     ];
+
+    /** @var array<string, array{class-string, string, string|null}|null> */
+    private array $resolved = [];
+
+    /** @var array<string, array<int, Node\Stmt>> */
+    private array $parsedFiles = [];
 
     public function __construct(private Parser $parser) {}
 
@@ -113,7 +120,25 @@ final class RelationReturnTypeExtension implements DynamicMethodReturnTypeExtens
             return null;
         }
 
-        $native = $declaring->getNativeReflection();
+        $cacheKey = $declaring->getName().'::'.$methodReflection->getName();
+
+        if (array_key_exists($cacheKey, $this->resolved)) {
+            return $this->resolved[$cacheKey];
+        }
+
+        return $this->resolved[$cacheKey] = $this->doResolve($methodReflection);
+    }
+
+    /** @return array{class-string, string, string|null}|null */
+    private function doResolve(MethodReflection $methodReflection): ?array
+    {
+        $returnType = $methodReflection->getVariants()[0]->getReturnType();
+
+        if (! new ObjectType(Relation::class)->isSuperTypeOf($returnType)->yes()) {
+            return null;
+        }
+
+        $native = $methodReflection->getDeclaringClass()->getNativeReflection();
 
         if (! $native->hasMethod($methodReflection->getName())) {
             return null;
@@ -128,7 +153,7 @@ final class RelationReturnTypeExtension implements DynamicMethodReturnTypeExtens
         }
 
         $method = (new NodeFinder)->findFirst(
-            $this->parser->parseFile($fileName),
+            $this->parseFile($fileName),
             static fn (Node $node): bool => $node instanceof ClassMethod
                 && $node->name->toString() === $methodReflection->getName(),
         );
@@ -173,6 +198,12 @@ final class RelationReturnTypeExtension implements DynamicMethodReturnTypeExtens
         return $intermediateClass === null
             ? null
             : [$relationClass, $relatedClass, $intermediateClass];
+    }
+
+    /** @return array<int, Node\Stmt> */
+    private function parseFile(string $fileName): array
+    {
+        return $this->parsedFiles[$fileName] ??= $this->parser->parseFile($fileName);
     }
 
     /** Resolve a `Foo::class` expression to its fully qualified name. */

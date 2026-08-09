@@ -67,6 +67,20 @@ Property access (`$model->team->name`) is already typed by laravel-ide-helper's
 generated mixin, which derives relations by reflecting the booted application. This
 extension exists only for relation *builder chains*.
 
+## Performance
+
+Larastan did this until 3.0 and removed it as "slow because it required parsing the
+file". That objection is real and was measured here: a naive implementation added
+**+54%** to analysis time (7.3s to 11.3s on a 60-file application).
+
+The cost came from parsing the model file on every method call to any Model before
+checking whether the method was a relation at all. Bailing on the declared return type
+first — cheap reflection — skips the parse for everything that isn't a relation.
+With that plus memoised resolution and cached ASTs, overhead is within measurement
+noise (7.30s vs 7.31s).
+
+Re-measure before trusting this on a substantially larger codebase.
+
 ## Status
 
 No unit tests yet. Currently exercised end to end by the host application: 11 relation
