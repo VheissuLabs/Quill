@@ -6,9 +6,7 @@ use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-/**
- * @extends Factory<Team>
- */
+/** @extends Factory<Team> */
 class TeamFactory extends Factory
 {
     /** @return array<string, mixed> */

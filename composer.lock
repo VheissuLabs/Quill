@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a612d50e6cfe3534a75a3550c618260d",
+    "content-hash": "69bcc0d1b76abfc3b2afcd3deceefc09",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -10406,6 +10406,41 @@
             "time": "2026-07-28T14:00:09+00:00"
         },
         {
+            "name": "quill/eloquent-relation-inference",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "packages/eloquent-relation-inference",
+                "reference": "3bc0021788f54c1707bf2f6498626f8538a253b2"
+            },
+            "require": {
+                "illuminate/database": "^11.0 || ^12.0 || ^13.0",
+                "php": "^8.3",
+                "phpstan/phpstan": "^2.0"
+            },
+            "type": "phpstan-extension",
+            "extra": {
+                "phpstan": {
+                    "includes": [
+                        "extension.neon"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Quill\\EloquentRelationInference\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Infers Eloquent relation generics from the method body, so relation methods need no @return docblock.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
             "name": "sebastian/cli-parser",
             "version": "5.0.1",
             "source": {
@@ -11748,11 +11783,77 @@
                 }
             ],
             "time": "2025-12-08T11:19:18+00:00"
+        },
+        {
+            "name": "tomasvotruba/cognitive-complexity",
+            "version": "1.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/TomasVotruba/cognitive-complexity.git",
+                "reference": "b95cac90113161b6063919bcb5aa3a51ce2aedcf"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/TomasVotruba/cognitive-complexity/zipball/b95cac90113161b6063919bcb5aa3a51ce2aedcf",
+                "reference": "b95cac90113161b6063919bcb5aa3a51ce2aedcf",
+                "shasum": ""
+            },
+            "require": {
+                "nikic/php-parser": "^5.3",
+                "php": "^8.3",
+                "phpstan/phpstan": "^2.0"
+            },
+            "require-dev": {
+                "php-parallel-lint/php-parallel-lint": "^1.4",
+                "phpstan/extension-installer": "^1.4",
+                "phpstan/phpstan-deprecation-rules": "^2.0",
+                "phpunit/phpunit": "^11.5",
+                "rector/rector": "^2.0",
+                "symplify/easy-coding-standard": "^12.5",
+                "tomasvotruba/type-coverage": "^2.0",
+                "tomasvotruba/unused-public": "^2.0",
+                "tracy/tracy": "^2.10"
+            },
+            "type": "phpstan-extension",
+            "extra": {
+                "phpstan": {
+                    "includes": [
+                        "config/extension.neon"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "TomasVotruba\\CognitiveComplexity\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "PHPStan rules to measure cognitive complexity of your classes and methods",
+            "support": {
+                "issues": "https://github.com/TomasVotruba/cognitive-complexity/issues",
+                "source": "https://github.com/TomasVotruba/cognitive-complexity/tree/1.2.0"
+            },
+            "funding": [
+                {
+                    "url": "https://www.paypal.me/rectorphp",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/tomasvotruba",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-06-08T08:16:55+00:00"
         }
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "quill/eloquent-relation-inference": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

@@ -4,28 +4,30 @@ namespace App\Models;
 
 use App\Enums\TeamRole;
 use Database\Factories\TeamInvitationFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-/**
- * @mixin IdeHelperTeamInvitation
- */
-#[Fillable(['team_id', 'email', 'role', 'invited_by', 'expires_at', 'accepted_at'])]
+/** @mixin IdeHelperTeamInvitation */
+
+#[UseFactory(TeamInvitationFactory::class)]
 class TeamInvitation extends Model
 {
-    /** @use HasFactory<TeamInvitationFactory> */
     use HasFactory;
 
-    /** @return BelongsTo<Team, $this> */
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
+    ];
+
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
     }
 
-    /** @return BelongsTo<User, $this> */
     public function inviter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by');
@@ -62,7 +64,6 @@ class TeamInvitation extends Model
         });
     }
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

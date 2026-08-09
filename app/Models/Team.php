@@ -5,21 +5,26 @@ namespace App\Models;
 use App\Concerns\GeneratesUniqueTeamSlugs;
 use App\Enums\TeamRole;
 use Database\Factories\TeamFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-/**
- * @mixin IdeHelperTeam
- */
-#[Fillable(['name', 'slug', 'is_personal'])]
+/** @mixin IdeHelperTeam */
+
+#[UseFactory(TeamFactory::class)]
 class Team extends Model
 {
-    /** @use HasFactory<TeamFactory> */
     use GeneratesUniqueTeamSlugs, HasFactory, SoftDeletes;
+
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
 
     public function owner(): ?Model
     {
@@ -28,7 +33,6 @@ class Team extends Model
             ->first();
     }
 
-    /** @return BelongsToMany<User, $this, Membership, 'pivot'> */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'team_members', 'team_id', 'user_id')
@@ -37,13 +41,11 @@ class Team extends Model
             ->withTimestamps();
     }
 
-    /** @return HasMany<Membership, $this> */
     public function memberships(): HasMany
     {
         return $this->hasMany(Membership::class);
     }
 
-    /** @return HasMany<TeamInvitation, $this> */
     public function invitations(): HasMany
     {
         return $this->hasMany(TeamInvitation::class);
@@ -71,7 +73,6 @@ class Team extends Model
         });
     }
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

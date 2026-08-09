@@ -1,0 +1,28 @@
+{
+    "name": "quill/eloquent-relation-inference",
+    "description": "Infers Eloquent relation generics from the method body, so relation methods need no @return docblock.",
+    "license": "MIT",
+    "type": "phpstan-extension",
+    "require": {
+        "php": "^8.3",
+        "illuminate/database": "^11.0 || ^12.0 || ^13.0",
+        "phpstan/phpstan": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Quill\\EloquentRelationInference\\": "src/"
+        }
+    },
+    "extra": {
+        "phpstan": {
+            "includes": [
+                "extension.neon"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

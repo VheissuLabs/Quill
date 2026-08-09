@@ -1,6 +1,8 @@
 includes:
     - vendor/larastan/larastan/extension.neon
     - vendor/nesbot/carbon/extension.neon
+    - vendor/quill/eloquent-relation-inference/extension.neon
+    - vendor/tomasvotruba/cognitive-complexity/config/extension.neon
 
 parameters:
     paths:
@@ -14,3 +16,30 @@ parameters:
         - _ide_helper_models.php
 
     level: 7
+
+    # Measured maxima in this codebase are 5 (method, generateUniqueTeamSlug) and
+    # 4 (class). The package defaults of 9/40 sit an order of magnitude above that
+    # and would never fire. These are set just high enough to allow normal growth
+    # while catching genuine sprawl before it lands.
+    cognitive_complexity:
+        function: 8
+        class: 20
+
+    ignoreErrors:
+        # The factory is declared by #[UseFactory] on the model, which is real code
+        # rather than a comment. The `@use HasFactory<XFactory>` docblock only
+        # restates it for the analyser. Scoped to the trait-use flavour so missing
+        # generics elsewhere are still reported.
+        -
+            identifier: missingType.generics
+            message: '#uses generic trait#'
+            path: app/Models/*
+
+        # Relation generics are supplied by quill/eloquent-relation-inference, which
+        # reads them from the method body. This rule inspects the declaration rather
+        # than the resolved type, so no extension can satisfy it - identifier-based
+        # ignoring is PHPStan's documented replacement for the removed
+        # checkGenericClassInNonGenericObjectType parameter.
+        -
+            identifier: missingType.generics
+            message: '#return type with generic class Illuminate\\Database\\Eloquent\\Relations#'

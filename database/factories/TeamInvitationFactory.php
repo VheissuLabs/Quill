@@ -8,9 +8,7 @@ use App\Models\TeamInvitation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<TeamInvitation>
- */
+/** @extends Factory<TeamInvitation> */
 class TeamInvitationFactory extends Factory
 {
     /** @return array<string, mixed> */

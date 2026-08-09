@@ -28,7 +28,8 @@
         "phpdoc_line_span": {
             "method": "single",
             "property": "single",
-            "const": "single"
+            "const": "single",
+            "class": "single"
         },
         "phpdoc_no_alias_tag": {
             "replacements": {
@@ -40,6 +41,7 @@
         "phpdoc_scalar": true,
         "phpdoc_separation": false,
         "phpdoc_trim": true,
-        "phpdoc_types": true
+        "phpdoc_types": true,
+        "no_blank_lines_after_phpdoc": false
     }
 }
