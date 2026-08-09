@@ -11,9 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureTeamMembership
 {
-    /**
-     * @param  Closure(Request): (Response)  $next
-     */
+    /** @param  Closure(Request): (Response)  $next */
     public function handle(Request $request, Closure $next, ?string $minimumRole = null): Response
     {
         [$user, $team] = [$request->user(), $this->team($request)];

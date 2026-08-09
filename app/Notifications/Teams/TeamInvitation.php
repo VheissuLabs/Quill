@@ -14,9 +14,7 @@ class TeamInvitation extends Notification implements ShouldQueue
 
     public function __construct(public TeamInvitationModel $invitation) {}
 
-    /**
-     * @return array<int, string>
-     */
+    /** @return array<int, string> */
     public function via(object $notifiable): array
     {
         return ['mail'];
@@ -40,9 +38,7 @@ class TeamInvitation extends Notification implements ShouldQueue
             );
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function toArray(object $notifiable): array
     {
         return [

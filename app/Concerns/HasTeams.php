@@ -17,9 +17,7 @@ use Illuminate\Support\Facades\URL;
 
 trait HasTeams
 {
-    /**
-     * @return BelongsToMany<Team, $this>
-     */
+    /** @return BelongsToMany<Team, $this> */
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class, 'team_members', 'user_id', 'team_id')
@@ -27,9 +25,7 @@ trait HasTeams
             ->withTimestamps();
     }
 
-    /**
-     * @return HasManyThrough<Team, Membership, $this>
-     */
+    /** @return HasManyThrough<Team, Membership, $this> */
     public function ownedTeams(): HasManyThrough
     {
         return $this->hasManyThrough(
@@ -42,17 +38,13 @@ trait HasTeams
         )->where('team_members.role', TeamRole::Owner->value);
     }
 
-    /**
-     * @return HasMany<Membership, $this>
-     */
+    /** @return HasMany<Membership, $this> */
     public function teamMemberships(): HasMany
     {
         return $this->hasMany(Membership::class, 'user_id');
     }
 
-    /**
-     * @return BelongsTo<Team, $this>
-     */
+    /** @return BelongsTo<Team, $this> */
     public function currentTeam(): BelongsTo
     {
         return $this->belongsTo(Team::class, 'current_team_id');
@@ -102,9 +94,7 @@ trait HasTeams
             ?->role;
     }
 
-    /**
-     * @return Collection<int, UserTeam>
-     */
+    /** @return Collection<int, UserTeam> */
     public function toUserTeams(bool $includeCurrent = false): Collection
     {
         return $this->teams()

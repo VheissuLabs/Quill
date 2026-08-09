@@ -11,9 +11,7 @@ use Illuminate\Support\Str;
  */
 class TeamFactory extends Factory
 {
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         $name = fake()->unique()->company();

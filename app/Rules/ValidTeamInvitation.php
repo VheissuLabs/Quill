@@ -12,9 +12,7 @@ class ValidTeamInvitation implements ValidationRule
 {
     public function __construct(protected ?User $user) {}
 
-    /**
-     * @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail
-     */
+    /** @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! $value instanceof TeamInvitation || ! $this->user instanceof User) {

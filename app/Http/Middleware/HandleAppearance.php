@@ -9,9 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class HandleAppearance
 {
-    /**
-     * @param  Closure(Request): (Response)  $next
-     */
+    /** @param  Closure(Request): (Response)  $next */
     public function handle(Request $request, Closure $next): Response
     {
         View::share('appearance', $request->cookie('appearance') ?? 'system');

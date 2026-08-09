@@ -16,9 +16,7 @@ class DeleteTeamRequest extends FormRequest
         return Gate::allows('delete', $this->route('team'));
     }
 
-    /**
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         return [
@@ -26,9 +24,7 @@ class DeleteTeamRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<int, Closure(Validator): void>
-     */
+    /** @return array<int, Closure(Validator): void> */
     public function after(): array
     {
         return [

@@ -13,9 +13,7 @@ enum TeamRole: string
         return ucfirst($this->value);
     }
 
-    /**
-     * @return array<TeamPermission>
-     */
+    /** @return array<TeamPermission> */
     public function permissions(): array
     {
         return match ($this) {
@@ -48,9 +46,7 @@ enum TeamRole: string
         return $this->level() >= $role->level();
     }
 
-    /**
-     * @return array<array{value: string, label: string}>
-     */
+    /** @return array<array{value: string, label: string}> */
     public static function assignable(): array
     {
         return collect(self::cases())

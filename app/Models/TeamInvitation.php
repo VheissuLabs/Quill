@@ -31,28 +31,13 @@ class TeamInvitation extends Model
     /** @use HasFactory<TeamInvitationFactory> */
     use HasFactory;
 
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        static::creating(function (TeamInvitation $invitation) {
-            if (empty($invitation->code)) {
-                $invitation->code = Str::random(64);
-            }
-        });
-    }
-
-    /**
-     * @return BelongsTo<Team, $this>
-     */
+    /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
     }
 
-    /**
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function inviter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by');
@@ -73,9 +58,23 @@ class TeamInvitation extends Model
         return $this->expires_at !== null && $this->expires_at->isPast();
     }
 
-    /**
-     * @return array<string, string>
-     */
+    public function getRouteKeyName(): string
+    {
+        return 'code';
+    }
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (TeamInvitation $invitation) {
+            if (empty($invitation->code)) {
+                $invitation->code = Str::random(64);
+            }
+        });
+    }
+
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -83,10 +82,5 @@ class TeamInvitation extends Model
             'expires_at' => 'datetime',
             'accepted_at' => 'datetime',
         ];
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'code';
     }
 }

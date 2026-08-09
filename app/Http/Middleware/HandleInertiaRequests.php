@@ -7,9 +7,7 @@ use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * @var string
-     */
+    /** @var string */
     protected $rootView = 'app';
 
     public function version(Request $request): ?string
@@ -17,9 +15,7 @@ class HandleInertiaRequests extends Middleware
         return parent::version($request);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function share(Request $request): array
     {
         $user = $request->user();

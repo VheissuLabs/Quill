@@ -32,6 +32,39 @@ class Team extends Model
     /** @use HasFactory<TeamFactory> */
     use GeneratesUniqueTeamSlugs, HasFactory, SoftDeletes;
 
+    public function owner(): ?Model
+    {
+        return $this->members()
+            ->wherePivot('role', TeamRole::Owner->value)
+            ->first();
+    }
+
+    /** @return BelongsToMany<User, $this, Membership, 'pivot'> */
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'team_members', 'team_id', 'user_id')
+            ->using(Membership::class)
+            ->withPivot(['role'])
+            ->withTimestamps();
+    }
+
+    /** @return HasMany<Membership, $this> */
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(Membership::class);
+    }
+
+    /** @return HasMany<TeamInvitation, $this> */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(TeamInvitation::class);
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     protected static function boot(): void
     {
         parent::boot();
@@ -49,52 +82,11 @@ class Team extends Model
         });
     }
 
-    public function owner(): ?Model
-    {
-        return $this->members()
-            ->wherePivot('role', TeamRole::Owner->value)
-            ->first();
-    }
-
-    /**
-     * @return BelongsToMany<User, $this, Membership, 'pivot'>
-     */
-    public function members(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'team_members', 'team_id', 'user_id')
-            ->using(Membership::class)
-            ->withPivot(['role'])
-            ->withTimestamps();
-    }
-
-    /**
-     * @return HasMany<Membership, $this>
-     */
-    public function memberships(): HasMany
-    {
-        return $this->hasMany(Membership::class);
-    }
-
-    /**
-     * @return HasMany<TeamInvitation, $this>
-     */
-    public function invitations(): HasMany
-    {
-        return $this->hasMany(TeamInvitation::class);
-    }
-
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
             'is_personal' => 'boolean',
         ];
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
     }
 }

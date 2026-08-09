@@ -16,9 +16,7 @@ class UserFactory extends Factory
 {
     protected static ?string $password;
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
