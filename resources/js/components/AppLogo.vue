@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+    import { usePage } from '@inertiajs/vue3'
+    import AppLogoIcon from '@/components/AppLogoIcon.vue'
 
-const name = usePage().props.name;
+    const name = usePage().props.name
 </script>
 
 <template>

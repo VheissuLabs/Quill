@@ -1,44 +1,44 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import TeamInvitationController from '@/actions/App/Http/Controllers/Teams/TeamInvitationController';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import type { DashboardInvitation } from '@/types';
+    import { router } from '@inertiajs/vue3'
+    import { ref } from 'vue'
+    import TeamInvitationController from '@/actions/App/Http/Controllers/Teams/TeamInvitationController'
+    import { Button } from '@/components/ui/button'
+    import {
+        Dialog,
+        DialogContent,
+        DialogDescription,
+        DialogHeader,
+        DialogTitle,
+    } from '@/components/ui/dialog'
+    import type { DashboardInvitation } from '@/types'
 
-type Props = {
-    invitations: DashboardInvitation[];
-};
+    type Props = {
+        invitations: DashboardInvitation[]
+    }
 
-const props = defineProps<Props>();
+    const props = defineProps<Props>()
 
-const open = ref(true);
-const processingCode = ref<string | null>(null);
+    const open = ref(true)
+    const processingCode = ref<string | null>(null)
 
-const acceptInvitation = (invitation: DashboardInvitation) => {
-    router.visit(TeamInvitationController.accept(invitation), {
-        onStart: () => (processingCode.value = invitation.code),
-        onFinish: () => (processingCode.value = null),
-    });
-};
+    const acceptInvitation = (invitation: DashboardInvitation) => {
+        router.visit(TeamInvitationController.accept(invitation), {
+            onStart: () => (processingCode.value = invitation.code),
+            onFinish: () => (processingCode.value = null),
+        })
+    }
 
-const declineInvitation = (invitation: DashboardInvitation) => {
-    router.visit(TeamInvitationController.decline(invitation), {
-        onStart: () => (processingCode.value = invitation.code),
-        onFinish: () => (processingCode.value = null),
-        onSuccess: () => {
-            if (props.invitations.length === 1) {
-                open.value = false;
-            }
-        },
-    });
-};
+    const declineInvitation = (invitation: DashboardInvitation) => {
+        router.visit(TeamInvitationController.decline(invitation), {
+            onStart: () => (processingCode.value = invitation.code),
+            onFinish: () => (processingCode.value = null),
+            onSuccess: () => {
+                if (props.invitations.length === 1) {
+                    open.value = false
+                }
+            },
+        })
+    }
 </script>
 
 <template>

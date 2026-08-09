@@ -1,97 +1,97 @@
 <script setup lang="ts">
-import { Form, Head, router } from '@inertiajs/vue3';
-import { ChevronDown, Mail, UserPlus, X } from '@lucide/vue';
-import { computed, ref } from 'vue';
-import CancelInvitationModal from '@/components/CancelInvitationModal.vue';
-import DeleteTeamModal from '@/components/DeleteTeamModal.vue';
-import Heading from '@/components/Heading.vue';
-import InputError from '@/components/InputError.vue';
-import InviteMemberModal from '@/components/InviteMemberModal.vue';
-import RemoveMemberModal from '@/components/RemoveMemberModal.vue';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { useInitials } from '@/composables/useInitials';
-import { edit, index, update } from '@/routes/teams';
-import { update as updateMember } from '@/routes/teams/members';
-import type {
-    RoleOption,
-    Team,
-    TeamInvitation,
-    TeamMember,
-    TeamPermissions,
-} from '@/types';
+    import { Form, Head, router } from '@inertiajs/vue3'
+    import { ChevronDown, Mail, UserPlus, X } from '@lucide/vue'
+    import { computed, ref } from 'vue'
+    import CancelInvitationModal from '@/components/CancelInvitationModal.vue'
+    import DeleteTeamModal from '@/components/DeleteTeamModal.vue'
+    import Heading from '@/components/Heading.vue'
+    import InputError from '@/components/InputError.vue'
+    import InviteMemberModal from '@/components/InviteMemberModal.vue'
+    import RemoveMemberModal from '@/components/RemoveMemberModal.vue'
+    import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+    import { Badge } from '@/components/ui/badge'
+    import { Button } from '@/components/ui/button'
+    import {
+        DropdownMenu,
+        DropdownMenuContent,
+        DropdownMenuItem,
+        DropdownMenuTrigger,
+    } from '@/components/ui/dropdown-menu'
+    import { Input } from '@/components/ui/input'
+    import { Label } from '@/components/ui/label'
+    import {
+        Tooltip,
+        TooltipContent,
+        TooltipProvider,
+        TooltipTrigger,
+    } from '@/components/ui/tooltip'
+    import { useInitials } from '@/composables/useInitials'
+    import { edit, index, update } from '@/routes/teams'
+    import { update as updateMember } from '@/routes/teams/members'
+    import type {
+        RoleOption,
+        Team,
+        TeamInvitation,
+        TeamMember,
+        TeamPermissions,
+    } from '@/types'
 
-type Props = {
-    team: Team;
-    members: TeamMember[];
-    invitations: TeamInvitation[];
-    permissions: TeamPermissions;
-    availableRoles: RoleOption[];
-};
+    type Props = {
+        team: Team
+        members: TeamMember[]
+        invitations: TeamInvitation[]
+        permissions: TeamPermissions
+        availableRoles: RoleOption[]
+    }
 
-const props = defineProps<Props>();
+    const props = defineProps<Props>()
 
-defineOptions({
-    layout: (props: { team: Team }) => ({
-        breadcrumbs: [
-            {
-                title: 'Teams',
-                href: index(),
-            },
-            {
-                title: props.team.name,
-                href: edit(props.team.slug),
-            },
-        ],
-    }),
-});
+    defineOptions({
+        layout: (props: { team: Team }) => ({
+            breadcrumbs: [
+                {
+                    title: 'Teams',
+                    href: index(),
+                },
+                {
+                    title: props.team.name,
+                    href: edit(props.team.slug),
+                },
+            ],
+        }),
+    })
 
-const { getInitials } = useInitials();
+    const { getInitials } = useInitials()
 
-const inviteDialogOpen = ref(false);
-const deleteDialogOpen = ref(false);
-const removeMemberDialogOpen = ref(false);
-const memberToRemove = ref<TeamMember | null>(null);
-const cancelInvitationDialogOpen = ref(false);
-const invitationToCancel = ref<TeamInvitation | null>(null);
+    const inviteDialogOpen = ref(false)
+    const deleteDialogOpen = ref(false)
+    const removeMemberDialogOpen = ref(false)
+    const memberToRemove = ref<TeamMember | null>(null)
+    const cancelInvitationDialogOpen = ref(false)
+    const invitationToCancel = ref<TeamInvitation | null>(null)
 
-const pageTitle = computed(() =>
-    props.permissions.canUpdateTeam
-        ? `Edit ${props.team.name}`
-        : `View ${props.team.name}`,
-);
+    const pageTitle = computed(() =>
+        props.permissions.canUpdateTeam
+            ? `Edit ${props.team.name}`
+            : `View ${props.team.name}`,
+    )
 
-const updateMemberRole = (member: TeamMember, newRole: string) => {
-    router.visit(updateMember([props.team.slug, member.id]), {
-        data: { role: newRole },
-        preserveScroll: true,
-    });
-};
+    const updateMemberRole = (member: TeamMember, newRole: string) => {
+        router.visit(updateMember([props.team.slug, member.id]), {
+            data: { role: newRole },
+            preserveScroll: true,
+        })
+    }
 
-const confirmRemoveMember = (member: TeamMember) => {
-    memberToRemove.value = member;
-    removeMemberDialogOpen.value = true;
-};
+    const confirmRemoveMember = (member: TeamMember) => {
+        memberToRemove.value = member
+        removeMemberDialogOpen.value = true
+    }
 
-const confirmCancelInvitation = (invitation: TeamInvitation) => {
-    invitationToCancel.value = invitation;
-    cancelInvitationDialogOpen.value = true;
-};
+    const confirmCancelInvitation = (invitation: TeamInvitation) => {
+        invitationToCancel.value = invitation
+        cancelInvitationDialogOpen.value = true
+    }
 </script>
 
 <template>

@@ -1,120 +1,118 @@
-import type { ComputedRef, Ref } from 'vue';
-import { computed, onMounted, ref } from 'vue';
-import type { Appearance, ResolvedAppearance } from '@/types';
+import type { ComputedRef, Ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import type { Appearance, ResolvedAppearance } from '@/types'
 
-export type { Appearance, ResolvedAppearance };
+export type { Appearance, ResolvedAppearance }
 
 export type UseAppearanceReturn = {
-    appearance: Ref<Appearance>;
-    resolvedAppearance: ComputedRef<ResolvedAppearance>;
-    updateAppearance: (value: Appearance) => void;
-};
+    appearance: Ref<Appearance>
+    resolvedAppearance: ComputedRef<ResolvedAppearance>
+    updateAppearance: (value: Appearance) => void
+}
 
 export function updateTheme(value: Appearance): void {
     if (typeof window === 'undefined') {
-        return;
+        return
     }
 
     if (value === 'system') {
-        const mediaQueryList = window.matchMedia(
-            '(prefers-color-scheme: dark)',
-        );
-        const systemTheme = mediaQueryList.matches ? 'dark' : 'light';
+        const mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)')
+        const systemTheme = mediaQueryList.matches ? 'dark' : 'light'
 
         document.documentElement.classList.toggle(
             'dark',
             systemTheme === 'dark',
-        );
+        )
     } else {
-        document.documentElement.classList.toggle('dark', value === 'dark');
+        document.documentElement.classList.toggle('dark', value === 'dark')
     }
 }
 
 const setCookie = (name: string, value: string, days = 365) => {
     if (typeof document === 'undefined') {
-        return;
+        return
     }
 
-    const maxAge = days * 24 * 60 * 60;
+    const maxAge = days * 24 * 60 * 60
 
-    document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
-};
+    document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`
+}
 
 const mediaQuery = () => {
     if (typeof window === 'undefined') {
-        return null;
+        return null
     }
 
-    return window.matchMedia('(prefers-color-scheme: dark)');
-};
+    return window.matchMedia('(prefers-color-scheme: dark)')
+}
 
 const getStoredAppearance = () => {
     if (typeof window === 'undefined') {
-        return null;
+        return null
     }
 
-    return localStorage.getItem('appearance') as Appearance | null;
-};
+    return localStorage.getItem('appearance') as Appearance | null
+}
 
 const prefersDark = (): boolean => {
     if (typeof window === 'undefined') {
-        return false;
+        return false
     }
 
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-};
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+}
 
 const handleSystemThemeChange = () => {
-    const currentAppearance = getStoredAppearance();
+    const currentAppearance = getStoredAppearance()
 
-    updateTheme(currentAppearance || 'system');
-};
+    updateTheme(currentAppearance || 'system')
+}
 
 export function initializeTheme(): void {
     if (typeof window === 'undefined') {
-        return;
+        return
     }
 
-    const savedAppearance = getStoredAppearance();
-    updateTheme(savedAppearance || 'system');
+    const savedAppearance = getStoredAppearance()
+    updateTheme(savedAppearance || 'system')
 
-    mediaQuery()?.addEventListener('change', handleSystemThemeChange);
+    mediaQuery()?.addEventListener('change', handleSystemThemeChange)
 }
 
-const appearance = ref<Appearance>('system');
+const appearance = ref<Appearance>('system')
 
 export function useAppearance(): UseAppearanceReturn {
     onMounted(() => {
         const savedAppearance = localStorage.getItem(
             'appearance',
-        ) as Appearance | null;
+        ) as Appearance | null
 
         if (savedAppearance) {
-            appearance.value = savedAppearance;
+            appearance.value = savedAppearance
         }
-    });
+    })
 
     const resolvedAppearance = computed<ResolvedAppearance>(() => {
         if (appearance.value === 'system') {
-            return prefersDark() ? 'dark' : 'light';
+            return prefersDark() ? 'dark' : 'light'
         }
 
-        return appearance.value;
-    });
+        return appearance.value
+    })
 
     function updateAppearance(value: Appearance) {
-        appearance.value = value;
+        appearance.value = value
 
-        localStorage.setItem('appearance', value);
+        localStorage.setItem('appearance', value)
 
-        setCookie('appearance', value);
+        setCookie('appearance', value)
 
-        updateTheme(value);
+        updateTheme(value)
     }
 
     return {
         appearance,
         resolvedAppearance,
         updateAppearance,
-    };
+    }
 }

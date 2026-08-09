@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { Link, router } from '@inertiajs/vue3';
-import { LogOut, Settings } from '@lucide/vue';
-import {
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import UserInfo from '@/components/UserInfo.vue';
-import { logout } from '@/routes';
-import { edit } from '@/routes/profile';
-import type { User } from '@/types';
+    import { Link, router } from '@inertiajs/vue3'
+    import { LogOut, Settings } from '@lucide/vue'
+    import {
+        DropdownMenuGroup,
+        DropdownMenuItem,
+        DropdownMenuLabel,
+        DropdownMenuSeparator,
+    } from '@/components/ui/dropdown-menu'
+    import UserInfo from '@/components/UserInfo.vue'
+    import { logout } from '@/routes'
+    import { edit } from '@/routes/profile'
+    import type { User } from '@/types'
 
-type Props = {
-    user: User;
-};
+    type Props = {
+        user: User
+    }
 
-const handleLogout = () => {
-    router.flushAll();
-};
+    const handleLogout = () => {
+        router.flushAll()
+    }
 
-defineProps<Props>();
+    defineProps<Props>()
 </script>
 
 <template>

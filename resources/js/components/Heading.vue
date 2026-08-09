@@ -1,13 +1,13 @@
 <script setup lang="ts">
-type Props = {
-    title: string;
-    description?: string;
-    variant?: 'default' | 'small';
-};
+    type Props = {
+        title: string
+        description?: string
+        variant?: 'default' | 'small'
+    }
 
-withDefaults(defineProps<Props>(), {
-    variant: 'default',
-});
+    withDefaults(defineProps<Props>(), {
+        variant: 'default',
+    })
 </script>
 
 <template>

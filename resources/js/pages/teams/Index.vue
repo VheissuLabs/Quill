@@ -1,47 +1,48 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { Eye, LogOut, Pencil, Plus } from '@lucide/vue';
-import { ref } from 'vue';
-import CreateTeamModal from '@/components/CreateTeamModal.vue';
-import Heading from '@/components/Heading.vue';
-import LeaveTeamModal from '@/components/LeaveTeamModal.vue';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { edit, index } from '@/routes/teams';
-import type { Team } from '@/types';
+    import { Head, Link } from '@inertiajs/vue3'
+    import { Eye, LogOut, Pencil, Plus } from '@lucide/vue'
+    import { ref } from 'vue'
+    import CreateTeamModal from '@/components/CreateTeamModal.vue'
+    import Heading from '@/components/Heading.vue'
+    import LeaveTeamModal from '@/components/LeaveTeamModal.vue'
+    import { Badge } from '@/components/ui/badge'
+    import { Button } from '@/components/ui/button'
+    import {
+        Tooltip,
+        TooltipContent,
+        TooltipProvider,
+        TooltipTrigger,
+    } from '@/components/ui/tooltip'
+    import { edit, index } from '@/routes/teams'
+    import type { Team } from '@/types'
 
-type Props = {
-    teams: Team[];
-};
+    type Props = {
+        teams: Team[]
+    }
 
-defineProps<Props>();
+    defineProps<Props>()
 
-const leaveTeamDialogOpen = ref(false);
-const teamLeaving = ref<Team | null>(null);
+    const leaveTeamDialogOpen = ref(false)
+    const teamLeaving = ref<Team | null>(null)
 
-const canLeaveTeam = (team: Team) => !team.isPersonal && team.role !== 'owner';
+    const canLeaveTeam = (team: Team) =>
+        !team.isPersonal && team.role !== 'owner'
 
-const openLeaveTeamDialog = (team: Team) => {
-    teamLeaving.value = team;
-    leaveTeamDialogOpen.value = true;
-};
+    const openLeaveTeamDialog = (team: Team) => {
+        teamLeaving.value = team
+        leaveTeamDialogOpen.value = true
+    }
 
-defineOptions({
-    layout: {
-        breadcrumbs: [
-            {
-                title: 'Teams',
-                href: index(),
-            },
-        ],
-    },
-});
+    defineOptions({
+        layout: {
+            breadcrumbs: [
+                {
+                    title: 'Teams',
+                    href: index(),
+                },
+            ],
+        },
+    })
 </script>
 
 <template>

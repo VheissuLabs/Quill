@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import type { AppVariant } from '@/types';
+    import { usePage } from '@inertiajs/vue3'
+    import { SidebarProvider } from '@/components/ui/sidebar'
+    import type { AppVariant } from '@/types'
 
-type Props = {
-    variant?: AppVariant;
-};
+    type Props = {
+        variant?: AppVariant
+    }
 
-withDefaults(defineProps<Props>(), {
-    variant: 'sidebar',
-});
+    withDefaults(defineProps<Props>(), {
+        variant: 'sidebar',
+    })
 
-const isOpen = usePage().props.sidebarOpen;
+    const isOpen = usePage().props.sidebarOpen
 </script>
 
 <template>

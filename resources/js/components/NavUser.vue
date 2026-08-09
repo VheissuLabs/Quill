@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
-import { ChevronsUpDown } from '@lucide/vue';
-import { computed } from 'vue';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    useSidebar,
-} from '@/components/ui/sidebar';
-import UserInfo from '@/components/UserInfo.vue';
-import UserMenuContent from '@/components/UserMenuContent.vue';
-import type { Team } from '@/types';
+    import { usePage } from '@inertiajs/vue3'
+    import { ChevronsUpDown } from '@lucide/vue'
+    import { computed } from 'vue'
+    import {
+        DropdownMenu,
+        DropdownMenuContent,
+        DropdownMenuTrigger,
+    } from '@/components/ui/dropdown-menu'
+    import {
+        SidebarMenu,
+        SidebarMenuButton,
+        SidebarMenuItem,
+        useSidebar,
+    } from '@/components/ui/sidebar'
+    import UserInfo from '@/components/UserInfo.vue'
+    import UserMenuContent from '@/components/UserMenuContent.vue'
+    import type { Team } from '@/types'
 
-const page = usePage();
-const user = page.props.auth.user;
-const { isMobile, state } = useSidebar();
+    const page = usePage()
+    const user = page.props.auth.user
+    const { isMobile, state } = useSidebar()
 
-const currentTeam = computed(() => page.props.currentTeam as Team | null);
+    const currentTeam = computed(() => page.props.currentTeam as Team | null)
 </script>
 
 <template>

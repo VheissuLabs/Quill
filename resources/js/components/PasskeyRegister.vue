@@ -1,62 +1,62 @@
 <script setup lang="ts">
-import { usePasskeyRegister } from '@laravel/passkeys/vue';
-import { ref } from 'vue';
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+    import { usePasskeyRegister } from '@laravel/passkeys/vue'
+    import { ref } from 'vue'
+    import InputError from '@/components/InputError.vue'
+    import { Button } from '@/components/ui/button'
+    import { Input } from '@/components/ui/input'
+    import { Label } from '@/components/ui/label'
 
-const emit = defineEmits<{
-    success: [];
-}>();
+    const emit = defineEmits<{
+        success: []
+    }>()
 
-const getDefaultPasskeyName = () => {
-    const ua = navigator.userAgent;
+    const getDefaultPasskeyName = () => {
+        const ua = navigator.userAgent
 
-    const browser = [
-        { pattern: /Edg|Edge/, name: 'Edge' },
-        { pattern: /OPR|Opera|OPiOS/, name: 'Opera' },
-        { pattern: /Firefox|FxiOS/, name: 'Firefox' },
-        { pattern: /Chrome|CriOS/, name: 'Chrome' },
-        { pattern: /Safari/, name: 'Safari' },
-    ].find(({ pattern }) => pattern.test(ua))?.name;
+        const browser = [
+            { pattern: /Edg|Edge/, name: 'Edge' },
+            { pattern: /OPR|Opera|OPiOS/, name: 'Opera' },
+            { pattern: /Firefox|FxiOS/, name: 'Firefox' },
+            { pattern: /Chrome|CriOS/, name: 'Chrome' },
+            { pattern: /Safari/, name: 'Safari' },
+        ].find(({ pattern }) => pattern.test(ua))?.name
 
-    const os = [
-        { pattern: /iPhone/, name: 'iPhone' },
-        { pattern: /iPad|Macintosh(?=.*Mobile)/, name: 'iPad' },
-        { pattern: /Android/, name: 'Android' },
-        { pattern: /Mac/, name: 'Mac' },
-        { pattern: /Windows/, name: 'Windows' },
-    ].find(({ pattern }) => pattern.test(ua))?.name;
+        const os = [
+            { pattern: /iPhone/, name: 'iPhone' },
+            { pattern: /iPad|Macintosh(?=.*Mobile)/, name: 'iPad' },
+            { pattern: /Android/, name: 'Android' },
+            { pattern: /Mac/, name: 'Mac' },
+            { pattern: /Windows/, name: 'Windows' },
+        ].find(({ pattern }) => pattern.test(ua))?.name
 
-    return [browser, os].filter(Boolean).join(' on ') || '';
-};
-
-const name = ref(getDefaultPasskeyName());
-const showForm = ref(false);
-
-const { register, isLoading, error, isSupported } = usePasskeyRegister({
-    onSuccess: () => {
-        name.value = '';
-        showForm.value = false;
-        emit('success');
-    },
-});
-
-const handleSubmit = async (event: Event) => {
-    event.preventDefault();
-
-    if (!name.value.trim()) {
-        return;
+        return [browser, os].filter(Boolean).join(' on ') || ''
     }
 
-    await register(name.value);
-};
+    const name = ref(getDefaultPasskeyName())
+    const showForm = ref(false)
 
-const handleCancel = () => {
-    showForm.value = false;
-    name.value = '';
-};
+    const { register, isLoading, error, isSupported } = usePasskeyRegister({
+        onSuccess: () => {
+            name.value = ''
+            showForm.value = false
+            emit('success')
+        },
+    })
+
+    const handleSubmit = async (event: Event) => {
+        event.preventDefault()
+
+        if (!name.value.trim()) {
+            return
+        }
+
+        await register(name.value)
+    }
+
+    const handleCancel = () => {
+        showForm.value = false
+        name.value = ''
+    }
 </script>
 
 <template>
