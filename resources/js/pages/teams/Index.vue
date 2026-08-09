@@ -5,6 +5,7 @@
     import CreateTeamModal from '@/components/CreateTeamModal.vue'
     import Heading from '@/components/Heading.vue'
     import LeaveTeamModal from '@/components/LeaveTeamModal.vue'
+    import Stack from '@/components/Stack.vue'
     import { Badge } from '@/components/ui/badge'
     import { Button } from '@/components/ui/button'
     import {
@@ -65,7 +66,7 @@
             </CreateTeamModal>
         </div>
 
-        <div class="space-y-3">
+        <Stack gap="3">
             <div
                 v-for="team in teams"
                 :key="team.id"
@@ -149,7 +150,7 @@
             >
                 You don't belong to any teams yet.
             </p>
-        </div>
+        </Stack>
     </div>
 
     <LeaveTeamModal v-model:open="leaveTeamDialogOpen" :team="teamLeaving" />

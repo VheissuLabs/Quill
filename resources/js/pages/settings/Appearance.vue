@@ -2,6 +2,7 @@
     import { Head } from '@inertiajs/vue3'
     import AppearanceTabs from '@/components/AppearanceTabs.vue'
     import Heading from '@/components/Heading.vue'
+    import Stack from '@/components/Stack.vue'
     import { edit } from '@/routes/appearance'
 
     defineOptions({
@@ -21,12 +22,12 @@
 
     <h1 class="sr-only">Appearance settings</h1>
 
-    <div class="space-y-6">
+    <Stack>
         <Heading
             variant="small"
             title="Appearance settings"
             description="Update the appearance settings for your account"
         />
         <AppearanceTabs />
-    </div>
+    </Stack>
 </template>

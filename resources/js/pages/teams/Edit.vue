@@ -5,9 +5,10 @@
     import CancelInvitationModal from '@/components/CancelInvitationModal.vue'
     import DeleteTeamModal from '@/components/DeleteTeamModal.vue'
     import Heading from '@/components/Heading.vue'
-    import InputError from '@/components/InputError.vue'
     import InviteMemberModal from '@/components/InviteMemberModal.vue'
     import RemoveMemberModal from '@/components/RemoveMemberModal.vue'
+    import Stack from '@/components/Stack.vue'
+    import TextInput from '@/components/TextInput.vue'
     import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
     import { Badge } from '@/components/ui/badge'
     import { Button } from '@/components/ui/button'
@@ -17,8 +18,6 @@
         DropdownMenuItem,
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu'
-    import { Input } from '@/components/ui/input'
-    import { Label } from '@/components/ui/label'
     import {
         Tooltip,
         TooltipContent,
@@ -110,30 +109,29 @@
 
             <Form
                 v-bind="update.form(team.slug)"
-                class="space-y-6"
                 v-slot="{ errors, processing }"
             >
-                <div class="grid gap-2">
-                    <Label for="name">Team name</Label>
-                    <Input
+                <Stack>
+                    <TextInput
                         id="name"
                         name="name"
+                        label="Team name"
+                        :error="errors.name"
                         data-test="team-name-input"
                         :default-value="team.name"
                         required
                     />
-                    <InputError :message="errors.name" />
-                </div>
 
-                <div class="flex items-center gap-4">
-                    <Button
-                        type="submit"
-                        data-test="team-save-button"
-                        :disabled="processing"
-                    >
-                        Save
-                    </Button>
-                </div>
+                    <div class="flex items-center gap-4">
+                        <Button
+                            type="submit"
+                            data-test="team-save-button"
+                            :disabled="processing"
+                        >
+                            Save
+                        </Button>
+                    </div>
+                </Stack>
             </Form>
         </div>
 
@@ -142,7 +140,7 @@
         </div>
 
         <!-- Members Section -->
-        <div class="space-y-6">
+        <Stack>
             <div class="flex items-center justify-between">
                 <Heading
                     variant="small"
@@ -163,7 +161,7 @@
                 </Button>
             </div>
 
-            <div class="space-y-3">
+            <Stack gap="3">
                 <div
                     v-for="member in members"
                     :key="member.id"
@@ -251,8 +249,8 @@
                         </TooltipProvider>
                     </div>
                 </div>
-            </div>
-        </div>
+            </Stack>
+        </Stack>
 
         <!-- Pending Invitations Section -->
         <div v-if="invitations.length > 0" class="space-y-6">

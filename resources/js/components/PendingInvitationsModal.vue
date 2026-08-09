@@ -2,6 +2,7 @@
     import { router } from '@inertiajs/vue3'
     import { ref } from 'vue'
     import TeamInvitationController from '@/actions/App/Http/Controllers/Teams/TeamInvitationController'
+    import Stack from '@/components/Stack.vue'
     import { Button } from '@/components/ui/button'
     import {
         Dialog,
@@ -51,7 +52,7 @@
                 </DialogDescription>
             </DialogHeader>
 
-            <div class="grid gap-4">
+            <Stack gap="4">
                 <div
                     v-for="invitation in props.invitations"
                     :key="invitation.code"
@@ -85,7 +86,7 @@
                         </Button>
                     </div>
                 </div>
-            </div>
+            </Stack>
         </DialogContent>
     </Dialog>
 </template>

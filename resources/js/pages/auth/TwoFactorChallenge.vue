@@ -2,8 +2,9 @@
     import { Form, Head, setLayoutProps } from '@inertiajs/vue3'
     import { computed, ref, watchEffect } from 'vue'
     import InputError from '@/components/InputError.vue'
+    import Stack from '@/components/Stack.vue'
+    import TextInput from '@/components/TextInput.vue'
     import { Button } from '@/components/ui/button'
-    import { Input } from '@/components/ui/input'
     import {
         InputOTP,
         InputOTPGroup,
@@ -50,7 +51,7 @@
 <template>
     <Head title="Two-factor authentication" />
 
-    <div class="space-y-6">
+    <Stack>
         <template v-if="!showRecoveryInput">
             <Form
                 v-bind="store.form()"
@@ -105,14 +106,14 @@
                 reset-on-error
                 #default="{ errors, processing, clearErrors }"
             >
-                <Input
+                <TextInput
                     name="recovery_code"
                     type="text"
+                    :error="errors.recovery_code"
                     placeholder="Enter recovery code"
                     :autofocus="showRecoveryInput"
                     required
                 />
-                <InputError :message="errors.recovery_code" />
                 <Button type="submit" class="w-full" :disabled="processing"
                     >Continue</Button
                 >
@@ -129,5 +130,5 @@
                 </div>
             </Form>
         </template>
-    </div>
+    </Stack>
 </template>
