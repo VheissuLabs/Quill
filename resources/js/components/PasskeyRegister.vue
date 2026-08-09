@@ -2,9 +2,8 @@
     import { usePasskeyRegister } from '@laravel/passkeys/vue'
     import { ref } from 'vue'
     import InputError from '@/components/InputError.vue'
+    import TextInput from '@/components/TextInput.vue'
     import { Button } from '@/components/ui/button'
-    import { Input } from '@/components/ui/input'
-    import { Label } from '@/components/ui/label'
 
     const emit = defineEmits<{
         success: []
@@ -73,20 +72,21 @@
         @submit="handleSubmit"
         class="space-y-4 rounded-lg border border-border bg-muted/50 p-4"
     >
-        <div class="grid gap-2">
-            <Label for="passkey-name">Passkey name</Label>
-            <Input
-                id="passkey-name"
-                type="text"
-                v-model="name"
-                placeholder="e.g., MacBook Pro, iPhone"
-                class="mt-1 block w-full border-foreground/20"
-                autofocus
-            />
-            <p class="text-xs text-muted-foreground">
-                A name helps you identify this passkey later.
-            </p>
-        </div>
+        <TextInput
+            id="passkey-name"
+            type="text"
+            label="Passkey name"
+            v-model="name"
+            placeholder="e.g., MacBook Pro, iPhone"
+            class="mt-1 block w-full border-foreground/20"
+            autofocus
+        >
+            <template #help>
+                <p class="text-xs text-muted-foreground">
+                    A name helps you identify this passkey later.
+                </p>
+            </template>
+        </TextInput>
 
         <InputError v-if="error" :message="error" />
 

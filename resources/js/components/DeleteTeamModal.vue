@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { Form } from '@inertiajs/vue3'
     import { computed, ref } from 'vue'
-    import InputError from '@/components/InputError.vue'
+    import TextInput from '@/components/TextInput.vue'
     import { Button } from '@/components/ui/button'
     import {
         Dialog,
@@ -12,8 +12,6 @@
         DialogHeader,
         DialogTitle,
     } from '@/components/ui/dialog'
-    import { Input } from '@/components/ui/input'
-    import { Label } from '@/components/ui/label'
     import { destroy } from '@/routes/teams'
     import type { Team } from '@/types'
 
@@ -64,21 +62,20 @@
                 </DialogHeader>
 
                 <div class="space-y-4 py-4">
-                    <div class="grid gap-2">
-                        <Label for="confirmation-name">
+                    <TextInput
+                        id="confirmation-name"
+                        name="name"
+                        :error="errors.name"
+                        data-test="delete-team-name"
+                        v-model="confirmationName"
+                        placeholder="Enter team name"
+                        autocomplete="off"
+                    >
+                        <template #label>
                             Type
                             <strong>"{{ props.team.name }}"</strong> to confirm
-                        </Label>
-                        <Input
-                            id="confirmation-name"
-                            name="name"
-                            data-test="delete-team-name"
-                            v-model="confirmationName"
-                            placeholder="Enter team name"
-                            autocomplete="off"
-                        />
-                        <InputError :message="errors.name" />
-                    </div>
+                        </template>
+                    </TextInput>
                 </div>
 
                 <DialogFooter class="gap-2">

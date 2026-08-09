@@ -3,8 +3,8 @@
     import { useTemplateRef } from 'vue'
     import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController'
     import Heading from '@/components/Heading.vue'
-    import InputError from '@/components/InputError.vue'
     import PasswordInput from '@/components/PasswordInput.vue'
+    import Stack from '@/components/Stack.vue'
     import { Button } from '@/components/ui/button'
     import {
         Dialog,
@@ -16,13 +16,12 @@
         DialogTitle,
         DialogTrigger,
     } from '@/components/ui/dialog'
-    import { Label } from '@/components/ui/label'
 
     const passwordInput = useTemplateRef('passwordInput')
 </script>
 
 <template>
-    <div class="space-y-6">
+    <Stack>
         <Heading
             variant="small"
             title="Delete account"
@@ -68,18 +67,15 @@
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div class="grid gap-2">
-                            <Label for="password" class="sr-only"
-                                >Password</Label
-                            >
-                            <PasswordInput
-                                id="password"
-                                name="password"
-                                ref="passwordInput"
-                                placeholder="Password"
-                            />
-                            <InputError :message="errors.password" />
-                        </div>
+                        <PasswordInput
+                            id="password"
+                            name="password"
+                            label="Password"
+                            label-class="sr-only"
+                            :error="errors.password"
+                            ref="passwordInput"
+                            placeholder="Password"
+                        />
 
                         <DialogFooter class="gap-2">
                             <DialogClose as-child>
@@ -109,5 +105,5 @@
                 </DialogContent>
             </Dialog>
         </div>
-    </div>
+    </Stack>
 </template>

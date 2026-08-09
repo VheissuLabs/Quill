@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { Form } from '@inertiajs/vue3'
     import { ref } from 'vue'
-    import InputError from '@/components/InputError.vue'
+    import TextInput from '@/components/TextInput.vue'
     import { Button } from '@/components/ui/button'
     import {
         Dialog,
@@ -13,8 +13,6 @@
         DialogTitle,
         DialogTrigger,
     } from '@/components/ui/dialog'
-    import { Input } from '@/components/ui/input'
-    import { Label } from '@/components/ui/label'
     import { store } from '@/routes/teams'
 
     const open = ref(false)
@@ -49,17 +47,15 @@
                     </DialogDescription>
                 </DialogHeader>
 
-                <div class="grid gap-2">
-                    <Label for="name">Team name</Label>
-                    <Input
-                        id="name"
-                        name="name"
-                        data-test="create-team-name"
-                        placeholder="My team"
-                        required
-                    />
-                    <InputError :message="errors.name" />
-                </div>
+                <TextInput
+                    id="name"
+                    name="name"
+                    label="Team name"
+                    :error="errors.name"
+                    data-test="create-team-name"
+                    placeholder="My team"
+                    required
+                />
 
                 <DialogFooter class="gap-2">
                     <DialogClose as-child>
