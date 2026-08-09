@@ -73,11 +73,19 @@ Larastan did this until 3.0 and removed it as "slow because it required parsing 
 file". That objection is real and was measured here: a naive implementation added
 **+54%** to analysis time (7.3s to 11.3s on a 60-file application).
 
-The cost came from parsing the model file on every method call to any Model before
-checking whether the method was a relation at all. Bailing on the declared return type
-first — cheap reflection — skips the parse for everything that isn't a relation.
-With that plus memoised resolution and cached ASTs, overhead is within measurement
-noise (7.30s vs 7.31s).
+The cost was repeated parsing, not parsing. `isMethodSupported()` runs for every method
+call on any Model, and the original implementation re-parsed the file every time.
+Measured contributions:
+
+| Configuration | Time | Overhead |
+| --- | --- | --- |
+| No caching, no return-type guard | 11.26s | +3.95s |
+| Memoised resolution + cached ASTs | 7.43s | +0.12s |
+| Plus return-type guard | 7.31s | ~0 |
+
+Memoisation accounts for 97% of the fix. The return-type guard — bailing before the
+parse when the declared type is not a `Relation` — is worth about 3%, and is kept
+because it is nearly free.
 
 Re-measure before trusting this on a substantially larger codebase.
 
