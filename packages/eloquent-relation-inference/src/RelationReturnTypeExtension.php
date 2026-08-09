@@ -64,9 +64,6 @@ final class RelationReturnTypeExtension implements DynamicMethodReturnTypeExtens
     /** @var array<string, array{class-string, string, string|null}|null> */
     private array $resolved = [];
 
-    /** @var array<string, array<int, Node\Stmt>> */
-    private array $parsedFiles = [];
-
     public function __construct(private Parser $parser) {}
 
     public function getClass(): string
@@ -153,7 +150,7 @@ final class RelationReturnTypeExtension implements DynamicMethodReturnTypeExtens
         }
 
         $method = (new NodeFinder)->findFirst(
-            $this->parseFile($fileName),
+            $this->parser->parseFile($fileName),
             static fn (Node $node): bool => $node instanceof ClassMethod
                 && $node->name->toString() === $methodReflection->getName(),
         );
@@ -198,12 +195,6 @@ final class RelationReturnTypeExtension implements DynamicMethodReturnTypeExtens
         return $intermediateClass === null
             ? null
             : [$relationClass, $relatedClass, $intermediateClass];
-    }
-
-    /** @return array<int, Node\Stmt> */
-    private function parseFile(string $fileName): array
-    {
-        return $this->parsedFiles[$fileName] ??= $this->parser->parseFile($fileName);
     }
 
     /** Resolve a `Foo::class` expression to its fully qualified name. */
