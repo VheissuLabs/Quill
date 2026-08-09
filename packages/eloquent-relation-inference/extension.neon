@@ -1,7 +1,10 @@
 services:
     -
-        class: Quill\EloquentRelationInference\RelationReturnTypeExtension
+        class: Quill\EloquentRelationInference\RelationBodyParser
         arguments:
             parser: @defaultAnalysisParser
+
+    -
+        class: Quill\EloquentRelationInference\RelationReturnTypeExtension
         tags:
             - phpstan.broker.dynamicMethodReturnTypeExtension
