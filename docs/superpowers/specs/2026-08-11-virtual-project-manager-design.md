@@ -67,6 +67,8 @@ Quill is five independent subsystems. Each gets its own spec, plan, and build:
 4. Feature voting.
 5. Multi-email identity (one human, several verified addresses, several orgs).
 6. Billing, per agent seat.
+7. Platform admin — cross-organization account troubleshooting and billing
+   adjustment.
 
 Nothing in this slice blocks the others. Multi-email in particular is only
 *enabled* here: no part of this design assumes one email per user.
@@ -109,6 +111,12 @@ never billed for growth they have not been paid for yet. Because "billable" and
 "holds a non-Client organization role" are the same set, the billing slice can
 count seats with a query rather than a migration. Nothing about billing is built
 here; the schema just needs to not preclude it, and it does not.
+
+Seat count is the *default*, not the invoice. Some organizations will be comped
+outright — people who helped build the thing, or clients being worked with
+directly — so billing resolves to an override when one exists and a seat count
+when one does not. That override belongs to the billing slice, but it means
+nothing downstream should treat "number of non-Client members" as the amount owed.
 
 ### Projects are polymorphic
 
@@ -155,6 +163,28 @@ department's, and guessing wrong creates a project nobody wanted.
 The consequence is that this slice must include that setup, or the Virtual PM
 has no clients to talk to. It is plain CRUD following the existing team
 screens — see Deliverables.
+
+### What the platform admin implies here
+
+A platform admin — one person, above every organization, troubleshooting accounts
+and adjusting billing — is subsystem 7 and is not built in this slice. But it
+constrains one decision that gets made now, in PR 1's policies:
+
+**Tenant isolation is enforced in policies and explicit queries, never by a global
+Eloquent scope.** A global scope on `Organization` would be the obvious way to keep
+one org's data away from another's, and it is the wrong one: the admin section has
+to read across every organization, and it would spend its life calling
+`withoutGlobalScopes()`. Code that fights its own guardrail stops being a guardrail.
+
+Two other consequences, recorded so the admin slice does not have to relitigate them:
+
+- **Platform admin is not an organization role.** `OrganizationRole::Owner` means
+  owner *of one organization*, not of Quill. The platform admin is a separate
+  attribute on `User`. Nothing in this slice needs it, and nothing in this slice
+  precludes adding it.
+- **Troubleshooting an account implies impersonation**, which needs its own audit
+  trail and its own careful design. It is named here so it arrives as a designed
+  feature rather than an afterthought bolted onto login.
 
 ### User orientation
 
