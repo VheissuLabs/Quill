@@ -21,7 +21,10 @@ test('inviting an unknown email creates a pending invitation and mails it', func
         'email' => 'lucy@acme.test',
     ]));
 
-    expect($result)->toContain('Invited lucy@acme.test as a contact for Acme Title');
+    expect($result)
+        ->toContain('Invited lucy@acme.test as a contact for Acme Title')
+        ->toContain('They have been sent an invitation')
+        ->not->toContain('already had a pending invitation');
 
     $invitation = OrganizationInvitation::sole();
 

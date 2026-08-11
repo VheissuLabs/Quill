@@ -47,6 +47,6 @@ class InviteContact
             Notification::route('mail', $email)->notify(new InvitationNotification($invitation));
         }
 
-        return $invitation->fresh() ?? $invitation;
+        return $invitation;
     }
 }

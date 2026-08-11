@@ -3,6 +3,7 @@
 use App\Http\Controllers\Assistant\AssistantController;
 use App\Http\Controllers\Assistant\AssistantMessageController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Organizations\OrganizationInvitationController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +28,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::post('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
     Route::delete('invitations/{invitation}', [TeamInvitationController::class, 'decline'])->name('invitations.decline');
+
+    Route::post('organization-invitations/{invitation}/accept', [OrganizationInvitationController::class, 'accept'])
+        ->name('organization-invitations.accept');
+    Route::delete('organization-invitations/{invitation}', [OrganizationInvitationController::class, 'decline'])
+        ->name('organization-invitations.decline');
 });
 
 require __DIR__.'/settings.php';

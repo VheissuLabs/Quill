@@ -1,12 +1,18 @@
 <script setup lang="ts">
     import { Head } from '@inertiajs/vue3'
     import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue'
+    import PendingOrganizationInvitationsModal from '@/components/PendingOrganizationInvitationsModal.vue'
     import PlaceholderPattern from '@/components/PlaceholderPattern.vue'
     import { dashboard } from '@/routes'
-    import type { DashboardInvitation, Team } from '@/types'
+    import type {
+        DashboardInvitation,
+        DashboardOrganizationInvitation,
+        Team,
+    } from '@/types'
 
     defineProps<{
         pendingInvitations?: DashboardInvitation[]
+        pendingOrganizationInvitations?: DashboardOrganizationInvitation[]
     }>()
 
     defineOptions({
@@ -29,6 +35,14 @@
     <PendingInvitationsModal
         v-if="pendingInvitations && pendingInvitations.length > 0"
         :invitations="pendingInvitations"
+    />
+
+    <PendingOrganizationInvitationsModal
+        v-if="
+            pendingOrganizationInvitations &&
+            pendingOrganizationInvitations.length > 0
+        "
+        :invitations="pendingOrganizationInvitations"
     />
 
     <div

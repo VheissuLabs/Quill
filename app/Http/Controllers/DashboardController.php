@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\OrganizationInvitation;
 use App\Models\TeamInvitation;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -31,8 +32,26 @@ class DashboardController extends Controller
                 ],
             ]);
 
+        $pendingOrganizationInvitations = OrganizationInvitation::query()
+            ->with(['inviter', 'organization', 'client'])
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->whereNull('accepted_at')
+            ->where(fn ($query) => $query
+                ->whereNull('expires_at')
+                ->orWhere('expires_at', '>=', now()))
+            ->latest()
+            ->get()
+            ->map(fn (OrganizationInvitation $invitation) => [
+                'code' => $invitation->code,
+                'inviterName' => $invitation->inviter->name,
+                'organizationName' => $invitation->organization->name,
+                'clientName' => $invitation->client?->name,
+                'roleLabel' => $invitation->role->label(),
+            ]);
+
         return Inertia::render('Dashboard', [
             'pendingInvitations' => $pendingInvitations,
+            'pendingOrganizationInvitations' => $pendingOrganizationInvitations,
         ]);
     }
 }

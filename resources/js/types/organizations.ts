@@ -27,3 +27,11 @@ export type Client = {
     name: string
     slug: string
 }
+
+export type DashboardOrganizationInvitation = {
+    code: string
+    inviterName: string
+    organizationName: string
+    clientName: string | null
+    roleLabel: string
+}
