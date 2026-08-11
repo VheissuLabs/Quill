@@ -49,14 +49,6 @@
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <OrganizationSwitcher />
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <TeamSwitcher />
-                </SidebarMenuItem>
-            </SidebarMenu>
         </SidebarHeader>
 
         <SidebarContent>
@@ -67,6 +59,12 @@
             <SidebarMenu>
                 <SidebarMenuItem>
                     <NotificationBell />
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <OrganizationSwitcher />
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <TeamSwitcher />
                 </SidebarMenuItem>
             </SidebarMenu>
             <NavUser />

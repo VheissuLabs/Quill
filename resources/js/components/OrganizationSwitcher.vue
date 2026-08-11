@@ -34,6 +34,13 @@
     const currentOrganization = computed(() => page.props.currentOrganization)
     const organizations = computed(() => page.props.organizations ?? [])
 
+    /**
+     * A switcher with nothing to switch to is just a label taking up a row, so it
+     * hides until the user belongs to more than one organization. The consequence
+     * is deliberate: someone in a single organization never sees its name here.
+     */
+    const canSwitch = computed(() => organizations.value.length > 1)
+
     const menuContentClass = computed(() =>
         props.inHeader
             ? 'w-56'
@@ -73,7 +80,7 @@
 </script>
 
 <template>
-    <DropdownMenu>
+    <DropdownMenu v-if="canSwitch">
         <DropdownMenuTrigger as-child>
             <Button
                 data-test="organization-switcher-trigger"
