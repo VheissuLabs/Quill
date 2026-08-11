@@ -178,9 +178,9 @@ test('the prompt names the current organization and forbids inventing data', fun
 
     expect($instructions)
         ->toContain('NotaryDash')
-        ->toContain('Never invent')
-        ->toContain('cannot see that data yet');
-})->note('Step 1 has no tools, so the prompt is the only thing keeping it from inventing data.');
+        ->toContain('never invent')
+        ->toContain('Use a tool before answering');
+})->note('The tools cannot stop the model answering from imagination; only the prompt can.');
 
 test('the prompt reflects the organization the user switched to', function () {
     $user = assistantUser('NotaryDash');
