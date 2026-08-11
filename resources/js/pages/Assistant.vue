@@ -24,6 +24,28 @@
     const error = ref<string | null>(null)
     const transcript = useTemplateRef<HTMLElement>('transcript')
 
+    /**
+     * Laravel refreshes the XSRF-TOKEN cookie on every response, so reading it at
+     * send time is always current. The <meta> tag is baked in when the page
+     * renders and goes stale if the session regenerates while the chat is open,
+     * which returned an intermittent 419.
+     */
+    const csrfToken = (): string => {
+        const cookie = document.cookie
+            .split('; ')
+            .find((entry) => entry.startsWith('XSRF-TOKEN='))
+
+        if (cookie) {
+            return decodeURIComponent(cookie.split('=').slice(1).join('='))
+        }
+
+        return (
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content') ?? ''
+        )
+    }
+
     const scrollToBottom = async (): Promise<void> => {
         await nextTick()
         transcript.value?.scrollTo({ top: transcript.value.scrollHeight })
@@ -62,13 +84,16 @@
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'text/event-stream',
-                    'X-CSRF-TOKEN':
-                        document
-                            .querySelector('meta[name="csrf-token"]')
-                            ?.getAttribute('content') ?? '',
+                    'X-XSRF-TOKEN': csrfToken(),
                 },
                 body: JSON.stringify({ message }),
             })
+
+            if (response.status === 419) {
+                throw new Error(
+                    'Your session expired. Reload the page and try again.',
+                )
+            }
 
             if (!response.ok || response.body === null) {
                 throw new Error(
