@@ -31,6 +31,16 @@ class OrganizationMembership extends Pivot
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * The client this member is a contact for, when the role is `Client`.
+     *
+     * Null for everyone who works for the organization itself.
+     */
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
     protected function casts(): array
     {
         return [

@@ -37,7 +37,7 @@ class ListContacts implements Tool
          * back as a cast enum instead of a raw pivot attribute.
          */
         $memberships = $organization->memberships()
-            ->with('user')
+            ->with(['user', 'client'])
             ->get()
             ->sortBy(fn (OrganizationMembership $membership) => $membership->user->name);
 
@@ -51,10 +51,10 @@ class ListContacts implements Tool
                 $role = $membership->role;
 
                 $kind = $role === OrganizationRole::Client
-                    ? 'client contact'
+                    ? 'contact for the client '.($membership->client->name ?? 'unknown')
                     : 'works for the organization';
 
-                return "- {$user->name} <{$user->email}> — {$role->label()} ({$kind})";
+                return "- {$user->name} <{$user->email}> — {$role->label()}, {$kind}";
             })
             ->prepend("People in {$organization->name}:")
             ->join("\n");

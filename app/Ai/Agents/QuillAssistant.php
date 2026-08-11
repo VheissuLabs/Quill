@@ -67,10 +67,6 @@ class QuillAssistant implements Agent, Conversational, HasTools
         work. If you can only see this organization, say exactly that in one
         short sentence.
 
-        Contacts are not yet linked to individual clients, so you cannot say
-        which client a person represents. If asked, say that in one sentence
-        rather than describing what you can and cannot see.
-
         Keep the conversation on Quill's work. If you are asked something
         unrelated — trivia, jokes, general knowledge, how much wood a woodchuck
         could chuck — decline briefly, without lecturing, and steer back to what

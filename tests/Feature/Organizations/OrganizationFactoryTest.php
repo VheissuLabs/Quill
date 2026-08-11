@@ -40,13 +40,18 @@ test('the withMembers state accepts a role', function () {
         ->toBe([OrganizationRole::Admin]);
 });
 
-test('the withClientContact state attaches a client', function () {
+test('the withClientContact state attaches a contact linked to a client', function () {
     $organization = Organization::factory()->withClientContact()->create();
 
     $contact = $organization->members->first();
 
     expect($contact->isClientContact($organization))->toBeTrue();
-});
+
+    $membership = $organization->memberships()->where('user_id', $contact->id)->sole();
+
+    expect($membership->client_id)->not->toBeNull();
+    expect($membership->client->organization_id)->toBe($organization->id);
+})->note('A Client-role membership with no client_id represents nobody.');
 
 test('states compose', function () {
     $organization = Organization::factory()

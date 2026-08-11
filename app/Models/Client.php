@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueSlugs;
+use App\Enums\OrganizationRole;
 use App\Observers\ParentIntegrityObserver;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -44,6 +46,18 @@ class Client extends Model
     public function teams(): MorphMany
     {
         return $this->morphMany(Team::class, 'parent');
+    }
+
+    /**
+     * The memberships of the people who represent this client.
+     *
+     * A contact is an ordinary organization member holding the `Client` role, so
+     * this reads through the membership rather than through a separate table.
+     */
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(OrganizationMembership::class)
+            ->where('role', OrganizationRole::Client->value);
     }
 
     public function getRouteKeyName(): string

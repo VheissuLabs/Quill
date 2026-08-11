@@ -44,7 +44,6 @@ class OrganizationSeeder extends Seeder
                 $organization = Organization::factory()
                     ->withOwner($owner)
                     ->withMembers(2)
-                    ->withClientContact()
                     ->create(['name' => $name]);
 
                 if (! $owner->is($user)) {

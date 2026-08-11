@@ -108,19 +108,94 @@ test('list_teams says what each team belongs to', function () {
         ->toContain('Delivery (under the organization directly');
 });
 
-test('list_contacts distinguishes client contacts from staff', function () {
+test('list_contacts names the client each contact represents', function () {
     $organization = Organization::factory()->create(['name' => 'NotaryDash']);
     $owner = memberOf($organization);
 
+    $client = Client::factory()->for($organization)->create([
+        'name' => 'Acme Title',
+        'parent_type' => Organization::class,
+        'parent_id' => $organization->id,
+    ]);
+
     $contact = User::factory()->create(['name' => 'Lucy Client', 'email' => 'lucy@acme.test']);
-    $organization->members()->attach($contact, ['role' => 'client']);
+
+    $organization->members()->attach($contact, [
+        'role' => 'client',
+        'client_id' => $client->id,
+    ]);
 
     $result = new ListContacts($owner)->handle(toolRequest());
 
     expect($result)
-        ->toContain('Lucy Client <lucy@acme.test> — Client (client contact)')
+        ->toContain('Lucy Client <lucy@acme.test> — Client, contact for the client Acme Title')
         ->toContain('works for the organization');
+})->note('Without the client name the assistant can only say a contact exists somewhere.');
+
+test('list_clients names the contacts at each client', function () {
+    $organization = Organization::factory()->create(['name' => 'NotaryDash']);
+    $owner = memberOf($organization);
+
+    $withContacts = Client::factory()->for($organization)->create([
+        'name' => 'Acme Title',
+        'parent_type' => Organization::class,
+        'parent_id' => $organization->id,
+    ]);
+
+    Client::factory()->for($organization)->create([
+        'name' => 'Harbor Escrow',
+        'parent_type' => Organization::class,
+        'parent_id' => $organization->id,
+    ]);
+
+    $organization->members()->attach(
+        User::factory()->create(['name' => 'Lucy Client', 'email' => 'lucy@acme.test']),
+        ['role' => 'client', 'client_id' => $withContacts->id],
+    );
+
+    $result = new ListClients($owner)->handle(toolRequest());
+
+    expect($result)
+        ->toContain('Acme Title (held by the organization directly). Contacts: Lucy Client <lucy@acme.test>')
+        ->toContain('Harbor Escrow (held by the organization directly). Contacts: none yet');
+})->note('Answers "who do I talk to at this client" in one tool call.');
+
+test('a contact at one client is not reported against another', function () {
+    $organization = Organization::factory()->create(['name' => 'NotaryDash']);
+    $owner = memberOf($organization);
+
+    $acme = Client::factory()->for($organization)->create([
+        'name' => 'Acme Title',
+        'parent_type' => Organization::class,
+        'parent_id' => $organization->id,
+    ]);
+
+    $harbor = Client::factory()->for($organization)->create([
+        'name' => 'Harbor Escrow',
+        'parent_type' => Organization::class,
+        'parent_id' => $organization->id,
+    ]);
+
+    $organization->members()->attach(
+        User::factory()->create(['name' => 'Lucy Acme']),
+        ['role' => 'client', 'client_id' => $acme->id],
+    );
+
+    expect($acme->contacts()->with('user')->get()->pluck('user.name')->all())->toBe(['Lucy Acme']);
+    expect($harbor->contacts()->count())->toBe(0);
 });
+
+test('staff are never counted as a client contact', function () {
+    $organization = Organization::factory()->create();
+    $owner = memberOf($organization);
+
+    $client = Client::factory()->for($organization)->create([
+        'parent_type' => Organization::class,
+        'parent_id' => $organization->id,
+    ]);
+
+    expect($client->contacts()->count())->toBe(0);
+})->note('contacts() filters on the Client role, not merely on client_id being set.');
 
 test('no read tool returns another organization data', function (string $tool) {
     $mine = Organization::factory()->create(['name' => 'NotaryDash']);

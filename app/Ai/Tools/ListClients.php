@@ -5,6 +5,7 @@ namespace App\Ai\Tools;
 use App\Ai\Tools\Concerns\ScopedToCurrentOrganization;
 use App\Models\Client;
 use App\Models\Organization;
+use App\Models\OrganizationMembership;
 use App\Models\Team;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Contracts\Tool;
@@ -22,7 +23,7 @@ class ListClients implements Tool
 
     public function description(): Stringable|string
     {
-        return 'List every client in the organization the user is currently working in, along with what holds each one: the organization directly, or one of its teams. Use this to answer any question about clients, and to check whether a client already exists.';
+        return 'List every client in the organization the user is currently working in, along with what holds each one (the organization directly, or one of its teams) and who the contacts are at each client. Use this to answer any question about clients or about who to talk to at a client, and to check whether a client already exists.';
     }
 
     public function handle(Request $request): Stringable|string
@@ -33,7 +34,10 @@ class ListClients implements Tool
             return $this->withoutOrganization();
         }
 
-        $clients = $organization->clients()->with('parent')->orderBy('name')->get();
+        $clients = $organization->clients()
+            ->with(['parent', 'contacts.user'])
+            ->orderBy('name')
+            ->get();
 
         if ($clients->isEmpty()) {
             return "{$organization->name} has no clients yet.";
@@ -49,7 +53,12 @@ class ListClients implements Tool
                     default => 'with no recorded owner',
                 };
 
-                return "- {$client->name} ({$heldBy})";
+                $contacts = $client->contacts
+                    ->map(fn (OrganizationMembership $contact) => $contact->user->name.' <'.$contact->user->email.'>')
+                    ->join(', ');
+
+                return "- {$client->name} ({$heldBy}). Contacts: ".
+                    ($contacts === '' ? 'none yet' : $contacts);
             })
             ->prepend("Clients in {$organization->name}:")
             ->join("\n");
