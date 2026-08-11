@@ -61,13 +61,6 @@ trait HasOrganizations
         return $this->belongsTo(Organization::class, 'current_organization_id');
     }
 
-    public function personalOrganization(): ?Organization
-    {
-        return $this->organizations()
-            ->where('is_personal', true)
-            ->first();
-    }
-
     public function switchOrganization(Organization $organization): bool
     {
         if (! $this->belongsToOrganization($organization)) {
@@ -113,7 +106,6 @@ trait HasOrganizations
             id: $organization->id,
             name: $organization->name,
             slug: $organization->slug,
-            isPersonal: $organization->is_personal,
             role: $role?->value,
             roleLabel: $role?->label(),
             isCurrent: $this->isCurrentOrganization($organization),

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OrganizationRole;
 use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInvitation;
@@ -37,12 +38,59 @@ test('new users can register', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'Test User',
         'email' => 'test@example.com',
+        'organization_name' => 'Acme Agency',
         'password' => 'password',
         'password_confirmation' => 'password',
     ]);
 
     $this->assertAuthenticated();
 
-    $user = User::where('email', 'test@example.com')->first();
     $response->assertRedirect(route('dashboard'));
+});
+
+test('registering creates the organization the user named and puts them in it', function () {
+    $this->post(route('register.store'), [
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'organization_name' => 'Acme Agency',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $user = User::where('email', 'test@example.com')->firstOrFail();
+    $organization = $user->currentOrganization;
+
+    expect($organization)->not->toBeNull();
+    expect($organization->name)->toBe('Acme Agency');
+    expect($organization->slug)->toBe('acme-agency');
+    expect($user->organizationRole($organization))->toBe(OrganizationRole::Owner);
+    expect($user->organizations()->count())->toBe(1);
+});
+
+test('registration requires an organization name', function () {
+    $response = $this->post(route('register.store'), [
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $response->assertSessionHasErrors('organization_name');
+
+    $this->assertGuest();
+    $this->assertDatabaseMissing('users', ['email' => 'test@example.com']);
+});
+
+test('registration rejects a reserved organization name', function () {
+    $response = $this->post(route('register.store'), [
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'organization_name' => 'settings',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $response->assertSessionHasErrors('organization_name');
+
+    $this->assertGuest();
 });

@@ -57,13 +57,6 @@ class Organization extends Model
         return 'slug';
     }
 
-    protected function casts(): array
-    {
-        return [
-            'is_personal' => 'boolean',
-        ];
-    }
-
     protected static function boot(): void
     {
         parent::boot();

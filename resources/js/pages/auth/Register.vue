@@ -65,13 +65,25 @@
                 placeholder="email@example.com"
             />
 
+            <TextInput
+                id="organization_name"
+                type="text"
+                name="organization_name"
+                label="Organization"
+                :error="errors.organization_name"
+                required
+                :tabindex="3"
+                autocomplete="organization"
+                placeholder="Your company or agency name"
+            />
+
             <PasswordInput
                 id="password"
                 name="password"
                 label="Password"
                 :error="errors.password"
                 required
-                :tabindex="3"
+                :tabindex="4"
                 autocomplete="new-password"
                 placeholder="Password"
                 :passwordrules="passwordRules"
@@ -83,7 +95,7 @@
                 label="Confirm password"
                 :error="errors.password_confirmation"
                 required
-                :tabindex="4"
+                :tabindex="5"
                 autocomplete="new-password"
                 placeholder="Confirm password"
                 :passwordrules="passwordRules"
@@ -92,7 +104,7 @@
             <Button
                 type="submit"
                 class="mt-2 w-full"
-                tabindex="5"
+                tabindex="6"
                 :disabled="processing"
                 data-test="register-user-button"
             >
@@ -114,7 +126,7 @@
                         : login()
                 "
                 class="underline underline-offset-4"
-                :tabindex="6"
+                :tabindex="7"
                 data-test="team-invitation-login-link"
             >
                 Log in

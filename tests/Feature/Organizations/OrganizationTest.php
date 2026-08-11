@@ -129,8 +129,6 @@ test('a user can list the organizations they belong to', function () {
     $first->members()->attach($user, ['role' => OrganizationRole::Owner->value]);
     $second->members()->attach($user, ['role' => OrganizationRole::Client->value]);
 
-    expect($user->organizations()->where('is_personal', false)->pluck('organizations.id')->sort()->values()->all())
+    expect($user->organizations()->pluck('organizations.id')->sort()->values()->all())
         ->toBe(collect([$first->id, $second->id])->sort()->values()->all());
-
-    expect($user->organizations()->count())->toBe(3, 'the personal organization counts too');
 });

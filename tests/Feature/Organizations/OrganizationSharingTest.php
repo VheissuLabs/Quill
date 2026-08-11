@@ -20,7 +20,7 @@ test('the current organization and the full list are shared with every page', fu
             ->where('currentOrganization.name', 'NotaryDash')
             ->where('currentOrganization.isCurrent', true)
             ->where('currentOrganization.role', OrganizationRole::Owner->value)
-            ->has('organizations', 2),
+            ->has('organizations', 1),
         );
 });
 

@@ -7,9 +7,9 @@ use App\Models\User;
 test('every organization is seeded with at least one client', function () {
     $this->seed();
 
-    expect(Organization::where('is_personal', false)->count())->toBe(3);
+    expect(Organization::count())->toBe(3);
 
-    Organization::where('is_personal', false)->each(function (Organization $organization) {
+    Organization::each(function (Organization $organization) {
         expect($organization->clients)->not->toBeEmpty();
     });
 });

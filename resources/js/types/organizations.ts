@@ -4,7 +4,6 @@ export type Organization = {
     id: string
     name: string
     slug: string
-    isPersonal: boolean
     role?: OrganizationRole
     roleLabel?: string
     isCurrent?: boolean

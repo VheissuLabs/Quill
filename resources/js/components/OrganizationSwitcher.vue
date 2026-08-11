@@ -135,12 +135,6 @@
                 @click="switchOrganization(organization)"
             >
                 <span class="truncate">{{ organization.name }}</span>
-                <span
-                    v-if="organization.isPersonal"
-                    class="text-xs text-muted-foreground"
-                >
-                    Personal
-                </span>
                 <Check
                     v-if="currentOrganization?.id === organization.id"
                     :class="checkIconClass"
