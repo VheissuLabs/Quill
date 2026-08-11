@@ -47,7 +47,7 @@ class ListCapabilities implements AssistantTool
 
         return $lines
             ->prepend($heading)
-            ->push('I cannot change or delete anything, and projects and issues do not exist in Quill yet.')
+            ->push('Renaming is the only change I can make — I cannot delete anything. Projects and issues do not exist in Quill yet.')
             ->join("\n");
     }
 

@@ -20,7 +20,9 @@ test('an admin is granted the write tools', function () {
         'list_teams',
         'list_contacts',
         'create_client',
+        'rename_client',
         'create_team',
+        'rename_team',
         'create_contact',
         'list_capabilities',
     ]);
@@ -69,7 +71,8 @@ test('list_capabilities reports what this user can actually do', function () {
         ->toContain('as Admin')
         ->toContain('Create a new client')
         ->toContain('Invite someone to be a contact')
-        ->toContain('cannot change or delete anything');
+        ->toContain('Rename one of your clients')
+        ->toContain('cannot delete anything');
 });
 
 test('list_capabilities offers a member nothing it cannot do', function () {
@@ -83,6 +86,7 @@ test('list_capabilities offers a member nothing it cannot do', function () {
         ->toContain('List your clients')
         ->not->toContain('Create a new client')
         ->not->toContain('Create a new team')
+        ->not->toContain('Rename one of your')
         ->not->toContain('Invite someone');
 });
 
