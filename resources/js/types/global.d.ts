@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth'
+import type { Organization } from '@/types/organizations'
 import type { Team } from '@/types/teams'
 
 declare module 'vite/client' {
@@ -21,6 +22,8 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean
             currentTeam: Team | null
             teams: Team[]
+            currentOrganization: Organization | null
+            organizations: Organization[]
             [key: string]: unknown
         }
     }

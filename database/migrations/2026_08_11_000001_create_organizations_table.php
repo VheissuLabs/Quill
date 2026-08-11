@@ -12,6 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('slug')->unique();
+            $table->boolean('is_personal')->default(false);
             $table->timestamps();
             $table->softDeletes();
         });

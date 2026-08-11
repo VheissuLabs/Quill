@@ -1,0 +1,30 @@
+export type OrganizationRole = 'owner' | 'admin' | 'member' | 'client'
+
+export type Organization = {
+    id: string
+    name: string
+    slug: string
+    isPersonal: boolean
+    role?: OrganizationRole
+    roleLabel?: string
+    isCurrent?: boolean
+}
+
+export type OrganizationPermissions = {
+    canUpdateOrganization: boolean
+    canDeleteOrganization: boolean
+    canAddMember: boolean
+    canUpdateMember: boolean
+    canRemoveMember: boolean
+    canCreateInvitation: boolean
+    canCancelInvitation: boolean
+    canCreateClient: boolean
+    canUpdateClient: boolean
+    canDeleteClient: boolean
+}
+
+export type Client = {
+    id: string
+    name: string
+    slug: string
+}

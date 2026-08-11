@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Actions\Organizations\CreateOrganization;
 use App\Actions\Teams\CreateTeam;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
@@ -14,7 +15,10 @@ class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
 
-    public function __construct(private CreateTeam $createTeam) {}
+    public function __construct(
+        private CreateTeam $createTeam,
+        private CreateOrganization $createOrganization,
+    ) {}
 
     /** @param  array<string, string>  $input */
     public function create(array $input): User
@@ -30,6 +34,8 @@ class CreateNewUser implements CreatesNewUsers
                 'email' => $input['email'],
                 'password' => $input['password'],
             ]);
+
+            $this->createOrganization->handle($user, $user->name."'s Organization", isPersonal: true);
 
             $this->createTeam->handle($user, $user->name."'s Team", isPersonal: true);
 

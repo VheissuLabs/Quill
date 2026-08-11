@@ -15,7 +15,15 @@ class OrganizationFactory extends Factory
     {
         return [
             'name' => fake()->unique()->company(),
+            'is_personal' => false,
         ];
+    }
+
+    public function personal(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_personal' => true,
+        ]);
     }
 
     public function trashed(): static

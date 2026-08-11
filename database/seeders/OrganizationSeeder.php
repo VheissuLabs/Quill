@@ -12,12 +12,19 @@ class OrganizationSeeder extends Seeder
     {
         $owner = User::where('email', 'test@example.com')->firstOrFail();
 
-        collect(['NotaryDash', '92 Labs', 'VheissuLabs'])
-            ->each(fn (string $name) => Organization::factory()
+        $organizations = collect(['NotaryDash', '92 Labs', 'VheissuLabs'])
+            ->map(fn (string $name) => Organization::factory()
                 ->withOwner($owner)
                 ->withMembers(2)
                 ->withClientContact()
                 ->create(['name' => $name]),
             );
+
+        /**
+         * Land the user in a real organization rather than the empty personal one
+         * they were given at registration, so a freshly seeded app has something
+         * to show on the first page load.
+         */
+        $owner->switchOrganization($organizations->first());
     }
 }
