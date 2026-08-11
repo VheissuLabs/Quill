@@ -143,8 +143,16 @@ In `bootstrap/app.php`, add a `withBroadcasting` call between `withRouting` and
 ```php
     ->withBroadcasting(
         __DIR__.'/../routes/channels.php',
+        ['middleware' => ['web', 'auth']],
     )
 ```
+
+The `auth` middleware is required, not optional. `Broadcast::routes()` defaults to
+`['middleware' => ['web']]`, and with no authenticated user
+`Broadcaster::verifyUserCanAccessChannel()` throws `AccessDeniedHttpException` — a
+**403** — so a guest never reaches a 401. Adding `auth` puts
+`AuthenticationException` in front of it, which renders 401 for JSON requests.
+Task 3's guest test depends on this.
 
 - [ ] **Step 6: Create the channels file**
 
