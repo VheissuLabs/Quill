@@ -29,8 +29,36 @@ Recorded here so nobody later mistakes it for an oversight.
 
 ## Transport
 
-`laravel/reverb` server-side; `laravel-echo` and `pusher-js` client-side. Two
-channel kinds, each with a different job:
+**Quill does not install `laravel/reverb`.** Herd already runs Reverb as a shared
+local service, verified on this machine:
+
+```
+herd services:list  →  Reverb   reverb   8080   1.x   running
+process             →  /Users/Shared/Herd/services/reverb/1.x/artisan reverb:start --port=8080
+```
+
+That is Herd's own Laravel app, not Quill's, so the server is external and the
+package is unnecessary. Quill needs only a Pusher-protocol broadcaster pointing at
+it — Reverb speaks the Pusher protocol — which means one composer dependency,
+`pusher/pusher-php-server`, and `laravel-echo` + `pusher-js` on the client.
+
+`config/broadcasting.php` gets a connection using the **`pusher` driver**, not the
+`reverb` driver (that driver ships with `laravel/reverb`, which is absent):
+
+```php
+'host' => '127.0.0.1', 'port' => 8080, 'scheme' => 'http', 'useTLS' => false,
+```
+
+Herd's Reverb defines a single app, so Quill must use its credentials verbatim:
+app id `1001`, key `laravel-herd`, secret `secret`, with `allowed_origins: ['*']`.
+
+**This is a shared development service.** Every Herd site using Reverb connects as
+the same app, which is fine locally and unacceptable in production. Production
+needs its own Reverb instance or a hosted Pusher/Ably equivalent, with its own
+credentials — a deploy concern, not a code one, but it must not be discovered at
+deploy time.
+
+Two channel kinds, each with a different job:
 
 | Channel | Purpose |
 | --- | --- |
@@ -99,10 +127,16 @@ interface PresenceLookup
 ```
 
 Two implementations: one wrapping Reverb's Pusher-compatible channel-occupancy
-API, and a fake for tests. The concrete HTTP call is deliberately behind this
-interface — it is the only part of the design that depends on the installed
-Reverb and Pusher SDK versions, and it must be confirmed against them during
-implementation rather than assumed here.
+API, and a fake for tests. The endpoint is verified against the running Herd
+service:
+
+```
+GET http://127.0.0.1:8080/apps/1001/channels   →  200  {"channels":[]}
+```
+
+The real implementation signs its requests through `pusher/pusher-php-server`
+rather than calling the URL bare — this Reverb build answered an unsigned request,
+but depending on that would be relying on a detail of its configuration.
 
 **It fails open.** Any error, timeout, or unreachable Reverb means the email is
 sent. A WebSocket outage should cost a redundant email, never a swallowed
@@ -186,9 +220,11 @@ Reverb is never started for tests.
 
 Each is one small, independently mergeable PR:
 
-1. Install `laravel/reverb`, `laravel-echo`, `pusher-js`; broadcasting config;
-   `.env.example` entries. **Requires approval to add dependencies** — given.
-   The dev script is the author's to wire up, not this plan's.
+1. Install `pusher/pusher-php-server`, `laravel-echo`, `pusher-js`; publish
+   `config/broadcasting.php` with the `pusher` connection pointed at Herd's
+   Reverb; add `.env` / `.env.example` entries. **Requires approval to add
+   dependencies** — given. No `laravel/reverb`, and nothing touches the dev
+   script: Herd already runs the server.
 2. The `notifications` migration with `uuidMorphs`, verified against MySQL.
 3. `routes/channels.php` — user and presence channel authorization, with tests.
 4. `PresenceLookup`, its Reverb implementation, and its fake.
