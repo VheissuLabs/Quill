@@ -185,6 +185,7 @@ test('the agent grants exactly the tools built so far', function () {
         'list_contacts',
         'create_client',
         'create_team',
+        'create_contact',
     ]);
 });
 

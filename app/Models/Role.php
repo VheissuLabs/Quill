@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role as SpatieRole;
 
+/** @mixin IdeHelperRole */
 class Role extends SpatieRole
 {
     use HasUuids;

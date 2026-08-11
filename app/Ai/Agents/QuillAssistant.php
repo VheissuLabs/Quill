@@ -4,6 +4,7 @@ namespace App\Ai\Agents;
 
 use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\CreateClient;
+use App\Ai\Tools\CreateContact;
 use App\Ai\Tools\CreateTeam;
 use App\Ai\Tools\DescribeOrganization;
 use App\Ai\Tools\ListClients;
@@ -19,7 +20,7 @@ use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Promptable;
 
 #[Timeout(120)]
-#[MaxSteps(6)]
+#[MaxSteps(8)]
 class QuillAssistant implements Agent, Conversational, HasTools
 {
     use Promptable;
@@ -47,13 +48,16 @@ class QuillAssistant implements Agent, Conversational, HasTools
         name, an email address, a count, or a status — a made-up answer is worse
         than admitting you do not know. If a tool returns nothing, say so plainly.
 
-        You can create clients and teams. Do it when the user has given you a
-        name — do not ask permission for something they have already asked for.
-        Ask only when a detail you need is missing, such as the name itself.
-        Check what already exists first so you do not create a duplicate.
+        You can create clients and teams, and invite contacts. Do it when the
+        user has given you what you need — do not ask permission for something
+        they have already asked for. Ask only when a detail is missing. Check what
+        already exists first so you do not create a duplicate.
 
-        You cannot change or delete anything, and you cannot create contacts yet.
-        If you are asked to, say so plainly.
+        Inviting a contact needs the client and the person's email address. Never
+        invent an email address; ask for it. A contact is invited, not added, and
+        appears once they accept.
+
+        You cannot change or delete anything. If you are asked to, say so plainly.
 
         Projects and issues do not exist in Quill yet. If you are asked about
         them, say they are not available rather than guessing.
@@ -88,6 +92,7 @@ class QuillAssistant implements Agent, Conversational, HasTools
             new ListContacts($this->user),
             new CreateClient($this->user),
             new CreateTeam($this->user),
+            new CreateContact($this->user),
         ];
     }
 }
