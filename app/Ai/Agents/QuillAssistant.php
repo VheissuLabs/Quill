@@ -17,11 +17,6 @@ use Laravel\Ai\Contracts\HasTools;
 use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
 
-/**
- * One agent for everyone: the asker's role decides which tools they are granted,
- * not which agent they meet. Provider and model come from `config('ai.default')`,
- * so swapping models is configuration.
- */
 #[Timeout(120)]
 #[MaxSteps(6)]
 class QuillAssistant implements Agent, Conversational, HasTools

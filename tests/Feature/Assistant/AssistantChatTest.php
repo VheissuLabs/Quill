@@ -30,10 +30,6 @@ test('sending a message streams a reply', function () {
 
     $response->assertOk();
 
-    /**
-     * The reply arrives as separate `text_delta` frames rather than one string,
-     * which is the whole point of streaming — the chat window joins them.
-     */
     $stream = $response->streamedContent();
 
     expect(assistantDeltas($stream))->toBe('Ready when you are.');

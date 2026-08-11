@@ -97,7 +97,6 @@ class CreateClient implements Tool
         return trim(preg_replace('/\s+/', ' ', $name) ?? $name);
     }
 
-    /** Returns the holder, or a message the assistant can relay if the named team does not exist. */
     protected function resolveParent(Organization $organization, ?string $teamName): Organization|Team|string
     {
         if ($teamName === null || trim($teamName) === '') {

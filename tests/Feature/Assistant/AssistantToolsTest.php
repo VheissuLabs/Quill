@@ -199,3 +199,31 @@ test('the agent grants exactly the tools built so far', function () {
         'create_client',
     ]);
 });
+
+test('a removed member can no longer read the organization', function (string $tool) {
+    [$organization, $user] = organizationWith(OrganizationRole::Admin);
+
+    Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
+
+    $organization->members()->detach($user);
+
+    expect(new $tool($user->refresh())->handle(toolRequest()))
+        ->toContain('not currently working in any organization')
+        ->not->toContain('Acme Title');
+})->with([
+    DescribeOrganization::class,
+    ListClients::class,
+    ListTeams::class,
+    ListContacts::class,
+]);
+
+test('a removed member cannot create a client', function () {
+    [$organization, $user] = organizationWith(OrganizationRole::Admin);
+
+    $organization->members()->detach($user);
+
+    $result = new App\Ai\Tools\CreateClient($user->refresh())->handle(toolRequest(['name' => 'Wayne Enterprises']));
+
+    expect($result)->toContain('not currently working in any organization');
+    expect($organization->clients()->count())->toBe(0);
+});

@@ -35,7 +35,6 @@ class DescribeOrganization implements Tool
         $clients = $organization->clients()->orderBy('name')->pluck('name');
         $teams = $organization->teams()->orderBy('name')->pluck('name');
 
-        /** Names as well as counts: a model handed a bare number can only relay a bare number. */
         return implode("\n", [
             "Organization: {$organization->name}",
             'The user\'s role: '.($role?->label() ?? 'unknown'),

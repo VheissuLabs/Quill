@@ -9,13 +9,6 @@ use Laravel\Ai\Models\ConversationMessage;
 
 trait HasAssistantConversation
 {
-    /**
-     * The most recent assistant conversation belonging to this user, if any.
-     *
-     * Scoped by participant so one user can never load another's transcript. The
-     * assistant will eventually hold data the asker is not entitled to see, so
-     * this scope is load-bearing rather than tidy.
-     */
     public function latestAssistantConversation(): ?Conversation
     {
         return Conversation::query()
@@ -25,11 +18,7 @@ trait HasAssistantConversation
             ->first();
     }
 
-    /**
-     * The current transcript, oldest first, ready for the chat window.
-     *
-     * @return Collection<int, AssistantMessage>
-     */
+    /** @return Collection<int, AssistantMessage> */
     public function toAssistantMessages(): Collection
     {
         $conversation = $this->latestAssistantConversation();

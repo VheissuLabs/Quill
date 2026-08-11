@@ -5,18 +5,19 @@ namespace App\Ai\Tools\Concerns;
 use App\Models\Organization;
 use App\Models\User;
 
-/**
- * Resolves the organization from the asking user, never from the model's
- * arguments. No tool accepts an organization parameter, so a confused or
- * prompt-injected model has nothing to reach another tenant through.
- */
 trait ScopedToCurrentOrganization
 {
     public function __construct(protected User $user) {}
 
     protected function organization(): ?Organization
     {
-        return $this->user->currentOrganization;
+        $organization = $this->user->currentOrganization;
+
+        if ($organization === null || ! $this->user->belongsToOrganization($organization)) {
+            return null;
+        }
+
+        return $organization;
     }
 
     protected function withoutOrganization(): string
@@ -24,7 +25,6 @@ trait ScopedToCurrentOrganization
         return 'The user is not currently working in any organization, so there is nothing to report.';
     }
 
-    /** Returned, not thrown, so the assistant explains the refusal rather than the turn erroring. */
     protected function refused(string $action): string
     {
         $role = $this->user->currentOrganization === null

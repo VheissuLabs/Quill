@@ -13,12 +13,6 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
 
-/**
- * Add a user to an organization and make it the one they are working in.
- *
- * Takes a role because the write tools are gated on it — a Member may not create
- * a client where an Admin may — so tests need to vary it.
- */
 function memberOf(Organization $organization, OrganizationRole $role = OrganizationRole::Owner): User
 {
     $user = User::factory()->create();
@@ -30,9 +24,6 @@ function memberOf(Organization $organization, OrganizationRole $role = Organizat
 }
 
 /**
- * An organization with someone working in it, which is the starting point for
- * anything to do with tenancy or the assistant.
- *
  * @return array{Organization, User}
  */
 function organizationWith(OrganizationRole $role = OrganizationRole::Owner, string $name = 'NotaryDash'): array
@@ -42,9 +33,6 @@ function organizationWith(OrganizationRole $role = OrganizationRole::Owner, stri
     return [$organization, memberOf($organization, $role)];
 }
 
-/**
- * A user working in an organization of the given name.
- */
 function userInOrganization(string $organizationName = 'NotaryDash', OrganizationRole $role = OrganizationRole::Owner): User
 {
     [, $user] = organizationWith($role, $organizationName);
@@ -52,10 +40,6 @@ function userInOrganization(string $organizationName = 'NotaryDash', Organizatio
     return $user;
 }
 
-/**
- * Attach a client contact: a `Client`-role membership carrying the client that
- * person represents.
- */
 function contactFor(Client $client, string $name, ?string $email = null): User
 {
     $contact = User::factory()->create([
@@ -71,17 +55,11 @@ function contactFor(Client $client, string $name, ?string $email = null): User
     return $contact;
 }
 
-/**
- * An empty tool request, for calling a tool that takes no arguments.
- */
 function toolRequest(array $arguments = []): Request
 {
     return new Request($arguments);
 }
 
-/**
- * Join the `text_delta` frames out of an SSE body, the way the chat window does.
- */
 function assistantDeltas(string $stream): string
 {
     return collect(explode("\n\n", $stream))
@@ -93,12 +71,6 @@ function assistantDeltas(string $stream): string
         ->join('');
 }
 
-/**
- * Post a message to the assistant and drain the stream.
- *
- * Draining matters: the conversation is persisted as the generator runs, so a
- * stream nobody reads is a conversation nobody stored.
- */
 function sendToAssistant(User $user, string $message): string
 {
     $response = test()->actingAs($user)

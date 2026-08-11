@@ -48,23 +48,9 @@ class OrganizationFactory extends Factory
         });
     }
 
-    /**
-     * Attach a client contact — a member holding the `Client` role who represents
-     * one client.
-     *
-     * The client is required: a `Client`-role membership without a `client_id`
-     * represents nobody, and the read tools would report it as a contact for an
-     * unknown client.
-     */
     public function withClientContact(?Client $client = null, ?User $contact = null): static
     {
         return $this->afterCreating(function (Organization $organization) use ($client, $contact) {
-            /**
-             * The client is created here rather than taken as a required argument
-             * because the caller cannot build one first — a client needs the
-             * organization this state is attached to, which does not exist until
-             * after creation.
-             */
             $client ??= Client::factory()->heldBy($organization)->create();
 
             $organization->members()->attach(

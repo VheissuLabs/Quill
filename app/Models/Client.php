@@ -48,12 +48,6 @@ class Client extends Model
         return $this->morphMany(Team::class, 'parent');
     }
 
-    /**
-     * The memberships of the people who represent this client.
-     *
-     * A contact is an ordinary organization member holding the `Client` role, so
-     * this reads through the membership rather than through a separate table.
-     */
     public function contacts(): HasMany
     {
         return $this->hasMany(OrganizationMembership::class)
