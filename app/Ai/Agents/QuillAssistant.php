@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Ai\Tools\CreateClient;
 use App\Ai\Tools\DescribeOrganization;
 use App\Ai\Tools\ListClients;
 use App\Ai\Tools\ListContacts;
@@ -17,11 +18,9 @@ use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
 
 /**
- * Quill's assistant. One agent for everyone — what changes between an owner and a
- * client contact is which tools they are granted, not which agent they meet.
- *
- * The provider and model come from `config('ai.default')` rather than a #[Provider]
- * attribute, so moving from LM Studio to a hosted model is a config change.
+ * One agent for everyone: the asker's role decides which tools they are granted,
+ * not which agent they meet. Provider and model come from `config('ai.default')`,
+ * so swapping models is configuration.
  */
 #[Timeout(120)]
 #[MaxSteps(6)]
@@ -52,8 +51,13 @@ class QuillAssistant implements Agent, Conversational, HasTools
         name, an email address, a count, or a status — a made-up answer is worse
         than admitting you do not know. If a tool returns nothing, say so plainly.
 
-        You cannot create or change anything yet. If you are asked to, say that
-        you can only read information for now.
+        You can create clients. Do it when the user has given you a name — do not
+        ask permission for something they have already asked for. Ask only when a
+        detail you need is missing, such as the name itself. Check the existing
+        clients first so you do not create a duplicate.
+
+        You cannot change or delete anything, and you cannot create teams or
+        contacts yet. If you are asked to, say so plainly.
 
         Projects and issues do not exist in Quill yet. If you are asked about
         them, say they are not available rather than guessing.
@@ -86,6 +90,7 @@ class QuillAssistant implements Agent, Conversational, HasTools
             new ListClients($this->user),
             new ListTeams($this->user),
             new ListContacts($this->user),
+            new CreateClient($this->user),
         ];
     }
 }

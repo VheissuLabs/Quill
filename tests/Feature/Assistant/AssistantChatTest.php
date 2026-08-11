@@ -97,7 +97,7 @@ test('a second message continues the same conversation', function () {
     sendToAssistant($user, 'Second');
 
     expect(Conversation::count())->toBe(1);
-})->note('One running thread per user; a reply must not spawn a fresh conversation.');
+});
 
 test('one user never sees another user transcript', function () {
     QuillAssistant::fake(['A private answer.']);
@@ -115,7 +115,7 @@ test('one user never sees another user transcript', function () {
         ->get(route('assistant'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('messages', []));
-})->note('The participant scope is the only thing separating transcripts.');
+});
 
 test('conversations are stored against the uuid participant, not a truncated key', function () {
     QuillAssistant::fake(['Stored.']);
@@ -128,7 +128,7 @@ test('conversations are stored against the uuid participant, not a truncated key
 
     expect($conversation->participant_id)->toBe($user->id);
     expect($conversation->participant_type)->toBe($user->getMorphClass());
-})->note('The published migration typed participant_id as a bigint, which would collapse every UUID to 0 on MySQL.');
+});
 
 test('the prompt names the current organization and forbids inventing data', function () {
     $instructions = new QuillAssistant(userInOrganization())->instructions();
@@ -137,7 +137,7 @@ test('the prompt names the current organization and forbids inventing data', fun
         ->toContain('NotaryDash')
         ->toContain('never invent')
         ->toContain('Use a tool before answering');
-})->note('The tools cannot stop the model answering from imagination; only the prompt can.');
+});
 
 test('the prompt reflects the organization the user switched to', function () {
     $user = userInOrganization('NotaryDash');

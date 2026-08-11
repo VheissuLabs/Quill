@@ -24,7 +24,7 @@ test('describe_organization reports the organization and the asker role', functi
         ->toContain('Admin')
         ->toContain('1 clients: Acme Title')
         ->toContain('1 teams: Delivery');
-})->note('Names, not just counts: a bare number is all a model can relay if that is all it is given.');
+});
 
 test('list_clients says how each client is held', function () {
     [$organization, $user] = organizationWith();
@@ -70,7 +70,7 @@ test('list_contacts names the client each contact represents', function () {
     expect($result)
         ->toContain('Lucy Client <lucy@acme.test> — Client, contact for the client Acme Title')
         ->toContain('works for the organization');
-})->note('Without the client name the assistant can only say a contact exists somewhere.');
+});
 
 test('list_clients names the contacts at each client', function () {
     [$organization, $owner] = organizationWith();
@@ -86,7 +86,7 @@ test('list_clients names the contacts at each client', function () {
     expect($result)
         ->toContain('Acme Title (held by the organization directly). Contacts: Lucy Client <lucy@acme.test>')
         ->toContain('Harbor Escrow (held by the organization directly). Contacts: none yet');
-})->note('Answers "who do I talk to at this client" in one tool call.');
+});
 
 test('a contact at one client is not reported against another', function () {
     [$organization, $owner] = organizationWith();
@@ -107,7 +107,7 @@ test('staff are never counted as a client contact', function () {
     $client = Client::factory()->heldBy($organization)->create();
 
     expect($client->contacts()->count())->toBe(0);
-})->note('contacts() filters on the Client role, not merely on client_id being set.');
+});
 
 test('no read tool returns another organization data', function (string $tool) {
     $mine = Organization::factory()->create(['name' => 'NotaryDash']);
@@ -135,7 +135,7 @@ test('no read tool returns another organization data', function (string $tool) {
     ListClients::class,
     ListTeams::class,
     ListContacts::class,
-])->note('No tool takes an organization argument, so this is the whole tenant boundary.');
+]);
 
 test('every read tool takes no arguments at all', function (string $tool) {
     $user = memberOf(Organization::factory()->create());
@@ -146,7 +146,7 @@ test('every read tool takes no arguments at all', function (string $tool) {
     ListClients::class,
     ListTeams::class,
     ListContacts::class,
-])->note('An organization parameter would be a cross-tenant read waiting to happen. There must be none.');
+]);
 
 test('the tools follow the organization the user switches to', function () {
     $first = Organization::factory()->create(['name' => 'NotaryDash']);
@@ -182,9 +182,9 @@ test('an empty organization says so rather than returning nothing', function () 
 
     expect(new ListClients($user)->handle(toolRequest()))->toBe('Fresh Org has no clients yet.');
     expect(new ListTeams($user)->handle(toolRequest()))->toBe('Fresh Org has no teams yet.');
-})->note('A blank tool result invites the model to fill the silence with invention.');
+});
 
-test('the agent grants all four read tools and no write tools', function () {
+test('the agent grants exactly the tools built so far', function () {
     $user = memberOf(Organization::factory()->create());
 
     $names = collect(new App\Ai\Agents\QuillAssistant($user)->tools())
@@ -196,5 +196,6 @@ test('the agent grants all four read tools and no write tools', function () {
         'list_clients',
         'list_teams',
         'list_contacts',
+        'create_client',
     ]);
-})->note('Write tools arrive in later steps; this pins the grant so one does not appear early.');
+});

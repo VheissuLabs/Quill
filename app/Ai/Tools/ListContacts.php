@@ -32,10 +32,7 @@ class ListContacts implements Tool
             return $this->withoutOrganization();
         }
 
-        /**
-         * Read through the memberships rather than `members()` so the role comes
-         * back as a cast enum instead of a raw pivot attribute.
-         */
+        /** Through memberships, not members(), so the role is a cast enum not a pivot attribute. */
         $memberships = $organization->memberships()
             ->with(['user', 'client'])
             ->get()

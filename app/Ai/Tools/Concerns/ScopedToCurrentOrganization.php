@@ -6,14 +6,9 @@ use App\Models\Organization;
 use App\Models\User;
 
 /**
- * Resolves the organization a tool operates on from the asking user, never from
- * the model's arguments.
- *
- * This is the load-bearing security property of every tool. No tool accepts an
- * organization parameter, so a model that is confused, or steered by a prompt
- * injected into a client's message, has no argument through which to reach
- * another tenant's data. Cross-tenant leakage is impossible by construction
- * rather than contingent on the model behaving.
+ * Resolves the organization from the asking user, never from the model's
+ * arguments. No tool accepts an organization parameter, so a confused or
+ * prompt-injected model has nothing to reach another tenant through.
  */
 trait ScopedToCurrentOrganization
 {
@@ -24,14 +19,22 @@ trait ScopedToCurrentOrganization
         return $this->user->currentOrganization;
     }
 
-    /**
-     * The message returned to the model when the user has no organization.
-     *
-     * Phrased as a fact for the model to relay rather than an exception, so the
-     * assistant explains the situation instead of the request failing.
-     */
     protected function withoutOrganization(): string
     {
         return 'The user is not currently working in any organization, so there is nothing to report.';
+    }
+
+    /** Returned, not thrown, so the assistant explains the refusal rather than the turn erroring. */
+    protected function refused(string $action): string
+    {
+        $role = $this->user->currentOrganization === null
+            ? null
+            : $this->user->organizationRole($this->user->currentOrganization);
+
+        return sprintf(
+            'The user does not have permission to %s in this organization. Their role is %s. Nothing was changed.',
+            $action,
+            $role?->label() ?? 'unknown',
+        );
     }
 }
