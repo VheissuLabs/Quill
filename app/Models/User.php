@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasOrganizations;
 use App\Concerns\HasTeams;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -18,7 +19,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 #[UseFactory(UserFactory::class)]
 class User extends Authenticatable implements PasskeyUser
 {
-    use HasFactory, HasTeams, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, HasOrganizations, HasTeams, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     protected $guarded = [
         'id',
