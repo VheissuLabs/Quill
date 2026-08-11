@@ -95,14 +95,17 @@ test('the reverb connection points at herd', function () {
     $options = config('broadcasting.connections.reverb.options');
 
     expect($options['host'])->toBe('127.0.0.1');
-    expect($options['port'])->toBe(8080);
+    expect((int) $options['port'])->toBe(8080);
     expect($options['scheme'])->toBe('http');
     expect($options['useTLS'])->toBeFalse();
 });
 
 test('the broadcasting auth route is registered', function () {
-    expect(Route::has('broadcasting.auth'))->toBeTrue();
-});
+    $uris = collect(Route::getRoutes()->getRoutes())
+        ->map(fn ($route) => $route->uri());
+
+    expect($uris)->toContain('broadcasting/auth');
+})->note('The framework registers this route unnamed, so it is found by URI, not by name.');
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
