@@ -11,7 +11,7 @@ class TeamSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::where('email', 'test@example.com')->firstOrFail();
+        $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
         /**
          * One team per role the test user can hold, so every permission path has

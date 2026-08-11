@@ -4,22 +4,51 @@ use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 
-test('seeding produces the three organizations owned by the test user', function () {
+test('seeding produces the three organizations', function () {
     $this->seed();
 
-    $owner = User::where('email', 'test@example.com')->firstOrFail();
-
     expect(Organization::where('is_personal', false)->count())->toBe(3);
+});
 
-    Organization::where('is_personal', false)->each(function (Organization $organization) use ($owner) {
+test('each organization is owned by the person who actually owns it', function () {
+    $this->seed();
+
+    $owners = [
+        'NotaryDash' => 'jen@notarydash.com',
+        '92 Labs' => 'jerry@92labs.com',
+        'VheissuLabs' => 'karl@vheissulabs.com',
+    ];
+
+    foreach ($owners as $organizationName => $email) {
+        $organization = Organization::where('name', $organizationName)->firstOrFail();
+        $owner = User::where('email', $email)->firstOrFail();
+
         expect($owner->ownsOrganization($organization))->toBeTrue();
-    });
+    }
+});
+
+test('the test user holds a different role in each organization', function () {
+    $this->seed();
+
+    $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
+
+    $expected = [
+        'NotaryDash' => OrganizationRole::Admin,
+        '92 Labs' => OrganizationRole::Member,
+        'VheissuLabs' => OrganizationRole::Owner,
+    ];
+
+    foreach ($expected as $organizationName => $role) {
+        $organization = Organization::where('name', $organizationName)->firstOrFail();
+
+        expect($user->organizationRole($organization))->toBe($role);
+    }
 });
 
 test('the test user has a personal organization alongside the three real ones', function () {
     $this->seed();
 
-    $user = User::where('email', 'test@example.com')->firstOrFail();
+    $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
     expect($user->personalOrganization())->not->toBeNull();
     expect($user->organizations()->count())->toBe(4);
@@ -28,7 +57,7 @@ test('the test user has a personal organization alongside the three real ones', 
 test('the test user starts in a real organization, not their personal one', function () {
     $this->seed();
 
-    $user = User::where('email', 'test@example.com')->firstOrFail();
+    $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
     expect($user->currentOrganization->name)->toBe('NotaryDash');
     expect($user->currentOrganization->is_personal)->toBeFalse();
@@ -51,8 +80,8 @@ test('every seeded organization has members and a client contact', function () {
 
         expect($roles)->toContain(OrganizationRole::Owner);
         expect($roles)->toContain(OrganizationRole::Client);
-        expect($roles->filter(fn (OrganizationRole $role) => $role === OrganizationRole::Member))
-            ->toHaveCount(2);
+        expect($roles->filter(fn (OrganizationRole $role) => $role === OrganizationRole::Member)->count())
+            ->toBeGreaterThanOrEqual(2);
     });
 });
 

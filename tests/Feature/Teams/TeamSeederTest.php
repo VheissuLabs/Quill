@@ -7,7 +7,7 @@ use App\Models\User;
 test('the test user belongs to several teams beyond their personal one', function () {
     $this->seed();
 
-    $user = User::where('email', 'test@example.com')->firstOrFail();
+    $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
     expect($user->teams()->where('is_personal', false)->count())->toBe(3);
     expect($user->personalTeam())->not->toBeNull();
@@ -16,7 +16,7 @@ test('the test user belongs to several teams beyond their personal one', functio
 test('the test user holds a different role in each seeded team', function () {
     $this->seed();
 
-    $user = User::where('email', 'test@example.com')->firstOrFail();
+    $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
     $roles = $user->teams()
         ->where('is_personal', false)
@@ -32,7 +32,7 @@ test('the test user holds a different role in each seeded team', function () {
 test('every seeded team has members besides the test user', function () {
     $this->seed();
 
-    $user = User::where('email', 'test@example.com')->firstOrFail();
+    $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
     $teams = Team::where('is_personal', false)->get();
 

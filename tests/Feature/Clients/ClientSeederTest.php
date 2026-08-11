@@ -28,7 +28,7 @@ test('clients are seeded with real names and generated slugs', function () {
 test('the test user can view every seeded client', function () {
     $this->seed();
 
-    $user = User::where('email', 'test@example.com')->firstOrFail();
+    $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
     expect(Client::count())->toBe(6);
 
