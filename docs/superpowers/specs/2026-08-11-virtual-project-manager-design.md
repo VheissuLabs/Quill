@@ -78,29 +78,51 @@ Nothing in this slice blocks the others. Multi-email in particular is only
 The Virtual PM creates an issue for a client, in a project, inside an
 organization. That hierarchy did not exist yet, so it is settled here.
 
-Organizations own clients, and clients own teams.
+An organization contains clients and teams, and either can own the other. A team
+may own clients; a client may have its own teams. Neither nesting is required.
 
 ```
-Organization  (NotaryDash, 92 Labs, VheissuLabs)
-├── members        Users, via OrganizationMembership
-├── Clients        companies — "Acme Title Co"
-│   ├── contacts   Users holding a Client-role org membership
-│   ├── Teams      subgroups of the client — the people doing that client's work
-│   └── default_project_id   (required)
-└── Projects       + Issues
+Organization  (NotaryDash)
+├── members              Users, via OrganizationMembership
+├── Team "Delivery"      an org-level team…
+│   └── Client "Acme"    …that owns a client
+│       └── Team "Acme Dev"   …which has its own subgroup
+├── Client "Harbor"      a client owned by the organization directly
+└── Projects             + Issues
 ```
 
-### Team is reparented under Client
+### Both teams and clients have a polymorphic owner
 
-`Team` gains a `client_id` and otherwise keeps its slug generation, `Membership`
-pivot, invitations, and policies. A team is a subgroup of the client that owns
-it, not a department of the organization.
+```php
+// Team
+organization_id            // the root organization
+owner_type / owner_id      // morphTo: Organization | Client
 
-An earlier version of this document had teams belonging directly to the
-organization. That was wrong and is recorded here because the correction matters:
-the organization a team belongs to is reached **through its client**, so
-"every team in this organization" is a join, not a column. Nothing carries a
-denormalized `organization_id` on `teams`.
+// Client
+organization_id            // the root organization
+owner_type / owner_id      // morphTo: Organization | Team
+```
+
+The `owner` expresses **structure**; `organization_id` expresses **tenancy**. Both
+are needed. Without `organization_id`, "every client in this organization" means
+walking an arbitrarily deep owner chain on every page load; with it, scoping is a
+plain `where` and the morph is free to describe any nesting.
+
+This is not the redundancy rejected for `Project`. There, `owner` is always a
+`Client` or a `Team`, never the organization, so no column duplicates it. Here the
+organization is one of the candidate owners, so the two columns say different
+things: `owner` says *who directly contains this*, `organization_id` says *whose
+tenant it is*.
+
+**An observer enforces the invariants the schema cannot:** an owner must belong to
+the same organization, and the owner chain must remain a tree. Nothing in the
+database prevents a cycle — a team owning a client that owns that team — so it is
+checked on write.
+
+Two earlier versions of this document were wrong: the first had teams belonging
+directly to the organization, the second had them belonging only to clients. Both
+are recorded because the shape took three passes to settle, and the reasoning is
+worth more than the conclusion.
 
 ### Membership splits in two
 
