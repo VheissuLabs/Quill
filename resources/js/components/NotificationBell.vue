@@ -46,16 +46,29 @@
             <SidebarMenuButton
                 data-test="notification-bell-trigger"
                 tooltip="Notifications"
+                class="relative"
             >
                 <Bell />
                 <span>Notifications</span>
+
+                <!--
+                    Two indicators for the same count, because a collapsed sidebar
+                    is an 8x8 overflow-hidden box: the numeric badge is clipped
+                    there, so a dot positioned inside the box takes over. Keeping
+                    `Bell` a direct child preserves the sidebar's [&>svg]:size-4.
+                -->
                 <span
                     v-if="unreadCount > 0"
                     data-test="notification-bell-count"
-                    class="ml-auto rounded-md bg-sidebar-accent px-1.5 text-xs font-medium"
+                    class="ml-auto rounded-md bg-sidebar-accent px-1.5 text-xs font-medium group-data-[collapsible=icon]:hidden"
                 >
                     {{ unreadCount }}
                 </span>
+                <span
+                    v-if="unreadCount > 0"
+                    data-test="notification-bell-dot"
+                    class="absolute top-1 right-1 hidden size-2 rounded-full bg-primary group-data-[collapsible=icon]:block"
+                />
             </SidebarMenuButton>
         </DropdownMenuTrigger>
 
