@@ -274,7 +274,7 @@ missed, not that a test is wrong.
 composer ide-helper
 vendor/bin/pint --dirty --format agent
 vendor/bin/phpstan analyse
-git add app/Models tests/Feature/UuidKeysTest.php _ide_helper_models.php
+git add app/Models tests/Feature/UuidKeysTest.php resources/js/types
 git commit -m "Give the domain models UUID keys"
 ```
 

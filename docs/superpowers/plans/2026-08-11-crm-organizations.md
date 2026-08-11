@@ -646,7 +646,7 @@ required — see `.ai/rules/general.md`.
 composer ide-helper
 vendor/bin/pint --dirty --format agent
 vendor/bin/phpstan analyse
-git add -A app/Models database/migrations database/factories tests/Feature/Organizations _ide_helper_models.php
+git add -A app/Models database/migrations database/factories tests/Feature/Organizations
 git commit -m "Add the Organization model and its membership pivot"
 ```
 
@@ -1143,7 +1143,7 @@ test('seeding produces the three organizations owned by the test user', function
 
     expect(Organization::count())->toBe(3);
     expect(Organization::pluck('slug')->sort()->values()->all())
-        ->toBe(['92-labs', 'notary-dash', 'vheissulabs']);
+        ->toBe(['92-labs', 'notarydash', 'vheissulabs']);
 
     Organization::each(function (Organization $organization) use ($owner) {
         expect($owner->ownsOrganization($organization))->toBeTrue();
