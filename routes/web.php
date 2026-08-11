@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Assistant\AssistantController;
+use App\Http\Controllers\Assistant\AssistantMessageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\EnsureTeamMembership;
@@ -12,6 +14,15 @@ Route::prefix('{current_team}')
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
     });
+
+/*
+ * The assistant is scoped to the user's current organization, not to a team, so
+ * it sits outside the {current_team} prefix the rest of the app still uses.
+ */
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('assistant', AssistantController::class)->name('assistant');
+    Route::post('assistant/messages', [AssistantMessageController::class, 'store'])->name('assistant.messages.store');
+});
 
 Route::middleware(['auth'])->group(function () {
     Route::post('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
