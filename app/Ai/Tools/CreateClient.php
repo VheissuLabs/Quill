@@ -3,6 +3,7 @@
 namespace App\Ai\Tools;
 
 use App\Ai\Contracts\AssistantTool;
+use App\Ai\Tools\Concerns\MatchesNames;
 use App\Ai\Tools\Concerns\ScopedToCurrentOrganization;
 use App\Models\Client;
 use App\Models\Organization;
@@ -14,6 +15,7 @@ use Stringable;
 
 class CreateClient implements AssistantTool
 {
+    use MatchesNames;
     use ScopedToCurrentOrganization;
 
     public function name(): string
@@ -81,54 +83,27 @@ class CreateClient implements AssistantTool
         ];
     }
 
-    protected function comparableName(string $name): string
-    {
-        $stripped = preg_replace('/[^\p{L}\p{N}\s]/u', '', mb_strtolower(trim($name)));
-
-        return trim(preg_replace('/\s+/', ' ', $stripped ?? $name) ?? $name);
-    }
-
-    protected function normalizeTeamName(string $name): string
-    {
-        $name = mb_strtolower(trim($name));
-        $name = preg_replace('/\bteams?\b/', '', $name) ?? $name;
-        $name = preg_replace('/^the\s+/', '', trim($name)) ?? $name;
-
-        return trim(preg_replace('/\s+/', ' ', $name) ?? $name);
-    }
-
     protected function resolveParent(Organization $organization, ?string $teamName): Organization|Team|string
     {
         if ($teamName === null || trim($teamName) === '') {
             return $organization;
         }
 
-        $teams = $organization->teams()->orderBy('name')->get();
-
-        $wanted = $this->normalizeTeamName($teamName);
-
-        $matches = $teams->filter(
-            fn (Team $team) => $this->normalizeTeamName($team->name) === $wanted
-        );
-
-        if ($matches->isEmpty()) {
-            $matches = $teams->filter(
-                fn (Team $team) => str_contains($this->normalizeTeamName($team->name), $wanted)
-            );
-        }
+        $teams = $organization->teams()->orderBy('name')->pluck('name');
+        $matches = $this->matchingNames($teams, $teamName, 'team');
 
         if ($matches->count() === 1) {
-            return $matches->sole();
+            return $organization->teams()->where('name', $matches->sole())->sole();
         }
 
         if ($matches->count() > 1) {
             return "More than one team in {$organization->name} matches \"{$teamName}\": ".
-                $matches->pluck('name')->join(', ').'. No client was created — ask which one.';
+                $matches->join(', ').'. No client was created — ask which one.';
         }
 
         return "There is no team called {$teamName} in {$organization->name}, so no client was created. ".
             ($teams->isEmpty()
                 ? 'The organization has no teams at all.'
-                : 'The teams are: '.$teams->pluck('name')->join(', ').'.');
+                : 'The teams are: '.$teams->join(', ').'.');
     }
 }

@@ -26,6 +26,8 @@ enum OrganizationRole: string
                 OrganizationPermission::RemoveMember,
                 OrganizationPermission::CreateInvitation,
                 OrganizationPermission::CancelInvitation,
+                OrganizationPermission::CreateTeam,
+                OrganizationPermission::UpdateTeam,
                 OrganizationPermission::CreateClient,
                 OrganizationPermission::UpdateClient,
             ],
