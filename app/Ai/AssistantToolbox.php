@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Ai;
+
+use App\Ai\Contracts\AssistantTool;
+use App\Ai\Tools\CreateClient;
+use App\Ai\Tools\CreateContact;
+use App\Ai\Tools\CreateTeam;
+use App\Ai\Tools\DescribeOrganization;
+use App\Ai\Tools\ListCapabilities;
+use App\Ai\Tools\ListClients;
+use App\Ai\Tools\ListContacts;
+use App\Ai\Tools\ListTeams;
+use App\Enums\OrganizationPermission;
+use App\Models\User;
+
+class AssistantToolbox
+{
+    /**
+     * The tools a user is granted.
+     *
+     * Write tools are withheld when the user's role does not permit the action, so
+     * the model cannot offer something it will then be refused. Each tool still
+     * checks its own permission — this is least privilege, not the only guard.
+     *
+     * @return list<AssistantTool>
+     */
+    public function for(User $user): array
+    {
+        $tools = [
+            new DescribeOrganization($user),
+            new ListClients($user),
+            new ListTeams($user),
+            new ListContacts($user),
+        ];
+
+        $organization = $user->currentOrganization;
+
+        $permitted = fn (OrganizationPermission $permission): bool => $organization !== null
+            && $user->hasOrganizationPermission($organization, $permission);
+
+        if ($permitted(OrganizationPermission::CreateClient)) {
+            $tools[] = new CreateClient($user);
+        }
+
+        if ($permitted(OrganizationPermission::CreateTeam)) {
+            $tools[] = new CreateTeam($user);
+        }
+
+        if ($permitted(OrganizationPermission::AddMember)) {
+            $tools[] = new CreateContact($user);
+        }
+
+        $tools[] = new ListCapabilities($user, $tools);
+
+        return $tools;
+    }
+}

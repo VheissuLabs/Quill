@@ -21,6 +21,11 @@ class ListClients implements AssistantTool
         return 'list_clients';
     }
 
+    public function capability(): string
+    {
+        return 'List your clients, who holds each one, and the contacts at each.';
+    }
+
     public function description(): Stringable|string
     {
         return 'List every client in the organization the user is currently working in, along with what holds each one (the organization directly, or one of its teams) and who the contacts are at each client. Use this to answer any question about clients or about who to talk to at a client, and to check whether a client already exists.';

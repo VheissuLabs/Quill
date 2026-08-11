@@ -23,6 +23,11 @@ class ListContacts implements AssistantTool
         return 'list_contacts';
     }
 
+    public function capability(): string
+    {
+        return 'List everyone in the organization and the client each contact represents.';
+    }
+
     public function description(): Stringable|string
     {
         return 'List everyone who belongs to the organization the user is currently working in, with each person\'s role. People with the Client role are client contacts; everyone else works for the organization. Use this to answer any question about people, contacts, or members.';

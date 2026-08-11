@@ -2,14 +2,8 @@
 
 namespace App\Ai\Agents;
 
+use App\Ai\AssistantToolbox;
 use App\Ai\Contracts\AssistantTool;
-use App\Ai\Tools\CreateClient;
-use App\Ai\Tools\CreateContact;
-use App\Ai\Tools\CreateTeam;
-use App\Ai\Tools\DescribeOrganization;
-use App\Ai\Tools\ListClients;
-use App\Ai\Tools\ListContacts;
-use App\Ai\Tools\ListTeams;
 use App\Models\User;
 use Laravel\Ai\Attributes\MaxSteps;
 use Laravel\Ai\Attributes\Timeout;
@@ -63,6 +57,10 @@ class QuillAssistant implements Agent, Conversational, HasTools
 
         You cannot change or delete anything. If you are asked to, say so plainly.
 
+        When asked what you can do, what your tools are, or how you can help, call
+        list_capabilities and report what it returns. Do not answer that question
+        from memory or in vague terms.
+
         Projects and issues do not exist in Quill yet. If you are asked about
         them, say they are not available rather than guessing.
 
@@ -89,14 +87,6 @@ class QuillAssistant implements Agent, Conversational, HasTools
     /** @return iterable<AssistantTool> */
     public function tools(): iterable
     {
-        return [
-            new DescribeOrganization($this->user),
-            new ListClients($this->user),
-            new ListTeams($this->user),
-            new ListContacts($this->user),
-            new CreateClient($this->user),
-            new CreateTeam($this->user),
-            new CreateContact($this->user),
-        ];
+        return app(AssistantToolbox::class)->for($this->user);
     }
 }

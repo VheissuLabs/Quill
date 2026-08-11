@@ -23,6 +23,11 @@ class CreateClient implements AssistantTool
         return 'create_client';
     }
 
+    public function capability(): string
+    {
+        return 'Create a new client, optionally held by one of your teams.';
+    }
+
     public function description(): Stringable|string
     {
         return 'Create a new client in the organization the user is currently working in. Only call this when the user has given a name for the client. Optionally name a team that should hold the client; otherwise the organization holds it directly.';

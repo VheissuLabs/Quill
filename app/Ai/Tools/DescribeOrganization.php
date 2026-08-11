@@ -17,6 +17,11 @@ class DescribeOrganization implements AssistantTool
         return 'describe_organization';
     }
 
+    public function capability(): string
+    {
+        return 'Tell you about the organization you are working in, including how many clients, teams and people it has.';
+    }
+
     public function description(): Stringable|string
     {
         return 'Get the name of the organization the user is currently working in, the user\'s role in it, and how many clients, teams, and members it has. Use this to answer any question about the organization itself.';

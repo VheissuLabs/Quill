@@ -24,6 +24,11 @@ class CreateContact implements AssistantTool
         return 'create_contact';
     }
 
+    public function capability(): string
+    {
+        return 'Invite someone to be a contact for a client, or re-send an invitation they did not receive.';
+    }
+
     public function description(): Stringable|string
     {
         return 'Invite someone to be a contact for one of the organization\'s clients, or re-send an invitation they did not receive. Requires the client name and the person\'s email address. Only call this when you have both; ask for whichever is missing. Calling it again for the same email re-sends the existing invitation rather than creating a second one, so use it for "resend", "send it again", or "they did not get it". The person is invited, not added — they join when they accept.';

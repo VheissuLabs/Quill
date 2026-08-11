@@ -23,6 +23,11 @@ class CreateTeam implements AssistantTool
         return 'create_team';
     }
 
+    public function capability(): string
+    {
+        return 'Create a new team, optionally belonging to one of your clients.';
+    }
+
     public function description(): Stringable|string
     {
         return 'Create a new team in the organization the user is currently working in. Only call this when the user has given a name for the team. Optionally name a client the team should belong to; otherwise the team belongs to the organization directly.';

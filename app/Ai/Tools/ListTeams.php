@@ -20,6 +20,11 @@ class ListTeams implements AssistantTool
         return 'list_teams';
     }
 
+    public function capability(): string
+    {
+        return 'List your teams and what each one belongs to.';
+    }
+
     public function description(): Stringable|string
     {
         return 'List every team in the organization the user is currently working in, along with what each team belongs to: the organization directly, or one of its clients. Use this to answer any question about teams, and to check whether a team already exists.';
