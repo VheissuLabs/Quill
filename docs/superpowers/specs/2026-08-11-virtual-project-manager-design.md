@@ -78,32 +78,40 @@ Nothing in this slice blocks the others. Multi-email in particular is only
 The Virtual PM creates an issue for a client, in a project, inside an
 organization. That hierarchy did not exist yet, so it is settled here.
 
+Organizations own clients, and clients own teams.
+
 ```
 Organization  (NotaryDash, 92 Labs, VheissuLabs)
-├── Teams          departments — existing Team model, + organization_id
+├── members        Users, via OrganizationMembership
 ├── Clients        companies — "Acme Title Co"
 │   ├── contacts   Users holding a Client-role org membership
+│   ├── Teams      subgroups of the client — the people doing that client's work
 │   └── default_project_id   (required)
-├── Projects       + Issues
-└── members        Users, via OrganizationMembership
+└── Projects       + Issues
 ```
 
-### Team is reparented, not replaced
+### Team is reparented under Client
 
-`Team` gains an `organization_id` and otherwise keeps its slug generation,
-`Membership` pivot, invitations, and policies. Departments are what teams
-already are; nothing existing is discarded.
+`Team` gains a `client_id` and otherwise keeps its slug generation, `Membership`
+pivot, invitations, and policies. A team is a subgroup of the client that owns
+it, not a department of the organization.
+
+An earlier version of this document had teams belonging directly to the
+organization. That was wrong and is recorded here because the correction matters:
+the organization a team belongs to is reached **through its client**, so
+"every team in this organization" is a join, not a column. Nothing carries a
+denormalized `organization_id` on `teams`.
 
 ### Membership splits in two
 
 `OrganizationMembership` (Owner / Admin / Member / Client) governs
 organization access. The existing team-level `Membership` continues to govern
-departments.
+who is in which team.
 
 A client contact holds an organization membership with the `Client` role and
-**no team membership at all**. That is what keeps clients out of internal
-departments by construction, rather than by policy checks repeated at every
-call site.
+**no team membership at all**. That is what keeps clients out of the teams
+working on their account by construction, rather than by policy checks repeated
+at every call site.
 
 It is also the billing boundary. Quill will charge per agent seat, and client
 contacts are free — deliberately, so that a freelancer taking on a client is
@@ -120,22 +128,21 @@ nothing downstream should treat "number of non-Client members" as the amount owe
 
 ### Projects are polymorphic
 
-A project is owned by either a `Client` (client-wide) or a `Team` (a
-department's project):
+A project is owned by either a `Client` (the whole account) or one `Team` within
+that client:
 
 ```php
 // Project
-organization_id            // direct
 owner_type / owner_id      // morphTo: Client | Team
 
 /** @return MorphTo<Model, $this> */
 public function owner(): MorphTo
 ```
 
-`organization_id` is deliberately redundant — both owners already belong to an
-organization — because deriving it would force a polymorphic join on every
-scoped query. That owner and project share an organization is enforced in a
-model observer, not by a database constraint.
+Both candidate owners sit under a client, so the client — and through it the
+organization — is reached by walking the owner. No denormalized column: the morph
+here is genuinely one-of-two, unlike on `teams`, where the parent is always a
+client and a plain `client_id` says everything.
 
 Per `.ai/rules/models.md`, `morphTo()` is the one relation that still carries a
 `@return` docblock; no other relation in this design gets one.
@@ -333,7 +340,7 @@ none of them is a "massive PR" — that is a working constraint, not an aspirati
 
 1. `Organization` and `OrganizationMembership`: models, migrations, factories,
    the role enum, policies. No UI.
-2. Reparent `Team` under `Organization` (`organization_id`), and
+2. Reparent `Team` under `Client` (`client_id`), and
    `User.current_team_id` → `current_organization_id` with the switcher.
 3. Organization screens — create and settings, mirroring the existing team
    screens.
