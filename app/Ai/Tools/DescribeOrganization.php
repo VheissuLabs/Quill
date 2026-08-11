@@ -32,11 +32,19 @@ class DescribeOrganization implements Tool
 
         $role = $this->user->organizationRole($organization);
 
+        $clients = $organization->clients()->orderBy('name')->pluck('name');
+        $teams = $organization->teams()->orderBy('name')->pluck('name');
+
+        /**
+         * Names, not just counts. Asked "how many teams", a model handed a bare
+         * number answers with a bare number; handed the names it can answer the
+         * question and say which ones in the same breath.
+         */
         return implode("\n", [
             "Organization: {$organization->name}",
             'The user\'s role: '.($role?->label() ?? 'unknown'),
-            'Clients: '.$organization->clients()->count(),
-            'Teams: '.$organization->teams()->count(),
+            $clients->count().' clients: '.($clients->isEmpty() ? 'none' : $clients->join(', ')),
+            $teams->count().' teams: '.($teams->isEmpty() ? 'none' : $teams->join(', ')),
             'Members: '.$organization->members()->count(),
         ]);
     }

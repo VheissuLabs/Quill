@@ -29,7 +29,14 @@ test('describe_organization reports the organization and the asker role', functi
     $organization = Organization::factory()->create(['name' => 'NotaryDash']);
     $user = memberOf($organization, 'admin');
 
-    Client::factory()->count(2)->for($organization)->create([
+    Client::factory()->for($organization)->create([
+        'name' => 'Acme Title',
+        'parent_type' => Organization::class,
+        'parent_id' => $organization->id,
+    ]);
+
+    Team::factory()->for($organization)->create([
+        'name' => 'Delivery',
         'parent_type' => Organization::class,
         'parent_id' => $organization->id,
     ]);
@@ -39,8 +46,9 @@ test('describe_organization reports the organization and the asker role', functi
     expect($result)
         ->toContain('NotaryDash')
         ->toContain('Admin')
-        ->toContain('Clients: 2');
-});
+        ->toContain('1 clients: Acme Title')
+        ->toContain('1 teams: Delivery');
+})->note('Names, not just counts: a bare number is all a model can relay if that is all it is given.');
 
 test('list_clients says how each client is held', function () {
     $organization = Organization::factory()->create(['name' => 'NotaryDash']);
