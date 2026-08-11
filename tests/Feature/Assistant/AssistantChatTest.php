@@ -134,7 +134,8 @@ test('the prompt names the current organization and forbids inventing data', fun
     expect($instructions)
         ->toContain('NotaryDash')
         ->toContain('never invent')
-        ->toContain('Use a tool before answering');
+        ->toContain('Use a tool before answering')
+        ->toContain('never say you cannot');
 });
 
 test('the prompt reflects the organization the user switched to', function () {

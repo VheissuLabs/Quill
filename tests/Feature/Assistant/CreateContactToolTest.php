@@ -214,3 +214,11 @@ test('the tool declares no organization argument', function () {
 
     expect($keys)->toBe(['client', 'email', 'name']);
 });
+
+test('the tool advertises re-sending so the assistant does not refuse', function () {
+    $description = (string) new CreateContact($this->admin)->description();
+
+    expect($description)
+        ->toContain('re-send')
+        ->toContain('resend');
+});
