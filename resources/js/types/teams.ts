@@ -7,7 +7,14 @@ export type Team = {
     isPersonal: boolean
     role?: TeamRole
     roleLabel?: string
+    parentName?: string | null
+    parentType?: 'organization' | 'client' | null
     isCurrent?: boolean
+}
+
+export type TeamGroup = {
+    label: string
+    teams: Team[]
 }
 
 export type TeamMember = {

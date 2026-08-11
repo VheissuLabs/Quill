@@ -6,6 +6,7 @@ use App\Data\TeamPermissions;
 use App\Data\UserTeam;
 use App\Enums\TeamPermission;
 use App\Enums\TeamRole;
+use App\Models\Client;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\Team;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 
 trait HasTeams
 {
@@ -101,6 +103,7 @@ trait HasTeams
     public function toUserTeams(bool $includeCurrent = false, ?Organization $organization = null): Collection
     {
         return $this->teams()
+            ->with('parent')
             ->when($organization, fn ($query) => $query->where('teams.organization_id', $organization->id))
             ->get()
             ->map(fn (Team $team) => ! $includeCurrent && $this->isCurrentTeam($team) ? null : $this->toUserTeam($team))
@@ -111,6 +114,14 @@ trait HasTeams
     public function toUserTeam(Team $team): UserTeam
     {
         $role = $this->teamRole($team);
+        $parent = $team->parent;
+
+        /**
+         * `morphTo()` is typed as returning a bare Model, so the concrete parent is
+         * narrowed here rather than by promising a tighter generic the framework
+         * does not actually return.
+         */
+        $hasNamedParent = $parent instanceof Organization || $parent instanceof Client;
 
         return new UserTeam(
             id: $team->id,
@@ -119,6 +130,8 @@ trait HasTeams
             isPersonal: $team->is_personal,
             role: $role?->value,
             roleLabel: $role?->label(),
+            parentName: $hasNamedParent ? $parent->name : null,
+            parentType: $hasNamedParent ? Str::lower(class_basename($parent)) : null,
             isCurrent: $this->isCurrentTeam($team),
         );
     }

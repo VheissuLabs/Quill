@@ -13,7 +13,7 @@
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu'
     import { switchMethod } from '@/routes/teams'
-    import type { Team } from '@/types'
+    import type { Team, TeamGroup } from '@/types'
 
     const props = withDefaults(
         defineProps<{
@@ -35,6 +35,50 @@
 
     const currentTeam = computed(() => page.props.currentTeam)
     const teams = computed(() => page.props.teams ?? [])
+
+    /**
+     * Teams hang off either a client or the organization itself, so they are
+     * grouped under whichever holds them. Organization-held groups come first,
+     * then clients alphabetically.
+     */
+    const teamGroups = computed<TeamGroup[]>(() => {
+        const groups = new Map<string, Team[]>()
+
+        for (const team of teams.value) {
+            const label = team.parentName ?? 'Other'
+
+            if (!groups.has(label)) {
+                groups.set(label, [])
+            }
+
+            groups.get(label)!.push(team)
+        }
+
+        const isOrganizationGroup = (label: string) =>
+            teams.value.some(
+                (team) =>
+                    team.parentName === label &&
+                    team.parentType === 'organization',
+            )
+
+        return [...groups.entries()]
+            .map(([label, groupTeams]) => ({
+                label,
+                teams: [...groupTeams].sort((a, b) =>
+                    a.name.localeCompare(b.name),
+                ),
+            }))
+            .sort((a, b) => {
+                const aIsOrg = isOrganizationGroup(a.label)
+                const bIsOrg = isOrganizationGroup(b.label)
+
+                if (aIsOrg !== bIsOrg) {
+                    return aIsOrg ? -1 : 1
+                }
+
+                return a.label.localeCompare(b.label)
+            })
+    })
     const menuContentClass = computed(() =>
         props.inHeader
             ? 'w-56'
@@ -140,22 +184,34 @@
             :align="props.inHeader ? 'end' : 'start'"
             :side-offset="props.inHeader ? undefined : 4"
         >
-            <DropdownMenuLabel class="text-xs text-muted-foreground">
-                Teams
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-                v-for="team in teams"
-                :key="team.id"
-                data-test="team-switcher-item"
-                :class="teamItemClass"
-                @click="switchTeam(team)"
+            <template v-for="(group, index) in teamGroups" :key="group.label">
+                <DropdownMenuSeparator v-if="index > 0" />
+                <DropdownMenuLabel
+                    class="text-xs text-muted-foreground"
+                    data-test="team-switcher-group"
+                >
+                    {{ group.label }}
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                    v-for="team in group.teams"
+                    :key="team.id"
+                    data-test="team-switcher-item"
+                    :class="teamItemClass"
+                    @click="switchTeam(team)"
+                >
+                    {{ team.name }}
+                    <Check
+                        v-if="currentTeam?.id === team.id"
+                        :class="checkIconClass"
+                    />
+                </DropdownMenuItem>
+            </template>
+            <DropdownMenuLabel
+                v-if="teamGroups.length === 0"
+                class="text-xs text-muted-foreground"
             >
-                {{ team.name }}
-                <Check
-                    v-if="currentTeam?.id === team.id"
-                    :class="checkIconClass"
-                />
-            </DropdownMenuItem>
+                No teams yet
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <CreateTeamModal>
                 <DropdownMenuItem
