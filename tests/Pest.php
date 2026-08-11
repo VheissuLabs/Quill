@@ -55,6 +55,9 @@ function contactFor(Client $client, string $name, ?string $email = null): User
     return $contact;
 }
 
+/**
+ * @param array<string, mixed> $arguments
+ */
 function toolRequest(array $arguments = []): Request
 {
     return new Request($arguments);
@@ -69,14 +72,4 @@ function assistantDeltas(string $stream): string
         ->where('type', 'text_delta')
         ->pluck('delta')
         ->join('');
-}
-
-function sendToAssistant(User $user, string $message): string
-{
-    $response = test()->actingAs($user)
-        ->post(route('assistant.messages.store'), ['message' => $message]);
-
-    $response->assertOk();
-
-    return $response->streamedContent();
 }

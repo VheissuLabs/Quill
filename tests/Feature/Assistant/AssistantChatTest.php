@@ -68,8 +68,8 @@ test('the transcript survives a reload', function () {
 
     $user = userInOrganization();
 
-    sendToAssistant($user, 'First question');
-    sendToAssistant($user, 'Second question');
+    $this->sendToAssistant($user, 'First question');
+    $this->sendToAssistant($user, 'Second question');
 
     $this
         ->actingAs($user)
@@ -89,8 +89,8 @@ test('a second message continues the same conversation', function () {
 
     $user = userInOrganization();
 
-    sendToAssistant($user, 'First');
-    sendToAssistant($user, 'Second');
+    $this->sendToAssistant($user, 'First');
+    $this->sendToAssistant($user, 'Second');
 
     expect(Conversation::count())->toBe(1);
 });
@@ -101,7 +101,7 @@ test('one user never sees another user transcript', function () {
     $owner = userInOrganization();
     $stranger = userInOrganization('92 Labs');
 
-    sendToAssistant($owner, 'Something confidential');
+    $this->sendToAssistant($owner, 'Something confidential');
 
     expect($owner->toAssistantMessages())->toHaveCount(2);
     expect($stranger->toAssistantMessages())->toBeEmpty();
@@ -118,7 +118,7 @@ test('conversations are stored against the uuid participant, not a truncated key
 
     $user = userInOrganization();
 
-    sendToAssistant($user, 'Store this');
+    $this->sendToAssistant($user, 'Store this');
 
     $conversation = Conversation::sole();
 
