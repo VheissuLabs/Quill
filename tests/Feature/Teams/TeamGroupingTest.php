@@ -12,7 +12,9 @@ test('a team carries the name and kind of its parent', function () {
     $client = Client::factory()->for($organization)->create(['name' => 'Acme Title Co']);
     $user = User::factory()->create();
 
-    $organization->members()->attach($user, ['role' => OrganizationRole::Owner->value]);
+    $organization->members()->attach($user);
+
+    $user->assignOrganizationRole($organization, OrganizationRole::Owner->value);
 
     $orgTeam = Team::factory()->heldBy($organization)->withMember($user, TeamRole::Owner)->create(['name' => 'Delivery']);
     $clientTeam = Team::factory()->heldBy($client)->withMember($user, TeamRole::Owner)->create(['name' => 'Development']);

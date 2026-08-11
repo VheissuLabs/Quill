@@ -27,6 +27,13 @@ parameters:
         class: 20
 
     ignoreErrors:
+        # Spatie's published migration branches on the teams feature and on which
+        # pivot columns are configured. Restructuring it would make future
+        # re-publishes impossible to diff against upstream for no benefit.
+        -
+            identifier: complexity.functionLike
+            path: database/migrations/*_create_permission_tables.php
+
         # The factory is declared by #[UseFactory] on the model, which is real code
         # rather than a comment. The `@use HasFactory<XFactory>` docblock only
         # restates it for the analyser. Scoped to the trait-use flavour so missing

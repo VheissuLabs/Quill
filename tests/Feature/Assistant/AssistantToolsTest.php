@@ -4,20 +4,17 @@ use App\Ai\Tools\DescribeOrganization;
 use App\Ai\Tools\ListClients;
 use App\Ai\Tools\ListContacts;
 use App\Ai\Tools\ListTeams;
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Team;
 use App\Models\User;
 
 test('describe_organization reports the organization and the asker role', function () {
-    [$organization, $user] = organizationWith(OrganizationRole::Admin);
+    Client::factory()->heldBy($this->organization)->create(['name' => 'Acme Title']);
 
-    Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
+    Team::factory()->heldBy($this->organization)->create(['name' => 'Delivery']);
 
-    Team::factory()->heldBy($organization)->create(['name' => 'Delivery']);
-
-    $result = new DescribeOrganization($user)->handle(toolRequest());
+    $result = new DescribeOrganization($this->admin)->handle(toolRequest());
 
     expect($result)
         ->toContain('NotaryDash')
@@ -27,15 +24,13 @@ test('describe_organization reports the organization and the asker role', functi
 });
 
 test('list_clients says how each client is held', function () {
-    [$organization, $user] = organizationWith();
-
-    $team = Team::factory()->heldBy($organization)->create(['name' => 'Delivery']);
+    $team = Team::factory()->heldBy($this->organization)->create(['name' => 'Delivery']);
 
     Client::factory()->heldBy($team)->create(['name' => 'Acme Title']);
 
-    Client::factory()->heldBy($organization)->create(['name' => 'Harbor Legal']);
+    Client::factory()->heldBy($this->organization)->create(['name' => 'Harbor Legal']);
 
-    $result = new ListClients($user)->handle(toolRequest());
+    $result = new ListClients($this->admin)->handle(toolRequest());
 
     expect($result)
         ->toContain('Acme Title (held by the team Delivery)')
@@ -43,15 +38,13 @@ test('list_clients says how each client is held', function () {
 });
 
 test('list_teams says what each team belongs to', function () {
-    [$organization, $user] = organizationWith();
-
-    $client = Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
+    $client = Client::factory()->heldBy($this->organization)->create(['name' => 'Acme Title']);
 
     Team::factory()->heldBy($client)->create(['name' => 'Acme Dev']);
 
-    Team::factory()->heldBy($organization)->create(['name' => 'Delivery']);
+    Team::factory()->heldBy($this->organization)->create(['name' => 'Delivery']);
 
-    $result = new ListTeams($user)->handle(toolRequest());
+    $result = new ListTeams($this->admin)->handle(toolRequest());
 
     expect($result)
         ->toContain('Acme Dev (under the client Acme Title')
@@ -59,13 +52,11 @@ test('list_teams says what each team belongs to', function () {
 });
 
 test('list_contacts names the client each contact represents', function () {
-    [$organization, $owner] = organizationWith();
-
-    $client = Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
+    $client = Client::factory()->heldBy($this->organization)->create(['name' => 'Acme Title']);
 
     contactFor($client, 'Lucy Client', 'lucy@acme.test');
 
-    $result = new ListContacts($owner)->handle(toolRequest());
+    $result = new ListContacts($this->admin)->handle(toolRequest());
 
     expect($result)
         ->toContain('Lucy Client <lucy@acme.test> — Client, contact for the client Acme Title')
@@ -73,15 +64,13 @@ test('list_contacts names the client each contact represents', function () {
 });
 
 test('list_clients names the contacts at each client', function () {
-    [$organization, $owner] = organizationWith();
+    $withContacts = Client::factory()->heldBy($this->organization)->create(['name' => 'Acme Title']);
 
-    $withContacts = Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
-
-    Client::factory()->heldBy($organization)->create(['name' => 'Harbor Escrow']);
+    Client::factory()->heldBy($this->organization)->create(['name' => 'Harbor Escrow']);
 
     contactFor($withContacts, 'Lucy Client', 'lucy@acme.test');
 
-    $result = new ListClients($owner)->handle(toolRequest());
+    $result = new ListClients($this->admin)->handle(toolRequest());
 
     expect($result)
         ->toContain('Acme Title (held by the organization directly). Contacts: Lucy Client <lucy@acme.test>')
@@ -89,11 +78,9 @@ test('list_clients names the contacts at each client', function () {
 });
 
 test('a contact at one client is not reported against another', function () {
-    [$organization, $owner] = organizationWith();
+    $acme = Client::factory()->heldBy($this->organization)->create(['name' => 'Acme Title']);
 
-    $acme = Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
-
-    $harbor = Client::factory()->heldBy($organization)->create(['name' => 'Harbor Escrow']);
+    $harbor = Client::factory()->heldBy($this->organization)->create(['name' => 'Harbor Escrow']);
 
     contactFor($acme, 'Lucy Acme');
 
@@ -102,9 +89,7 @@ test('a contact at one client is not reported against another', function () {
 });
 
 test('staff are never counted as a client contact', function () {
-    [$organization, $owner] = organizationWith();
-
-    $client = Client::factory()->heldBy($organization)->create();
+    $client = Client::factory()->heldBy($this->organization)->create();
 
     expect($client->contacts()->count())->toBe(0);
 });
@@ -113,16 +98,17 @@ test('no read tool returns another organization data', function (string $tool) {
     $mine = Organization::factory()->create(['name' => 'NotaryDash']);
     $theirs = Organization::factory()->create(['name' => '92 Labs']);
 
-    $user = memberOf($mine);
+    $this->admin = memberOf($mine);
 
     Client::factory()->heldBy($theirs)->create(['name' => 'Secret Client']);
 
     Team::factory()->heldBy($theirs)->create(['name' => 'Secret Team']);
 
     $stranger = User::factory()->create(['name' => 'Secret Person', 'email' => 'secret@92labs.test']);
-    $theirs->members()->attach($stranger, ['role' => 'member']);
+    $theirs->members()->attach($stranger);
+    $stranger->assignOrganizationRole($theirs, 'member');
 
-    $result = new $tool($user)->handle(toolRequest());
+    $result = new $tool($this->admin)->handle(toolRequest());
 
     expect($result)
         ->toContain('NotaryDash')
@@ -138,9 +124,9 @@ test('no read tool returns another organization data', function (string $tool) {
 ]);
 
 test('every read tool takes no arguments at all', function (string $tool) {
-    $user = memberOf(Organization::factory()->create());
+    $this->admin = memberOf(Organization::factory()->create());
 
-    expect(new $tool($user)->schema(new Illuminate\JsonSchema\JsonSchemaTypeFactory))->toBe([]);
+    expect(new $tool($this->admin)->schema(new Illuminate\JsonSchema\JsonSchemaTypeFactory))->toBe([]);
 })->with([
     DescribeOrganization::class,
     ListClients::class,
@@ -152,22 +138,23 @@ test('the tools follow the organization the user switches to', function () {
     $first = Organization::factory()->create(['name' => 'NotaryDash']);
     $second = Organization::factory()->create(['name' => '92 Labs']);
 
-    $user = memberOf($first);
-    $second->members()->attach($user, ['role' => 'member']);
+    $this->admin = memberOf($first);
+    $second->members()->attach($this->admin);
+    $this->admin->assignOrganizationRole($second, 'member');
 
     Client::factory()->heldBy($second)->create(['name' => 'Second Org Client']);
 
-    expect(new ListClients($user)->handle(toolRequest()))->not->toContain('Second Org Client');
+    expect(new ListClients($this->admin)->handle(toolRequest()))->not->toContain('Second Org Client');
 
-    $user->switchOrganization($second);
+    $this->admin->switchOrganization($second);
 
-    expect(new ListClients($user->refresh())->handle(toolRequest()))->toContain('Second Org Client');
+    expect(new ListClients($this->admin->refresh())->handle(toolRequest()))->toContain('Second Org Client');
 });
 
 test('a user with no current organization gets a plain explanation, not an error', function (string $tool) {
-    $user = User::factory()->create(['current_organization_id' => null]);
+    $this->admin = User::factory()->create(['current_organization_id' => null]);
 
-    expect(new $tool($user)->handle(toolRequest()))
+    expect(new $tool($this->admin)->handle(toolRequest()))
         ->toContain('not currently working in any organization');
 })->with([
     DescribeOrganization::class,
@@ -177,17 +164,17 @@ test('a user with no current organization gets a plain explanation, not an error
 ]);
 
 test('an empty organization says so rather than returning nothing', function () {
-    $organization = Organization::factory()->create(['name' => 'Fresh Org']);
-    $user = memberOf($organization);
+    $this->organization = Organization::factory()->create(['name' => 'Fresh Org']);
+    $this->admin = memberOf($this->organization);
 
-    expect(new ListClients($user)->handle(toolRequest()))->toBe('Fresh Org has no clients yet.');
-    expect(new ListTeams($user)->handle(toolRequest()))->toBe('Fresh Org has no teams yet.');
+    expect(new ListClients($this->admin)->handle(toolRequest()))->toBe('Fresh Org has no clients yet.');
+    expect(new ListTeams($this->admin)->handle(toolRequest()))->toBe('Fresh Org has no teams yet.');
 });
 
 test('the agent grants exactly the tools built so far', function () {
-    $user = memberOf(Organization::factory()->create());
+    $this->admin = memberOf(Organization::factory()->create());
 
-    $names = collect(new App\Ai\Agents\QuillAssistant($user)->tools())
+    $names = collect(new App\Ai\Agents\QuillAssistant($this->admin)->tools())
         ->map(fn (object $tool) => $tool->name())
         ->all();
 
@@ -201,13 +188,11 @@ test('the agent grants exactly the tools built so far', function () {
 });
 
 test('a removed member can no longer read the organization', function (string $tool) {
-    [$organization, $user] = organizationWith(OrganizationRole::Admin);
+    Client::factory()->heldBy($this->organization)->create(['name' => 'Acme Title']);
 
-    Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
+    $this->organization->members()->detach($this->admin);
 
-    $organization->members()->detach($user);
-
-    expect(new $tool($user->refresh())->handle(toolRequest()))
+    expect(new $tool($this->admin->refresh())->handle(toolRequest()))
         ->toContain('not currently working in any organization')
         ->not->toContain('Acme Title');
 })->with([
@@ -218,12 +203,10 @@ test('a removed member can no longer read the organization', function (string $t
 ]);
 
 test('a removed member cannot create a client', function () {
-    [$organization, $user] = organizationWith(OrganizationRole::Admin);
+    $this->organization->members()->detach($this->admin);
 
-    $organization->members()->detach($user);
-
-    $result = new App\Ai\Tools\CreateClient($user->refresh())->handle(toolRequest(['name' => 'Wayne Enterprises']));
+    $result = new App\Ai\Tools\CreateClient($this->admin->refresh())->handle(toolRequest(['name' => 'Wayne Enterprises']));
 
     expect($result)->toContain('not currently working in any organization');
-    expect($organization->clients()->count())->toBe(0);
+    expect($this->organization->clients()->count())->toBe(0);
 });

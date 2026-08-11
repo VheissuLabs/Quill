@@ -15,13 +15,24 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
 /** @mixin IdeHelperUser */
 
 #[UseFactory(UserFactory::class)]
 class User extends Authenticatable implements PasskeyUser
 {
-    use HasAssistantConversation, HasFactory, HasNotificationFeed, HasOrganizations, HasTeams, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasAssistantConversation, HasFactory, HasNotificationFeed, HasOrganizations, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /**
+     * Spatie scopes roles by a "team", which in Quill is the organization, so its
+     * `teams()` relation means "organizations I hold a role in" — a different
+     * thing from Quill's own teams. Ours keeps the name.
+     */
+    use HasRoles, HasTeams {
+        HasTeams::teams insteadof HasRoles;
+        HasRoles::teams as roleOrganizations;
+    }
 
     protected $guarded = [
         'id',

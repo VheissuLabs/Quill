@@ -2,15 +2,19 @@
 
 namespace App\Ai\Tools;
 
+use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\Concerns\ScopedToCurrentOrganization;
-use App\Enums\OrganizationRole;
+use App\Models\Organization;
 use App\Models\OrganizationMembership;
+use App\Models\User;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Laravel\Ai\Contracts\Tool;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Ai\Tools\Request;
 use Stringable;
 
-class ListContacts implements Tool
+class ListContacts implements AssistantTool
 {
     use ScopedToCurrentOrganization;
 
@@ -41,16 +45,18 @@ class ListContacts implements Tool
             return "{$organization->name} has no members yet.";
         }
 
+        $roles = $this->roleNamesByUser($organization);
+
         return $memberships
-            ->map(function (OrganizationMembership $membership): string {
+            ->map(function (OrganizationMembership $membership) use ($roles): string {
                 $user = $membership->user;
-                $role = $membership->role;
+                $role = $roles->get($user->id);
 
-                $kind = $role === OrganizationRole::Client
-                    ? 'contact for the client '.($membership->client->name ?? 'unknown')
-                    : 'works for the organization';
+                $kind = $membership->client_id === null
+                    ? 'works for the organization'
+                    : 'contact for the client '.($membership->client->name ?? 'unknown');
 
-                return "- {$user->name} <{$user->email}> — {$role->label()}, {$kind}";
+                return "- {$user->name} <{$user->email}> — ".Str::headline($role ?? 'no role').", {$kind}";
             })
             ->prepend("People in {$organization->name}:")
             ->join("\n");
@@ -60,5 +66,19 @@ class ListContacts implements Tool
     public function schema(JsonSchema $schema): array
     {
         return [];
+    }
+
+    /**
+     * One query for every member's role, rather than a scoped lookup per person.
+     *
+     * @return Collection<string, string>
+     */
+    protected function roleNamesByUser(Organization $organization): Collection
+    {
+        return DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.organization_id', $organization->id)
+            ->where('model_has_roles.model_type', (new User)->getMorphClass())
+            ->pluck('roles.name', 'model_has_roles.model_id');
     }
 }

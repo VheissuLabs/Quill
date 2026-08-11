@@ -13,11 +13,19 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
 
+pest()->beforeEach(function () {
+    $this->organization = Organization::factory()->create(['name' => 'NotaryDash']);
+    $this->admin = memberOf($this->organization, OrganizationRole::Admin);
+
+    $this->actingAs($this->admin);
+})->in('Feature/Assistant');
+
 function memberOf(Organization $organization, OrganizationRole $role = OrganizationRole::Owner): User
 {
     $user = User::factory()->create();
 
-    $organization->members()->attach($user, ['role' => $role->value]);
+    $organization->members()->attach($user);
+    $user->assignOrganizationRole($organization, $role);
     $user->switchOrganization($organization);
 
     return $user->refresh();
@@ -48,9 +56,10 @@ function contactFor(Client $client, string $name, ?string $email = null): User
     ]);
 
     $client->organization->members()->attach($contact, [
-        'role' => OrganizationRole::Client->value,
         'client_id' => $client->id,
     ]);
+
+    $contact->assignOrganizationRole($client->organization, OrganizationRole::Client);
 
     return $contact;
 }

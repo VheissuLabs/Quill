@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\OrganizationRole;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -34,12 +33,5 @@ class OrganizationMembership extends Pivot
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
-    }
-
-    protected function casts(): array
-    {
-        return [
-            'role' => OrganizationRole::class,
-        ];
     }
 }

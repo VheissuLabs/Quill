@@ -43,9 +43,10 @@ class ContactSeeder extends Seeder
                 ]);
 
                 $client->organization->members()->attach($contact, [
-                    'role' => OrganizationRole::Client->value,
                     'client_id' => $client->id,
                 ]);
+
+                $contact->assignOrganizationRole($client->organization, OrganizationRole::Client);
             }
         }
     }

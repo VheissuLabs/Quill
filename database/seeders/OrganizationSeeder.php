@@ -47,9 +47,8 @@ class OrganizationSeeder extends Seeder
                     ->create(['name' => $name]);
 
                 if (! $owner->is($user)) {
-                    $organization->members()->attach($user, [
-                        'role' => $spec['role']->value,
-                    ]);
+                    $organization->members()->attach($user);
+                    $user->assignOrganizationRole($organization, $spec['role']);
                 }
 
                 return $organization;

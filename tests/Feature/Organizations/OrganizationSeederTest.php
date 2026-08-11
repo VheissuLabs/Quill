@@ -41,7 +41,7 @@ test('the test user holds a different role in each organization', function () {
     foreach ($expected as $organizationName => $role) {
         $organization = Organization::where('name', $organizationName)->firstOrFail();
 
-        expect($user->organizationRole($organization))->toBe($role);
+        expect($user->organizationRoleName($organization))->toBe($role->value);
     }
 });
 
@@ -74,11 +74,11 @@ test('every seeded organization has members and a client contact', function () {
     expect(Organization::count())->toBe(3);
 
     Organization::each(function (Organization $organization) {
-        $roles = $organization->memberships->pluck('role');
+        $roles = $organization->members->map->organizationRoleName($organization);
 
-        expect($roles)->toContain(OrganizationRole::Owner);
-        expect($roles)->toContain(OrganizationRole::Client);
-        expect($roles->filter(fn (OrganizationRole $role) => $role === OrganizationRole::Member)->count())
+        expect($roles)->toContain(OrganizationRole::Owner->value);
+        expect($roles)->toContain(OrganizationRole::Client->value);
+        expect($roles->filter(fn (?string $role) => $role === OrganizationRole::Member->value)->count())
             ->toBeGreaterThanOrEqual(2);
     });
 });

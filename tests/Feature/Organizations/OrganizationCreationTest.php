@@ -18,7 +18,7 @@ test('the create organization action makes the user its owner', function () {
     $organization = app(CreateOrganization::class)->handle($user, 'NotaryDash');
 
     expect($organization->slug)->toBe('notarydash');
-    expect($user->organizationRole($organization))->toBe(OrganizationRole::Owner);
+    expect($user->organizationRoleName($organization))->toBe(OrganizationRole::Owner->value);
 });
 
 test('creating an organization switches the user into it', function () {

@@ -8,6 +8,7 @@ use App\Enums\OrganizationPermission;
 use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
+use App\Models\Role;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,7 +20,7 @@ trait HasOrganizations
     {
         return $this->belongsToMany(Organization::class, 'organization_members', 'user_id', 'organization_id')
             ->using(OrganizationMembership::class)
-            ->withPivot(['role'])
+            ->withPivot(['client_id'])
             ->withTimestamps();
     }
 
@@ -33,27 +34,49 @@ trait HasOrganizations
         return $this->organizations()->where('organizations.id', $organization->id)->exists();
     }
 
-    public function organizationRole(Organization $organization): ?OrganizationRole
+    public function assignOrganizationRole(Organization $organization, OrganizationRole|Role|string $role): void
     {
-        return $this->organizationMemberships()
+        $this->withinOrganization($organization, function () use ($role) {
+            $this->unsetRelation('roles');
+            $this->syncRoles([$role instanceof OrganizationRole ? $role->value : $role]);
+        });
+    }
+
+    public function organizationRole(Organization $organization): ?Role
+    {
+        return Role::query()
             ->where('organization_id', $organization->id)
-            ->first()
-            ?->role;
+            ->whereHas('users', fn ($query) => $query->whereKey($this->getKey()))
+            ->first();
+    }
+
+    public function organizationRoleName(Organization $organization): ?string
+    {
+        return $this->organizationRole($organization)?->name;
     }
 
     public function ownsOrganization(Organization $organization): bool
     {
-        return $this->organizationRole($organization) === OrganizationRole::Owner;
+        return $this->organizationRoleName($organization) === OrganizationRole::Owner->value;
     }
 
     public function isClientContact(Organization $organization): bool
     {
-        return $this->organizationRole($organization) === OrganizationRole::Client;
+        return $this->organizationRoleName($organization) === OrganizationRole::Client->value;
     }
 
     public function hasOrganizationPermission(Organization $organization, OrganizationPermission $permission): bool
     {
-        return $this->organizationRole($organization)?->hasPermission($permission) ?? false;
+        if (! $this->belongsToOrganization($organization)) {
+            return false;
+        }
+
+        return $this->withinOrganization($organization, function () use ($permission) {
+            $this->unsetRelation('roles');
+            $this->forgetCachedPermissions();
+
+            return $this->hasPermissionTo($permission->value);
+        });
     }
 
     public function currentOrganization(): BelongsTo
@@ -106,7 +129,7 @@ trait HasOrganizations
             id: $organization->id,
             name: $organization->name,
             slug: $organization->slug,
-            role: $role?->value,
+            role: $role?->name,
             roleLabel: $role?->label(),
             isCurrent: $this->isCurrentOrganization($organization),
         );
@@ -114,19 +137,63 @@ trait HasOrganizations
 
     public function toOrganizationPermissions(Organization $organization): OrganizationPermissions
     {
-        $role = $this->organizationRole($organization);
+        $granted = $this->organizationPermissionNames($organization);
 
         return new OrganizationPermissions(
-            canUpdateOrganization: $role?->hasPermission(OrganizationPermission::UpdateOrganization) ?? false,
-            canDeleteOrganization: $role?->hasPermission(OrganizationPermission::DeleteOrganization) ?? false,
-            canAddMember: $role?->hasPermission(OrganizationPermission::AddMember) ?? false,
-            canUpdateMember: $role?->hasPermission(OrganizationPermission::UpdateMember) ?? false,
-            canRemoveMember: $role?->hasPermission(OrganizationPermission::RemoveMember) ?? false,
-            canCreateInvitation: $role?->hasPermission(OrganizationPermission::CreateInvitation) ?? false,
-            canCancelInvitation: $role?->hasPermission(OrganizationPermission::CancelInvitation) ?? false,
-            canCreateClient: $role?->hasPermission(OrganizationPermission::CreateClient) ?? false,
-            canUpdateClient: $role?->hasPermission(OrganizationPermission::UpdateClient) ?? false,
-            canDeleteClient: $role?->hasPermission(OrganizationPermission::DeleteClient) ?? false,
+            canUpdateOrganization: $granted->contains(OrganizationPermission::UpdateOrganization->value),
+            canDeleteOrganization: $granted->contains(OrganizationPermission::DeleteOrganization->value),
+            canAddMember: $granted->contains(OrganizationPermission::AddMember->value),
+            canUpdateMember: $granted->contains(OrganizationPermission::UpdateMember->value),
+            canRemoveMember: $granted->contains(OrganizationPermission::RemoveMember->value),
+            canCreateInvitation: $granted->contains(OrganizationPermission::CreateInvitation->value),
+            canCancelInvitation: $granted->contains(OrganizationPermission::CancelInvitation->value),
+            canCreateClient: $granted->contains(OrganizationPermission::CreateClient->value),
+            canUpdateClient: $granted->contains(OrganizationPermission::UpdateClient->value),
+            canDeleteClient: $granted->contains(OrganizationPermission::DeleteClient->value),
         );
+    }
+
+    /**
+     * Read the whole permission set in one pass rather than a query per flag.
+     *
+     * @return Collection<int, string>
+     */
+    public function organizationPermissionNames(Organization $organization): Collection
+    {
+        if (! $this->belongsToOrganization($organization)) {
+            return collect();
+        }
+
+        return Role::query()
+            ->where('organization_id', $organization->id)
+            ->whereHas('users', fn ($query) => $query->whereKey($this->getKey()))
+            ->with('permissions')
+            ->get()
+            ->flatMap(fn (Role $role) => $role->permissions->pluck('name'))
+            ->unique()
+            ->values();
+    }
+
+    /**
+     * Every role operation reads the globally-set team id, so it is set for the
+     * duration of the callback and restored afterwards. Without restoring it, one
+     * permission check would silently change the scope of the next.
+     *
+     * @template TReturn
+     *
+     * @param callable(): TReturn $callback
+     * @return TReturn
+     */
+    protected function withinOrganization(Organization $organization, callable $callback): mixed
+    {
+        $previous = getPermissionsTeamId();
+
+        setPermissionsTeamId($organization->id);
+
+        try {
+            return $callback();
+        } finally {
+            setPermissionsTeamId($previous);
+        }
     }
 }

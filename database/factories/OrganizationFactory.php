@@ -29,10 +29,7 @@ class OrganizationFactory extends Factory
     public function withOwner(?User $owner = null): static
     {
         return $this->afterCreating(function (Organization $organization) use ($owner) {
-            $organization->members()->attach(
-                $owner ?? User::factory()->create(),
-                ['role' => OrganizationRole::Owner->value],
-            );
+            $this->addMember($organization, $owner ?? User::factory()->create(), OrganizationRole::Owner);
         });
     }
 
@@ -42,9 +39,7 @@ class OrganizationFactory extends Factory
             User::factory()
                 ->count($count)
                 ->create()
-                ->each(fn (User $user) => $organization->members()->attach($user, [
-                    'role' => $role->value,
-                ]));
+                ->each(fn (User $user) => $this->addMember($organization, $user, $role));
         });
     }
 
@@ -53,13 +48,25 @@ class OrganizationFactory extends Factory
         return $this->afterCreating(function (Organization $organization) use ($client, $contact) {
             $client ??= Client::factory()->heldBy($organization)->create();
 
-            $organization->members()->attach(
+            $this->addMember(
+                $organization,
                 $contact ?? User::factory()->create(),
-                [
-                    'role' => OrganizationRole::Client->value,
-                    'client_id' => $client->id,
-                ],
+                OrganizationRole::Client,
+                $client,
             );
         });
+    }
+
+    /**
+     * Membership records who belongs; the role lives in Spatie, scoped to the
+     * organization. `client_id` is only ever set alongside the Client role.
+     */
+    protected function addMember(Organization $organization, User $user, OrganizationRole $role, ?Client $client = null): void
+    {
+        $organization->members()->attach($user, [
+            'client_id' => $client?->id,
+        ]);
+
+        $user->assignOrganizationRole($organization, $role);
     }
 }

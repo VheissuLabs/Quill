@@ -101,7 +101,9 @@ test('the sidebar receives the feed and the unread count on every page', functio
     $user = User::factory()->create();
     $organization = Organization::factory()->create(['name' => 'NotaryDash']);
 
-    $organization->members()->attach($user, ['role' => 'owner']);
+    $organization->members()->attach($user);
+
+    $user->assignOrganizationRole($organization, 'owner');
     $user->switchOrganization($organization);
 
     storeNotification($user, 'Jen invited you to Development', 'NotaryDash');

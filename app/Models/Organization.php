@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Concerns\GeneratesUniqueSlugs;
 use App\Enums\OrganizationRole;
+use App\Observers\OrganizationObserver;
 use Database\Factories\OrganizationFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /** @mixin IdeHelperOrganization */
 
 #[UseFactory(OrganizationFactory::class)]
+#[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model
 {
     use GeneratesUniqueSlugs, HasFactory, HasUuids, SoftDeletes;
@@ -28,10 +31,24 @@ class Organization extends Model
         'deleted_at',
     ];
 
+    public function roles(): HasMany
+    {
+        return $this->hasMany(Role::class);
+    }
+
+    public function membersWithRole(OrganizationRole|string $role): BelongsToMany
+    {
+        $name = $role instanceof OrganizationRole ? $role->value : $role;
+
+        return $this->members()->whereIn(
+            'users.id',
+            $this->roles()->where('name', $name)->first()?->users()->pluck('users.id') ?? []
+        );
+    }
+
     public function owner(): ?Model
     {
-        return $this->members()
-            ->wherePivot('role', OrganizationRole::Owner->value)
+        return $this->membersWithRole(OrganizationRole::Owner)
             ->first();
     }
 
@@ -39,7 +56,7 @@ class Organization extends Model
     {
         return $this->belongsToMany(User::class, 'organization_members', 'organization_id', 'user_id')
             ->using(OrganizationMembership::class)
-            ->withPivot(['role', 'client_id'])
+            ->withPivot(['client_id'])
             ->withTimestamps();
     }
 

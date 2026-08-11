@@ -2,13 +2,13 @@
 
 namespace App\Ai\Tools;
 
+use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\Concerns\ScopedToCurrentOrganization;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 use Stringable;
 
-class DescribeOrganization implements Tool
+class DescribeOrganization implements AssistantTool
 {
     use ScopedToCurrentOrganization;
 

@@ -2,16 +2,16 @@
 
 namespace App\Ai\Tools;
 
+use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\Concerns\ScopedToCurrentOrganization;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Team;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Tools\Request;
 use Stringable;
 
-class ListTeams implements Tool
+class ListTeams implements AssistantTool
 {
     use ScopedToCurrentOrganization;
 

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueSlugs;
-use App\Enums\OrganizationRole;
 use App\Observers\ParentIntegrityObserver;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -50,8 +49,7 @@ class Client extends Model
 
     public function contacts(): HasMany
     {
-        return $this->hasMany(OrganizationMembership::class)
-            ->where('role', OrganizationRole::Client->value);
+        return $this->hasMany(OrganizationMembership::class);
     }
 
     public function getRouteKeyName(): string

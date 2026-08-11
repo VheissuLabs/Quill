@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\CreateClient;
 use App\Ai\Tools\DescribeOrganization;
 use App\Ai\Tools\ListClients;
@@ -14,7 +15,6 @@ use Laravel\Ai\Concerns\RemembersConversations;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
 use Laravel\Ai\Contracts\HasTools;
-use Laravel\Ai\Contracts\Tool;
 use Laravel\Ai\Promptable;
 
 #[Timeout(120)]
@@ -77,7 +77,7 @@ class QuillAssistant implements Agent, Conversational, HasTools
         PROMPT;
     }
 
-    /** @return iterable<Tool> */
+    /** @return iterable<AssistantTool> */
     public function tools(): iterable
     {
         return [

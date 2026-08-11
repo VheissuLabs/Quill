@@ -5,6 +5,8 @@ use App\Models\Organization;
 use Laravel\Ai\Models\Conversation;
 
 test('a guest cannot reach the assistant', function () {
+    auth()->logout();
+
     $this->get(route('assistant'))->assertRedirect(route('login'));
     $this->post(route('assistant.messages.store'), ['message' => 'Hi'])
         ->assertRedirect(route('login'));
@@ -139,7 +141,9 @@ test('the prompt reflects the organization the user switched to', function () {
     $user = userInOrganization('NotaryDash');
     $other = Organization::factory()->create(['name' => '92 Labs']);
 
-    $other->members()->attach($user, ['role' => 'member']);
+    $other->members()->attach($user);
+
+    $user->assignOrganizationRole($other, 'member');
     $user->switchOrganization($other);
 
     expect(new QuillAssistant($user->refresh())->instructions())

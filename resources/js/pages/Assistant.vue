@@ -3,6 +3,7 @@
     import { Send } from '@lucide/vue'
     import { nextTick, ref, useTemplateRef, watch } from 'vue'
     import { Button } from '@/components/ui/button'
+    import { Textarea } from '@/components/ui/textarea'
     import { assistant } from '@/routes'
     import { store as sendAssistantMessage } from '@/routes/assistant/messages'
     import type { AssistantMessage } from '@/types'
@@ -22,22 +23,6 @@
     const isStreaming = ref(false)
     const error = ref<string | null>(null)
     const transcript = useTemplateRef<HTMLElement>('transcript')
-    const input = useTemplateRef<HTMLTextAreaElement>('input')
-
-    /**
-     * Grow the composer with its content. `max-h-40` caps it, at which point the
-     * textarea's own scrollbar takes over.
-     */
-    watch(draft, async () => {
-        await nextTick()
-
-        const element = input.value
-
-        if (element) {
-            element.style.height = 'auto'
-            element.style.height = `${element.scrollHeight}px`
-        }
-    })
 
     const scrollToBottom = async (): Promise<void> => {
         await nextTick()
@@ -46,12 +31,6 @@
 
     watch(() => messages.value.length, scrollToBottom)
 
-    /**
-     * Reads the SSE body from the streaming route, appending each `text_delta` to
-     * the reply in place. Written against `fetch` rather than an Inertia visit
-     * because an Inertia response swaps page props in one shot, which cannot
-     * express token-by-token output.
-     */
     const send = async (): Promise<void> => {
         const message = draft.value.trim()
 
@@ -92,7 +71,9 @@
             })
 
             if (!response.ok || response.body === null) {
-                throw new Error(`The assistant responded with ${response.status}.`)
+                throw new Error(
+                    `The assistant responded with ${response.status}.`,
+                )
             }
 
             const reader = response.body
@@ -110,11 +91,6 @@
 
                 buffer += value
 
-                /**
-                 * SSE frames are separated by a blank line. The final chunk of a
-                 * read may be a partial frame, so anything after the last
-                 * separator stays in the buffer for the next pass.
-                 */
                 const frames = buffer.split('\n\n')
                 buffer = frames.pop() ?? ''
 
@@ -144,11 +120,6 @@
                 throw new Error('The assistant returned an empty reply.')
             }
         } catch (thrown) {
-            /**
-             * The transcript is deliberately left intact. The message was already
-             * persisted server-side, so discarding it here would show the user
-             * less than the database holds.
-             */
             error.value =
                 thrown instanceof Error
                     ? thrown.message
@@ -196,7 +167,9 @@
                     :data-test="`assistant-message-${message.role}`"
                     class="flex"
                     :class="
-                        message.role === 'user' ? 'justify-end' : 'justify-start'
+                        message.role === 'user'
+                            ? 'justify-end'
+                            : 'justify-start'
                     "
                 >
                     <div
@@ -235,18 +208,19 @@
                     class="rounded-2xl border border-input bg-background shadow-xs focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50"
                     @submit.prevent="send"
                 >
-                    <textarea
-                        ref="input"
+                    <Textarea
                         v-model="draft"
                         data-test="assistant-input"
                         rows="1"
                         placeholder="Ask the assistant…"
                         :disabled="isStreaming"
-                        class="max-h-40 w-full resize-none bg-transparent px-4 pt-3 text-sm outline-none disabled:opacity-50"
+                        class="max-h-40 resize-none border-0 bg-transparent px-4 pt-3 text-sm shadow-none focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
                         @keydown="onKeydown"
                     />
 
-                    <div class="flex items-center justify-between px-3 pb-3">
+                    <div
+                        class="flex items-center justify-between pr-3 pb-3 pl-4"
+                    >
                         <span class="text-xs text-muted-foreground">
                             Enter to send, Shift + Enter for a new line
                         </span>
