@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\PresenceLookup;
+use App\Support\ReverbPresenceLookup;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -10,7 +12,10 @@ use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        $this->app->singleton(PresenceLookup::class, ReverbPresenceLookup::class);
+    }
 
     public function boot(): void
     {
