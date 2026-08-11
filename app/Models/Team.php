@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Concerns\GeneratesUniqueTeamSlugs;
+use App\Concerns\GeneratesUniqueSlugs;
 use App\Enums\TeamRole;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[UseFactory(TeamFactory::class)]
 class Team extends Model
 {
-    use GeneratesUniqueTeamSlugs, HasFactory, HasUuids, SoftDeletes;
+    use GeneratesUniqueSlugs, HasFactory, HasUuids, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -63,13 +63,13 @@ class Team extends Model
 
         static::creating(function (Team $team) {
             if (empty($team->slug)) {
-                $team->slug = static::generateUniqueTeamSlug($team->name);
+                $team->slug = static::generateUniqueSlug($team->name);
             }
         });
 
         static::updating(function (Team $team) {
             if ($team->isDirty('name')) {
-                $team->slug = static::generateUniqueTeamSlug($team->name, $team->id);
+                $team->slug = static::generateUniqueSlug($team->name, $team->id);
             }
         });
     }

@@ -4,9 +4,9 @@ namespace App\Concerns;
 
 use Illuminate\Support\Str;
 
-trait GeneratesUniqueTeamSlugs
+trait GeneratesUniqueSlugs
 {
-    protected static function generateUniqueTeamSlug(string $name, ?string $excludeId = null): string
+    protected static function generateUniqueSlug(string $name, ?string $excludeId = null): string
     {
         $defaultSlug = Str::slug($name);
 
