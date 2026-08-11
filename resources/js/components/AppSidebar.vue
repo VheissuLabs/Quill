@@ -5,6 +5,7 @@
     import AppLogo from '@/components/AppLogo.vue'
     import NavMain from '@/components/NavMain.vue'
     import NavUser from '@/components/NavUser.vue'
+    import NotificationBell from '@/components/NotificationBell.vue'
     import OrganizationSwitcher from '@/components/OrganizationSwitcher.vue'
     import TeamSwitcher from '@/components/TeamSwitcher.vue'
     import {
@@ -63,6 +64,11 @@
         </SidebarContent>
 
         <SidebarFooter>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <NotificationBell />
+                </SidebarMenuItem>
+            </SidebarMenu>
             <NavUser />
         </SidebarFooter>
     </Sidebar>

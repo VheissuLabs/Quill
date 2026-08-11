@@ -1,0 +1,139 @@
+<script setup lang="ts">
+    import { usePage } from '@inertiajs/vue3'
+    import { Bell } from '@lucide/vue'
+    import { computed } from 'vue'
+    import { Button } from '@/components/ui/button'
+    import {
+        DropdownMenu,
+        DropdownMenuContent,
+        DropdownMenuItem,
+        DropdownMenuLabel,
+        DropdownMenuSeparator,
+        DropdownMenuTrigger,
+    } from '@/components/ui/dropdown-menu'
+    import type { NotificationGroup } from '@/types'
+
+    const page = usePage()
+
+    const notifications = computed(() => page.props.notifications ?? [])
+    const unreadCount = computed(() => page.props.unreadNotificationCount ?? 0)
+
+    /**
+     * Grouped by the organization each notification belongs to, mirroring how the
+     * team switcher groups by client. Order follows the feed, which is newest
+     * first, so the organization with the most recent activity leads.
+     */
+    const groups = computed<NotificationGroup[]>(() => {
+        const grouped = new Map<string, NotificationGroup>()
+
+        for (const notification of notifications.value) {
+            const label = notification.organizationName ?? 'Other'
+
+            if (!grouped.has(label)) {
+                grouped.set(label, { label, notifications: [] })
+            }
+
+            grouped.get(label)!.notifications.push(notification)
+        }
+
+        return [...grouped.values()]
+    })
+</script>
+
+<template>
+    <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+            <Button
+                data-test="notification-bell-trigger"
+                variant="ghost"
+                class="w-full justify-start px-2 has-[>svg]:px-2 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+                <span class="relative flex shrink-0 items-center">
+                    <Bell class="size-4" />
+                    <span
+                        v-if="unreadCount > 0"
+                        data-test="notification-bell-dot"
+                        class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary ring-2 ring-sidebar"
+                    />
+                </span>
+
+                <span
+                    class="truncate group-data-[collapsible=icon]:hidden"
+                    :class="
+                        unreadCount > 0
+                            ? 'font-medium'
+                            : 'text-muted-foreground'
+                    "
+                >
+                    Notifications
+                </span>
+
+                <span
+                    v-if="unreadCount > 0"
+                    data-test="notification-bell-count"
+                    class="ml-auto rounded-md bg-sidebar-accent px-1.5 py-0.5 text-xs font-medium group-data-[collapsible=icon]:hidden"
+                >
+                    {{ unreadCount }}
+                </span>
+            </Button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent
+            class="w-(--reka-dropdown-menu-trigger-width) min-w-80 rounded-lg"
+            side="right"
+            align="end"
+            :side-offset="4"
+        >
+            <DropdownMenuLabel
+                class="flex items-center justify-between text-xs text-muted-foreground"
+            >
+                <span>Notifications</span>
+                <span v-if="unreadCount > 0">{{ unreadCount }} unread</span>
+            </DropdownMenuLabel>
+
+            <template v-if="groups.length > 0">
+                <template v-for="(group, index) in groups" :key="group.label">
+                    <DropdownMenuSeparator v-if="index > 0" />
+                    <DropdownMenuLabel
+                        data-test="notification-group"
+                        class="text-xs text-muted-foreground"
+                    >
+                        {{ group.label }}
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem
+                        v-for="notification in group.notifications"
+                        :key="notification.id"
+                        data-test="notification-item"
+                        class="cursor-default items-start gap-2 p-2"
+                    >
+                        <span
+                            class="mt-1.5 size-1.5 shrink-0 rounded-full"
+                            :class="
+                                notification.isRead
+                                    ? 'bg-transparent'
+                                    : 'bg-primary'
+                            "
+                        />
+                        <span class="flex-1 text-sm leading-snug">
+                            {{ notification.title }}
+                        </span>
+                        <span
+                            class="shrink-0 text-xs text-muted-foreground"
+                            :title="notification.createdAtDiff"
+                        >
+                            {{ notification.createdAtDiff }}
+                        </span>
+                    </DropdownMenuItem>
+                </template>
+            </template>
+
+            <DropdownMenuLabel
+                v-else
+                data-test="notification-empty"
+                class="py-6 text-center text-xs font-normal text-muted-foreground"
+            >
+                Nothing yet
+            </DropdownMenuLabel>
+        </DropdownMenuContent>
+    </DropdownMenu>
+</template>

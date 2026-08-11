@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\PresenceLookup;
 use App\Support\ReverbPresenceLookup;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -14,7 +15,14 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(PresenceLookup::class, ReverbPresenceLookup::class);
+        $this->app->singleton(
+            PresenceLookup::class,
+            ReverbPresenceLookup::class
+        );
+
+        DevCommands::except(
+            'server',
+        );
     }
 
     public function boot(): void
