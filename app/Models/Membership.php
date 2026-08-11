@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\TeamRole;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class Membership extends Pivot
 {
-    public $incrementing = true;
+    use HasUuids;
 
     protected $table = 'team_members';
 
