@@ -2,50 +2,7 @@
 
 use App\Ai\Agents\QuillAssistant;
 use App\Models\Organization;
-use App\Models\User;
-use Illuminate\Support\Str;
 use Laravel\Ai\Models\Conversation;
-
-/**
- * Join the `text_delta` frames out of an SSE body, the way the chat window does.
- */
-function assistantDeltas(string $stream): string
-{
-    return collect(explode("\n\n", $stream))
-        ->map(fn (string $frame) => trim(Str::after($frame, 'data: ')))
-        ->filter(fn (string $payload) => $payload !== '' && $payload !== '[DONE]')
-        ->map(fn (string $payload) => json_decode($payload, true))
-        ->where('type', 'text_delta')
-        ->pluck('delta')
-        ->join('');
-}
-
-/**
- * Post a message and drain the stream.
- *
- * Draining matters: the conversation is persisted as the generator runs, so a
- * stream nobody reads is a conversation nobody stored.
- */
-function sendToAssistant(User $user, string $message): string
-{
-    $response = test()->actingAs($user)
-        ->post(route('assistant.messages.store'), ['message' => $message]);
-
-    $response->assertOk();
-
-    return $response->streamedContent();
-}
-
-function assistantUser(string $organizationName = 'NotaryDash'): User
-{
-    $user = User::factory()->create();
-    $organization = Organization::factory()->create(['name' => $organizationName]);
-
-    $organization->members()->attach($user, ['role' => 'owner']);
-    $user->switchOrganization($organization);
-
-    return $user->refresh();
-}
 
 test('a guest cannot reach the assistant', function () {
     $this->get(route('assistant'))->assertRedirect(route('login'));
@@ -55,7 +12,7 @@ test('a guest cannot reach the assistant', function () {
 
 test('the assistant page renders with an empty transcript', function () {
     $this
-        ->actingAs(assistantUser())
+        ->actingAs(userInOrganization())
         ->get(route('assistant'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
@@ -68,7 +25,7 @@ test('sending a message streams a reply', function () {
     QuillAssistant::fake(['Ready when you are.']);
 
     $response = $this
-        ->actingAs(assistantUser())
+        ->actingAs(userInOrganization())
         ->post(route('assistant.messages.store'), ['message' => 'Hello?']);
 
     $response->assertOk();
@@ -88,7 +45,7 @@ test('sending a message streams a reply', function () {
 test('a message is required and bounded', function () {
     QuillAssistant::fake();
 
-    $user = assistantUser();
+    $user = userInOrganization();
 
     $this->actingAs($user)
         ->post(route('assistant.messages.store'), ['message' => ''])
@@ -113,7 +70,7 @@ test('the transcript survives a reload', function () {
         default => 'Unexpected prompt.',
     });
 
-    $user = assistantUser();
+    $user = userInOrganization();
 
     sendToAssistant($user, 'First question');
     sendToAssistant($user, 'Second question');
@@ -134,7 +91,7 @@ test('the transcript survives a reload', function () {
 test('a second message continues the same conversation', function () {
     QuillAssistant::fake();
 
-    $user = assistantUser();
+    $user = userInOrganization();
 
     sendToAssistant($user, 'First');
     sendToAssistant($user, 'Second');
@@ -145,8 +102,8 @@ test('a second message continues the same conversation', function () {
 test('one user never sees another user transcript', function () {
     QuillAssistant::fake(['A private answer.']);
 
-    $owner = assistantUser();
-    $stranger = assistantUser('92 Labs');
+    $owner = userInOrganization();
+    $stranger = userInOrganization('92 Labs');
 
     sendToAssistant($owner, 'Something confidential');
 
@@ -163,7 +120,7 @@ test('one user never sees another user transcript', function () {
 test('conversations are stored against the uuid participant, not a truncated key', function () {
     QuillAssistant::fake(['Stored.']);
 
-    $user = assistantUser();
+    $user = userInOrganization();
 
     sendToAssistant($user, 'Store this');
 
@@ -174,7 +131,7 @@ test('conversations are stored against the uuid participant, not a truncated key
 })->note('The published migration typed participant_id as a bigint, which would collapse every UUID to 0 on MySQL.');
 
 test('the prompt names the current organization and forbids inventing data', function () {
-    $instructions = new QuillAssistant(assistantUser())->instructions();
+    $instructions = new QuillAssistant(userInOrganization())->instructions();
 
     expect($instructions)
         ->toContain('NotaryDash')
@@ -183,7 +140,7 @@ test('the prompt names the current organization and forbids inventing data', fun
 })->note('The tools cannot stop the model answering from imagination; only the prompt can.');
 
 test('the prompt reflects the organization the user switched to', function () {
-    $user = assistantUser('NotaryDash');
+    $user = userInOrganization('NotaryDash');
     $other = Organization::factory()->create(['name' => '92 Labs']);
 
     $other->members()->attach($user, ['role' => 'member']);

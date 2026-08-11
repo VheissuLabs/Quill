@@ -4,42 +4,18 @@ use App\Ai\Tools\DescribeOrganization;
 use App\Ai\Tools\ListClients;
 use App\Ai\Tools\ListContacts;
 use App\Ai\Tools\ListTeams;
+use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Team;
 use App\Models\User;
-use Laravel\Ai\Tools\Request;
-
-function toolRequest(): Request
-{
-    return new Request([]);
-}
-
-function memberOf(Organization $organization, string $role = 'owner'): User
-{
-    $user = User::factory()->create();
-
-    $organization->members()->attach($user, ['role' => $role]);
-    $user->switchOrganization($organization);
-
-    return $user->refresh();
-}
 
 test('describe_organization reports the organization and the asker role', function () {
-    $organization = Organization::factory()->create(['name' => 'NotaryDash']);
-    $user = memberOf($organization, 'admin');
+    [$organization, $user] = organizationWith(OrganizationRole::Admin);
 
-    Client::factory()->for($organization)->create([
-        'name' => 'Acme Title',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
 
-    Team::factory()->for($organization)->create([
-        'name' => 'Delivery',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    Team::factory()->heldBy($organization)->create(['name' => 'Delivery']);
 
     $result = new DescribeOrganization($user)->handle(toolRequest());
 
@@ -51,26 +27,13 @@ test('describe_organization reports the organization and the asker role', functi
 })->note('Names, not just counts: a bare number is all a model can relay if that is all it is given.');
 
 test('list_clients says how each client is held', function () {
-    $organization = Organization::factory()->create(['name' => 'NotaryDash']);
-    $user = memberOf($organization);
+    [$organization, $user] = organizationWith();
 
-    $team = Team::factory()->for($organization)->create([
-        'name' => 'Delivery',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    $team = Team::factory()->heldBy($organization)->create(['name' => 'Delivery']);
 
-    Client::factory()->for($organization)->create([
-        'name' => 'Acme Title',
-        'parent_type' => Team::class,
-        'parent_id' => $team->id,
-    ]);
+    Client::factory()->heldBy($team)->create(['name' => 'Acme Title']);
 
-    Client::factory()->for($organization)->create([
-        'name' => 'Harbor Legal',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    Client::factory()->heldBy($organization)->create(['name' => 'Harbor Legal']);
 
     $result = new ListClients($user)->handle(toolRequest());
 
@@ -80,26 +43,13 @@ test('list_clients says how each client is held', function () {
 });
 
 test('list_teams says what each team belongs to', function () {
-    $organization = Organization::factory()->create(['name' => 'NotaryDash']);
-    $user = memberOf($organization);
+    [$organization, $user] = organizationWith();
 
-    $client = Client::factory()->for($organization)->create([
-        'name' => 'Acme Title',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    $client = Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
 
-    Team::factory()->for($organization)->create([
-        'name' => 'Acme Dev',
-        'parent_type' => Client::class,
-        'parent_id' => $client->id,
-    ]);
+    Team::factory()->heldBy($client)->create(['name' => 'Acme Dev']);
 
-    Team::factory()->for($organization)->create([
-        'name' => 'Delivery',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    Team::factory()->heldBy($organization)->create(['name' => 'Delivery']);
 
     $result = new ListTeams($user)->handle(toolRequest());
 
@@ -109,21 +59,11 @@ test('list_teams says what each team belongs to', function () {
 });
 
 test('list_contacts names the client each contact represents', function () {
-    $organization = Organization::factory()->create(['name' => 'NotaryDash']);
-    $owner = memberOf($organization);
+    [$organization, $owner] = organizationWith();
 
-    $client = Client::factory()->for($organization)->create([
-        'name' => 'Acme Title',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    $client = Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
 
-    $contact = User::factory()->create(['name' => 'Lucy Client', 'email' => 'lucy@acme.test']);
-
-    $organization->members()->attach($contact, [
-        'role' => 'client',
-        'client_id' => $client->id,
-    ]);
+    contactFor($client, 'Lucy Client', 'lucy@acme.test');
 
     $result = new ListContacts($owner)->handle(toolRequest());
 
@@ -133,25 +73,13 @@ test('list_contacts names the client each contact represents', function () {
 })->note('Without the client name the assistant can only say a contact exists somewhere.');
 
 test('list_clients names the contacts at each client', function () {
-    $organization = Organization::factory()->create(['name' => 'NotaryDash']);
-    $owner = memberOf($organization);
+    [$organization, $owner] = organizationWith();
 
-    $withContacts = Client::factory()->for($organization)->create([
-        'name' => 'Acme Title',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    $withContacts = Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
 
-    Client::factory()->for($organization)->create([
-        'name' => 'Harbor Escrow',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    Client::factory()->heldBy($organization)->create(['name' => 'Harbor Escrow']);
 
-    $organization->members()->attach(
-        User::factory()->create(['name' => 'Lucy Client', 'email' => 'lucy@acme.test']),
-        ['role' => 'client', 'client_id' => $withContacts->id],
-    );
+    contactFor($withContacts, 'Lucy Client', 'lucy@acme.test');
 
     $result = new ListClients($owner)->handle(toolRequest());
 
@@ -161,38 +89,22 @@ test('list_clients names the contacts at each client', function () {
 })->note('Answers "who do I talk to at this client" in one tool call.');
 
 test('a contact at one client is not reported against another', function () {
-    $organization = Organization::factory()->create(['name' => 'NotaryDash']);
-    $owner = memberOf($organization);
+    [$organization, $owner] = organizationWith();
 
-    $acme = Client::factory()->for($organization)->create([
-        'name' => 'Acme Title',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    $acme = Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
 
-    $harbor = Client::factory()->for($organization)->create([
-        'name' => 'Harbor Escrow',
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    $harbor = Client::factory()->heldBy($organization)->create(['name' => 'Harbor Escrow']);
 
-    $organization->members()->attach(
-        User::factory()->create(['name' => 'Lucy Acme']),
-        ['role' => 'client', 'client_id' => $acme->id],
-    );
+    contactFor($acme, 'Lucy Acme');
 
     expect($acme->contacts()->with('user')->get()->pluck('user.name')->all())->toBe(['Lucy Acme']);
     expect($harbor->contacts()->count())->toBe(0);
 });
 
 test('staff are never counted as a client contact', function () {
-    $organization = Organization::factory()->create();
-    $owner = memberOf($organization);
+    [$organization, $owner] = organizationWith();
 
-    $client = Client::factory()->for($organization)->create([
-        'parent_type' => Organization::class,
-        'parent_id' => $organization->id,
-    ]);
+    $client = Client::factory()->heldBy($organization)->create();
 
     expect($client->contacts()->count())->toBe(0);
 })->note('contacts() filters on the Client role, not merely on client_id being set.');
@@ -203,17 +115,9 @@ test('no read tool returns another organization data', function (string $tool) {
 
     $user = memberOf($mine);
 
-    Client::factory()->for($theirs)->create([
-        'name' => 'Secret Client',
-        'parent_type' => Organization::class,
-        'parent_id' => $theirs->id,
-    ]);
+    Client::factory()->heldBy($theirs)->create(['name' => 'Secret Client']);
 
-    Team::factory()->for($theirs)->create([
-        'name' => 'Secret Team',
-        'parent_type' => Organization::class,
-        'parent_id' => $theirs->id,
-    ]);
+    Team::factory()->heldBy($theirs)->create(['name' => 'Secret Team']);
 
     $stranger = User::factory()->create(['name' => 'Secret Person', 'email' => 'secret@92labs.test']);
     $theirs->members()->attach($stranger, ['role' => 'member']);
@@ -251,11 +155,7 @@ test('the tools follow the organization the user switches to', function () {
     $user = memberOf($first);
     $second->members()->attach($user, ['role' => 'member']);
 
-    Client::factory()->for($second)->create([
-        'name' => 'Second Org Client',
-        'parent_type' => Organization::class,
-        'parent_id' => $second->id,
-    ]);
+    Client::factory()->heldBy($second)->create(['name' => 'Second Org Client']);
 
     expect(new ListClients($user)->handle(toolRequest()))->not->toContain('Second Org Client');
 
