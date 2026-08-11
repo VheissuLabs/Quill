@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Client;
 use App\Models\Organization;
+use App\Models\Team;
 use Illuminate\Database\Seeder;
 
 class ClientSeeder extends Seeder
@@ -11,6 +12,10 @@ class ClientSeeder extends Seeder
     /**
      * The companies each organization does work for. Named rather than faked so
      * the seeded app reads like the real thing when clicking through it.
+     *
+     * NotaryDash holds its clients through a "Delivery" team, which is the
+     * org-team-owns-clients shape; the other two hold theirs directly. Both
+     * arrangements are legal and the seed shows each.
      *
      * @var array<string, array<int, string>>
      */
@@ -25,8 +30,12 @@ class ClientSeeder extends Seeder
         foreach ($this->clients as $organizationName => $clientNames) {
             $organization = Organization::where('name', $organizationName)->firstOrFail();
 
+            $parent = $organizationName === 'NotaryDash'
+                ? Team::factory()->heldBy($organization)->create(['name' => 'Delivery'])
+                : $organization;
+
             foreach ($clientNames as $name) {
-                Client::factory()->for($organization)->create(['name' => $name]);
+                Client::factory()->heldBy($parent)->create(['name' => $name]);
             }
         }
     }

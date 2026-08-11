@@ -24,7 +24,10 @@ class TeamController extends Controller
         $user = $request->user();
 
         return Inertia::render('teams/Index', [
-            'teams' => $user->toUserTeams(includeCurrent: true),
+            'teams' => $user->toUserTeams(
+                includeCurrent: true,
+                organization: $user->currentOrganization,
+            ),
         ]);
     }
 

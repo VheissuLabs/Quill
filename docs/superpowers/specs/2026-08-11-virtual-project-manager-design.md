@@ -95,27 +95,31 @@ Organization  (NotaryDash)
 
 ```php
 // Team
-organization_id            // the root organization
-owner_type / owner_id      // morphTo: Organization | Client
+organization_id             // the root organization
+parent_type / parent_id     // morphTo: Organization | Client
 
 // Client
-organization_id            // the root organization
-owner_type / owner_id      // morphTo: Organization | Team
+organization_id             // the root organization
+parent_type / parent_id     // morphTo: Organization | Team
 ```
 
-The `owner` expresses **structure**; `organization_id` expresses **tenancy**. Both
+The relation is `parent`, not `owner`: `Team::owner()` and `Organization::owner()`
+already mean *the user holding the Owner role*. The structural container and the
+human owner are different ideas and must not share a name.
+
+The `parent` expresses **structure**; `organization_id` expresses **tenancy**. Both
 are needed. Without `organization_id`, "every client in this organization" means
 walking an arbitrarily deep owner chain on every page load; with it, scoping is a
 plain `where` and the morph is free to describe any nesting.
 
 This is not the redundancy rejected for `Project`. There, `owner` is always a
 `Client` or a `Team`, never the organization, so no column duplicates it. Here the
-organization is one of the candidate owners, so the two columns say different
-things: `owner` says *who directly contains this*, `organization_id` says *whose
+organization is one of the candidate parents, so the two columns say different
+things: `parent` says *who directly contains this*, `organization_id` says *whose
 tenant it is*.
 
-**An observer enforces the invariants the schema cannot:** an owner must belong to
-the same organization, and the owner chain must remain a tree. Nothing in the
+**An observer enforces the invariants the schema cannot:** a parent must belong to
+the same organization, and the parent chain must remain a tree. Nothing in the
 database prevents a cycle — a team owning a client that owns that team — so it is
 checked on write.
 
@@ -161,10 +165,9 @@ owner_type / owner_id      // morphTo: Client | Team
 public function owner(): MorphTo
 ```
 
-Both candidate owners sit under a client, so the client — and through it the
-organization — is reached by walking the owner. No denormalized column: the morph
-here is genuinely one-of-two, unlike on `teams`, where the parent is always a
-client and a plain `client_id` says everything.
+A project carries `organization_id` for the same reason teams and clients do —
+scoping without a walk. `owner` here is named `owner`, not `parent`, because
+`Project` has no role-based owner to collide with.
 
 Per `.ai/rules/models.md`, `morphTo()` is the one relation that still carries a
 `@return` docblock; no other relation in this design gets one.

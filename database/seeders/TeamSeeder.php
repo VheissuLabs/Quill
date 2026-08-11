@@ -3,41 +3,68 @@
 namespace Database\Seeders;
 
 use App\Enums\TeamRole;
+use App\Models\Client;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class TeamSeeder extends Seeder
 {
+    /**
+     * Teams are subgroups of a client. Spread across several clients in several
+     * organizations so switching organizations visibly changes the team list, and
+     * so the test user holds a different role in each team.
+     *
+     * @var array<string, array<string, TeamRole>>
+     */
+    protected array $teams = [
+        'Acme Title Co' => [
+            'Development' => TeamRole::Owner,
+            'Design' => TeamRole::Admin,
+        ],
+        'Harbor Escrow' => [
+            'Quality Assurance' => TeamRole::Member,
+        ],
+        'Ridgeline Outfitters' => [
+            'Platform' => TeamRole::Member,
+        ],
+        'Wavelength Audio' => [
+            'Audio Tools' => TeamRole::Owner,
+        ],
+    ];
+
     public function run(): void
     {
         $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
         /**
-         * One team per role the test user can hold, so every permission path has
-         * somewhere to be exercised without editing the database by hand.
-         *
-         * These teams are not yet attached to an organization — that arrives with
-         * the reparenting in PR 2, which is also when their names start meaning
-         * "department of NotaryDash" rather than standing alone.
+         * ClientSeeder creates the org-level "Delivery" team as structure, because
+         * NotaryDash's clients hang off it. Membership belongs here, so it is
+         * populated rather than created.
          */
-        $teams = [
-            'Development' => TeamRole::Owner,
-            'Design' => TeamRole::Admin,
-            'Quality Assurance' => TeamRole::Member,
-        ];
+        $delivery = Team::where('name', 'Delivery')->firstOrFail();
+        $delivery->members()->attach($user, ['role' => TeamRole::Admin->value]);
+        User::factory()->count(2)->create()->each(
+            fn (User $member) => $delivery->members()->attach($member, ['role' => TeamRole::Member->value]),
+        );
+        $delivery->members()->attach(User::factory()->create(), ['role' => TeamRole::Owner->value]);
 
-        foreach ($teams as $name => $role) {
-            $team = Team::factory()
-                ->withMember($user, $role)
-                ->withMembers(2)
-                ->create(['name' => $name]);
+        foreach ($this->teams as $clientName => $teams) {
+            $client = Client::where('name', $clientName)->firstOrFail();
 
-            if ($role !== TeamRole::Owner) {
-                $team->members()->attach(
-                    User::factory()->create(),
-                    ['role' => TeamRole::Owner->value],
-                );
+            foreach ($teams as $name => $role) {
+                $team = Team::factory()
+                    ->heldBy($client)
+                    ->withMember($user, $role)
+                    ->withMembers(2)
+                    ->create(['name' => $name]);
+
+                if ($role !== TeamRole::Owner) {
+                    $team->members()->attach(
+                        User::factory()->create(),
+                        ['role' => TeamRole::Owner->value],
+                    );
+                }
             }
         }
     }

@@ -4,17 +4,23 @@ namespace App\Models;
 
 use App\Concerns\GeneratesUniqueSlugs;
 use App\Enums\TeamRole;
+use App\Observers\ParentIntegrityObserver;
 use Database\Factories\TeamFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** @mixin IdeHelperTeam */
 
+#[ObservedBy(ParentIntegrityObserver::class)]
 #[UseFactory(TeamFactory::class)]
 class Team extends Model
 {
@@ -32,6 +38,22 @@ class Team extends Model
         return $this->members()
             ->wherePivot('role', TeamRole::Owner->value)
             ->first();
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    /** @return MorphTo<Model, $this> */
+    public function parent(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    public function clients(): MorphMany
+    {
+        return $this->morphMany(Client::class, 'parent');
     }
 
     public function members(): BelongsToMany

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** @mixin IdeHelperOrganization */
@@ -47,9 +48,29 @@ class Organization extends Model
         return $this->hasMany(OrganizationMembership::class);
     }
 
+    /**
+     * Every client in the organization, at any depth. Distinct from
+     * `childClients()`, which is only those the organization holds directly.
+     */
     public function clients(): HasMany
     {
         return $this->hasMany(Client::class);
+    }
+
+    public function childClients(): MorphMany
+    {
+        return $this->morphMany(Client::class, 'parent');
+    }
+
+    /** Every team in the organization, at any depth. */
+    public function teams(): HasMany
+    {
+        return $this->hasMany(Team::class);
+    }
+
+    public function childTeams(): MorphMany
+    {
+        return $this->morphMany(Team::class, 'parent');
     }
 
     public function getRouteKeyName(): string

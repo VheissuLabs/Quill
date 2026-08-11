@@ -7,6 +7,7 @@ use App\Data\UserTeam;
 use App\Enums\TeamPermission;
 use App\Enums\TeamRole;
 use App\Models\Membership;
+use App\Models\Organization;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -90,10 +91,17 @@ trait HasTeams
             ?->role;
     }
 
-    /** @return Collection<int, UserTeam> */
-    public function toUserTeams(bool $includeCurrent = false): Collection
+    /**
+     * A team's structural parent may be an organization or a client, but it always
+     * carries the organization it belongs to, so scoping is a plain filter rather
+     * than a walk up the parent chain.
+     *
+     * @return Collection<int, UserTeam>
+     */
+    public function toUserTeams(bool $includeCurrent = false, ?Organization $organization = null): Collection
     {
         return $this->teams()
+            ->when($organization, fn ($query) => $query->where('teams.organization_id', $organization->id))
             ->get()
             ->map(fn (Team $team) => ! $includeCurrent && $this->isCurrentTeam($team) ? null : $this->toUserTeam($team))
             ->filter()
