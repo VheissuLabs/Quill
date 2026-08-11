@@ -23,8 +23,7 @@ teams, and members; creating a client, a team, or a contact.
 
 **Out:** projects, issues, tasks — those models do not exist. Nothing in this
 design anticipates them beyond leaving room for another tool later. Also out:
-client-contact access to the chat, editing or deleting anything, and any
-notification of what the assistant did.
+client-contact access to the chat, and editing or deleting anything.
 
 This narrowness is the point. The product is going to be sold, and the way to
 find out whether the agent is any good is to ship a small piece and use it.
@@ -69,7 +68,7 @@ not a privilege escalation path.
 | `list_contacts` | read | Members with roles; `Client`-role ones marked as contacts |
 | `create_client` | write | Requires `CreateClient`. Held by the organization unless a team is named |
 | `create_team` | write | Requires team-create rights. Parent is the organization or a named client |
-| `create_contact` | write | Requires `AddMember`. Creates or attaches a user as a `Client`-role member of one client |
+| `create_contact` | write | Requires `AddMember`. Invites a person as a `Client`-role contact of one client |
 
 Read tools exist to serve the write tools as much as the user: resolving "Acme
 Title" to a client means being able to list them.
@@ -87,26 +86,44 @@ whether to ask first.
 **Duplicates are guarded in the tool, not the prompt.** A small model will repeat
 itself. `create_client` given a name that already exists in the organization
 returns the existing record and says so, rather than silently creating
-`acme-title-co-1`. `create_contact` finds an existing user by email and attaches
-them rather than making a second account.
+`acme-title-co-1`. `create_contact` keyed on an email that already has a
+pending invitation re-sends rather than stacking a second one.
 
-## Contacts are users
+## Contacts are invited, not created
 
 A contact is a `User` holding a `Client`-role `OrganizationMembership` — the same
-concept as any other member, not a parallel one. Two consequences:
+concept as any other member, not a parallel one. But `create_contact` does not
+create that membership. **It creates an invitation**, and the membership appears
+only when the invited person accepts.
 
-- **`organization_members` gains a nullable `client_id`**, recording which client a
-  contact represents. It is required when the role is `Client` and must be null
-  otherwise, enforced by an observer.
-- **A created contact cannot log in yet.** `users.password` is `NOT NULL`, and the
-  password column is deliberately left alone: making it nullable would put
-  `Hash::check()` against null into Fortify's login path, and authentication is
-  not worth touching to save a migration. A new contact gets a random unguessable
-  password and a null `email_verified_at` — that pairing *is* the pending state,
-  and they onboard through password reset.
+That matters: being added to someone's client account is not something that should
+happen to you without your agreement, and an unaccepted invitation is also the
+natural place for a typo'd email to die harmlessly.
 
-No invitation email is sent. Creating the record and granting access are separate
-acts, and only the first is in scope.
+One invitation record, two deliveries, decided by whether the email is already
+known:
+
+- **Unknown email.** A `User` is created with no usable password, and they receive
+  an emailed invite. Setting a password is how they accept.
+- **Known email.** Nothing is created. They receive the **in-app notification**
+  built in the notifications slice, which they accept from the bell. Someone
+  already using Quill for one organization joins a second without a second
+  account — which is the multi-email/multi-org identity story arriving early, for
+  free.
+
+**`organization_members` gains a nullable `client_id`**, recording which client a
+contact represents. Required when the role is `Client`, null otherwise, enforced by
+an observer. The invitation carries the same pair so acceptance knows what to build.
+
+`users.password` stays `NOT NULL`; making it nullable would put `Hash::check()`
+against null into Fortify's login path, and authentication is not worth touching to
+save a migration. A pending contact gets a random unguessable password and a null
+`email_verified_at` — that pairing *is* the pending state, and the invite link is
+the only way through it.
+
+This is the first notification *producer* in the app. The consumer — feed, bell,
+presence channel — already exists and is unused, so this slice is where it earns
+its place.
 
 ## Conversation
 
@@ -130,7 +147,9 @@ were both invisible to a green test suite and surfaced by running the app.
    from the database rather than the model's imagination.
 3. **`create_client`.**
 4. **`create_team`.**
-5. **`create_contact`**, with the `client_id` migration and its observer rule.
+5. **`create_contact`** — the `client_id` migration and its observer rule, the
+   invitation record, and both deliveries: an emailed invite for a new email, an
+   in-app notification for a known one.
 
 ## Failure modes
 
@@ -155,6 +174,9 @@ Against `laravel/ai`'s fake driver — LM Studio is never contacted in tests.
 - Asking for another organization by name still returns only your own data.
 - A Member is refused `create_client`; an Owner is not.
 - `create_client` with an existing name returns that record and creates nothing.
-- `create_contact` with an existing email attaches rather than duplicating.
+- `create_contact` for an unknown email creates a pending user and mails an invite.
+- `create_contact` for a known email creates no user and notifies the existing one.
+- Inviting the same email twice re-sends rather than creating a second invitation.
+- No membership exists until the invitation is accepted.
 - A `Client`-role user cannot reach the chat route at all.
 - An unreachable provider surfaces an error and preserves the transcript.
