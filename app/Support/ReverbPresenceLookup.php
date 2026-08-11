@@ -14,7 +14,7 @@ class ReverbPresenceLookup implements PresenceLookup
     public function isOnline(User $user): bool
     {
         try {
-            $broadcaster = Broadcast::connection('reverb');
+            $broadcaster = Broadcast::connection();
 
             if (! $broadcaster instanceof PusherBroadcaster) {
                 return false;

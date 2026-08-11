@@ -10470,7 +10470,7 @@
         },
         {
             "name": "quill/eloquent-relation-inference",
-            "version": "dev-realtime-notifications",
+            "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "packages/eloquent-relation-inference",

@@ -34,3 +34,11 @@ test('an unreachable reverb reports the user as offline so the email still sends
 
     expect(app(ReverbPresenceLookup::class)->isOnline($user))->toBeFalse();
 })->note('Fail-open: a WebSocket outage must cost a redundant email, never a swallowed notification.');
+
+test('the lookup follows the configured default connection instead of a hardcoded name', function () {
+    $user = User::factory()->create();
+
+    config()->set('broadcasting.default', 'null');
+
+    expect(app(ReverbPresenceLookup::class)->isOnline($user))->toBeFalse();
+})->note('The default connection is "null" here, which is not a PusherBroadcaster, so this must not throw.');
