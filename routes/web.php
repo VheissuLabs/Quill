@@ -3,12 +3,24 @@
 use App\Http\Controllers\Assistant\AssistantController;
 use App\Http\Controllers\Assistant\AssistantMessageController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Organizations\JoinOrganizationController;
 use App\Http\Controllers\Organizations\OrganizationInvitationController;
 use App\Http\Controllers\Teams\TeamInvitationController;
+use App\Http\Middleware\DenyClientContacts;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
+
+/*
+ * Open to guests: someone invited who has no account yet arrives here from their
+ * email. Fortify's register route is the wrong door — it requires an organization
+ * name and creates one, and an invited contact is joining someone else's.
+ */
+Route::middleware('guest')->group(function () {
+    Route::get('join/{invitation}', [JoinOrganizationController::class, 'show'])->name('join.show');
+    Route::post('join/{invitation}', [JoinOrganizationController::class, 'store'])->name('join.store');
+});
 
 Route::prefix('{current_team}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class])
@@ -20,7 +32,7 @@ Route::prefix('{current_team}')
  * The assistant is scoped to the user's current organization, not to a team, so
  * it sits outside the {current_team} prefix the rest of the app still uses.
  */
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', DenyClientContacts::class])->group(function () {
     Route::get('assistant', AssistantController::class)->name('assistant');
     Route::post('assistant/messages', [AssistantMessageController::class, 'store'])->name('assistant.messages.store');
 });

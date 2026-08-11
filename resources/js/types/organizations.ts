@@ -35,3 +35,11 @@ export type DashboardOrganizationInvitation = {
     clientName: string | null
     roleLabel: string
 }
+
+export type JoinInvitationContext = {
+    code: string
+    email: string
+    inviterName: string
+    organizationName: string
+    clientName: string | null
+}

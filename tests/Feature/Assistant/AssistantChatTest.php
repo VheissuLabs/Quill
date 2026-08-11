@@ -151,3 +151,14 @@ test('the prompt reflects the organization the user switched to', function () {
         ->toContain('92 Labs')
         ->not->toContain('NotaryDash');
 });
+
+test('a client contact cannot reach the assistant', function () {
+    $organization = Organization::factory()->create(['name' => 'NotaryDash']);
+    $client = App\Models\Client::factory()->heldBy($organization)->create(['name' => 'Acme Title']);
+    $contact = contactFor($client, 'Lucy Client');
+
+    $contact->switchOrganization($organization);
+
+    $this->actingAs($contact->refresh())->get(route('assistant'))->assertForbidden();
+    $this->actingAs($contact)->post(route('assistant.messages.store'), ['message' => 'Hi'])->assertForbidden();
+})->note('Its tools answer for the whole organization, so one client could read another client\'s people.');

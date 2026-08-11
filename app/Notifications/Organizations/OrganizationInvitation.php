@@ -36,7 +36,7 @@ class OrganizationInvitation extends Notification implements ShouldQueue
             ->line(__('Set a password to accept the invitation and get started.'))
             ->action(
                 __('Accept invitation'),
-                route('login', ['invitation' => $this->invitation->code]),
+                route('join.show', ['invitation' => $this->invitation->code]),
             );
     }
 
