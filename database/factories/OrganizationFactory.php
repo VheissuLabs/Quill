@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\OrganizationRole;
 use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<Organization> */
@@ -21,5 +23,37 @@ class OrganizationFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'deleted_at' => now(),
         ]);
+    }
+
+    public function withOwner(?User $owner = null): static
+    {
+        return $this->afterCreating(function (Organization $organization) use ($owner) {
+            $organization->members()->attach(
+                $owner ?? User::factory()->create(),
+                ['role' => OrganizationRole::Owner->value],
+            );
+        });
+    }
+
+    public function withMembers(int $count = 3, OrganizationRole $role = OrganizationRole::Member): static
+    {
+        return $this->afterCreating(function (Organization $organization) use ($count, $role) {
+            User::factory()
+                ->count($count)
+                ->create()
+                ->each(fn (User $user) => $organization->members()->attach($user, [
+                    'role' => $role->value,
+                ]));
+        });
+    }
+
+    public function withClientContact(?User $contact = null): static
+    {
+        return $this->afterCreating(function (Organization $organization) use ($contact) {
+            $organization->members()->attach(
+                $contact ?? User::factory()->create(),
+                ['role' => OrganizationRole::Client->value],
+            );
+        });
     }
 }
