@@ -1,0 +1,1284 @@
+# CRM Stage 1, PR 1 — Organizations Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Introduce `Organization` and its membership layer — the tenancy root every later CRM object hangs off — with no UI and no changes to existing team behaviour.
+
+**Architecture:** Organizations mirror the existing `Team` structure almost exactly: a slugged, soft-deleting model; an `organization_members` pivot with a role column backed by an enum; a `HasOrganizations` concern on `User`; and a permission-driven policy. The one genuinely new idea is a fourth role, `Client`, which sits *below* `Member`, carries no permissions, and marks a seat as non-billable.
+
+**Tech Stack:** PHP 8.5, Laravel 13, Pest 5, PHPStan (larastan) level 7, Pint.
+
+## Global Constraints
+
+- PHPStan stays at **level 7**. Do not raise it. (`.ai/rules/general.md`)
+- Models carry **exactly one docblock**: `/** @mixin IdeHelperX */`, one line, followed by a blank line before the attribute or class. (`.ai/rules/models.md`)
+- Mass assignment uses `protected $guarded`, never `$fillable`. Soft-deleting models include `'deleted_at'` in `$guarded`.
+- Factories are declared with `#[UseFactory(XFactory::class)]` on the class, keeping the `HasFactory` trait. Never `/** @use HasFactory<XFactory> */`.
+- **No `@return` docblocks on relation methods.** The `quill/eloquent-relation-inference` PHPStan extension infers them. The sole exception is `morphTo()`, which is not used in this PR.
+- No `@return array<string, string>` on `casts()`, no `@var list<string>` on `$guarded` or `$hidden`.
+- Curly braces on all control structures, even single-line bodies. Explicit return types and parameter type hints everywhere.
+- Enum keys are TitleCase.
+- **Every model gets a factory covering every state it can be in, and every model gets seeded.** `php artisan migrate:fresh --seed` must leave a fully working app that can be logged into and clicked through — not an empty shell. Each PR extends the seeder so this holds at every commit, for the app as it exists at that commit.
+- `DatabaseSeeder` uses `WithoutModelEvents`, so model `creating`/`updating` hooks **do not fire during seeding**. Anything a hook would normally generate — slugs especially — must be set explicitly by the factory or the seeder.
+- Run `vendor/bin/pint --dirty --format agent` before every commit.
+- Full gate is `composer test` (config:clear → pint --test → phpstan → artisan test). Individual runs use `php artisan test --compact --filter=...`.
+- **No UI, no controllers, no routes in this PR.** Existing team behaviour must not change.
+
+---
+
+## File Structure
+
+| File | Responsibility |
+| --- | --- |
+| `app/Enums/OrganizationPermission.php` | The set of things an organization role may do |
+| `app/Enums/OrganizationRole.php` | Owner/Admin/Member/Client, their permissions, ordering, and billability |
+| `app/Concerns/GeneratesUniqueSlugs.php` | Renamed from `GeneratesUniqueTeamSlugs` — now shared by `Team` and `Organization` |
+| `database/migrations/..._create_organizations_table.php` | `organizations` and `organization_members` tables |
+| `app/Models/Organization.php` | The tenancy root |
+| `app/Models/OrganizationMembership.php` | The `organization_members` pivot |
+| `database/factories/OrganizationFactory.php` | Factory + every state an organization can be in |
+| `database/seeders/OrganizationSeeder.php` | The three real organizations, seeded with members |
+| `app/Concerns/HasOrganizations.php` | The `User` side of the relationship and its role queries |
+| `app/Policies/OrganizationPolicy.php` | Permission-driven authorization |
+| `tests/Unit/Enums/OrganizationRoleTest.php` | Pure enum logic |
+| `tests/Feature/Organizations/OrganizationTest.php` | Model, slug, and membership behaviour |
+| `tests/Feature/Organizations/OrganizationPolicyTest.php` | Authorization per role |
+| `tests/Feature/Organizations/OrganizationFactoryTest.php` | Every factory state |
+| `tests/Feature/Organizations/OrganizationSeederTest.php` | `migrate:fresh --seed` produces a usable app |
+
+---
+
+### Task 1: Role and permission enums
+
+**Files:**
+- Create: `app/Enums/OrganizationPermission.php`
+- Create: `app/Enums/OrganizationRole.php`
+- Test: `tests/Unit/Enums/OrganizationRoleTest.php`
+
+**Interfaces:**
+- Consumes: nothing.
+- Produces:
+  - `OrganizationPermission` cases: `UpdateOrganization`, `DeleteOrganization`, `AddMember`, `UpdateMember`, `RemoveMember`, `CreateInvitation`, `CancelInvitation`.
+  - `OrganizationRole` cases: `Owner`, `Admin`, `Member`, `Client`.
+  - `OrganizationRole::label(): string`
+  - `OrganizationRole::permissions(): array<OrganizationPermission>`
+  - `OrganizationRole::hasPermission(OrganizationPermission $permission): bool`
+  - `OrganizationRole::level(): int`
+  - `OrganizationRole::isAtLeast(OrganizationRole $role): bool`
+  - `OrganizationRole::isBillable(): bool`
+  - `OrganizationRole::assignable(): array<array{value: string, label: string}>`
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Unit/Enums/OrganizationRoleTest.php`:
+
+```php
+<?php
+
+use App\Enums\OrganizationPermission;
+use App\Enums\OrganizationRole;
+
+test('owners hold every permission', function () {
+    expect(OrganizationRole::Owner->permissions())
+        ->toEqual(OrganizationPermission::cases());
+});
+
+test('admins can update the organization but not delete it', function () {
+    expect(OrganizationRole::Admin->hasPermission(OrganizationPermission::UpdateOrganization))->toBeTrue();
+    expect(OrganizationRole::Admin->hasPermission(OrganizationPermission::DeleteOrganization))->toBeFalse();
+});
+
+test('members and clients hold no permissions', function () {
+    expect(OrganizationRole::Member->permissions())->toBe([]);
+    expect(OrganizationRole::Client->permissions())->toBe([]);
+});
+
+test('clients rank below members', function () {
+    expect(OrganizationRole::Client->isAtLeast(OrganizationRole::Member))->toBeFalse();
+    expect(OrganizationRole::Member->isAtLeast(OrganizationRole::Client))->toBeTrue();
+    expect(OrganizationRole::Owner->isAtLeast(OrganizationRole::Owner))->toBeTrue();
+});
+
+test('every role except client is a billable seat', function () {
+    expect(OrganizationRole::Owner->isBillable())->toBeTrue();
+    expect(OrganizationRole::Admin->isBillable())->toBeTrue();
+    expect(OrganizationRole::Member->isBillable())->toBeTrue();
+    expect(OrganizationRole::Client->isBillable())->toBeFalse();
+});
+
+test('assignable roles exclude owner and client', function () {
+    expect(OrganizationRole::assignable())->toBe([
+        ['value' => 'admin', 'label' => 'Admin'],
+        ['value' => 'member', 'label' => 'Member'],
+    ]);
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `php artisan test --compact --filter=OrganizationRoleTest`
+Expected: FAIL — `Class "App\Enums\OrganizationRole" not found`.
+
+- [ ] **Step 3: Write the permission enum**
+
+Create `app/Enums/OrganizationPermission.php`:
+
+```php
+<?php
+
+namespace App\Enums;
+
+enum OrganizationPermission: string
+{
+    case UpdateOrganization = 'organization:update';
+    case DeleteOrganization = 'organization:delete';
+
+    case AddMember = 'member:add';
+    case UpdateMember = 'member:update';
+    case RemoveMember = 'member:remove';
+
+    case CreateInvitation = 'invitation:create';
+    case CancelInvitation = 'invitation:cancel';
+}
+```
+
+- [ ] **Step 4: Write the role enum**
+
+Create `app/Enums/OrganizationRole.php`:
+
+```php
+<?php
+
+namespace App\Enums;
+
+enum OrganizationRole: string
+{
+    case Owner = 'owner';
+    case Admin = 'admin';
+    case Member = 'member';
+    case Client = 'client';
+
+    public function label(): string
+    {
+        return ucfirst($this->value);
+    }
+
+    /** @return array<OrganizationPermission> */
+    public function permissions(): array
+    {
+        return match ($this) {
+            self::Owner => OrganizationPermission::cases(),
+            self::Admin => [
+                OrganizationPermission::UpdateOrganization,
+                OrganizationPermission::AddMember,
+                OrganizationPermission::UpdateMember,
+                OrganizationPermission::RemoveMember,
+                OrganizationPermission::CreateInvitation,
+                OrganizationPermission::CancelInvitation,
+            ],
+            self::Member, self::Client => [],
+        };
+    }
+
+    public function hasPermission(OrganizationPermission $permission): bool
+    {
+        return in_array($permission, $this->permissions());
+    }
+
+    public function level(): int
+    {
+        return match ($this) {
+            self::Owner => 4,
+            self::Admin => 3,
+            self::Member => 2,
+            self::Client => 1,
+        };
+    }
+
+    public function isAtLeast(OrganizationRole $role): bool
+    {
+        return $this->level() >= $role->level();
+    }
+
+    public function isBillable(): bool
+    {
+        return $this !== self::Client;
+    }
+
+    /** @return array<array{value: string, label: string}> */
+    public static function assignable(): array
+    {
+        return collect(self::cases())
+            ->reject(fn (self $role) => in_array($role, [self::Owner, self::Client]))
+            ->map(fn (self $role) => ['value' => $role->value, 'label' => $role->label()])
+            ->values()
+            ->toArray();
+    }
+}
+```
+
+> `Client` is excluded from `assignable()` deliberately: a client contact is never
+> created through the ordinary member-invite flow. PR 6 sets that role explicitly.
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `php artisan test --compact --filter=OrganizationRoleTest`
+Expected: PASS, 6 tests.
+
+- [ ] **Step 6: Lint, analyse, commit**
+
+```bash
+vendor/bin/pint --dirty --format agent
+vendor/bin/phpstan analyse
+git add app/Enums/OrganizationPermission.php app/Enums/OrganizationRole.php tests/Unit/Enums/OrganizationRoleTest.php
+git commit -m "Add organization roles and permissions"
+```
+
+---
+
+### Task 2: Generalise the slug trait
+
+`GeneratesUniqueTeamSlugs` is already generic — it uses `static::` throughout and
+nothing in it is team-specific except its name. `Organization` needs the same
+behaviour, so rename rather than duplicate.
+
+**Files:**
+- Create: `app/Concerns/GeneratesUniqueSlugs.php`
+- Delete: `app/Concerns/GeneratesUniqueTeamSlugs.php`
+- Modify: `app/Models/Team.php:5` (import), `:20` (trait list), `:65` and `:71` (method calls)
+
+**Interfaces:**
+- Produces: `GeneratesUniqueSlugs::generateUniqueSlug(string $name, ?int $excludeId = null): string`
+
+- [ ] **Step 1: Confirm the existing slug tests pass before touching anything**
+
+Run: `php artisan test --compact --filter=TeamTest`
+Expected: PASS. `team slug uses next available suffix` is the test that guards this rename.
+
+- [ ] **Step 2: Create the renamed trait**
+
+Create `app/Concerns/GeneratesUniqueSlugs.php` with the exact body of the old
+trait, renaming the trait and the method:
+
+```php
+<?php
+
+namespace App\Concerns;
+
+use Illuminate\Support\Str;
+
+trait GeneratesUniqueSlugs
+{
+    protected static function generateUniqueSlug(string $name, ?int $excludeId = null): string
+    {
+        $defaultSlug = Str::slug($name);
+
+        $query = static::withTrashed()
+            ->where(function ($query) use ($defaultSlug) {
+                $query->where('slug', $defaultSlug)
+                    ->orWhere('slug', 'like', $defaultSlug.'-%');
+            });
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        $existingSlugs = $query->pluck('slug');
+
+        $maxSuffix = $existingSlugs
+            ->map(function (string $slug) use ($defaultSlug): ?int {
+                if ($slug === $defaultSlug) {
+                    return 0;
+                } elseif (preg_match('/^'.preg_quote($defaultSlug, '/').'-(\d+)$/', $slug, $matches)) {
+                    return (int) $matches[1];
+                }
+
+                return null;
+            })
+            ->filter(fn (?int $suffix) => $suffix !== null)
+            ->max() ?? 0;
+
+        return $existingSlugs->isEmpty()
+            ? $defaultSlug
+            : $defaultSlug.'-'.($maxSuffix + 1);
+    }
+}
+```
+
+- [ ] **Step 3: Point `Team` at the new trait**
+
+In `app/Models/Team.php`, change the import `use App\Concerns\GeneratesUniqueTeamSlugs;`
+to `use App\Concerns\GeneratesUniqueSlugs;`, change the trait list from
+`use GeneratesUniqueTeamSlugs, HasFactory, SoftDeletes;` to
+`use GeneratesUniqueSlugs, HasFactory, SoftDeletes;`, and change both calls inside
+`boot()` from `static::generateUniqueTeamSlug(...)` to `static::generateUniqueSlug(...)`.
+
+- [ ] **Step 4: Delete the old trait**
+
+```bash
+rm app/Concerns/GeneratesUniqueTeamSlugs.php
+```
+
+- [ ] **Step 5: Verify nothing else referenced it**
+
+Run: `grep -rn "GeneratesUniqueTeamSlugs\|generateUniqueTeamSlug" app tests database`
+Expected: no output.
+
+- [ ] **Step 6: Run the team tests to prove behaviour is unchanged**
+
+Run: `php artisan test --compact --filter=TeamTest`
+Expected: PASS, same count as Step 1.
+
+- [ ] **Step 7: Lint, analyse, commit**
+
+```bash
+vendor/bin/pint --dirty --format agent
+vendor/bin/phpstan analyse
+git add -A app/Concerns app/Models/Team.php
+git commit -m "Rename the slug trait now that organizations share it"
+```
+
+---
+
+### Task 3: Organizations schema and model
+
+**Files:**
+- Create: `database/migrations/2026_08_11_000001_create_organizations_table.php`
+- Create: `app/Models/Organization.php`
+- Create: `app/Models/OrganizationMembership.php`
+- Create: `database/factories/OrganizationFactory.php`
+- Test: `tests/Feature/Organizations/OrganizationTest.php`
+
+**Interfaces:**
+- Consumes: `OrganizationRole` (Task 1), `GeneratesUniqueSlugs` (Task 2).
+- Produces:
+  - `Organization::members(): BelongsToMany` — `User`, through `organization_members`, `withPivot(['role'])`
+  - `Organization::memberships(): HasMany` — `OrganizationMembership`
+  - `Organization::owner(): ?Model`
+  - `Organization::getRouteKeyName(): string` returning `'slug'`
+  - `OrganizationMembership` pivot on table `organization_members`, `role` cast to `OrganizationRole`
+  - `OrganizationFactory::definition()` and `OrganizationFactory::trashed(): static`. The
+    membership states are added in Task 6, where they are tested.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Feature/Organizations/OrganizationTest.php`:
+
+```php
+<?php
+
+use App\Enums\OrganizationRole;
+use App\Models\Organization;
+use App\Models\User;
+
+test('an organization generates a slug from its name', function () {
+    $organization = Organization::factory()->create(['name' => 'Notary Dash', 'slug' => null]);
+
+    expect($organization->slug)->toBe('notary-dash');
+});
+
+test('organization slugs use the next available suffix', function () {
+    Organization::factory()->create(['name' => 'Acme', 'slug' => 'acme']);
+    Organization::factory()->create(['name' => 'Acme One', 'slug' => 'acme-1']);
+
+    $organization = Organization::factory()->create(['name' => 'Acme', 'slug' => null]);
+
+    expect($organization->slug)->toBe('acme-2');
+});
+
+test('renaming an organization regenerates its slug', function () {
+    $organization = Organization::factory()->create(['name' => 'Before', 'slug' => 'before']);
+
+    $organization->update(['name' => 'After']);
+
+    expect($organization->fresh()->slug)->toBe('after');
+});
+
+test('an organization is resolved by slug', function () {
+    expect((new Organization)->getRouteKeyName())->toBe('slug');
+});
+
+test('members attach with a role that casts to the enum', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+
+    $organization->members()->attach($user, ['role' => OrganizationRole::Admin->value]);
+
+    expect($organization->members)->toHaveCount(1);
+    expect($organization->memberships->first()->role)->toBe(OrganizationRole::Admin);
+});
+
+test('organizations soft delete', function () {
+    $organization = Organization::factory()->create();
+
+    $organization->delete();
+
+    $this->assertSoftDeleted('organizations', ['id' => $organization->id]);
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `php artisan test --compact --filter=OrganizationTest`
+Expected: FAIL — `Class "App\Models\Organization" not found`.
+
+- [ ] **Step 3: Write the migration**
+
+Create `database/migrations/2026_08_11_000001_create_organizations_table.php`:
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('organizations', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('organization_members', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('role');
+            $table->timestamps();
+
+            $table->unique(['organization_id', 'user_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('organization_members');
+        Schema::dropIfExists('organizations');
+    }
+};
+```
+
+- [ ] **Step 4: Write the pivot model**
+
+Create `app/Models/OrganizationMembership.php`:
+
+```php
+<?php
+
+namespace App\Models;
+
+use App\Enums\OrganizationRole;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\Pivot;
+
+/** @mixin IdeHelperOrganizationMembership */
+
+class OrganizationMembership extends Pivot
+{
+    public $incrementing = true;
+
+    protected $table = 'organization_members';
+
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
+    ];
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'role' => OrganizationRole::class,
+        ];
+    }
+}
+```
+
+- [ ] **Step 5: Write the Organization model**
+
+Create `app/Models/Organization.php`:
+
+```php
+<?php
+
+namespace App\Models;
+
+use App\Concerns\GeneratesUniqueSlugs;
+use App\Enums\OrganizationRole;
+use Database\Factories\OrganizationFactory;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+/** @mixin IdeHelperOrganization */
+
+#[UseFactory(OrganizationFactory::class)]
+class Organization extends Model
+{
+    use GeneratesUniqueSlugs, HasFactory, SoftDeletes;
+
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
+
+    public function owner(): ?Model
+    {
+        return $this->members()
+            ->wherePivot('role', OrganizationRole::Owner->value)
+            ->first();
+    }
+
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'organization_members', 'organization_id', 'user_id')
+            ->using(OrganizationMembership::class)
+            ->withPivot(['role'])
+            ->withTimestamps();
+    }
+
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(OrganizationMembership::class);
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (Organization $organization) {
+            if (empty($organization->slug)) {
+                $organization->slug = static::generateUniqueSlug($organization->name);
+            }
+        });
+
+        static::updating(function (Organization $organization) {
+            if ($organization->isDirty('name')) {
+                $organization->slug = static::generateUniqueSlug($organization->name, $organization->id);
+            }
+        });
+    }
+}
+```
+
+- [ ] **Step 6: Write the factory**
+
+Create `database/factories/OrganizationFactory.php`. Note that `slug` is always set
+explicitly — the `creating` hook cannot be relied on during seeding, because
+`DatabaseSeeder` uses `WithoutModelEvents`.
+
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Organization;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
+
+/** @extends Factory<Organization> */
+class OrganizationFactory extends Factory
+{
+    /** @return array<string, mixed> */
+    public function definition(): array
+    {
+        $name = fake()->unique()->company();
+
+        return [
+            'name' => $name,
+            'slug' => Str::slug($name),
+        ];
+    }
+
+    public function trashed(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'deleted_at' => now(),
+        ]);
+    }
+}
+```
+
+The membership states (`withOwner`, `withMembers`, `withClientContact`) arrive in
+Task 6 alongside the tests that cover them.
+
+- [ ] **Step 7: Run test to verify it passes**
+
+Run: `php artisan test --compact --filter=OrganizationTest`
+Expected: PASS, 6 tests.
+
+- [ ] **Step 8: Regenerate the ide-helper mixins, then lint, analyse, commit**
+
+The `@mixin IdeHelperOrganization` docblocks reference classes that do not exist
+until the mixins are generated. `composer ide-helper` ends with `@lint`, which is
+required — see `.ai/rules/general.md`.
+
+```bash
+composer ide-helper
+vendor/bin/pint --dirty --format agent
+vendor/bin/phpstan analyse
+git add -A app/Models database/migrations database/factories tests/Feature/Organizations _ide_helper_models.php
+git commit -m "Add the Organization model and its membership pivot"
+```
+
+---
+
+### Task 4: The `HasOrganizations` concern
+
+`Organization` needs the `User` side of the relationship, mirroring `HasTeams` but
+smaller — there is no personal organization, no switching yet (that is PR 2), and
+no `Data` objects until there is UI to feed.
+
+**Files:**
+- Create: `app/Concerns/HasOrganizations.php`
+- Modify: `app/Models/User.php:5` (import), `:20` (trait list)
+- Test: `tests/Feature/Organizations/OrganizationTest.php` (append)
+
+**Interfaces:**
+- Consumes: `Organization`, `OrganizationMembership`, `OrganizationRole`.
+- Produces:
+  - `User::organizations(): BelongsToMany`
+  - `User::organizationMemberships(): HasMany`
+  - `User::belongsToOrganization(Organization $organization): bool`
+  - `User::organizationRole(Organization $organization): ?OrganizationRole`
+  - `User::ownsOrganization(Organization $organization): bool`
+  - `User::hasOrganizationPermission(Organization $organization, OrganizationPermission $permission): bool`
+  - `User::isClientContact(Organization $organization): bool`
+
+- [ ] **Step 1: Write the failing test**
+
+Append to `tests/Feature/Organizations/OrganizationTest.php`:
+
+```php
+test('a user belongs to organizations they are a member of', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $other = Organization::factory()->create();
+
+    $organization->members()->attach($user, ['role' => OrganizationRole::Member->value]);
+
+    expect($user->belongsToOrganization($organization))->toBeTrue();
+    expect($user->belongsToOrganization($other))->toBeFalse();
+});
+
+test('a users organization role is readable and owners are identified', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    $organization->members()->attach($owner, ['role' => OrganizationRole::Owner->value]);
+    $organization->members()->attach($member, ['role' => OrganizationRole::Member->value]);
+
+    expect($owner->organizationRole($organization))->toBe(OrganizationRole::Owner);
+    expect($owner->ownsOrganization($organization))->toBeTrue();
+    expect($member->ownsOrganization($organization))->toBeFalse();
+});
+
+test('a non member has no role and no permissions', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    expect($user->organizationRole($organization))->toBeNull();
+    expect($user->hasOrganizationPermission($organization, OrganizationPermission::UpdateOrganization))->toBeFalse();
+});
+
+test('client contacts are identified and hold no permissions', function () {
+    $contact = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    $organization->members()->attach($contact, ['role' => OrganizationRole::Client->value]);
+
+    expect($contact->isClientContact($organization))->toBeTrue();
+    expect($contact->hasOrganizationPermission($organization, OrganizationPermission::UpdateOrganization))->toBeFalse();
+    expect($contact->hasOrganizationPermission($organization, OrganizationPermission::CreateInvitation))->toBeFalse();
+});
+
+test('members are not client contacts', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    $organization->members()->attach($member, ['role' => OrganizationRole::Member->value]);
+
+    expect($member->isClientContact($organization))->toBeFalse();
+});
+```
+
+Add `use App\Enums\OrganizationPermission;` to the top of the test file.
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `php artisan test --compact --filter=OrganizationTest`
+Expected: FAIL — `Call to undefined method App\Models\User::belongsToOrganization()`.
+
+- [ ] **Step 3: Write the concern**
+
+Create `app/Concerns/HasOrganizations.php`:
+
+```php
+<?php
+
+namespace App\Concerns;
+
+use App\Enums\OrganizationPermission;
+use App\Enums\OrganizationRole;
+use App\Models\Organization;
+use App\Models\OrganizationMembership;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+trait HasOrganizations
+{
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class, 'organization_members', 'user_id', 'organization_id')
+            ->using(OrganizationMembership::class)
+            ->withPivot(['role'])
+            ->withTimestamps();
+    }
+
+    public function organizationMemberships(): HasMany
+    {
+        return $this->hasMany(OrganizationMembership::class, 'user_id');
+    }
+
+    public function belongsToOrganization(Organization $organization): bool
+    {
+        return $this->organizations()->where('organizations.id', $organization->id)->exists();
+    }
+
+    public function organizationRole(Organization $organization): ?OrganizationRole
+    {
+        return $this->organizationMemberships()
+            ->where('organization_id', $organization->id)
+            ->first()
+            ?->role;
+    }
+
+    public function ownsOrganization(Organization $organization): bool
+    {
+        return $this->organizationRole($organization) === OrganizationRole::Owner;
+    }
+
+    public function isClientContact(Organization $organization): bool
+    {
+        return $this->organizationRole($organization) === OrganizationRole::Client;
+    }
+
+    public function hasOrganizationPermission(Organization $organization, OrganizationPermission $permission): bool
+    {
+        return $this->organizationRole($organization)?->hasPermission($permission) ?? false;
+    }
+}
+```
+
+- [ ] **Step 4: Add the trait to `User`**
+
+In `app/Models/User.php`, add `use App\Concerns\HasOrganizations;` to the imports
+and add `HasOrganizations` to the trait list, keeping alphabetical order:
+
+```php
+use HasFactory, HasOrganizations, HasTeams, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+```
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `php artisan test --compact --filter=OrganizationTest`
+Expected: PASS, 11 tests.
+
+- [ ] **Step 6: Lint, analyse, commit**
+
+```bash
+vendor/bin/pint --dirty --format agent
+vendor/bin/phpstan analyse
+git add app/Concerns/HasOrganizations.php app/Models/User.php tests/Feature/Organizations/OrganizationTest.php
+git commit -m "Give users their organization memberships"
+```
+
+---
+
+### Task 5: The organization policy
+
+**Files:**
+- Create: `app/Policies/OrganizationPolicy.php`
+- Test: `tests/Feature/Organizations/OrganizationPolicyTest.php`
+
+Laravel 13 discovers `App\Policies\OrganizationPolicy` for `App\Models\Organization`
+by naming convention — no registration is required.
+
+**Interfaces:**
+- Consumes: `HasOrganizations` methods (Task 4), `OrganizationPermission` (Task 1).
+- Produces: `viewAny`, `view`, `create`, `update`, `delete`, `addMember`,
+  `updateMember`, `removeMember`, `inviteMember`, `cancelInvitation`.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Feature/Organizations/OrganizationPolicyTest.php`:
+
+```php
+<?php
+
+use App\Models\Organization;
+use App\Models\User;
+use App\Enums\OrganizationRole;
+
+function memberWithRole(Organization $organization, OrganizationRole $role): User
+{
+    $user = User::factory()->create();
+
+    $organization->members()->attach($user, ['role' => $role->value]);
+
+    return $user;
+}
+
+test('members can view their organization and outsiders cannot', function () {
+    $organization = Organization::factory()->create();
+    $member = memberWithRole($organization, OrganizationRole::Member);
+    $outsider = User::factory()->create();
+
+    expect($member->can('view', $organization))->toBeTrue();
+    expect($outsider->can('view', $organization))->toBeFalse();
+});
+
+test('owners and admins can update the organization', function () {
+    $organization = Organization::factory()->create();
+
+    expect(memberWithRole($organization, OrganizationRole::Owner)->can('update', $organization))->toBeTrue();
+    expect(memberWithRole($organization, OrganizationRole::Admin)->can('update', $organization))->toBeTrue();
+    expect(memberWithRole($organization, OrganizationRole::Member)->can('update', $organization))->toBeFalse();
+    expect(memberWithRole($organization, OrganizationRole::Client)->can('update', $organization))->toBeFalse();
+});
+
+test('only owners can delete the organization', function () {
+    $organization = Organization::factory()->create();
+
+    expect(memberWithRole($organization, OrganizationRole::Owner)->can('delete', $organization))->toBeTrue();
+    expect(memberWithRole($organization, OrganizationRole::Admin)->can('delete', $organization))->toBeFalse();
+});
+
+test('client contacts can view but cannot manage members', function () {
+    $organization = Organization::factory()->create();
+    $contact = memberWithRole($organization, OrganizationRole::Client);
+
+    expect($contact->can('view', $organization))->toBeTrue();
+    expect($contact->can('addMember', $organization))->toBeFalse();
+    expect($contact->can('inviteMember', $organization))->toBeFalse();
+    expect($contact->can('removeMember', $organization))->toBeFalse();
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `php artisan test --compact --filter=OrganizationPolicyTest`
+Expected: FAIL — every `can()` returns `false` because no policy exists, so the
+first assertion fails.
+
+- [ ] **Step 3: Write the policy**
+
+Create `app/Policies/OrganizationPolicy.php`:
+
+```php
+<?php
+
+namespace App\Policies;
+
+use App\Enums\OrganizationPermission;
+use App\Models\Organization;
+use App\Models\User;
+
+class OrganizationPolicy
+{
+    public function viewAny(User $user): bool
+    {
+        return true;
+    }
+
+    public function view(User $user, Organization $organization): bool
+    {
+        return $user->belongsToOrganization($organization);
+    }
+
+    public function create(User $user): bool
+    {
+        return true;
+    }
+
+    public function update(User $user, Organization $organization): bool
+    {
+        return $user->hasOrganizationPermission($organization, OrganizationPermission::UpdateOrganization);
+    }
+
+    public function delete(User $user, Organization $organization): bool
+    {
+        return $user->hasOrganizationPermission($organization, OrganizationPermission::DeleteOrganization);
+    }
+
+    public function addMember(User $user, Organization $organization): bool
+    {
+        return $user->hasOrganizationPermission($organization, OrganizationPermission::AddMember);
+    }
+
+    public function updateMember(User $user, Organization $organization): bool
+    {
+        return $user->hasOrganizationPermission($organization, OrganizationPermission::UpdateMember);
+    }
+
+    public function removeMember(User $user, Organization $organization): bool
+    {
+        return $user->hasOrganizationPermission($organization, OrganizationPermission::RemoveMember);
+    }
+
+    public function inviteMember(User $user, Organization $organization): bool
+    {
+        return $user->hasOrganizationPermission($organization, OrganizationPermission::CreateInvitation);
+    }
+
+    public function cancelInvitation(User $user, Organization $organization): bool
+    {
+        return $user->hasOrganizationPermission($organization, OrganizationPermission::CancelInvitation);
+    }
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `php artisan test --compact --filter=OrganizationPolicyTest`
+Expected: PASS, 4 tests.
+
+- [ ] **Step 5: Run the full gate**
+
+Run: `composer test`
+Expected: PASS. Pint clean, PHPStan level 7 with 0 errors, all tests green
+including the untouched team and auth suites.
+
+- [ ] **Step 6: Commit**
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add app/Policies/OrganizationPolicy.php tests/Feature/Organizations/OrganizationPolicyTest.php
+git commit -m "Authorize organization access by role"
+```
+
+---
+
+### Task 6: Seed a working app
+
+`migrate:fresh --seed` must produce something you can log into and click around.
+For this PR that means the three real organizations, owned by the test user, each
+with members and a client contact — which also happens to be the exact
+multi-organization shape the whole product exists to serve.
+
+**Files:**
+- Create: `database/seeders/OrganizationSeeder.php`
+- Modify: `database/seeders/DatabaseSeeder.php:16-19`
+- Test: `tests/Feature/Organizations/OrganizationSeederTest.php`
+- Test: `tests/Feature/Organizations/OrganizationFactoryTest.php`
+
+**Files (continued):**
+- Modify: `database/factories/OrganizationFactory.php` — add the membership states
+
+**Interfaces:**
+- Consumes: `OrganizationFactory` (Task 3), `HasOrganizations` (Task 4).
+- Produces:
+  - `OrganizationFactory::withOwner(?User $owner = null): static`
+  - `OrganizationFactory::withMembers(int $count = 3, OrganizationRole $role = OrganizationRole::Member): static`
+  - `OrganizationFactory::withClientContact(?User $contact = null): static`
+  - `OrganizationSeeder`, called from `DatabaseSeeder`. Later PRs append their own
+    seeders to `DatabaseSeeder` after this one.
+
+- [ ] **Step 1: Write the failing factory-state test**
+
+Every state the factory offers gets exercised, so a broken state fails here rather
+than in a seeder three PRs later. Create
+`tests/Feature/Organizations/OrganizationFactoryTest.php`:
+
+```php
+<?php
+
+use App\Enums\OrganizationRole;
+use App\Models\Organization;
+use App\Models\User;
+
+test('the trashed state creates a soft deleted organization', function () {
+    $organization = Organization::factory()->trashed()->create();
+
+    $this->assertSoftDeleted('organizations', ['id' => $organization->id]);
+});
+
+test('the withOwner state attaches an owner', function () {
+    $organization = Organization::factory()->withOwner()->create();
+
+    expect($organization->owner())->not->toBeNull();
+    expect($organization->memberships->first()->role)->toBe(OrganizationRole::Owner);
+});
+
+test('the withOwner state accepts a specific user', function () {
+    $owner = User::factory()->create();
+
+    $organization = Organization::factory()->withOwner($owner)->create();
+
+    expect($owner->ownsOrganization($organization))->toBeTrue();
+});
+
+test('the withMembers state attaches the requested number of members', function () {
+    $organization = Organization::factory()->withMembers(4)->create();
+
+    expect($organization->members)->toHaveCount(4);
+    expect($organization->memberships->pluck('role')->unique()->all())
+        ->toBe([OrganizationRole::Member]);
+});
+
+test('the withClientContact state attaches a client', function () {
+    $organization = Organization::factory()->withClientContact()->create();
+
+    $contact = $organization->members->first();
+
+    expect($contact->isClientContact($organization))->toBeTrue();
+});
+
+test('states compose', function () {
+    $organization = Organization::factory()
+        ->withOwner()
+        ->withMembers(2)
+        ->withClientContact()
+        ->create();
+
+    expect($organization->members)->toHaveCount(4);
+});
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `php artisan test --compact --filter=OrganizationFactoryTest`
+Expected: FAIL — `Call to undefined method Database\Factories\OrganizationFactory::withOwner()`.
+The `trashed` test passes; the other five fail.
+
+- [ ] **Step 3: Add the membership states to the factory**
+
+Append to `database/factories/OrganizationFactory.php`, adding
+`use App\Enums\OrganizationRole;` and `use App\Models\User;` to its imports:
+
+```php
+    public function withOwner(?User $owner = null): static
+    {
+        return $this->afterCreating(function (Organization $organization) use ($owner) {
+            $organization->members()->attach(
+                $owner ?? User::factory()->create(),
+                ['role' => OrganizationRole::Owner->value],
+            );
+        });
+    }
+
+    public function withMembers(int $count = 3, OrganizationRole $role = OrganizationRole::Member): static
+    {
+        return $this->afterCreating(function (Organization $organization) use ($count, $role) {
+            User::factory()
+                ->count($count)
+                ->create()
+                ->each(fn (User $user) => $organization->members()->attach($user, [
+                    'role' => $role->value,
+                ]));
+        });
+    }
+
+    public function withClientContact(?User $contact = null): static
+    {
+        return $this->afterCreating(function (Organization $organization) use ($contact) {
+            $organization->members()->attach(
+                $contact ?? User::factory()->create(),
+                ['role' => OrganizationRole::Client->value],
+            );
+        });
+    }
+```
+
+- [ ] **Step 4: Run it to verify it passes**
+
+Run: `php artisan test --compact --filter=OrganizationFactoryTest`
+Expected: PASS, 6 tests.
+
+- [ ] **Step 5: Write the failing seeder test**
+
+Create `tests/Feature/Organizations/OrganizationSeederTest.php`:
+
+```php
+<?php
+
+use App\Enums\OrganizationRole;
+use App\Models\Organization;
+use App\Models\User;
+
+test('seeding produces the three organizations owned by the test user', function () {
+    $this->seed();
+
+    $owner = User::where('email', 'test@example.com')->firstOrFail();
+
+    expect(Organization::count())->toBe(3);
+    expect(Organization::pluck('slug')->sort()->values()->all())
+        ->toBe(['92-labs', 'notary-dash', 'vheissulabs']);
+
+    Organization::each(function (Organization $organization) use ($owner) {
+        expect($owner->ownsOrganization($organization))->toBeTrue();
+    });
+});
+
+test('every seeded organization has members and a client contact', function () {
+    $this->seed();
+
+    Organization::each(function (Organization $organization) {
+        $roles = $organization->memberships->pluck('role');
+
+        expect($roles)->toContain(OrganizationRole::Owner);
+        expect($roles)->toContain(OrganizationRole::Client);
+        expect($roles->filter(fn (OrganizationRole $role) => $role === OrganizationRole::Member))
+            ->toHaveCount(2);
+    });
+});
+
+test('seeded slugs are set even though model events are muted', function () {
+    $this->seed();
+
+    expect(Organization::whereNull('slug')->orWhere('slug', '')->count())->toBe(0);
+});
+```
+
+- [ ] **Step 6: Run it to verify it fails**
+
+Run: `php artisan test --compact --filter=OrganizationSeederTest`
+Expected: FAIL — `expect(0)->toBe(3)`, because nothing seeds organizations yet.
+
+- [ ] **Step 7: Write the seeder**
+
+`slug` is passed explicitly because `DatabaseSeeder`'s `WithoutModelEvents` mutes
+the `creating` hook that would otherwise generate it.
+
+Create `database/seeders/OrganizationSeeder.php`:
+
+```php
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Organization;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
+
+class OrganizationSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $owner = User::where('email', 'test@example.com')->firstOrFail();
+
+        collect(['NotaryDash', '92 Labs', 'VheissuLabs'])
+            ->each(function (string $name) use ($owner) {
+                Organization::factory()
+                    ->withOwner($owner)
+                    ->withMembers(2)
+                    ->withClientContact()
+                    ->create([
+                        'name' => $name,
+                        'slug' => Str::slug($name),
+                    ]);
+            });
+    }
+}
+```
+
+- [ ] **Step 8: Call it from `DatabaseSeeder`**
+
+Replace the body of `run()` in `database/seeders/DatabaseSeeder.php`:
+
+```php
+    public function run(): void
+    {
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
+
+        $this->call(OrganizationSeeder::class);
+    }
+```
+
+- [ ] **Step 9: Run both test files to verify they pass**
+
+Run: `php artisan test --compact --filter="OrganizationSeederTest|OrganizationFactoryTest"`
+Expected: PASS, 9 tests.
+
+- [ ] **Step 10: Prove it end to end against a real database**
+
+Run: `php artisan migrate:fresh --seed`
+Expected: migrations run, seeding completes with no errors.
+
+Then confirm the app is genuinely usable rather than merely populated:
+
+```bash
+php artisan tinker --execute 'echo App\Models\User::where("email", "test@example.com")->firstOrFail()->organizations()->pluck("name")->implode(", ");'
+```
+
+Expected output: `NotaryDash, 92 Labs, VheissuLabs`
+
+- [ ] **Step 11: Run the full gate and commit**
+
+Run: `composer test`
+Expected: PASS.
+
+```bash
+vendor/bin/pint --dirty --format agent
+git add database/seeders tests/Feature/Organizations
+git commit -m "Seed the three organizations with members and a client contact"
+```
+
+---
+
+## What this PR deliberately does not do
+
+Each of these is a later PR in Stage 1, and each gets its own plan:
+
+2. Reparent `Team` under `Organization`, and move the `{current_team}` URL prefix,
+   `SetTeamUrlDefaults`, `EnsureTeamMembership`, and `RedirectsToCurrentTeam` over
+   to organizations. **This is the riskiest PR in Stage 1** — it touches routing,
+   middleware, and every Fortify response — which is exactly why it is not mixed
+   in with new-model work.
+3. Organization screens: create and settings.
+4. `Project`, with its polymorphic `Client | Team` owner.
+5. `Client`, with its required `default_project_id`.
+6. Client-contact invitations, setting the `Client` role explicitly.
+
+## Self-review notes
+
+- `Organization::owner()` returns `?Model` rather than `?User`, matching the
+  existing `Team::owner()` exactly. It is imprecise, but PHPStan level 7 accepts
+  it and diverging from the sibling model would be worse. Worth fixing on both
+  models at once, in its own commit, some other day.
+- No `Data` objects (`UserOrganization`, `OrganizationPermissions`) are created
+  here. `HasTeams` has them because there are Vue pages consuming them; there is
+  no organization UI until PR 3, so adding them now would be speculative.
+- `Organization::teams()` is intentionally absent — the `organization_id` column
+  it depends on arrives in PR 2.
