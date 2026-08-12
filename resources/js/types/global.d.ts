@@ -1,6 +1,6 @@
 import type { Auth } from '@/types/auth'
 import type { UserNotification } from '@/types/notifications'
-import type { Organization } from '@/types/organizations'
+import type { Organization, UserProject } from '@/types/organizations'
 import type { Team } from '@/types/teams'
 
 declare module 'vite/client' {
@@ -25,6 +25,7 @@ declare module '@inertiajs/core' {
             teams: Team[]
             currentOrganization: Organization | null
             organizations: Organization[]
+            projects: UserProject[]
             notifications: UserNotification[]
             unreadNotificationCount: number
             [key: string]: unknown

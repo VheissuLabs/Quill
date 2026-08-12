@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\HasAssistantConversation;
 use App\Concerns\HasNotificationFeed;
 use App\Concerns\HasOrganizations;
+use App\Concerns\HasProjects;
 use App\Concerns\HasTeams;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -22,7 +23,7 @@ use Spatie\Permission\Traits\HasRoles;
 #[UseFactory(UserFactory::class)]
 class User extends Authenticatable implements PasskeyUser
 {
-    use HasAssistantConversation, HasFactory, HasNotificationFeed, HasOrganizations, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasAssistantConversation, HasFactory, HasNotificationFeed, HasOrganizations, HasProjects, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
      * Spatie scopes roles by a "team", which in Quill is the organization, so its

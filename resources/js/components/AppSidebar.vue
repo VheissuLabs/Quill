@@ -4,6 +4,7 @@
     import { computed } from 'vue'
     import AppLogo from '@/components/AppLogo.vue'
     import NavMain from '@/components/NavMain.vue'
+    import NavProjects from '@/components/NavProjects.vue'
     import NavUser from '@/components/NavUser.vue'
     import NotificationBell from '@/components/NotificationBell.vue'
     import OrganizationSwitcher from '@/components/OrganizationSwitcher.vue'
@@ -58,6 +59,7 @@
 
         <SidebarContent>
             <NavMain :items="mainNavItems" />
+            <NavProjects />
         </SidebarContent>
 
         <SidebarFooter>

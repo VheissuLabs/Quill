@@ -5,6 +5,7 @@ use App\Http\Controllers\Assistant\AssistantMessageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Organizations\JoinOrganizationController;
 use App\Http\Controllers\Organizations\OrganizationInvitationController;
+use App\Http\Controllers\Projects\ProjectController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\DenyClientContacts;
 use App\Http\Middleware\EnsureTeamMembership;
@@ -33,6 +34,8 @@ Route::prefix('{current_team}')
  * it sits outside the {current_team} prefix the rest of the app still uses.
  */
 Route::middleware(['auth', 'verified', DenyClientContacts::class])->group(function () {
+    Route::get('projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
+
     Route::get('assistant', AssistantController::class)->name('assistant');
     Route::post('assistant/messages', [AssistantMessageController::class, 'store'])->name('assistant.messages.store');
 });

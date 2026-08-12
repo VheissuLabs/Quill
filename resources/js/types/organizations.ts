@@ -60,3 +60,11 @@ export type Paginated<T> = {
     prev_page_url: string | null
     next_page_url: string | null
 }
+
+export type UserProject = {
+    id: string
+    name: string
+    slug: string
+    ownerName: string | null
+    ownerType: string | null
+}

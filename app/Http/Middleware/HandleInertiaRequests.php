@@ -36,6 +36,7 @@ class HandleInertiaRequests extends Middleware
                 ? $user->toUserOrganization($user->currentOrganization)
                 : null,
             'organizations' => fn () => $user?->toUserOrganizations(includeCurrent: true) ?? [],
+            'projects' => fn () => $user?->toUserProjects() ?? [],
             'notifications' => fn () => $user?->toUserNotifications() ?? [],
             'unreadNotificationCount' => fn () => $user?->unreadNotificationCount() ?? 0,
         ];
