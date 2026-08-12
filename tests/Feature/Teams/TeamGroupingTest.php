@@ -48,7 +48,7 @@ test('the seeded team list carries the parent each team hangs off', function () 
         ->all();
 
     expect($grouped)->toBe([
-        'Acme Title Co' => ['Design', 'Development'],
+        'Acme Title Co' => ['Design', 'Engineering'],
         'Harbor Escrow' => ['Quality Assurance'],
         'NotaryDash' => ['Delivery'],
     ]);

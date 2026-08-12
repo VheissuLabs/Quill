@@ -7,32 +7,37 @@ use App\Models\Client;
 use App\Models\Team;
 use App\Models\User;
 use Database\Seeders\Concerns\AttributesActivity;
+use Database\Seeders\Concerns\NamesDepartments;
 use Illuminate\Database\Seeder;
 
 class TeamSeeder extends Seeder
 {
-    use AttributesActivity;
+    use AttributesActivity, NamesDepartments;
 
     /**
-     * Teams are subgroups of a client. Spread across several clients in several
-     * organizations so switching organizations visibly changes the team list, and
-     * so the test user holds a different role in each team.
+     * The departments working on each client's account, and the role the test user
+     * holds in each. Spread across several organizations so switching visibly
+     * changes the team list.
+     *
+     * Names come from `departments()`, so they read like a real company rather
+     * than like fixtures. Each one is used once: slugs are unique across the whole
+     * table, so a repeated department would seed an "engineering-1".
      *
      * @var array<string, array<string, TeamRole>>
      */
     protected array $teams = [
         'Acme Title Co' => [
-            'Development' => TeamRole::Owner,
+            'Engineering' => TeamRole::Owner,
             'Design' => TeamRole::Admin,
         ],
         'Harbor Escrow' => [
             'Quality Assurance' => TeamRole::Member,
         ],
         'Ridgeline Outfitters' => [
-            'Platform' => TeamRole::Member,
+            'Client Services' => TeamRole::Member,
         ],
         'Wavelength Audio' => [
-            'Audio Tools' => TeamRole::Owner,
+            'Support' => TeamRole::Owner,
         ],
     ];
 
@@ -61,7 +66,7 @@ class TeamSeeder extends Seeder
                         ->heldBy($client)
                         ->withMember($user, $role)
                         ->withMembers(2)
-                        ->create(['name' => $name]);
+                        ->create(['name' => $this->department($name)]);
 
                     if ($role !== TeamRole::Owner) {
                         $team->members()->attach(

@@ -6,11 +6,12 @@ use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Team;
 use Database\Seeders\Concerns\AttributesActivity;
+use Database\Seeders\Concerns\NamesDepartments;
 use Illuminate\Database\Seeder;
 
 class ClientSeeder extends Seeder
 {
-    use AttributesActivity;
+    use AttributesActivity, NamesDepartments;
 
     /**
      * The companies each organization does work for. Named rather than faked so
@@ -35,7 +36,7 @@ class ClientSeeder extends Seeder
 
             $this->causedBy($this->ownerOf($organization), function () use ($organization, $organizationName, $clientNames) {
                 $parent = $organizationName === 'NotaryDash'
-                    ? Team::factory()->heldBy($organization)->create(['name' => 'Delivery'])
+                    ? Team::factory()->heldBy($organization)->create(['name' => $this->department('Delivery')])
                     : $organization;
 
                 foreach ($clientNames as $name) {

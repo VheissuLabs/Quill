@@ -18,7 +18,7 @@ test('every seeded team has a parent, and both parent kinds appear', function ()
     expect($teams->firstWhere('name', 'Delivery')->parent)
         ->toBeInstanceOf(Organization::class);
 
-    expect($teams->firstWhere('name', 'Development')->parent)
+    expect($teams->firstWhere('name', 'Design')->parent)
         ->toBeInstanceOf(Client::class);
 });
 
@@ -28,9 +28,9 @@ test('the team list is scoped to the organization the user is in', function () {
     $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
     $expected = [
-        'NotaryDash' => ['Delivery', 'Design', 'Development', 'Quality Assurance'],
-        '92 Labs' => ['Platform'],
-        'VheissuLabs' => ['Audio Tools'],
+        'NotaryDash' => ['Delivery', 'Design', 'Engineering', 'Quality Assurance'],
+        '92 Labs' => ['Client Services'],
+        'VheissuLabs' => ['Support'],
     ];
 
     foreach ($expected as $organizationName => $teamNames) {
@@ -55,7 +55,7 @@ test('the test user holds a different role across the seeded teams', function ()
         ->get()
         ->mapWithKeys(fn (Team $team) => [$team->name => $user->teamRole($team)]);
 
-    expect($roles['Development'])->toBe(TeamRole::Owner);
+    expect($roles['Engineering'])->toBe(TeamRole::Owner);
     expect($roles['Design'])->toBe(TeamRole::Admin);
     expect($roles['Quality Assurance'])->toBe(TeamRole::Member);
 });
@@ -80,5 +80,36 @@ test('seeded team slugs are generated from their names', function () {
     $this->seed();
 
     expect(Team::where('is_personal', false)->pluck('slug')->sort()->values()->all())
-        ->toBe(['audio-tools', 'delivery', 'design', 'development', 'platform', 'quality-assurance']);
+        ->toBe(['client-services', 'delivery', 'design', 'engineering', 'quality-assurance', 'support']);
 });
+
+test('every seeded team is named after a department', function () {
+    $this->seed();
+
+    $departments = new class
+    {
+        use Database\Seeders\Concerns\NamesDepartments;
+
+        /** @return array<int, string> */
+        public function all(): array
+        {
+            return $this->departments();
+        }
+    };
+
+    $names = Team::where('is_personal', false)->pluck('name');
+
+    expect($names)->not->toBeEmpty();
+
+    foreach ($names as $name) {
+        expect($departments->all())->toContain($name);
+    }
+})->note('A name outside the list is a typo pretending to be a department.');
+
+test('no seeded team needs a numbered slug', function () {
+    $this->seed();
+
+    $slugs = Team::where('is_personal', false)->pluck('slug');
+
+    expect($slugs->filter(fn (string $slug) => preg_match('/-\d+$/', $slug) === 1)->all())->toBe([]);
+})->note('Slugs are unique across the table, so a repeated department would seed an "engineering-1".');
