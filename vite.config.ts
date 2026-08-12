@@ -23,6 +23,14 @@ export default defineConfig({
             fonts: [
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600],
+                    /**
+                     * Bunny serves a `woff` @font-face after the `woff2` one for
+                     * the same weight, so the older file wins and the preloaded
+                     * woff2 is fetched and discarded. Preloading a file the
+                     * browser never uses is three wasted requests and a warning
+                     * per weight.
+                     */
+                    preload: false,
                 }),
             ],
         }),

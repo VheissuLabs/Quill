@@ -222,3 +222,41 @@ test('the tool advertises re-sending so the assistant does not refuse', function
         ->toContain('re-send')
         ->toContain('resend');
 });
+
+test('an in-app invitation is broadcast as well as stored', function () {
+    $client = Client::factory()->heldBy($this->organization)->create(['name' => 'Harbor Escrow']);
+    $invitation = OrganizationInvitation::factory()->forClient($client)->create([
+        'email' => 'jen@notarydash.com',
+        'invited_by' => $this->admin->id,
+    ]);
+
+    $notification = new InvitationNotification($invitation, inApp: true);
+
+    expect($notification->via($this->admin))->toBe(['database', 'broadcast']);
+})->note('Without the broadcast channel the bell only updates on reload.');
+
+test('an emailed invitation is not broadcast', function () {
+    $client = Client::factory()->heldBy($this->organization)->create(['name' => 'Harbor Escrow']);
+    $invitation = OrganizationInvitation::factory()->forClient($client)->create([
+        'email' => 'nobody@acme.test',
+        'invited_by' => $this->admin->id,
+    ]);
+
+    expect(new InvitationNotification($invitation)->via($this->admin))->toBe(['mail']);
+})->note('Someone with no account has no channel to receive it on.');
+
+test('the broadcast payload carries what the bell renders', function () {
+    $client = Client::factory()->heldBy($this->organization)->create(['name' => 'Acme Title']);
+    $invitation = OrganizationInvitation::factory()->forClient($client)->create([
+        'email' => 'jen@notarydash.com',
+        'invited_by' => $this->admin->id,
+    ]);
+
+    $payload = new InvitationNotification($invitation, inApp: true)
+        ->toBroadcast($this->admin)
+        ->data;
+
+    expect($payload['title'])->toContain('as a contact for Acme Title');
+    expect($payload['organization_name'])->toBe('NotaryDash');
+    expect($payload['created_at_diff'])->toBe('just now');
+})->note('An arriving notification must look the same as one read back from the database.');

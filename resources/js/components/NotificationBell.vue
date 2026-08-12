@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { usePage } from '@inertiajs/vue3'
     import { Bell } from '@lucide/vue'
-    import { computed } from 'vue'
+    import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
     import {
         DropdownMenu,
         DropdownMenuContent,
@@ -11,12 +11,60 @@
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu'
     import { SidebarMenuButton } from '@/components/ui/sidebar'
-    import type { NotificationGroup } from '@/types'
+    import type { NotificationGroup, UserNotification } from '@/types'
 
     const page = usePage()
 
-    const notifications = computed(() => page.props.notifications ?? [])
-    const unreadCount = computed(() => page.props.unreadNotificationCount ?? 0)
+    /**
+     * Notifications that arrived over the websocket since the last page load. Kept
+     * separate from the shared prop so a reload — which returns them from the
+     * database anyway — replaces rather than duplicates them.
+     */
+    const arrivals = ref<UserNotification[]>([])
+
+    const notifications = computed(() => [
+        ...arrivals.value,
+        ...(page.props.notifications ?? []),
+    ])
+
+    const unreadCount = computed(
+        () => (page.props.unreadNotificationCount ?? 0) + arrivals.value.length,
+    )
+
+    watch(() => page.props.notifications, () => (arrivals.value = []))
+
+    const channel = (): string | null => {
+        const id = page.props.auth?.user?.id
+
+        return id ? `App.Models.User.${id}` : null
+    }
+
+    onMounted(() => {
+        const name = channel()
+
+        /** Echo is absent when the transport cannot work; see resources/js/echo.ts. */
+        if (! name || ! window.Echo) {
+            return
+        }
+
+        window.Echo.private(name).notification((payload: Record<string, string>) => {
+            arrivals.value.unshift({
+                id: payload.id,
+                title: payload.title ?? 'Notification',
+                organizationName: payload.organization_name ?? null,
+                createdAtDiff: payload.created_at_diff ?? 'just now',
+                isRead: false,
+            })
+        })
+    })
+
+    onUnmounted(() => {
+        const name = channel()
+
+        if (name && window.Echo) {
+            window.Echo.leave(name)
+        }
+    })
 
     /**
      * Grouped by the organization each notification belongs to, mirroring how the

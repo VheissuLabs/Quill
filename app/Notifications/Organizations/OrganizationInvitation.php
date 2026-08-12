@@ -5,6 +5,7 @@ namespace App\Notifications\Organizations;
 use App\Models\OrganizationInvitation as InvitationModel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -25,7 +26,7 @@ class OrganizationInvitation extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return $this->inApp ? ['database'] : ['mail'];
+        return $this->inApp ? ['database', 'broadcast'] : ['mail'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -38,6 +39,18 @@ class OrganizationInvitation extends Notification implements ShouldQueue
                 __('Accept invitation'),
                 route('join.show', ['invitation' => $this->invitation->code]),
             );
+    }
+
+    /**
+     * The payload the bell renders, shaped like `HasNotificationFeed` reads it so
+     * an arriving notification looks the same as a reloaded one.
+     */
+    public function toBroadcast(object $notifiable): BroadcastMessage
+    {
+        return new BroadcastMessage([
+            ...$this->toArray($notifiable),
+            'created_at_diff' => __('just now'),
+        ]);
     }
 
     /** @return array<string, mixed> */
