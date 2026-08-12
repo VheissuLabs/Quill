@@ -6,10 +6,13 @@ use App\Enums\TeamRole;
 use App\Models\Client;
 use App\Models\Team;
 use App\Models\User;
+use Database\Seeders\Concerns\AttributesActivity;
 use Illuminate\Database\Seeder;
 
 class TeamSeeder extends Seeder
 {
+    use AttributesActivity;
+
     /**
      * Teams are subgroups of a client. Spread across several clients in several
      * organizations so switching organizations visibly changes the team list, and
@@ -52,20 +55,22 @@ class TeamSeeder extends Seeder
         foreach ($this->teams as $clientName => $teams) {
             $client = Client::where('name', $clientName)->firstOrFail();
 
-            foreach ($teams as $name => $role) {
-                $team = Team::factory()
-                    ->heldBy($client)
-                    ->withMember($user, $role)
-                    ->withMembers(2)
-                    ->create(['name' => $name]);
+            $this->causedBy($this->ownerOf($client->organization), function () use ($client, $teams, $user) {
+                foreach ($teams as $name => $role) {
+                    $team = Team::factory()
+                        ->heldBy($client)
+                        ->withMember($user, $role)
+                        ->withMembers(2)
+                        ->create(['name' => $name]);
 
-                if ($role !== TeamRole::Owner) {
-                    $team->members()->attach(
-                        User::factory()->create(),
-                        ['role' => TeamRole::Owner->value],
-                    );
+                    if ($role !== TeamRole::Owner) {
+                        $team->members()->attach(
+                            User::factory()->create(),
+                            ['role' => TeamRole::Owner->value],
+                        );
+                    }
                 }
-            }
+            });
         }
     }
 }

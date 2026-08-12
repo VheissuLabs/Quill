@@ -5,11 +5,14 @@ namespace Database\Seeders;
 use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\User;
+use Database\Seeders\Concerns\AttributesActivity;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 class ContactSeeder extends Seeder
 {
+    use AttributesActivity;
+
     /**
      * The people at each client, by client name.
      *
@@ -36,18 +39,20 @@ class ContactSeeder extends Seeder
         foreach ($this->contacts as $clientName => $people) {
             $client = Client::where('name', $clientName)->firstOrFail();
 
-            foreach ($people as $name) {
-                $contact = User::factory()->create([
-                    'name' => $name,
-                    'email' => Str::slug($name, '.').'@'.Str::slug($clientName).'.test',
-                ]);
+            $this->causedBy($this->ownerOf($client->organization), function () use ($client, $people) {
+                foreach ($people as $name) {
+                    $contact = User::factory()->create([
+                        'name' => $name,
+                        'email' => Str::slug($name, '.').'@'.Str::slug($client->name).'.test',
+                    ]);
 
-                $client->organization->members()->attach($contact, [
-                    'client_id' => $client->id,
-                ]);
+                    $client->organization->members()->attach($contact, [
+                        'client_id' => $client->id,
+                    ]);
 
-                $contact->assignOrganizationRole($client->organization, OrganizationRole::Client);
-            }
+                    $contact->assignOrganizationRole($client->organization, OrganizationRole::Client);
+                }
+            });
         }
     }
 }

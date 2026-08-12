@@ -95,6 +95,15 @@ class Team extends Model
         return $this->hasMany(TeamInvitation::class);
     }
 
+    /**
+     * A personal team is a private workspace, not organization history, and it
+     * carries no organization to file the entry under.
+     */
+    protected function shouldLogEvent(string $eventName): bool
+    {
+        return ! $this->is_personal;
+    }
+
     protected static function boot(): void
     {
         parent::boot();

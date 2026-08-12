@@ -216,3 +216,27 @@ test('membership and invitation entries read as sentences too', function () {
     expect($summaries)->toContain('Invited nina@acme.test');
     expect($summaries)->toContain('Lucy Alvarez joined the organization');
 })->note('"Created organization membership" against a UUID tells an admin nothing.');
+
+test('personal teams are not organization history', function () {
+    [$organization, $admin] = organizationWith(OrganizationRole::Admin);
+
+    forgetSetupActivity();
+
+    Team::factory()->create(['name' => "Someone's Team", 'is_personal' => true]);
+    Team::factory()->heldBy($organization)->create(['name' => 'Delivery']);
+
+    expect(Activity::count())->toBe(1);
+    expect(Activity::sole()->subject->name)->toBe('Delivery');
+})->note('A personal team is a private workspace and carries no organization to file it under.');
+
+test('seeded history is attributed to a person, not the system', function () {
+    $this->seed();
+
+    expect(Activity::whereNull('causer_id')->count())->toBe(0);
+    expect(Activity::whereNull('organization_id')->count())->toBe(0);
+
+    $notaryDash = Organization::where('name', 'NotaryDash')->sole();
+
+    expect(Activity::forOrganization($notaryDash)->with('causer')->get()->pluck('causer.name')->unique()->all())
+        ->toBe(['Jen']);
+})->note('An activity table full of "System" is not a used app.');
