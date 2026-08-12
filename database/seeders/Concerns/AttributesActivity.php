@@ -4,7 +4,7 @@ namespace Database\Seeders\Concerns;
 
 use App\Models\Organization;
 use App\Models\User;
-use Spatie\Activitylog\Support\CauserResolver;
+use Spatie\Activitylog\Facades\Activity;
 
 trait AttributesActivity
 {
@@ -19,7 +19,7 @@ trait AttributesActivity
      */
     protected function causedBy(?User $causer, callable $callback): mixed
     {
-        return app(CauserResolver::class)->withCauser($causer, fn () => $callback());
+        return Activity::defaultCauser($causer, fn () => $callback());
     }
 
     protected function ownerOf(Organization $organization): ?User
