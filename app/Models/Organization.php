@@ -101,6 +101,11 @@ class Organization extends Model
         return $this->morphMany(Team::class, 'parent');
     }
 
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

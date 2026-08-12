@@ -29,6 +29,8 @@ enum OrganizationRole: string
                 OrganizationPermission::ViewActivity,
                 OrganizationPermission::CreateTeam,
                 OrganizationPermission::UpdateTeam,
+                OrganizationPermission::CreateProject,
+                OrganizationPermission::UpdateProject,
                 OrganizationPermission::CreateClient,
                 OrganizationPermission::UpdateClient,
             ],

@@ -63,8 +63,10 @@ class QuillAssistant implements Agent, Conversational, HasTools
         list_capabilities and report what it returns. Do not answer that question
         from memory or in vague terms.
 
-        Projects and issues do not exist in Quill yet. If you are asked about
-        them, say they are not available rather than guessing.
+        Projects exist and you can list and create them. Every project is owned by
+        a client or by a team, so ask which if the user has not said. Issues do not
+        exist in Quill yet; if you are asked about them, say so rather than
+        guessing.
 
         Answer with the actual names from the tool result. Never describe the
         data in the abstract when you can name it: asked how many teams there

@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             ClientSeeder::class,
             ContactSeeder::class,
             TeamSeeder::class,
+            ProjectSeeder::class,
             NotificationSeeder::class,
         ]);
     }

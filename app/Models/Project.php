@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueSlugs;
-use App\Observers\ParentIntegrityObserver;
-use Database\Factories\ClientFactory;
+use App\Observers\ProjectOwnerObserver;
+use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -12,17 +12,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/** @mixin IdeHelperClient */
+/** @mixin IdeHelperProject */
 
-#[ObservedBy(ParentIntegrityObserver::class)]
-#[UseFactory(ClientFactory::class)]
-class Client extends Model
+#[ObservedBy(ProjectOwnerObserver::class)]
+#[UseFactory(ProjectFactory::class)]
+class Project extends Model
 {
     use GeneratesUniqueSlugs, HasFactory, HasUuids, LogsActivity, SoftDeletes;
 
@@ -48,29 +47,15 @@ class Client extends Model
     }
 
     /** @return MorphTo<Model, $this> */
-    public function parent(): MorphTo
+    public function owner(): MorphTo
     {
         return $this->morphTo();
     }
 
-    public function teams(): MorphMany
+    /** The clients that send their work here by default. */
+    public function defaultForClients(): HasMany
     {
-        return $this->morphMany(Team::class, 'parent');
-    }
-
-    public function contacts(): HasMany
-    {
-        return $this->hasMany(OrganizationMembership::class);
-    }
-
-    public function projects(): MorphMany
-    {
-        return $this->morphMany(Project::class, 'owner');
-    }
-
-    public function defaultProject(): BelongsTo
-    {
-        return $this->belongsTo(Project::class, 'default_project_id');
+        return $this->hasMany(Client::class, 'default_project_id');
     }
 
     public function getRouteKeyName(): string
@@ -82,15 +67,15 @@ class Client extends Model
     {
         parent::boot();
 
-        static::creating(function (Client $client) {
-            if (empty($client->slug)) {
-                $client->slug = static::generateUniqueSlug($client->name);
+        static::creating(function (Project $project) {
+            if (empty($project->slug)) {
+                $project->slug = static::generateUniqueSlug($project->name);
             }
         });
 
-        static::updating(function (Client $client) {
-            if ($client->isDirty('name')) {
-                $client->slug = static::generateUniqueSlug($client->name, $client->id);
+        static::updating(function (Project $project) {
+            if ($project->isDirty('name')) {
+                $project->slug = static::generateUniqueSlug($project->name, $project->id);
             }
         });
     }

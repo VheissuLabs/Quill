@@ -19,10 +19,12 @@ test('an admin is granted the write tools', function () {
         'list_clients',
         'list_teams',
         'list_contacts',
+        'list_projects',
         'create_client',
         'rename_client',
         'create_team',
         'rename_team',
+        'create_project',
         'create_contact',
         'list_capabilities',
     ]);
@@ -42,6 +44,7 @@ test('a member is granted no write tools at all', function () {
         'list_clients',
         'list_teams',
         'list_contacts',
+        'list_projects',
         'list_capabilities',
     ]);
 })->note('Withholding the grant stops the model offering something it would then be refused.');

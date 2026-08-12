@@ -44,6 +44,11 @@ class Team extends Model
             ->useLogName('organization');
     }
 
+    public function projects(): MorphMany
+    {
+        return $this->morphMany(Project::class, 'owner');
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

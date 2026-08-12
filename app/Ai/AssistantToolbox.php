@@ -5,11 +5,13 @@ namespace App\Ai;
 use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\CreateClient;
 use App\Ai\Tools\CreateContact;
+use App\Ai\Tools\CreateProject;
 use App\Ai\Tools\CreateTeam;
 use App\Ai\Tools\DescribeOrganization;
 use App\Ai\Tools\ListCapabilities;
 use App\Ai\Tools\ListClients;
 use App\Ai\Tools\ListContacts;
+use App\Ai\Tools\ListProjects;
 use App\Ai\Tools\ListTeams;
 use App\Ai\Tools\RenameClient;
 use App\Ai\Tools\RenameTeam;
@@ -34,6 +36,7 @@ class AssistantToolbox
             new ListClients($user),
             new ListTeams($user),
             new ListContacts($user),
+            new ListProjects($user),
         ];
 
         $organization = $user->currentOrganization;
@@ -55,6 +58,10 @@ class AssistantToolbox
 
         if ($permitted(OrganizationPermission::UpdateTeam)) {
             $tools[] = new RenameTeam($user);
+        }
+
+        if ($permitted(OrganizationPermission::CreateProject)) {
+            $tools[] = new CreateProject($user);
         }
 
         if ($permitted(OrganizationPermission::AddMember)) {

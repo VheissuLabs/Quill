@@ -20,6 +20,10 @@ enum OrganizationPermission: string
     case UpdateTeam = 'team:update';
     case DeleteTeam = 'team:delete';
 
+    case CreateProject = 'project:create';
+    case UpdateProject = 'project:update';
+    case DeleteProject = 'project:delete';
+
     case CreateClient = 'client:create';
     case UpdateClient = 'client:update';
     case DeleteClient = 'client:delete';
