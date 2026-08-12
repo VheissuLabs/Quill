@@ -25,6 +25,7 @@ test('an admin is granted the write tools', function () {
         'create_team',
         'rename_team',
         'create_project',
+        'rename_project',
         'create_contact',
         'list_capabilities',
     ]);

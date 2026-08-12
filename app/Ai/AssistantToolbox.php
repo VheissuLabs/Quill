@@ -14,6 +14,7 @@ use App\Ai\Tools\ListContacts;
 use App\Ai\Tools\ListProjects;
 use App\Ai\Tools\ListTeams;
 use App\Ai\Tools\RenameClient;
+use App\Ai\Tools\RenameProject;
 use App\Ai\Tools\RenameTeam;
 use App\Enums\OrganizationPermission;
 use App\Models\User;
@@ -62,6 +63,10 @@ class AssistantToolbox
 
         if ($permitted(OrganizationPermission::CreateProject)) {
             $tools[] = new CreateProject($user);
+        }
+
+        if ($permitted(OrganizationPermission::UpdateProject)) {
+            $tools[] = new RenameProject($user);
         }
 
         if ($permitted(OrganizationPermission::AddMember)) {
