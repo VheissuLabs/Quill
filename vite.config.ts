@@ -11,6 +11,9 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
+            // Serve the dev server over Herd's certificate so HMR is not blocked
+            // as mixed content by the HTTPS site.
+            detectTls: 'Quill.test',
             fonts: [
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600],
