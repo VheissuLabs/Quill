@@ -13,57 +13,54 @@ class ProjectSeeder extends Seeder
     use AttributesActivity;
 
     /**
-     * The work each client has on the go, and who owns it.
+     * One project per client, owned by that client, and that client's work lands
+     * there. This is the ordinary case, and keeping it uniform means anything that
+     * differs on screen differs for a reason.
      *
-     * Acme's two projects show a client owning its own work directly. Harbor's
-     * sits under the Delivery team, which is the other legal arrangement. Sunbelt
-     * has none, so the no-projects-yet case is visible without editing seeders.
+     * Sunbelt Signings is absent on purpose: a client that has not been set up yet
+     * is a real state, and it is the only row with no default project.
      *
-     * @var array<string, array<int, string>>
+     * @var array<string, string>
      */
     protected array $clientProjects = [
-        'Acme Title Co' => ['Acme Website', 'Acme Closing Portal'],
-        'Ridgeline Outfitters' => ['Ridgeline Storefront'],
-        'Copperfield Dental' => ['Copperfield Booking'],
-        'Wavelength Audio' => ['Wavelength App'],
+        'Acme Title Co' => 'Acme Website',
+        'Harbor Escrow' => 'Harbor Escrow Portal',
+        'Ridgeline Outfitters' => 'Ridgeline Storefront',
+        'Copperfield Dental' => 'Copperfield Booking',
+        'Wavelength Audio' => 'Wavelength App',
     ];
 
-    /** @var array<string, array<int, string>> */
+    /**
+     * A team may own a project too — internal work that belongs to no client.
+     *
+     * Exactly one exists, and no client points at it, so the difference between
+     * "a client's project" and "a team's project" is visible on screen rather
+     * than something you have to read the seeder to notice.
+     *
+     * @var array<string, string>
+     */
     protected array $teamProjects = [
-        'Delivery' => ['Harbor Escrow Rebuild'],
+        'Delivery' => 'Delivery Internal Tooling',
     ];
 
     public function run(): void
     {
-        foreach ($this->clientProjects as $clientName => $names) {
+        foreach ($this->clientProjects as $clientName => $projectName) {
             $client = Client::where('name', $clientName)->firstOrFail();
 
-            $this->causedBy($this->ownerOf($client->organization), function () use ($client, $names) {
-                foreach ($names as $name) {
-                    $project = Project::factory()->ownedBy($client)->create(['name' => $name]);
+            $this->causedBy($this->ownerOf($client->organization), function () use ($client, $projectName) {
+                $project = Project::factory()->ownedBy($client)->create(['name' => $projectName]);
 
-                    /** Where a client's issues land, set once the project exists. */
-                    $client->default_project_id ??= $project->id;
-                }
-
-                $client->save();
+                $client->update(['default_project_id' => $project->id]);
             });
         }
 
-        foreach ($this->teamProjects as $teamName => $names) {
+        foreach ($this->teamProjects as $teamName => $projectName) {
             $team = Team::where('name', $teamName)->firstOrFail();
 
-            $this->causedBy($this->ownerOf($team->organization), function () use ($team, $names) {
-                foreach ($names as $name) {
-                    Project::factory()->ownedBy($team)->create(['name' => $name]);
-                }
+            $this->causedBy($this->ownerOf($team->organization), function () use ($team, $projectName) {
+                Project::factory()->ownedBy($team)->create(['name' => $projectName]);
             });
         }
-
-        /** Harbor's work is run by the Delivery team rather than by Harbor itself. */
-        $harbor = Client::where('name', 'Harbor Escrow')->firstOrFail();
-        $harbor->update([
-            'default_project_id' => Project::where('name', 'Harbor Escrow Rebuild')->firstOrFail()->id,
-        ]);
     }
 }
