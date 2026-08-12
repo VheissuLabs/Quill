@@ -68,6 +68,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
+            "@php artisan optimize:clear",
             "@php artisan dev"
         ],
         "lint": [
