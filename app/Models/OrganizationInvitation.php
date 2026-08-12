@@ -10,19 +10,30 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperOrganizationInvitation */
 
 #[UseFactory(OrganizationInvitationFactory::class)]
 class OrganizationInvitation extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, LogsActivity;
 
     protected $guarded = [
         'id',
         'created_at',
         'updated_at',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['email', 'role'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('organization');
+    }
 
     public function organization(): BelongsTo
     {

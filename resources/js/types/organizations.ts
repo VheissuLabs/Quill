@@ -43,3 +43,20 @@ export type JoinInvitationContext = {
     organizationName: string
     clientName: string | null
 }
+
+export type ActivityEntry = {
+    id: string
+    summary: string
+    causerName: string | null
+    happenedAt: string
+    happenedAtDiff: string
+}
+
+export type Paginated<T> = {
+    data: T[]
+    current_page: number
+    last_page: number
+    total: number
+    prev_page_url: string | null
+    next_page_url: string | null
+}

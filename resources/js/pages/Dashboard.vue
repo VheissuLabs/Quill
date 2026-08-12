@@ -1,18 +1,22 @@
 <script setup lang="ts">
     import { Head } from '@inertiajs/vue3'
+    import OrganizationActivityTable from '@/components/OrganizationActivityTable.vue'
     import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue'
     import PendingOrganizationInvitationsModal from '@/components/PendingOrganizationInvitationsModal.vue'
     import PlaceholderPattern from '@/components/PlaceholderPattern.vue'
     import { dashboard } from '@/routes'
     import type {
+        ActivityEntry,
         DashboardInvitation,
         DashboardOrganizationInvitation,
+        Paginated,
         Team,
     } from '@/types'
 
     defineProps<{
         pendingInvitations?: DashboardInvitation[]
         pendingOrganizationInvitations?: DashboardOrganizationInvitation[]
+        activity?: Paginated<ActivityEntry> | null
     }>()
 
     defineOptions({
@@ -65,7 +69,10 @@
                 <PlaceholderPattern />
             </div>
         </div>
+        <OrganizationActivityTable v-if="activity" :activity="activity" />
+
         <div
+            v-else
             class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border"
         >
             <PlaceholderPattern />

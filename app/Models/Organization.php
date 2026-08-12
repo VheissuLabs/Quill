@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperOrganization */
 
@@ -22,7 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model
 {
-    use GeneratesUniqueSlugs, HasFactory, HasUuids, SoftDeletes;
+    use GeneratesUniqueSlugs, HasFactory, HasUuids, LogsActivity, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -30,6 +32,15 @@ class Organization extends Model
         'updated_at',
         'deleted_at',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('organization');
+    }
 
     public function roles(): HasMany
     {

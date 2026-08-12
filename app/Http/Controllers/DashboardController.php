@@ -2,14 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Concerns\SummarizesActivity;
+use App\Data\ActivityEntry;
+use App\Enums\OrganizationPermission;
+use App\Models\Activity;
 use App\Models\OrganizationInvitation;
 use App\Models\TeamInvitation;
+use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    use SummarizesActivity;
+
     public function __invoke(Request $request): Response
     {
         $email = strtolower($request->user()->email);
@@ -52,6 +60,34 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'pendingInvitations' => $pendingInvitations,
             'pendingOrganizationInvitations' => $pendingOrganizationInvitations,
+            'activity' => $this->activityFor($request->user()),
         ]);
+    }
+
+    /**
+     * The organization's history, for anyone allowed to read it.
+     *
+     * Scoped by `activity_log.organization_id`, so it covers the organization and
+     * everything beneath it — clients, teams, memberships, invitations — without
+     * one query per subject type.
+     *
+     * @return LengthAwarePaginator<int, ActivityEntry>|null
+     */
+    protected function activityFor(User $user): ?LengthAwarePaginator
+    {
+        $organization = $user->currentOrganization;
+
+        if ($organization === null || ! $user->hasOrganizationPermission($organization, OrganizationPermission::ViewActivity)) {
+            return null;
+        }
+
+        return Activity::query()
+            ->forOrganization($organization)
+            ->with(['causer', 'subject'])
+            ->latest()
+            ->latest('id')
+            ->paginate(15, pageName: 'activity')
+            ->withQueryString()
+            ->through(fn (Activity $activity) => $this->toActivityEntry($activity));
     }
 }

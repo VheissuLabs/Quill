@@ -14,6 +14,8 @@ enum OrganizationPermission: string
     case CreateInvitation = 'invitation:create';
     case CancelInvitation = 'invitation:cancel';
 
+    case ViewActivity = 'activity:view';
+
     case CreateTeam = 'team:create';
     case UpdateTeam = 'team:update';
     case DeleteTeam = 'team:delete';
