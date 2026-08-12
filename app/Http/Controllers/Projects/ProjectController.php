@@ -10,6 +10,30 @@ use Inertia\Response;
 
 class ProjectController extends Controller
 {
+    public function index(Request $request): Response
+    {
+        $user = $request->user();
+        $organization = $user->currentOrganization;
+        $team = $user->currentTeam;
+
+        $inScope = $organization !== null
+            && $team !== null
+            && $team->organization_id === $organization->id;
+
+        $projects = $inScope
+            ? $team->projectsInScope()->with(['owner', 'defaultForClients'])->orderBy('name')->get()
+            : collect();
+
+        return Inertia::render('projects/Index', [
+            'teamName' => $inScope ? $team->name : null,
+            'projects' => $projects->map(fn (Project $project) => [
+                ...(array) $user->toUserProject($project),
+                'defaultForClients' => $project->defaultForClients->pluck('name')->values(),
+                'createdAt' => $project->created_at?->toFormattedDateString(),
+            ])->values(),
+        ]);
+    }
+
     public function show(Request $request, Project $project): Response
     {
         $user = $request->user();

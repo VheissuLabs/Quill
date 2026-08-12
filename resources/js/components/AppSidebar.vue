@@ -1,10 +1,9 @@
 <script setup lang="ts">
     import { Link, usePage } from '@inertiajs/vue3'
-    import { LayoutGrid, Sparkles } from '@lucide/vue'
+    import { FolderOpen, LayoutGrid, Sparkles } from '@lucide/vue'
     import { computed } from 'vue'
     import AppLogo from '@/components/AppLogo.vue'
     import NavMain from '@/components/NavMain.vue'
-    import NavProjects from '@/components/NavProjects.vue'
     import NavUser from '@/components/NavUser.vue'
     import NotificationBell from '@/components/NotificationBell.vue'
     import OrganizationSwitcher from '@/components/OrganizationSwitcher.vue'
@@ -19,6 +18,7 @@
         SidebarMenuItem,
     } from '@/components/ui/sidebar'
     import { assistant, dashboard } from '@/routes'
+    import projects from '@/routes/projects'
     import type { NavItem } from '@/types'
 
     const page = usePage()
@@ -40,6 +40,11 @@
             href: assistant().url,
             icon: Sparkles,
         },
+        {
+            title: 'Projects',
+            href: projects.index().url,
+            icon: FolderOpen,
+        },
     ])
 </script>
 
@@ -59,7 +64,6 @@
 
         <SidebarContent>
             <NavMain :items="mainNavItems" />
-            <NavProjects />
         </SidebarContent>
 
         <SidebarFooter>

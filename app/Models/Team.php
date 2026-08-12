@@ -8,6 +8,7 @@ use App\Observers\ParentIntegrityObserver;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -47,6 +49,46 @@ class Team extends Model
     public function projects(): MorphMany
     {
         return $this->morphMany(Project::class, 'owner');
+    }
+
+    /**
+     * The clients whose work this team is responsible for.
+     *
+     * Both directions count: a team may hold clients (an org-level "Delivery"
+     * team owning accounts) or sit under one (an "Acme Dev" team inside Acme).
+     * Either way that client's projects are this team's work.
+     *
+     * @return Collection<int, string>
+     */
+    public function clientsInScope(): Collection
+    {
+        $ids = $this->clients()->pluck('id');
+
+        if ($this->getAttribute('parent_type') === Client::class) {
+            $ids->push($this->getAttribute('parent_id'));
+        }
+
+        return $ids->unique()->values();
+    }
+
+    /**
+     * Projects this team owns, plus those owned by the clients in its scope.
+     *
+     * @return Builder<Project>
+     */
+    public function projectsInScope(): Builder
+    {
+        $clientIds = $this->clientsInScope();
+
+        return Project::query()
+            ->where('organization_id', $this->organization_id)
+            ->where(fn (Builder $query) => $query
+                ->where(fn (Builder $owned) => $owned
+                    ->where('owner_type', self::class)
+                    ->where('owner_id', $this->getKey()))
+                ->orWhere(fn (Builder $client) => $client
+                    ->where('owner_type', Client::class)
+                    ->whereIn('owner_id', $clientIds)));
     }
 
     public function getRouteKeyName(): string

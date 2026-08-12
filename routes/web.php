@@ -34,6 +34,7 @@ Route::prefix('{current_team}')
  * it sits outside the {current_team} prefix the rest of the app still uses.
  */
 Route::middleware(['auth', 'verified', DenyClientContacts::class])->group(function () {
+    Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
 
     Route::get('assistant', AssistantController::class)->name('assistant');
