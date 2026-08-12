@@ -11,9 +11,15 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
-            // Serve the dev server over Herd's certificate so HMR is not blocked
-            // as mixed content by the HTTPS site.
-            detectTls: 'Quill.test',
+            /**
+             * Lowercase deliberately. The value becomes both `server.host` and
+             * `server.hmr.host`, and Vite's allowed-host check is case-sensitive —
+             * browsers always send a lowercase Host header, so 'Quill.test' (as
+             * Herd names the certificate files) makes every HMR upgrade 400 while
+             * ordinary asset requests still succeed. The cert lookup is
+             * case-insensitive on macOS, so this still finds Quill.test.crt.
+             */
+            detectTls: 'quill.test',
             fonts: [
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600],
