@@ -21,14 +21,13 @@ class ProjectController extends Controller
             && $team->organization_id === $organization->id;
 
         $projects = $inScope
-            ? $team->projectsInScope()->with(['owner', 'defaultForClients'])->orderBy('name')->get()
+            ? $team->projectsInScope()->with('owner')->orderBy('name')->get()
             : collect();
 
         return Inertia::render('projects/Index', [
             'teamName' => $inScope ? $team->name : null,
             'projects' => $projects->map(fn (Project $project) => [
                 ...(array) $user->toUserProject($project),
-                'defaultForClients' => $project->defaultForClients->pluck('name')->values(),
                 'createdAt' => $project->created_at?->toFormattedDateString(),
             ])->values(),
         ]);

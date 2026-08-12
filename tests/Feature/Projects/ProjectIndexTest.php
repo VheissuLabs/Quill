@@ -138,7 +138,6 @@ test('the table carries what each row shows', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('projects.0.ownerName', 'Acme Title')
-            ->where('projects.0.defaultForClients', ['Acme Title'])
             ->where('projects.0.slug', 'acme-website')
             ->has('projects.0.createdAt'),
         );

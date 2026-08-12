@@ -1,6 +1,15 @@
 <script setup lang="ts">
     import { Link } from '@inertiajs/vue3'
     import { Button } from '@/components/ui/button'
+    import {
+        Table,
+        TableBody,
+        TableCell,
+        TableEmpty,
+        TableHead,
+        TableHeader,
+        TableRow,
+    } from '@/components/ui/table'
     import type { ActivityEntry, Paginated } from '@/types'
 
     const props = defineProps<{
@@ -21,44 +30,44 @@
             </span>
         </div>
 
-        <p
-            v-if="props.activity.data.length === 0"
-            data-test="organization-activity-empty"
-            class="px-4 py-10 text-center text-sm text-muted-foreground"
-        >
-            Nothing has happened yet.
-        </p>
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>What</TableHead>
+                    <TableHead>Who</TableHead>
+                    <TableHead class="text-right">When</TableHead>
+                </TableRow>
+            </TableHeader>
 
-        <div v-else class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="text-xs text-muted-foreground">
-                    <tr class="border-b">
-                        <th class="px-4 py-2 text-left font-medium">What</th>
-                        <th class="px-4 py-2 text-left font-medium">Who</th>
-                        <th class="px-4 py-2 text-right font-medium">When</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr
+            <TableBody>
+                <TableEmpty
+                    v-if="props.activity.data.length === 0"
+                    :colspan="3"
+                    data-test="organization-activity-empty"
+                >
+                    Nothing has happened yet.
+                </TableEmpty>
+
+                <template v-else>
+                    <TableRow
                         v-for="entry in props.activity.data"
                         :key="entry.id"
                         data-test="organization-activity-row"
-                        class="border-b last:border-0"
                     >
-                        <td class="px-4 py-2">{{ entry.summary }}</td>
-                        <td class="px-4 py-2 text-muted-foreground">
+                        <TableCell>{{ entry.summary }}</TableCell>
+                        <TableCell class="text-muted-foreground">
                             {{ entry.causerName ?? 'System' }}
-                        </td>
-                        <td
-                            class="px-4 py-2 text-right whitespace-nowrap text-muted-foreground"
+                        </TableCell>
+                        <TableCell
+                            class="text-right whitespace-nowrap text-muted-foreground"
                             :title="entry.happenedAt"
                         >
                             {{ entry.happenedAtDiff }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+                        </TableCell>
+                    </TableRow>
+                </template>
+            </TableBody>
+        </Table>
 
         <div
             v-if="props.activity.last_page > 1"

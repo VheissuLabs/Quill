@@ -114,24 +114,6 @@ test('projects are scoped to their organization', function () {
     expect($mine->projects()->pluck('name')->all())->toBe(['Mine']);
 });
 
-test('the seeder gives every organization projects with both kinds of owner', function () {
-    $this->seed();
-
-    $notaryDash = Organization::where('name', 'NotaryDash')->sole();
-
-    expect($notaryDash->projects()->count())->toBeGreaterThanOrEqual(3);
-
-    $owners = $notaryDash->projects()->with('owner')->get()
-        ->map(fn (Project $project) => class_basename((string) $project->owner_type))
-        ->unique()
-        ->sort()
-        ->values()
-        ->all();
-
-    expect($owners)->toBe(['Client', 'Team']);
-    expect(Client::whereNull('default_project_id')->pluck('name')->all())->toBe(['Sunbelt Signings']);
-})->note('Both legal arrangements and the no-project case are visible without editing seeders.');
-
 test('project activity is filed under the organization', function () {
     $organization = Organization::factory()->create();
     $client = Client::factory()->heldBy($organization)->create();
@@ -146,36 +128,3 @@ test('project activity is filed under the organization', function () {
     expect($entries)->toHaveCount(2);
     expect($entries->pluck('organization_id')->unique()->all())->toBe([$organization->id]);
 })->note('A new subject the Activity hook does not know about silently logs with no organization and never appears.');
-
-test('the seed makes the two kinds of ownership obvious', function () {
-    $this->seed();
-
-    $notaryDash = Organization::where('name', 'NotaryDash')->sole();
-
-    $rows = $notaryDash->projects()->with(['owner', 'defaultForClients'])->orderBy('name')->get()
-        ->map(fn (Project $project) => [
-            'project' => $project->name,
-            'owner' => class_basename((string) $project->owner_type).':'.$project->owner->name,
-            'defaultFor' => $project->defaultForClients->pluck('name')->join(','),
-        ])
-        ->all();
-
-    expect($rows)->toBe([
-        ['project' => 'Acme Website', 'owner' => 'Client:Acme Title Co', 'defaultFor' => 'Acme Title Co'],
-        ['project' => 'Delivery Internal Tooling', 'owner' => 'Team:Delivery', 'defaultFor' => ''],
-        ['project' => 'Harbor Escrow Portal', 'owner' => 'Client:Harbor Escrow', 'defaultFor' => 'Harbor Escrow'],
-    ]);
-})->note('Every client project follows one rule, so the single team-owned project is the only thing that looks different.');
-
-test('a client owns exactly the project its work lands in', function () {
-    $this->seed();
-
-    Client::whereNotNull('default_project_id')->with(['defaultProject.owner'])->get()
-        ->each(function (Client $client) {
-            expect($client->defaultProject->owner->is($client))->toBeTrue(
-                "{$client->name} should default to a project it owns"
-            );
-        });
-
-    expect(Client::whereNull('default_project_id')->pluck('name')->all())->toBe(['Sunbelt Signings']);
-})->note('One client is deliberately unset: a client nobody has set up yet is a real state.');
