@@ -6,10 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * `owner` rather than `parent`: unlike teams and clients, a project has no
-     * role-based `owner()` for the name to collide with.
-     */
     public function up(): void
     {
         Schema::create('projects', function (Blueprint $table) {
@@ -26,7 +22,6 @@ return new class extends Migration
         });
 
         Schema::table('clients', function (Blueprint $table) {
-            /** Nullable because a project may be owned by a client: requiring one at creation is circular. */
             $table->foreignUuid('default_project_id')
                 ->nullable()
                 ->after('parent_id')

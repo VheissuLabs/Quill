@@ -51,11 +51,7 @@ class Team extends Model
         return $this->morphMany(Project::class, 'owner');
     }
 
-    /**
-     * A team may hold clients or sit under one; both count as its scope.
-     *
-     * @return Collection<int, string>
-     */
+    /** @return Collection<int, string> */
     public function clientsInScope(): Collection
     {
         $ids = $this->clients()->pluck('id');
@@ -134,7 +130,6 @@ class Team extends Model
         return $this->hasMany(TeamInvitation::class);
     }
 
-    /** A personal team is a private workspace with no organization to file the entry under. */
     protected function shouldLogEvent(string $eventName): bool
     {
         return ! $this->is_personal;

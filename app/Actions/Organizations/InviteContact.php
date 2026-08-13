@@ -12,10 +12,6 @@ use Illuminate\Support\Facades\Notification;
 
 class InviteContact
 {
-    /**
-     * Re-inviting the same address re-sends rather than stacking a second invitation:
-     * a small model repeats itself, and nobody should collect duplicates for one seat.
-     */
     public function handle(User $inviter, Client $client, string $email, ?string $name = null): OrganizationInvitation
     {
         $email = mb_strtolower(trim($email));

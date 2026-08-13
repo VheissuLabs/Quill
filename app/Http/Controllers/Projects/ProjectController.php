@@ -38,10 +38,6 @@ class ProjectController extends Controller
         $user = $request->user();
         $organization = $user->currentOrganization;
 
-        /**
-         * The slug is unique across the whole table, so a project from another
-         * organization resolves fine and has to be refused here.
-         */
         abort_unless(
             $organization !== null
                 && $project->organization_id === $organization->id

@@ -26,7 +26,6 @@ class Activity extends SpatieActivity
         return $query->where('organization_id', $organization->id);
     }
 
-    /** Stamped here, not at each call site, so nothing can log activity without its organization. */
     protected static function boot(): void
     {
         parent::boot();

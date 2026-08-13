@@ -52,7 +52,6 @@ class Project extends Model
         return $this->morphTo();
     }
 
-    /** The clients that send their work here by default. */
     public function defaultForClients(): HasMany
     {
         return $this->hasMany(Client::class, 'default_project_id');

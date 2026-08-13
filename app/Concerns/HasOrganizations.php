@@ -171,11 +171,7 @@ trait HasOrganizations
     }
 
     /**
-     * Restores the previous team id: without it, one permission check silently
-     * changes the scope of the next.
-     *
      * @template TReturn
-     *
      * @param callable(): TReturn $callback
      * @return TReturn
      */

@@ -7,10 +7,6 @@ use App\Models\Project;
 use App\Models\Team;
 use RuntimeException;
 
-/**
- * An owner must share the project's organization. The database cannot express
- * that across a morph, so it is checked on write.
- */
 class ProjectOwnerObserver
 {
     public function saving(Project $project): void
@@ -33,11 +29,6 @@ class ProjectOwnerObserver
 
     protected function resolveOwner(Project $project): Client|Team|null
     {
-        /**
-         * Read through getAttribute, not the `owner` relation: Eloquent caches a
-         * loaded relation and would validate against the previous owner. The
-         * columns are typed non-nullable, but an unsaved project has neither yet.
-         */
         $type = $project->getAttribute('owner_type');
         $id = $project->getAttribute('owner_id');
 

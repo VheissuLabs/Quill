@@ -10,10 +10,6 @@ use App\Models\Role;
 
 class SeedDefaultRoles
 {
-    /**
-     * Permissions are global — a fixed vocabulary the application understands. Roles are
-     * per-organization, so an owner can reshape their own without affecting anyone else.
-     */
     public function handle(Organization $organization): void
     {
         $this->ensurePermissionsExist();

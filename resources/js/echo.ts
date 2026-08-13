@@ -10,17 +10,9 @@ declare global {
 
 const scheme = import.meta.env.VITE_REVERB_SCHEME ?? 'http'
 
-/**
- * pusher-js upgrades to `wss` whenever the page is secure, whatever `forceTLS` says,
- * so a plain-`ws` Reverb is unreachable from HTTPS. Skip rather than retry it.
- */
 const reachable = (): boolean =>
     scheme === 'https' || window.location.protocol !== 'https:'
 
-/**
- * Guarded because app.ts imports this and Inertia's SSR renderer evaluates it, where
- * there is no `window`. Unguarded, Vite fails to warm the SSR graph and never starts.
- */
 if (typeof window !== 'undefined') {
     window.Pusher = Pusher
 

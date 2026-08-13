@@ -57,10 +57,6 @@ test('a message is required and bounded', function () {
 });
 
 test('the transcript survives a reload', function () {
-    /**
-     * Keyed on the prompt, not ordered: a streamed invocation advances the fake's
-     * response index more than once, so positional fakes do not line up.
-     */
     QuillAssistant::fake(fn (string $prompt) => match ($prompt) {
         'First question' => 'The first answer.',
         'Second question' => 'The second answer.',

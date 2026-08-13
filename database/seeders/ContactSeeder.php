@@ -13,12 +13,7 @@ class ContactSeeder extends Seeder
 {
     use AttributesActivity;
 
-    /**
-     * Two contacts at Acme Title Co and none at Sunbelt Signings on purpose, so both
-     * cases are visible. Named rather than faked so the assistant's answers are checkable.
-     *
-     * @var array<string, array<int, string>>
-     */
+    /** @var array<string, array<int, string>> */
     protected array $contacts = [
         'Acme Title Co' => ['Lucy Alvarez', 'Marcus Webb'],
         'Harbor Escrow' => ['Priya Raman'],

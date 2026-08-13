@@ -22,7 +22,6 @@ class JoinOrganizationController extends Controller
             return $this->rejected($invitation);
         }
 
-        /** An existing account accepts from the dashboard, so there is nothing to set up. */
         if ($this->accountExistsFor($invitation)) {
             Inertia::flash('toast', [
                 'type' => 'info',

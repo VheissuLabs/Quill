@@ -11,9 +11,6 @@ function dashboardFor(App\Models\User $user): string
     return route('dashboard', ['current_team' => $user->currentTeam?->slug]);
 }
 
-/**
- * The fixture's own creation is logged, so clear those rows before asserting.
- */
 function forgetSetupActivity(): void
 {
     Activity::query()->delete();

@@ -6,7 +6,6 @@ use Illuminate\Support\Collection;
 
 trait MatchesNames
 {
-    /** The model rephrases, and "Acme Title Co." is the same company as "Acme Title Co". */
     protected function comparableName(string $name): string
     {
         $stripped = preg_replace('/[^\p{L}\p{N}\s]/u', '', mb_strtolower(trim($name)));
@@ -15,9 +14,6 @@ trait MatchesNames
     }
 
     /**
-     * `$noun` is stripped from both sides because the model relays the user's
-     * phrasing: "the Development team" for a team named "Development".
-     *
      * @param Collection<int, string> $names
      * @return Collection<int, string>
      */

@@ -24,11 +24,6 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements PasskeyUser
 {
     use HasAssistantConversation, HasFactory, HasNotificationFeed, HasOrganizations, HasProjects, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
-
-    /**
-     * Spatie's "team" is Quill's organization, so its `teams()` means "organizations I
-     * hold a role in" — a different thing from Quill's teams, which keep the name.
-     */
     use HasRoles, HasTeams {
         HasTeams::teams insteadof HasRoles;
         HasRoles::teams as roleOrganizations;

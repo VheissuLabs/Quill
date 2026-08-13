@@ -6,11 +6,7 @@ use InvalidArgumentException;
 
 trait NamesDepartments
 {
-    /**
-     * Teams are departments, named from one list so the seeded app reads like a company.
-     *
-     * @return array<int, string>
-     */
+    /** @return array<int, string> */
     protected function departments(): array
     {
         return [

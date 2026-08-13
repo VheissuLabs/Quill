@@ -24,10 +24,6 @@
     const error = ref<string | null>(null)
     const transcript = useTemplateRef<HTMLElement>('transcript')
 
-    /**
-     * Read from the cookie, which Laravel refreshes on every response. The baked-in
-     * meta tag goes stale if the session regenerates mid-chat, returning a 419.
-     */
     const csrfToken = (): string => {
         const cookie = document.cookie
             .split('; ')

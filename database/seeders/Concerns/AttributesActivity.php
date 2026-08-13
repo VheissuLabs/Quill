@@ -9,10 +9,7 @@ use Spatie\Activitylog\Facades\Activity;
 trait AttributesActivity
 {
     /**
-     * Seed as a real person so the activity log does not read as a wall of "System".
-     *
      * @template TReturn
-     *
      * @param callable(): TReturn $callback
      * @return TReturn
      */

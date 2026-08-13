@@ -14,17 +14,7 @@ class TeamSeeder extends Seeder
 {
     use AttributesActivity, NamesDepartments;
 
-    /**
-     * The departments working on each client's account, and the role the test user
-     * holds in each. Spread across several organizations so switching visibly
-     * changes the team list.
-     *
-     * Names come from `departments()`, so they read like a real company rather
-     * than like fixtures. Each one is used once: slugs are unique across the whole
-     * table, so a repeated department would seed an "engineering-1".
-     *
-     * @var array<string, array<string, TeamRole>>
-     */
+    /** @var array<string, array<string, TeamRole>> */
     protected array $teams = [
         'Acme Title Co' => [
             'Engineering' => TeamRole::Owner,
@@ -45,11 +35,6 @@ class TeamSeeder extends Seeder
     {
         $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
-        /**
-         * ClientSeeder creates the org-level "Delivery" team as structure, because
-         * NotaryDash's clients hang off it. Membership belongs here, so it is
-         * populated rather than created.
-         */
         $delivery = Team::where('name', 'Delivery')->firstOrFail();
         $delivery->members()->attach($user, ['role' => TeamRole::Admin->value]);
         User::factory()->count(2)->create()->each(

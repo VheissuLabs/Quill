@@ -15,7 +15,6 @@
 
     const page = usePage()
 
-    /** Kept out of the shared prop so a reload replaces these rather than duplicating them. */
     const arrivals = ref<UserNotification[]>([])
 
     const notifications = computed(() => [
@@ -41,7 +40,6 @@
     onMounted(() => {
         const name = channel()
 
-        /** Echo is absent when the transport cannot work; see resources/js/echo.ts. */
         if (!name || !window.Echo) {
             return
         }
@@ -67,7 +65,6 @@
         }
     })
 
-    /** Order follows the feed, so the organization with the most recent activity leads. */
     const groups = computed<NotificationGroup[]>(() => {
         const grouped = new Map<string, NotificationGroup>()
 
@@ -96,12 +93,6 @@
                 <Bell />
                 <span>Notifications</span>
 
-                <!--
-                    Two indicators for the same count, because a collapsed sidebar
-                    is an 8x8 overflow-hidden box: the numeric badge is clipped
-                    there, so a dot positioned inside the box takes over. Keeping
-                    `Bell` a direct child preserves the sidebar's [&>svg]:size-4.
-                -->
                 <span
                     v-if="unreadCount > 0"
                     data-test="notification-bell-count"

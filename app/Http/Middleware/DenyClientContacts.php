@@ -8,10 +8,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class DenyClientContacts
 {
-    /**
-     * The assistant's tools answer for the whole organization, so a contact for one
-     * client could read another client's people. Contacts get a narrower grant later.
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();

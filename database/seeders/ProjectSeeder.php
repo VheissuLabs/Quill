@@ -12,11 +12,7 @@ class ProjectSeeder extends Seeder
 {
     use AttributesActivity;
 
-    /**
-     * Sunbelt Signings is absent on purpose — a client not yet set up is a real state.
-     *
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     protected array $clientProjects = [
         'Acme Title Co' => 'Acme Website',
         'Harbor Escrow' => 'Harbor Escrow Portal',
@@ -25,11 +21,7 @@ class ProjectSeeder extends Seeder
         'Wavelength Audio' => 'Wavelength App',
     ];
 
-    /**
-     * Internal work that belongs to no client, so both owner types appear on screen.
-     *
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     protected array $teamProjects = [
         'Delivery' => 'Delivery Internal Tooling',
     ];

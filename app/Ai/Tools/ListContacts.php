@@ -73,11 +73,7 @@ class ListContacts implements AssistantTool
         return [];
     }
 
-    /**
-     * One query for every member's role, rather than a scoped lookup per person.
-     *
-     * @return Collection<string, string>
-     */
+    /** @return Collection<string, string> */
     protected function roleNamesByUser(Organization $organization): Collection
     {
         return DB::table('model_has_roles')

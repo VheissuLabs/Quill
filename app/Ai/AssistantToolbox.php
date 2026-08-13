@@ -21,13 +21,7 @@ use App\Models\User;
 
 class AssistantToolbox
 {
-    /**
-     * Write tools are withheld when the role does not permit the action, so the model
-     * cannot offer what it will be refused. Each tool still checks its own permission:
-     * least privilege, not the only guard.
-     *
-     * @return list<AssistantTool>
-     */
+    /** @return list<AssistantTool> */
     public function for(User $user): array
     {
         $tools = [

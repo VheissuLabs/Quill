@@ -6,11 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * No membership exists until this is accepted: being added to someone's client
-     * account should not happen to you without your agreement, and an unaccepted
-     * invitation is where a mistyped email dies harmlessly.
-     */
     public function up(): void
     {
         Schema::create('organization_invitations', function (Blueprint $table) {

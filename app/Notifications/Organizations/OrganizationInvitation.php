@@ -18,11 +18,7 @@ class OrganizationInvitation extends Notification implements ShouldQueue
         public bool $inApp = false,
     ) {}
 
-    /**
-     * Someone with no account has nowhere to be told but their inbox.
-     *
-     * @return array<int, string>
-     */
+    /** @return array<int, string> */
     public function via(object $notifiable): array
     {
         return $this->inApp ? ['database', 'broadcast'] : ['mail'];
@@ -40,7 +36,6 @@ class OrganizationInvitation extends Notification implements ShouldQueue
             );
     }
 
-    /** Shaped like `HasNotificationFeed` reads it, so an arrival matches a reload. */
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
         return new BroadcastMessage([

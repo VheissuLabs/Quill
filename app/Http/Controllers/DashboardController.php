@@ -64,12 +64,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    /**
-     * Scoped by `activity_log.organization_id`, so everything beneath the organization
-     * is covered without one query per subject type.
-     *
-     * @return LengthAwarePaginator<int, ActivityEntry>|null
-     */
+    /** @return LengthAwarePaginator<int, ActivityEntry>|null */
     protected function activityFor(User $user): ?LengthAwarePaginator
     {
         $organization = $user->currentOrganization;
