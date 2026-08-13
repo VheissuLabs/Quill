@@ -48,7 +48,8 @@
             <DialogHeader>
                 <DialogTitle>Pending invitations</DialogTitle>
                 <DialogDescription>
-                    Accept or decline the organizations you have been invited to.
+                    Accept or decline the organizations you have been invited
+                    to.
                 </DialogDescription>
             </DialogHeader>
 

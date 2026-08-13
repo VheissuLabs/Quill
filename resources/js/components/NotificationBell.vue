@@ -31,7 +31,10 @@
         () => (page.props.unreadNotificationCount ?? 0) + arrivals.value.length,
     )
 
-    watch(() => page.props.notifications, () => (arrivals.value = []))
+    watch(
+        () => page.props.notifications,
+        () => (arrivals.value = []),
+    )
 
     const channel = (): string | null => {
         const id = page.props.auth?.user?.id
@@ -43,19 +46,21 @@
         const name = channel()
 
         /** Echo is absent when the transport cannot work; see resources/js/echo.ts. */
-        if (! name || ! window.Echo) {
+        if (!name || !window.Echo) {
             return
         }
 
-        window.Echo.private(name).notification((payload: Record<string, string>) => {
-            arrivals.value.unshift({
-                id: payload.id,
-                title: payload.title ?? 'Notification',
-                organizationName: payload.organization_name ?? null,
-                createdAtDiff: payload.created_at_diff ?? 'just now',
-                isRead: false,
-            })
-        })
+        window.Echo.private(name).notification(
+            (payload: Record<string, string>) => {
+                arrivals.value.unshift({
+                    id: payload.id,
+                    title: payload.title ?? 'Notification',
+                    organizationName: payload.organization_name ?? null,
+                    createdAtDiff: payload.created_at_diff ?? 'just now',
+                    isRead: false,
+                })
+            },
+        )
     })
 
     onUnmounted(() => {

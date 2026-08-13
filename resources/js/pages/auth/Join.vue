@@ -33,9 +33,8 @@
             <Info class="size-4" />
             <AlertDescription class="text-blue-900 dark:text-blue-100">
                 {{ props.invitation.inviterName }} invited you to
-                {{ props.invitation.organizationName }}<template
-                    v-if="props.invitation.clientName"
-                >
+                {{ props.invitation.organizationName
+                }}<template v-if="props.invitation.clientName">
                     as a contact for
                     {{ props.invitation.clientName }}</template
                 >.
