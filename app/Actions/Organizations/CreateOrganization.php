@@ -18,9 +18,9 @@ class CreateOrganization
 
             $organization->memberships()->create([
                 'user_id' => $user->id,
-                'role' => OrganizationRole::Owner,
             ]);
 
+            $user->assignOrganizationRole($organization, OrganizationRole::Owner);
             $user->switchOrganization($organization);
 
             return $organization;

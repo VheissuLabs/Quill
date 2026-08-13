@@ -8,7 +8,9 @@ test('a user can switch to an organization they belong to', function () {
     $user = User::factory()->create();
     $organization = Organization::factory()->create();
 
-    $organization->members()->attach($user, ['role' => OrganizationRole::Member->value]);
+    $organization->members()->attach($user);
+
+    $user->assignOrganizationRole($organization, OrganizationRole::Member->value);
 
     $response = $this
         ->actingAs($user)
@@ -23,7 +25,9 @@ test('a client contact can switch into their organization', function () {
     $user = User::factory()->create();
     $organization = Organization::factory()->create();
 
-    $organization->members()->attach($user, ['role' => OrganizationRole::Client->value]);
+    $organization->members()->attach($user);
+
+    $user->assignOrganizationRole($organization, OrganizationRole::Client->value);
 
     $this
         ->actingAs($user)

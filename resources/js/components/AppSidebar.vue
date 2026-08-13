@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { Link, usePage } from '@inertiajs/vue3'
-    import { LayoutGrid } from '@lucide/vue'
+    import { FolderOpen, LayoutGrid, Sparkles } from '@lucide/vue'
     import { computed } from 'vue'
     import AppLogo from '@/components/AppLogo.vue'
     import NavMain from '@/components/NavMain.vue'
@@ -17,7 +17,8 @@
         SidebarMenuButton,
         SidebarMenuItem,
     } from '@/components/ui/sidebar'
-    import { dashboard } from '@/routes'
+    import { assistant, dashboard } from '@/routes'
+    import projects from '@/routes/projects'
     import type { NavItem } from '@/types'
 
     const page = usePage()
@@ -33,6 +34,16 @@
             title: 'Dashboard',
             href: dashboardUrl.value,
             icon: LayoutGrid,
+        },
+        {
+            title: 'Assistant',
+            href: assistant().url,
+            icon: Sparkles,
+        },
+        {
+            title: 'Projects',
+            href: projects.index().url,
+            icon: FolderOpen,
         },
     ])
 </script>

@@ -12,7 +12,9 @@ test('a team carries the name and kind of its parent', function () {
     $client = Client::factory()->for($organization)->create(['name' => 'Acme Title Co']);
     $user = User::factory()->create();
 
-    $organization->members()->attach($user, ['role' => OrganizationRole::Owner->value]);
+    $organization->members()->attach($user);
+
+    $user->assignOrganizationRole($organization, OrganizationRole::Owner->value);
 
     $orgTeam = Team::factory()->heldBy($organization)->withMember($user, TeamRole::Owner)->create(['name' => 'Delivery']);
     $clientTeam = Team::factory()->heldBy($client)->withMember($user, TeamRole::Owner)->create(['name' => 'Development']);
@@ -46,7 +48,7 @@ test('the seeded team list carries the parent each team hangs off', function () 
         ->all();
 
     expect($grouped)->toBe([
-        'Acme Title Co' => ['Design', 'Development'],
+        'Acme Title Co' => ['Design', 'Engineering'],
         'Harbor Escrow' => ['Quality Assurance'],
         'NotaryDash' => ['Delivery'],
     ]);

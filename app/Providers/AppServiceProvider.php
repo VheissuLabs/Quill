@@ -20,8 +20,15 @@ class AppServiceProvider extends ServiceProvider
             ReverbPresenceLookup::class
         );
 
+        DevCommands::node('dev', 'vite');
+
         DevCommands::except(
             'server',
+        );
+
+        DevCommands::artisan(
+            'schedule:work',
+            'scheduler'
         );
     }
 

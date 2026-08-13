@@ -9,7 +9,9 @@ test('the current organization and the full list are shared with every page', fu
     $user = User::factory()->create();
     $organization = Organization::factory()->create(['name' => 'NotaryDash']);
 
-    $organization->members()->attach($user, ['role' => OrganizationRole::Owner->value]);
+    $organization->members()->attach($user);
+
+    $user->assignOrganizationRole($organization, OrganizationRole::Owner->value);
     $user->switchOrganization($organization);
 
     $this

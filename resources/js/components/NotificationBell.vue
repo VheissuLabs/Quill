@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { usePage } from '@inertiajs/vue3'
     import { Bell } from '@lucide/vue'
-    import { computed } from 'vue'
+    import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
     import {
         DropdownMenu,
         DropdownMenuContent,
@@ -11,18 +11,60 @@
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu'
     import { SidebarMenuButton } from '@/components/ui/sidebar'
-    import type { NotificationGroup } from '@/types'
+    import type { NotificationGroup, UserNotification } from '@/types'
 
     const page = usePage()
 
-    const notifications = computed(() => page.props.notifications ?? [])
-    const unreadCount = computed(() => page.props.unreadNotificationCount ?? 0)
+    const arrivals = ref<UserNotification[]>([])
 
-    /**
-     * Grouped by the organization each notification belongs to, mirroring how the
-     * team switcher groups by client. Order follows the feed, which is newest
-     * first, so the organization with the most recent activity leads.
-     */
+    const notifications = computed(() => [
+        ...arrivals.value,
+        ...(page.props.notifications ?? []),
+    ])
+
+    const unreadCount = computed(
+        () => (page.props.unreadNotificationCount ?? 0) + arrivals.value.length,
+    )
+
+    watch(
+        () => page.props.notifications,
+        () => (arrivals.value = []),
+    )
+
+    const channel = (): string | null => {
+        const id = page.props.auth?.user?.id
+
+        return id ? `App.Models.User.${id}` : null
+    }
+
+    onMounted(() => {
+        const name = channel()
+
+        if (!name || !window.Echo) {
+            return
+        }
+
+        window.Echo.private(name).notification(
+            (payload: Record<string, string>) => {
+                arrivals.value.unshift({
+                    id: payload.id,
+                    title: payload.title ?? 'Notification',
+                    organizationName: payload.organization_name ?? null,
+                    createdAtDiff: payload.created_at_diff ?? 'just now',
+                    isRead: false,
+                })
+            },
+        )
+    })
+
+    onUnmounted(() => {
+        const name = channel()
+
+        if (name && window.Echo) {
+            window.Echo.leave(name)
+        }
+    })
+
     const groups = computed<NotificationGroup[]>(() => {
         const grouped = new Map<string, NotificationGroup>()
 
@@ -51,12 +93,6 @@
                 <Bell />
                 <span>Notifications</span>
 
-                <!--
-                    Two indicators for the same count, because a collapsed sidebar
-                    is an 8x8 overflow-hidden box: the numeric badge is clipped
-                    there, so a dot positioned inside the box takes over. Keeping
-                    `Bell` a direct child preserves the sidebar's [&>svg]:size-4.
-                -->
                 <span
                     v-if="unreadCount > 0"
                     data-test="notification-bell-count"

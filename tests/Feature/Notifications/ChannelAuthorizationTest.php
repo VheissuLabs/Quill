@@ -42,7 +42,9 @@ test('a member may join their organizations presence channel', function () {
     $user = User::factory()->create();
     $organization = Organization::factory()->create();
 
-    $organization->members()->attach($user, ['role' => OrganizationRole::Member->value]);
+    $organization->members()->attach($user);
+
+    $user->assignOrganizationRole($organization, OrganizationRole::Member->value);
 
     authorizeChannel($user, 'presence-organizations.'.$organization->id)->assertOk();
 });
@@ -51,7 +53,9 @@ test('a client contact may join their own organizations presence channel', funct
     $contact = User::factory()->create();
     $organization = Organization::factory()->create();
 
-    $organization->members()->attach($contact, ['role' => OrganizationRole::Client->value]);
+    $organization->members()->attach($contact);
+
+    $contact->assignOrganizationRole($organization, OrganizationRole::Client->value);
 
     authorizeChannel($contact, 'presence-organizations.'.$organization->id)->assertOk();
 });
@@ -80,7 +84,9 @@ test('the presence payload carries the members name for display', function () {
     $user = User::factory()->create(['name' => 'Karl Murray']);
     $organization = Organization::factory()->create();
 
-    $organization->members()->attach($user, ['role' => OrganizationRole::Owner->value]);
+    $organization->members()->attach($user);
+
+    $user->assignOrganizationRole($organization, OrganizationRole::Owner->value);
 
     $response = authorizeChannel($user, 'presence-organizations.'.$organization->id);
 

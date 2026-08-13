@@ -14,7 +14,7 @@ test('the withOwner state attaches an owner', function () {
     $organization = Organization::factory()->withOwner()->create();
 
     expect($organization->owner())->not->toBeNull();
-    expect($organization->memberships->first()->role)->toBe(OrganizationRole::Owner);
+    expect($organization->members->first()->organizationRoleName($organization))->toBe(OrganizationRole::Owner->value);
 });
 
 test('the withOwner state accepts a specific user', function () {
@@ -29,24 +29,29 @@ test('the withMembers state attaches the requested number of members', function 
     $organization = Organization::factory()->withMembers(4)->create();
 
     expect($organization->members)->toHaveCount(4);
-    expect($organization->memberships->pluck('role')->unique()->all())
-        ->toBe([OrganizationRole::Member]);
+    expect($organization->members->map->organizationRoleName($organization)->unique()->all())
+        ->toBe([OrganizationRole::Member->value]);
 });
 
 test('the withMembers state accepts a role', function () {
     $organization = Organization::factory()->withMembers(2, OrganizationRole::Admin)->create();
 
-    expect($organization->memberships->pluck('role')->unique()->all())
-        ->toBe([OrganizationRole::Admin]);
+    expect($organization->members->map->organizationRoleName($organization)->unique()->all())
+        ->toBe([OrganizationRole::Admin->value]);
 });
 
-test('the withClientContact state attaches a client', function () {
+test('the withClientContact state attaches a contact linked to a client', function () {
     $organization = Organization::factory()->withClientContact()->create();
 
     $contact = $organization->members->first();
 
     expect($contact->isClientContact($organization))->toBeTrue();
-});
+
+    $membership = $organization->memberships()->where('user_id', $contact->id)->sole();
+
+    expect($membership->client_id)->not->toBeNull();
+    expect($membership->client->organization_id)->toBe($organization->id);
+})->note('A Client-role membership with no client_id represents nobody.');
 
 test('states compose', function () {
     $organization = Organization::factory()

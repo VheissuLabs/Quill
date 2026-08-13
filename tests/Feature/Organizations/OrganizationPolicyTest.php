@@ -8,7 +8,9 @@ function memberWithRole(Organization $organization, OrganizationRole $role): Use
 {
     $user = User::factory()->create();
 
-    $organization->members()->attach($user, ['role' => $role->value]);
+    $organization->members()->attach($user);
+
+    $user->assignOrganizationRole($organization, $role->value);
 
     return $user;
 }

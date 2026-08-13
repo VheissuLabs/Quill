@@ -10,6 +10,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::factory()->create([
+            'id' => '019ff2df-fea9-7355-8e26-6b7617008e1d',
             'name' => 'Karl Murray',
             'email' => 'karl@vheissulabs.com',
         ]);
@@ -17,7 +18,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             OrganizationSeeder::class,
             ClientSeeder::class,
+            ContactSeeder::class,
             TeamSeeder::class,
+            ProjectSeeder::class,
             NotificationSeeder::class,
         ]);
     }

@@ -63,7 +63,7 @@ test('registering creates the organization the user named and puts them in it', 
     expect($organization)->not->toBeNull();
     expect($organization->name)->toBe('Acme Agency');
     expect($organization->slug)->toBe('acme-agency');
-    expect($user->organizationRole($organization))->toBe(OrganizationRole::Owner);
+    expect($user->organizationRoleName($organization))->toBe(OrganizationRole::Owner->value);
     expect($user->organizations()->count())->toBe(1);
 });
 

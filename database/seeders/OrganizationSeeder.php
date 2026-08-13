@@ -5,10 +5,13 @@ namespace Database\Seeders;
 use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
+use Database\Seeders\Concerns\AttributesActivity;
 use Illuminate\Database\Seeder;
 
 class OrganizationSeeder extends Seeder
 {
+    use AttributesActivity;
+
     /**
      * The three organizations, with who owns each and what role the test user
      * holds there. Two of them belong to other people — the test user is
@@ -41,19 +44,19 @@ class OrganizationSeeder extends Seeder
                     ? $user
                     : User::factory()->create($spec['owner']);
 
-                $organization = Organization::factory()
-                    ->withOwner($owner)
-                    ->withMembers(2)
-                    ->withClientContact()
-                    ->create(['name' => $name]);
+                return $this->causedBy($owner, function () use ($name, $owner, $user, $spec) {
+                    $organization = Organization::factory()
+                        ->withOwner($owner)
+                        ->withMembers(2)
+                        ->create(['name' => $name]);
 
-                if (! $owner->is($user)) {
-                    $organization->members()->attach($user, [
-                        'role' => $spec['role']->value,
-                    ]);
-                }
+                    if (! $owner->is($user)) {
+                        $organization->members()->attach($user);
+                        $user->assignOrganizationRole($organization, $spec['role']);
+                    }
 
-                return $organization;
+                    return $organization;
+                });
             });
 
         /**

@@ -11,9 +11,12 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperClient */
 
@@ -21,7 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[UseFactory(ClientFactory::class)]
 class Client extends Model
 {
-    use GeneratesUniqueSlugs, HasFactory, HasUuids, SoftDeletes;
+    use GeneratesUniqueSlugs, HasFactory, HasUuids, LogsActivity, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -29,6 +32,15 @@ class Client extends Model
         'updated_at',
         'deleted_at',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('organization');
+    }
 
     public function organization(): BelongsTo
     {
@@ -44,6 +56,21 @@ class Client extends Model
     public function teams(): MorphMany
     {
         return $this->morphMany(Team::class, 'parent');
+    }
+
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(OrganizationMembership::class);
+    }
+
+    public function projects(): MorphMany
+    {
+        return $this->morphMany(Project::class, 'owner');
+    }
+
+    public function defaultProject(): BelongsTo
+    {
+        return $this->belongsTo(Project::class, 'default_project_id');
     }
 
     public function getRouteKeyName(): string

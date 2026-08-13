@@ -11,12 +11,15 @@
     "require": {
         "php": "^8.3",
         "inertiajs/inertia-laravel": "^3.0",
+        "laravel/ai": "^0.10.3",
         "laravel/chisel": "^0.1.0",
         "laravel/fortify": "^1.37.2",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "pusher/pusher-php-server": "^7.3"
+        "pusher/pusher-php-server": "^7.3",
+        "spatie/laravel-activitylog": "^5.0",
+        "spatie/laravel-permission": "^8.3"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.7",
@@ -31,6 +34,7 @@
         "nunomaduro/collision": "^8.9.3",
         "pestphp/pest": "^5.0",
         "pestphp/pest-plugin-laravel": "^5.0",
+        "pestphp/pest-plugin-phpstan": "^5.0",
         "quill/eloquent-relation-inference": "@dev",
         "tomasvotruba/cognitive-complexity": "^1.2"
     },
@@ -64,6 +68,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
+            "@php artisan optimize:clear",
             "@php artisan dev"
         ],
         "lint": [
@@ -94,7 +99,7 @@
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
-            "@php artisan boost:update --ansi"
+            "@php artisan boost:update --discover --ansi"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""

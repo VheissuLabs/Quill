@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\OrganizationRole;
+use App\Models\Client;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -28,10 +29,7 @@ class OrganizationFactory extends Factory
     public function withOwner(?User $owner = null): static
     {
         return $this->afterCreating(function (Organization $organization) use ($owner) {
-            $organization->members()->attach(
-                $owner ?? User::factory()->create(),
-                ['role' => OrganizationRole::Owner->value],
-            );
+            $this->addMember($organization, $owner ?? User::factory()->create(), OrganizationRole::Owner);
         });
     }
 
@@ -41,19 +39,30 @@ class OrganizationFactory extends Factory
             User::factory()
                 ->count($count)
                 ->create()
-                ->each(fn (User $user) => $organization->members()->attach($user, [
-                    'role' => $role->value,
-                ]));
+                ->each(fn (User $user) => $this->addMember($organization, $user, $role));
         });
     }
 
-    public function withClientContact(?User $contact = null): static
+    public function withClientContact(?Client $client = null, ?User $contact = null): static
     {
-        return $this->afterCreating(function (Organization $organization) use ($contact) {
-            $organization->members()->attach(
+        return $this->afterCreating(function (Organization $organization) use ($client, $contact) {
+            $client ??= Client::factory()->heldBy($organization)->create();
+
+            $this->addMember(
+                $organization,
                 $contact ?? User::factory()->create(),
-                ['role' => OrganizationRole::Client->value],
+                OrganizationRole::Client,
+                $client,
             );
         });
+    }
+
+    protected function addMember(Organization $organization, User $user, OrganizationRole $role, ?Client $client = null): void
+    {
+        $organization->members()->attach($user, [
+            'client_id' => $client?->id,
+        ]);
+
+        $user->assignOrganizationRole($organization, $role);
     }
 }

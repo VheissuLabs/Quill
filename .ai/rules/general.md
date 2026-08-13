@@ -35,3 +35,10 @@ Measured on this codebase:
 Satisfying level 8 requires wrapping every `$request->user()` in a typed accessor and null-guarding timestamps that are never null. That is changing the code to suit the analyser, not fixing defects.
 
 If level 8 is ever revisited, the entry cost is the ~25-site `currentUser()` refactor — measure whether it has found a real bug before paying it again.
+
+## Verify with composer ci:check, not composer test
+`composer test` only covers the PHP side (pint, phpstan, pest). CI runs `composer ci:check`, which additionally runs `npm run lint:check` (eslint), `npm run format:check` (prettier over resources/) and `npm run types:check` (vue-tsc) *before* `@test`.
+
+So a branch can be green locally under `composer test` and still fail CI on frontend formatting alone — that happened on PR #1, where three .vue files failed `prettier --check` after a `composer test` run reported everything passing.
+
+Before pushing anything that touches resources/, run `composer ci:check`. To fix formatting, run `npm run format` (prettier --write).

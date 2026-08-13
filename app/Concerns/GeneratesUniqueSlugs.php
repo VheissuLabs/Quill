@@ -6,8 +6,10 @@ use Illuminate\Support\Str;
 
 trait GeneratesUniqueSlugs
 {
-    protected static function generateUniqueSlug(string $name, ?string $excludeId = null): string
-    {
+    protected static function generateUniqueSlug(
+        string $name,
+        ?string $excludeId = null
+    ): string {
         $defaultSlug = Str::slug($name);
 
         $query = static::withTrashed()

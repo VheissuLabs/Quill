@@ -8,6 +8,7 @@ use App\Observers\ParentIntegrityObserver;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperTeam */
 
@@ -24,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[UseFactory(TeamFactory::class)]
 class Team extends Model
 {
-    use GeneratesUniqueSlugs, HasFactory, HasUuids, SoftDeletes;
+    use GeneratesUniqueSlugs, HasFactory, HasUuids, LogsActivity, SoftDeletes;
 
     protected $guarded = [
         'id',
@@ -32,6 +36,53 @@ class Team extends Model
         'updated_at',
         'deleted_at',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->useLogName('organization');
+    }
+
+    public function projects(): MorphMany
+    {
+        return $this->morphMany(Project::class, 'owner');
+    }
+
+    /** @return Collection<int, string> */
+    public function clientsInScope(): Collection
+    {
+        $ids = $this->clients()->pluck('id');
+
+        if ($this->getAttribute('parent_type') === Client::class) {
+            $ids->push($this->getAttribute('parent_id'));
+        }
+
+        return $ids->unique()->values();
+    }
+
+    /** @return Builder<Project> */
+    public function projectsInScope(): Builder
+    {
+        $clientIds = $this->clientsInScope();
+
+        return Project::query()
+            ->where('organization_id', $this->organization_id)
+            ->where(fn (Builder $query) => $query
+                ->where(fn (Builder $owned) => $owned
+                    ->where('owner_type', self::class)
+                    ->where('owner_id', $this->getKey()))
+                ->orWhere(fn (Builder $client) => $client
+                    ->where('owner_type', Client::class)
+                    ->whereIn('owner_id', $clientIds)));
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 
     public function owner(): ?Model
     {
@@ -58,7 +109,12 @@ class Team extends Model
 
     public function members(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'team_members', 'team_id', 'user_id')
+        return $this->belongsToMany(
+            User::class,
+            'team_members',
+            'team_id',
+            'user_id'
+        )
             ->using(Membership::class)
             ->withPivot(['role'])
             ->withTimestamps();
@@ -74,9 +130,9 @@ class Team extends Model
         return $this->hasMany(TeamInvitation::class);
     }
 
-    public function getRouteKeyName(): string
+    protected function shouldLogEvent(string $eventName): bool
     {
-        return 'slug';
+        return ! $this->is_personal;
     }
 
     protected static function boot(): void

@@ -5,10 +5,14 @@ namespace Database\Seeders;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Team;
+use Database\Seeders\Concerns\AttributesActivity;
+use Database\Seeders\Concerns\NamesDepartments;
 use Illuminate\Database\Seeder;
 
 class ClientSeeder extends Seeder
 {
+    use AttributesActivity, NamesDepartments;
+
     /**
      * The companies each organization does work for. Named rather than faked so
      * the seeded app reads like the real thing when clicking through it.
@@ -30,13 +34,15 @@ class ClientSeeder extends Seeder
         foreach ($this->clients as $organizationName => $clientNames) {
             $organization = Organization::where('name', $organizationName)->firstOrFail();
 
-            $parent = $organizationName === 'NotaryDash'
-                ? Team::factory()->heldBy($organization)->create(['name' => 'Delivery'])
-                : $organization;
+            $this->causedBy($this->ownerOf($organization), function () use ($organization, $organizationName, $clientNames) {
+                $parent = $organizationName === 'NotaryDash'
+                    ? Team::factory()->heldBy($organization)->create(['name' => $this->department('Delivery')])
+                    : $organization;
 
-            foreach ($clientNames as $name) {
-                Client::factory()->heldBy($parent)->create(['name' => $name]);
-            }
+                foreach ($clientNames as $name) {
+                    Client::factory()->heldBy($parent)->create(['name' => $name]);
+                }
+            });
         }
     }
 }

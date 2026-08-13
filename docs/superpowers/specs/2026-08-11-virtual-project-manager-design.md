@@ -39,17 +39,14 @@ Projects, with the owner-side screens to create them. No AI at all. This is the
 substrate everything else needs, and it is ordinary Laravel work that can be
 tested exhaustively.
 
-**Stage 2 — An internal, read-only Virtual PM.** A chat that answers questions
-about the organization's own contacts, clients, and projects: *who are the
-contacts at Acme Title Co? which clients does 92 Labs have?* Staff only —
-owners and admins, never client contacts. Read-only tools scoped to the asker's
-organization.
+**Stage 2 — The assistant.** Moved to its own spec:
+`2026-08-11-quill-assistant-design.md`.
 
-This stage exists to prove the entire AI path — the `laravel/ai` driver against
-LM Studio, SSE streaming into the chat UI, tool calling and result handling,
-and testing against the fake driver — while the tools are read-only and the
-audience is internal. A scoping mistake here is invisible to clients, and a bad
-prompt costs nothing.
+An earlier version of this document treated the assistant as a stage of the
+Virtual PM. That was backwards. There is **one agent**; the assistant and the
+grooming PM are the same thing with different tools granted by the asker's role.
+The assistant spec is now the primary document, and what remains here is the
+grooming behaviour it will eventually take on.
 
 **Stage 3 — The client-facing grooming PM.** The `create_issue` tool, the
 grooming rubric, client confirmation, and `Issue` itself. Everything below

@@ -10,12 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /** @extends Factory<Client> */
 class ClientFactory extends Factory
 {
-    /**
-     * A client defaults to being held directly by its organization. Use
-     * `heldBy()` to nest it under a team instead.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

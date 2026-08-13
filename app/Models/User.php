@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Concerns\HasAssistantConversation;
 use App\Concerns\HasNotificationFeed;
 use App\Concerns\HasOrganizations;
+use App\Concerns\HasProjects;
 use App\Concerns\HasTeams;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -14,13 +16,18 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
 /** @mixin IdeHelperUser */
 
 #[UseFactory(UserFactory::class)]
 class User extends Authenticatable implements PasskeyUser
 {
-    use HasFactory, HasNotificationFeed, HasOrganizations, HasTeams, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasAssistantConversation, HasFactory, HasNotificationFeed, HasOrganizations, HasProjects, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasRoles, HasTeams {
+        HasTeams::teams insteadof HasRoles;
+        HasRoles::teams as roleOrganizations;
+    }
 
     protected $guarded = [
         'id',
