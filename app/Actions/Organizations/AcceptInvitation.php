@@ -9,11 +9,8 @@ use Illuminate\Support\Facades\DB;
 class AcceptInvitation
 {
     /**
-     * Turn an accepted invitation into a membership.
-     *
-     * `client_id` and the role are written together: a Client-role membership
-     * without a client represents nobody, and the read tools would report it as a
-     * contact for an unknown client.
+     * `client_id` and the role are written together: a Client-role membership without a
+     * client represents nobody, and the read tools would report an unknown client.
      */
     public function handle(User $user, OrganizationInvitation $invitation): void
     {

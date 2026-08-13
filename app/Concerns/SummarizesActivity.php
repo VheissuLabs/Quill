@@ -21,10 +21,7 @@ trait SummarizesActivity
         );
     }
 
-    /**
-     * A readable sentence, because "updated" against a UUID tells an admin
-     * nothing about what happened to their organization.
-     */
+    /** A readable sentence: "updated" against a UUID tells an admin nothing. */
     protected function summarize(Activity $activity): string
     {
         $subjectModel = $activity->subject;

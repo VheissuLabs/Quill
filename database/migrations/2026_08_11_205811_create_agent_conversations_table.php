@@ -6,14 +6,6 @@ use Laravel\Ai\Migrations\AiMigration;
 
 return new class extends AiMigration
 {
-    /**
-     * Run the migrations.
-     *
-     * The published stub declares `participant_id` as an unsignedBigInteger.
-     * Quill's keys are UUIDs, so on MySQL every participant id would truncate to
-     * 0 and one user's conversations would be readable as another's. SQLite does
-     * not enforce column types, so the test suite would never show it.
-     */
     public function up(): void
     {
         $conversationsTable = config('ai.conversations.tables.conversations', 'agent_conversations');
@@ -47,7 +39,6 @@ return new class extends AiMigration
         });
     }
 
-    /** Reverse the migrations. */
     public function down(): void
     {
         Schema::dropIfExists(config('ai.conversations.tables.messages', 'agent_conversation_messages'));

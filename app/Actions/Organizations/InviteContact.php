@@ -13,11 +13,8 @@ use Illuminate\Support\Facades\Notification;
 class InviteContact
 {
     /**
-     * Invite someone to be a contact for a client.
-     *
-     * Re-inviting the same address re-sends rather than stacking a second
-     * invitation, because a small model repeats itself and a person should not
-     * collect duplicates for one seat.
+     * Re-inviting the same address re-sends rather than stacking a second invitation:
+     * a small model repeats itself, and nobody should collect duplicates for one seat.
      */
     public function handle(User $inviter, Client $client, string $email, ?string $name = null): OrganizationInvitation
     {

@@ -6,11 +6,7 @@ use Illuminate\Support\Collection;
 
 trait MatchesNames
 {
-    /**
-     * Compare names without punctuation, case, or repeated spaces. The model
-     * rephrases: "Acme Title Co." and "Acme Title Co" are the same company, and
-     * an exact comparison creates duplicates.
-     */
+    /** The model rephrases, and "Acme Title Co." is the same company as "Acme Title Co". */
     protected function comparableName(string $name): string
     {
         $stripped = preg_replace('/[^\p{L}\p{N}\s]/u', '', mb_strtolower(trim($name)));
@@ -19,8 +15,6 @@ trait MatchesNames
     }
 
     /**
-     * The names that match, exactly first and then on a unique partial.
-     *
      * `$noun` is stripped from both sides because the model relays the user's
      * phrasing: "the Development team" for a team named "Development".
      *

@@ -25,10 +25,8 @@
     const transcript = useTemplateRef<HTMLElement>('transcript')
 
     /**
-     * Laravel refreshes the XSRF-TOKEN cookie on every response, so reading it at
-     * send time is always current. The <meta> tag is baked in when the page
-     * renders and goes stale if the session regenerates while the chat is open,
-     * which returned an intermittent 419.
+     * Read from the cookie, which Laravel refreshes on every response. The baked-in
+     * meta tag goes stale if the session regenerates mid-chat, returning a 419.
      */
     const csrfToken = (): string => {
         const cookie = document.cookie

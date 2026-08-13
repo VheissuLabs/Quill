@@ -7,13 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * An invitation to join an organization, either as staff or as a contact for
-     * one of its clients.
-     *
-     * The membership does not exist until the invitation is accepted: being added
-     * to someone's client account should not happen to you without your
-     * agreement, and an unaccepted invitation is where a mistyped email dies
-     * harmlessly.
+     * No membership exists until this is accepted: being added to someone's client
+     * account should not happen to you without your agreement, and an unaccepted
+     * invitation is where a mistyped email dies harmlessly.
      */
     public function up(): void
     {

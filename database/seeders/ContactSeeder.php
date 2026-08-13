@@ -14,14 +14,8 @@ class ContactSeeder extends Seeder
     use AttributesActivity;
 
     /**
-     * The people at each client, by client name.
-     *
-     * Named rather than faked so the seeded app reads like the real thing, and
-     * so "who are the contacts at Acme Title Co?" has a checkable answer.
-     *
-     * Acme Title Co has two contacts and Sunbelt Signings has none on purpose:
-     * both the several-contacts and the no-contacts-yet cases should be visible
-     * without editing the seeder.
+     * Two contacts at Acme Title Co and none at Sunbelt Signings on purpose, so both
+     * cases are visible. Named rather than faked so the assistant's answers are checkable.
      *
      * @var array<string, array<int, string>>
      */

@@ -26,9 +26,8 @@ class User extends Authenticatable implements PasskeyUser
     use HasAssistantConversation, HasFactory, HasNotificationFeed, HasOrganizations, HasProjects, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
-     * Spatie scopes roles by a "team", which in Quill is the organization, so its
-     * `teams()` relation means "organizations I hold a role in" — a different
-     * thing from Quill's own teams. Ours keeps the name.
+     * Spatie's "team" is Quill's organization, so its `teams()` means "organizations I
+     * hold a role in" — a different thing from Quill's teams, which keep the name.
      */
     use HasRoles, HasTeams {
         HasTeams::teams insteadof HasRoles;

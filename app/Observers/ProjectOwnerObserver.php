@@ -8,13 +8,8 @@ use App\Models\Team;
 use RuntimeException;
 
 /**
- * A project's owner may be a client or a team, and must belong to the same
- * organization as the project. The database cannot express that across a morph,
- * so it is checked on write.
- *
- * The owner is resolved from the model's current attributes rather than the
- * `owner` relation, because Eloquent caches a loaded relation and would
- * otherwise validate against the owner the project used to have.
+ * An owner must share the project's organization. The database cannot express
+ * that across a morph, so it is checked on write.
  */
 class ProjectOwnerObserver
 {
@@ -39,9 +34,9 @@ class ProjectOwnerObserver
     protected function resolveOwner(Project $project): Client|Team|null
     {
         /**
-         * Read through getAttribute: the columns are not nullable, so the model
-         * docblock types them as strings, but an unsaved project genuinely has
-         * neither yet.
+         * Read through getAttribute, not the `owner` relation: Eloquent caches a
+         * loaded relation and would validate against the previous owner. The
+         * columns are typed non-nullable, but an unsaved project has neither yet.
          */
         $type = $project->getAttribute('owner_type');
         $id = $project->getAttribute('owner_id');

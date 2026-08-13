@@ -52,11 +52,7 @@ class Team extends Model
     }
 
     /**
-     * The clients whose work this team is responsible for.
-     *
-     * Both directions count: a team may hold clients (an org-level "Delivery"
-     * team owning accounts) or sit under one (an "Acme Dev" team inside Acme).
-     * Either way that client's projects are this team's work.
+     * A team may hold clients or sit under one; both count as its scope.
      *
      * @return Collection<int, string>
      */
@@ -71,11 +67,7 @@ class Team extends Model
         return $ids->unique()->values();
     }
 
-    /**
-     * Projects this team owns, plus those owned by the clients in its scope.
-     *
-     * @return Builder<Project>
-     */
+    /** @return Builder<Project> */
     public function projectsInScope(): Builder
     {
         $clientIds = $this->clientsInScope();
@@ -142,10 +134,7 @@ class Team extends Model
         return $this->hasMany(TeamInvitation::class);
     }
 
-    /**
-     * A personal team is a private workspace, not organization history, and it
-     * carries no organization to file the entry under.
-     */
+    /** A personal team is a private workspace with no organization to file the entry under. */
     protected function shouldLogEvent(string $eventName): bool
     {
         return ! $this->is_personal;

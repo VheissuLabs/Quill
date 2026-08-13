@@ -65,11 +65,8 @@ class DashboardController extends Controller
     }
 
     /**
-     * The organization's history, for anyone allowed to read it.
-     *
-     * Scoped by `activity_log.organization_id`, so it covers the organization and
-     * everything beneath it — clients, teams, memberships, invitations — without
-     * one query per subject type.
+     * Scoped by `activity_log.organization_id`, so everything beneath the organization
+     * is covered without one query per subject type.
      *
      * @return LengthAwarePaginator<int, ActivityEntry>|null
      */

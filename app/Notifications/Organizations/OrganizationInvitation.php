@@ -19,8 +19,7 @@ class OrganizationInvitation extends Notification implements ShouldQueue
     ) {}
 
     /**
-     * Someone already using Quill is told in the app, where they can accept from
-     * the bell. Someone with no account has nowhere to be told but their inbox.
+     * Someone with no account has nowhere to be told but their inbox.
      *
      * @return array<int, string>
      */
@@ -41,10 +40,7 @@ class OrganizationInvitation extends Notification implements ShouldQueue
             );
     }
 
-    /**
-     * The payload the bell renders, shaped like `HasNotificationFeed` reads it so
-     * an arriving notification looks the same as a reloaded one.
-     */
+    /** Shaped like `HasNotificationFeed` reads it, so an arrival matches a reload. */
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
         return new BroadcastMessage([

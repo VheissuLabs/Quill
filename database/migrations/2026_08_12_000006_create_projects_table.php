@@ -7,15 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * A project is owned by a client (the whole account) or by one team.
-     *
-     * `owner` rather than `parent`, because a project has no role-based owner to
-     * collide with — unlike teams and clients, where `owner()` already means the
-     * user holding the Owner role.
-     *
-     * `organization_id` is carried for the same reason teams and clients carry it:
-     * "every project in this organization" is a plain where instead of a walk up
-     * an arbitrarily deep owner chain.
+     * `owner` rather than `parent`: unlike teams and clients, a project has no
+     * role-based `owner()` for the name to collide with.
      */
     public function up(): void
     {
@@ -33,12 +26,7 @@ return new class extends Migration
         });
 
         Schema::table('clients', function (Blueprint $table) {
-            /**
-             * Nullable, despite the design calling it required. A project may be
-             * owned by a client, so requiring the client to name a project at
-             * creation is circular. Where the destination actually matters — an
-             * issue must land somewhere — is where it gets enforced.
-             */
+            /** Nullable because a project may be owned by a client: requiring one at creation is circular. */
             $table->foreignUuid('default_project_id')
                 ->nullable()
                 ->after('parent_id')

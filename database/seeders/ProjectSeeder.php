@@ -13,12 +13,7 @@ class ProjectSeeder extends Seeder
     use AttributesActivity;
 
     /**
-     * One project per client, owned by that client, and that client's work lands
-     * there. This is the ordinary case, and keeping it uniform means anything that
-     * differs on screen differs for a reason.
-     *
-     * Sunbelt Signings is absent on purpose: a client that has not been set up yet
-     * is a real state, and it is the only row with no default project.
+     * Sunbelt Signings is absent on purpose — a client not yet set up is a real state.
      *
      * @var array<string, string>
      */
@@ -31,11 +26,7 @@ class ProjectSeeder extends Seeder
     ];
 
     /**
-     * A team may own a project too — internal work that belongs to no client.
-     *
-     * Exactly one exists, and no client points at it, so the difference between
-     * "a client's project" and "a team's project" is visible on screen rather
-     * than something you have to read the seeder to notice.
+     * Internal work that belongs to no client, so both owner types appear on screen.
      *
      * @var array<string, string>
      */

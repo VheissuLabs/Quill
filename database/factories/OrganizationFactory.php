@@ -57,10 +57,7 @@ class OrganizationFactory extends Factory
         });
     }
 
-    /**
-     * Membership records who belongs; the role lives in Spatie, scoped to the
-     * organization. `client_id` is only ever set alongside the Client role.
-     */
+    /** Membership records who belongs; the role lives in Spatie, scoped to the organization. */
     protected function addMember(Organization $organization, User $user, OrganizationRole $role, ?Client $client = null): void
     {
         $organization->members()->attach($user, [

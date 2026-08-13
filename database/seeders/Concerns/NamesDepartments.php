@@ -7,9 +7,7 @@ use InvalidArgumentException;
 trait NamesDepartments
 {
     /**
-     * Teams are departments — the groups of people inside an organization who do
-     * the work. Naming them from one list keeps the seeded app reading like a real
-     * company instead of a set of placeholders.
+     * Teams are departments, named from one list so the seeded app reads like a company.
      *
      * @return array<int, string>
      */
@@ -27,12 +25,6 @@ trait NamesDepartments
         ];
     }
 
-    /**
-     * Guard against a department name drifting out of the list.
-     *
-     * Without this a typo silently becomes a new "department", which is exactly
-     * the kind of thing that makes seeded data stop looking deliberate.
-     */
     protected function department(string $name): string
     {
         if (! in_array($name, $this->departments(), true)) {

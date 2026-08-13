@@ -26,13 +26,7 @@ class Activity extends SpatieActivity
         return $query->where('organization_id', $organization->id);
     }
 
-    /**
-     * Stamp the tenant from the subject as the row is written.
-     *
-     * Doing it here rather than at each call site means nothing can log activity
-     * without its organization, and an admin's history query stays a plain where
-     * instead of a walk through every subject's own tenancy.
-     */
+    /** Stamped here, not at each call site, so nothing can log activity without its organization. */
     protected static function boot(): void
     {
         parent::boot();

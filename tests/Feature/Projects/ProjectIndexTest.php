@@ -5,10 +5,6 @@ use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Team;
 
-/**
- * The index answers "my team's work": projects the current team owns, plus
- * client-level projects for the clients in that team's orbit.
- */
 function projectIndexFor(App\Models\User $user): Illuminate\Testing\TestResponse
 {
     return test()->actingAs($user)->get(route('projects.index'));

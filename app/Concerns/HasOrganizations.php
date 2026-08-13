@@ -153,11 +153,7 @@ trait HasOrganizations
         );
     }
 
-    /**
-     * Read the whole permission set in one pass rather than a query per flag.
-     *
-     * @return Collection<int, string>
-     */
+    /** @return Collection<int, string> */
     public function organizationPermissionNames(Organization $organization): Collection
     {
         if (! $this->belongsToOrganization($organization)) {
@@ -175,9 +171,8 @@ trait HasOrganizations
     }
 
     /**
-     * Every role operation reads the globally-set team id, so it is set for the
-     * duration of the callback and restored afterwards. Without restoring it, one
-     * permission check would silently change the scope of the next.
+     * Restores the previous team id: without it, one permission check silently
+     * changes the scope of the next.
      *
      * @template TReturn
      *

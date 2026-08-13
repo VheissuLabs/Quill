@@ -9,11 +9,8 @@ use Symfony\Component\HttpFoundation\Response;
 class DenyClientContacts
 {
     /**
-     * Keep client contacts out of the staff-facing assistant.
-     *
-     * Its tools answer for the whole organization, so a contact for one client
-     * could read another client's people. The design gives contacts their own
-     * narrower grant later; until then they have no business here.
+     * The assistant's tools answer for the whole organization, so a contact for one
+     * client could read another client's people. Contacts get a narrower grant later.
      */
     public function handle(Request $request, Closure $next): Response
     {

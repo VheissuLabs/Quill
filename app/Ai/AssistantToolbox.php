@@ -22,11 +22,9 @@ use App\Models\User;
 class AssistantToolbox
 {
     /**
-     * The tools a user is granted.
-     *
-     * Write tools are withheld when the user's role does not permit the action, so
-     * the model cannot offer something it will then be refused. Each tool still
-     * checks its own permission — this is least privilege, not the only guard.
+     * Write tools are withheld when the role does not permit the action, so the model
+     * cannot offer what it will be refused. Each tool still checks its own permission:
+     * least privilege, not the only guard.
      *
      * @return list<AssistantTool>
      */

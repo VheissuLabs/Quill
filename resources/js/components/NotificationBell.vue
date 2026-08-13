@@ -15,11 +15,7 @@
 
     const page = usePage()
 
-    /**
-     * Notifications that arrived over the websocket since the last page load. Kept
-     * separate from the shared prop so a reload — which returns them from the
-     * database anyway — replaces rather than duplicates them.
-     */
+    /** Kept out of the shared prop so a reload replaces these rather than duplicating them. */
     const arrivals = ref<UserNotification[]>([])
 
     const notifications = computed(() => [
@@ -71,11 +67,7 @@
         }
     })
 
-    /**
-     * Grouped by the organization each notification belongs to, mirroring how the
-     * team switcher groups by client. Order follows the feed, which is newest
-     * first, so the organization with the most recent activity leads.
-     */
+    /** Order follows the feed, so the organization with the most recent activity leads. */
     const groups = computed<NotificationGroup[]>(() => {
         const grouped = new Map<string, NotificationGroup>()
 

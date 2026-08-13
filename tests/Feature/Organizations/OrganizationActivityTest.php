@@ -12,9 +12,7 @@ function dashboardFor(App\Models\User $user): string
 }
 
 /**
- * Creating the organization and its first membership are themselves logged, so
- * the fixture leaves rows behind. Clearing them keeps each assertion about the
- * action under test.
+ * The fixture's own creation is logged, so clear those rows before asserting.
  */
 function forgetSetupActivity(): void
 {
