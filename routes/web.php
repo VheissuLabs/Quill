@@ -35,6 +35,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
     Route::delete('invitations/{invitation}', [TeamInvitationController::class, 'decline'])->name('invitations.decline');
 
+    Route::put('organizations/{organization}/membership', [OrganizationMembershipController::class, 'update'])
+        ->name('organizations.membership.update');
+
     Route::delete('organization-invitations/{invitation}', [OrganizationMembershipController::class, 'destroy'])
         ->name('organization-invitations.destroy');
 });

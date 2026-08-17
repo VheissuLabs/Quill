@@ -10,7 +10,7 @@
         DropdownMenuLabel,
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu'
-    import { update as switchOrganizationRoute } from '@/routes/current-organization'
+    import { update as switchOrganizationRoute } from '@/routes/organizations/membership'
     import type { Organization } from '@/types'
 
     const props = withDefaults(
