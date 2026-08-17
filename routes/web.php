@@ -36,6 +36,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('invitations/{invitation}', [TeamInvitationController::class, 'decline'])->name('invitations.decline');
 
     Route::put('organizations/{organization}/membership', [OrganizationMembershipController::class, 'update'])
+        ->middleware('can:view,organization')
         ->name('organizations.membership.update');
 
     Route::delete('organization-invitations/{invitation}', [OrganizationMembershipController::class, 'destroy'])

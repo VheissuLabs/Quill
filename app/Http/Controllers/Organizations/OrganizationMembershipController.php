@@ -13,7 +13,6 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -93,8 +92,6 @@ class OrganizationMembershipController extends Controller
 
     public function update(Request $request, Organization $organization): RedirectResponse
     {
-        Gate::authorize('view', $organization);
-
         $request->user()->switchOrganization($organization);
 
         return back();
