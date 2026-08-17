@@ -54,10 +54,7 @@ class TeamInvitationController extends Controller
         DB::transaction(function () use ($user, $invitation) {
             $team = $invitation->team;
 
-            $team->memberships()->firstOrCreate(
-                ['user_id' => $user->id],
-                ['role' => $invitation->role],
-            );
+            $team->memberships()->firstOrCreate(['user_id' => $user->id]);
 
             $invitation->update(['accepted_at' => now()]);
 
