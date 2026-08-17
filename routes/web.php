@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Organizations\OrganizationMembershipController;
 use App\Http\Controllers\Projects\ProjectController;
 use App\Http\Controllers\Teams\TeamInvitationController;
+use App\Http\Controllers\Teams\TeamMembershipController;
 use App\Http\Middleware\DenyClientContacts;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
@@ -32,8 +33,10 @@ Route::middleware(['auth', 'verified', DenyClientContacts::class])->group(functi
 });
 
 Route::middleware(['auth'])->group(function () {
-    Route::post('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
-    Route::delete('invitations/{invitation}', [TeamInvitationController::class, 'decline'])->name('invitations.decline');
+    Route::post('invitations/{invitation}/membership', [TeamMembershipController::class, 'store'])
+        ->name('invitations.membership.store');
+    Route::delete('teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])
+        ->name('invitations.destroy');
 
     Route::put('organizations/{organization}/membership', [OrganizationMembershipController::class, 'update'])
         ->middleware('can:view,organization')

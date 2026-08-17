@@ -188,7 +188,7 @@ test('team invitations can be accepted', function () {
 
     $response = $this
         ->actingAs($invitedUser)
-        ->post(route('invitations.accept', $invitation));
+        ->post(route('invitations.membership.store', $invitation));
 
     $response->assertRedirect(route('dashboard'));
     $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Invitation accepted.']);
@@ -213,7 +213,7 @@ test('team invitations can be declined by the invited user', function () {
 
     $response = $this
         ->actingAs($invitedUser)
-        ->delete(route('invitations.decline', $invitation));
+        ->delete(route('invitations.destroy', [$invitation->team, $invitation]));
 
     $response->assertRedirect(route('dashboard'));
 
@@ -238,7 +238,7 @@ test('team invitations cannot be declined by uninvited user', function () {
 
     $response = $this
         ->actingAs($uninvitedUser)
-        ->delete(route('invitations.decline', $invitation));
+        ->delete(route('invitations.destroy', [$invitation->team, $invitation]));
 
     $response->assertSessionHasErrors('invitation');
 
@@ -263,7 +263,7 @@ test('accepted team invitations cannot be declined', function () {
 
     $response = $this
         ->actingAs($invitedUser)
-        ->delete(route('invitations.decline', $invitation));
+        ->delete(route('invitations.destroy', [$invitation->team, $invitation]));
 
     $response->assertSessionHasErrors('invitation');
 
@@ -288,7 +288,7 @@ test('team invitations cannot be accepted by uninvited user', function () {
 
     $response = $this
         ->actingAs($uninvitedUser)
-        ->post(route('invitations.accept', $invitation));
+        ->post(route('invitations.membership.store', $invitation));
 
     $response->assertSessionHasErrors('invitation');
 
@@ -311,7 +311,7 @@ test('expired invitations cannot be accepted', function () {
 
     $response = $this
         ->actingAs($invitedUser)
-        ->post(route('invitations.accept', $invitation));
+        ->post(route('invitations.membership.store', $invitation));
 
     $response->assertSessionHasErrors('invitation');
 
