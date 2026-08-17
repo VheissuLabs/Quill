@@ -9,7 +9,6 @@ use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Team;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Support\Facades\Gate;
 use Laravel\Ai\Tools\Request;
 use Stringable;
 
@@ -41,7 +40,7 @@ class CreateClient implements AssistantTool
             return $this->withoutOrganization();
         }
 
-        if (! Gate::forUser($this->user)->allows('create', [Client::class, $organization])) {
+        if (! $this->user->can('client:create')) {
             return $this->refused('create a client');
         }
 

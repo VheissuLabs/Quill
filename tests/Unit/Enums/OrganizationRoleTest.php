@@ -1,39 +1,29 @@
 <?php
 
-use App\Enums\OrganizationPermission;
-use App\Enums\OrganizationRole;
+uses(Tests\TestCase::class);
 
-test('owners hold every permission', function () {
-    expect(OrganizationRole::Owner->permissions())
-        ->toEqual(OrganizationPermission::cases());
+test('owner is granted the whole catalog', function () {
+    expect(config('roles.defaults.owner'))->toBe('*');
 });
 
-test('admins can update the organization but not delete it', function () {
-    expect(OrganizationRole::Admin->hasPermission(OrganizationPermission::UpdateOrganization))->toBeTrue();
-    expect(OrganizationRole::Admin->hasPermission(OrganizationPermission::DeleteOrganization))->toBeFalse();
+test('admin may update the organization but not delete it', function () {
+    expect(config('roles.defaults.admin'))
+        ->toContain('organization:update')
+        ->not->toContain('organization:delete');
 });
 
-test('members and clients hold no permissions', function () {
-    expect(OrganizationRole::Member->permissions())->toBe([]);
-    expect(OrganizationRole::Client->permissions())->toBe([]);
+test('member and client are granted nothing by default', function () {
+    expect(config('roles.defaults.member'))->toBe([]);
+    expect(config('roles.defaults.client'))->toBe([]);
 });
 
-test('clients rank below members', function () {
-    expect(OrganizationRole::Client->isAtLeast(OrganizationRole::Member))->toBeFalse();
-    expect(OrganizationRole::Member->isAtLeast(OrganizationRole::Client))->toBeTrue();
-    expect(OrganizationRole::Owner->isAtLeast(OrganizationRole::Owner))->toBeTrue();
-});
+test('every default grant names a permission in the catalog', function () {
+    $catalog = config('roles.permissions');
 
-test('every role except client is a billable seat', function () {
-    expect(OrganizationRole::Owner->isBillable())->toBeTrue();
-    expect(OrganizationRole::Admin->isBillable())->toBeTrue();
-    expect(OrganizationRole::Member->isBillable())->toBeTrue();
-    expect(OrganizationRole::Client->isBillable())->toBeFalse();
-});
+    $granted = collect(config('roles.defaults'))
+        ->reject(fn (array|string $permissions) => $permissions === '*')
+        ->flatten()
+        ->unique();
 
-test('assignable roles exclude owner and client', function () {
-    expect(OrganizationRole::assignable())->toBe([
-        ['value' => 'admin', 'label' => 'Admin'],
-        ['value' => 'member', 'label' => 'Member'],
-    ]);
+    expect($granted->diff($catalog)->all())->toBe([]);
 });

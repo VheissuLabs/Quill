@@ -5,7 +5,6 @@ namespace App\Ai\Tools;
 use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\Concerns\MatchesNames;
 use App\Ai\Tools\Concerns\ScopedToCurrentOrganization;
-use App\Enums\OrganizationPermission;
 use App\Models\Client;
 use App\Models\Organization;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -40,7 +39,7 @@ class RenameClient implements AssistantTool
             return $this->withoutOrganization();
         }
 
-        if (! $this->user->hasOrganizationPermission($organization, OrganizationPermission::UpdateClient)) {
+        if (! $this->user->can('client:update')) {
             return $this->refused('rename a client');
         }
 

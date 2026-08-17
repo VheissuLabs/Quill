@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 
@@ -10,7 +9,7 @@ test('a user can switch to an organization they belong to', function () {
 
     $organization->members()->attach($user);
 
-    $user->assignOrganizationRole($organization, OrganizationRole::Member->value);
+    $user->assignOrganizationRole($organization, 'member');
 
     $response = $this
         ->actingAs($user)
@@ -27,7 +26,7 @@ test('a client contact can switch into their organization', function () {
 
     $organization->members()->attach($user);
 
-    $user->assignOrganizationRole($organization, OrganizationRole::Client->value);
+    $user->assignOrganizationRole($organization, 'client');
 
     $this
         ->actingAs($user)

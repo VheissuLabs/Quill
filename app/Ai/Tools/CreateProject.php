@@ -5,7 +5,6 @@ namespace App\Ai\Tools;
 use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\Concerns\MatchesNames;
 use App\Ai\Tools\Concerns\ScopedToCurrentOrganization;
-use App\Enums\OrganizationPermission;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Project;
@@ -42,7 +41,7 @@ class CreateProject implements AssistantTool
             return $this->withoutOrganization();
         }
 
-        if (! $this->user->hasOrganizationPermission($organization, OrganizationPermission::CreateProject)) {
+        if (! $this->user->can('project:create')) {
             return $this->refused('create a project');
         }
 

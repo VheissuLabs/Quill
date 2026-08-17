@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInvitation;
@@ -63,7 +62,7 @@ test('registering creates the organization the user named and puts them in it', 
     expect($organization)->not->toBeNull();
     expect($organization->name)->toBe('Acme Agency');
     expect($organization->slug)->toBe('acme-agency');
-    expect($user->organizationRoleName($organization))->toBe(OrganizationRole::Owner->value);
+    expect($user->organizationRoleName($organization))->toBe('owner');
     expect($user->organizations()->count())->toBe(1);
 });
 

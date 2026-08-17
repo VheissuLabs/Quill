@@ -16,7 +16,6 @@ use App\Ai\Tools\ListTeams;
 use App\Ai\Tools\RenameClient;
 use App\Ai\Tools\RenameProject;
 use App\Ai\Tools\RenameTeam;
-use App\Enums\OrganizationPermission;
 use App\Models\User;
 
 class AssistantToolbox
@@ -32,36 +31,33 @@ class AssistantToolbox
             new ListProjects($user),
         ];
 
-        $organization = $user->currentOrganization;
+        $permitted = fn (string $permission): bool => $user->can($permission);
 
-        $permitted = fn (OrganizationPermission $permission): bool => $organization !== null
-            && $user->hasOrganizationPermission($organization, $permission);
-
-        if ($permitted(OrganizationPermission::CreateClient)) {
+        if ($permitted('client:create')) {
             $tools[] = new CreateClient($user);
         }
 
-        if ($permitted(OrganizationPermission::UpdateClient)) {
+        if ($permitted('client:update')) {
             $tools[] = new RenameClient($user);
         }
 
-        if ($permitted(OrganizationPermission::CreateTeam)) {
+        if ($permitted('team:create')) {
             $tools[] = new CreateTeam($user);
         }
 
-        if ($permitted(OrganizationPermission::UpdateTeam)) {
+        if ($permitted('team:update')) {
             $tools[] = new RenameTeam($user);
         }
 
-        if ($permitted(OrganizationPermission::CreateProject)) {
+        if ($permitted('project:create')) {
             $tools[] = new CreateProject($user);
         }
 
-        if ($permitted(OrganizationPermission::UpdateProject)) {
+        if ($permitted('project:update')) {
             $tools[] = new RenameProject($user);
         }
 
-        if ($permitted(OrganizationPermission::AddMember)) {
+        if ($permitted('member:add')) {
             $tools[] = new CreateContact($user);
         }
 

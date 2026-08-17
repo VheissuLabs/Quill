@@ -1,7 +1,6 @@
 <?php
 
 use App\Actions\Organizations\CreateOrganization;
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 
@@ -18,7 +17,7 @@ test('the create organization action makes the user its owner', function () {
     $organization = app(CreateOrganization::class)->handle($user, 'NotaryDash');
 
     expect($organization->slug)->toBe('notarydash');
-    expect($user->organizationRoleName($organization))->toBe(OrganizationRole::Owner->value);
+    expect($user->organizationRoleName($organization))->toBe('owner');
 });
 
 test('creating an organization switches the user into it', function () {

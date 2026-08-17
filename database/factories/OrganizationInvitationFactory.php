@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
@@ -18,7 +17,7 @@ class OrganizationInvitationFactory extends Factory
         return [
             'organization_id' => Organization::factory(),
             'email' => fake()->unique()->safeEmail(),
-            'role' => OrganizationRole::Client,
+            'role' => 'client',
             'client_id' => null,
             'invited_by' => User::factory(),
             'expires_at' => now()->addDays(14),
@@ -31,7 +30,7 @@ class OrganizationInvitationFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'organization_id' => $client->organization_id,
             'client_id' => $client->id,
-            'role' => OrganizationRole::Client,
+            'role' => 'client',
         ]);
     }
 

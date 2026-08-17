@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueSlugs;
-use App\Enums\OrganizationRole;
 use App\Observers\OrganizationObserver;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -47,9 +46,9 @@ class Organization extends Model
         return $this->hasMany(Role::class);
     }
 
-    public function membersWithRole(OrganizationRole|string $role): BelongsToMany
+    public function membersWithRole(string $role): BelongsToMany
     {
-        $name = $role instanceof OrganizationRole ? $role->value : $role;
+        $name = $role;
 
         return $this->members()->whereIn(
             'users.id',
@@ -59,7 +58,7 @@ class Organization extends Model
 
     public function owner(): ?Model
     {
-        return $this->membersWithRole(OrganizationRole::Owner)
+        return $this->membersWithRole('owner')
             ->first();
     }
 

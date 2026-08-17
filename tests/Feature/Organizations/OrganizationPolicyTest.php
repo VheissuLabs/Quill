@@ -1,77 +1,75 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 
-function memberWithRole(Organization $organization, OrganizationRole $role): User
+function memberWithRole(Organization $organization, string $role): User
 {
     $user = User::factory()->create();
 
     $organization->members()->attach($user);
 
-    $user->assignOrganizationRole($organization, $role->value);
+    $user->assignOrganizationRole($organization, $role);
 
     return $user;
 }
 
 test('members can view their organization and outsiders cannot', function () {
     $organization = Organization::factory()->create();
-    $member = memberWithRole($organization, OrganizationRole::Member);
+    $member = memberWithRole($organization, 'member');
     $outsider = User::factory()->create();
 
     expect($member->can('view', $organization))->toBeTrue();
     expect($outsider->can('view', $organization))->toBeFalse();
 });
 
-test('owners and admins can update the organization', function () {
+test('owners and admins are granted organization:update', function () {
     $organization = Organization::factory()->create();
 
-    expect(memberWithRole($organization, OrganizationRole::Owner)->can('update', $organization))->toBeTrue();
-    expect(memberWithRole($organization, OrganizationRole::Admin)->can('update', $organization))->toBeTrue();
-    expect(memberWithRole($organization, OrganizationRole::Member)->can('update', $organization))->toBeFalse();
-    expect(memberWithRole($organization, OrganizationRole::Client)->can('update', $organization))->toBeFalse();
+    expect(memberWithRole($organization, 'owner')->canInOrganization($organization, 'organization:update'))->toBeTrue();
+    expect(memberWithRole($organization, 'admin')->canInOrganization($organization, 'organization:update'))->toBeTrue();
+    expect(memberWithRole($organization, 'member')->canInOrganization($organization, 'organization:update'))->toBeFalse();
+    expect(memberWithRole($organization, 'client')->canInOrganization($organization, 'organization:update'))->toBeFalse();
 });
 
-test('only owners can delete the organization', function () {
+test('only owners are granted organization:delete', function () {
     $organization = Organization::factory()->create();
 
-    expect(memberWithRole($organization, OrganizationRole::Owner)->can('delete', $organization))->toBeTrue();
-    expect(memberWithRole($organization, OrganizationRole::Admin)->can('delete', $organization))->toBeFalse();
-    expect(memberWithRole($organization, OrganizationRole::Member)->can('delete', $organization))->toBeFalse();
+    expect(memberWithRole($organization, 'owner')->canInOrganization($organization, 'organization:delete'))->toBeTrue();
+    expect(memberWithRole($organization, 'admin')->canInOrganization($organization, 'organization:delete'))->toBeFalse();
+    expect(memberWithRole($organization, 'member')->canInOrganization($organization, 'organization:delete'))->toBeFalse();
 });
 
-test('client contacts can view but cannot manage members', function () {
+test('client contacts can view but hold no member permissions', function () {
     $organization = Organization::factory()->create();
-    $contact = memberWithRole($organization, OrganizationRole::Client);
+    $contact = memberWithRole($organization, 'client');
 
     expect($contact->can('view', $organization))->toBeTrue();
-    expect($contact->can('addMember', $organization))->toBeFalse();
-    expect($contact->can('updateMember', $organization))->toBeFalse();
-    expect($contact->can('removeMember', $organization))->toBeFalse();
-    expect($contact->can('inviteMember', $organization))->toBeFalse();
-    expect($contact->can('cancelInvitation', $organization))->toBeFalse();
-});
 
-test('owners and admins can manage members and invitations', function () {
-    $organization = Organization::factory()->create();
-
-    foreach ([OrganizationRole::Owner, OrganizationRole::Admin] as $role) {
-        $user = memberWithRole($organization, $role);
-
-        expect($user->can('addMember', $organization))->toBeTrue();
-        expect($user->can('removeMember', $organization))->toBeTrue();
-        expect($user->can('inviteMember', $organization))->toBeTrue();
+    foreach (['member:add', 'member:update', 'member:remove', 'invitation:create', 'invitation:cancel'] as $permission) {
+        expect($contact->canInOrganization($organization, $permission))->toBeFalse();
     }
 });
 
-test('an outsider cannot do anything to an organization', function () {
+test('owners and admins are granted the member and invitation permissions', function () {
+    $organization = Organization::factory()->create();
+
+    foreach (['owner', 'admin'] as $role) {
+        $user = memberWithRole($organization, $role);
+
+        expect($user->canInOrganization($organization, 'member:add'))->toBeTrue();
+        expect($user->canInOrganization($organization, 'member:remove'))->toBeTrue();
+        expect($user->canInOrganization($organization, 'invitation:create'))->toBeTrue();
+    }
+});
+
+test('an outsider is granted nothing and cannot view', function () {
     $organization = Organization::factory()->create();
     $outsider = User::factory()->create();
 
     expect($outsider->can('view', $organization))->toBeFalse();
-    expect($outsider->can('update', $organization))->toBeFalse();
-    expect($outsider->can('delete', $organization))->toBeFalse();
-    expect($outsider->can('addMember', $organization))->toBeFalse();
-    expect($outsider->can('inviteMember', $organization))->toBeFalse();
-});
+
+    foreach (['organization:update', 'organization:delete', 'member:add', 'invitation:create'] as $permission) {
+        expect($outsider->canInOrganization($organization, $permission))->toBeFalse();
+    }
+})->note('canInOrganization refuses a non-member before it ever reaches the permission tables.');

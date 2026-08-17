@@ -2,7 +2,6 @@
 
 namespace App\Actions\Organizations;
 
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\OrganizationInvitation;
 use App\Models\User;
@@ -24,7 +23,7 @@ class InviteContact
                 ],
                 [
                     'client_id' => $client->id,
-                    'role' => OrganizationRole::Client,
+                    'role' => 'client',
                     'invited_by' => $inviter->id,
                     'expires_at' => now()->addDays(14),
                     'accepted_at' => null,

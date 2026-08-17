@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -11,7 +10,7 @@ test('the current organization and the full list are shared with every page', fu
 
     $organization->members()->attach($user);
 
-    $user->assignOrganizationRole($organization, OrganizationRole::Owner->value);
+    $user->assignOrganizationRole($organization, 'owner');
     $user->switchOrganization($organization);
 
     $this
@@ -21,7 +20,7 @@ test('the current organization and the full list are shared with every page', fu
         ->assertInertia(fn (Assert $page) => $page
             ->where('currentOrganization.name', 'NotaryDash')
             ->where('currentOrganization.isCurrent', true)
-            ->where('currentOrganization.role', OrganizationRole::Owner->value)
+            ->where('currentOrganization.role', 'owner')
             ->has('organizations', 1),
         );
 });

@@ -1,7 +1,6 @@
 <?php
 
 use App\Ai\Tools\CreateTeam;
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Team;
@@ -83,7 +82,7 @@ test('an existing team is returned rather than duplicated', function (string $re
 })->with(['Design Ops', 'design ops', 'Design Ops.', 'DESIGN  OPS']);
 
 test('a member is refused and nothing is created', function () {
-    $member = memberOf($this->organization, OrganizationRole::Member);
+    $member = memberOf($this->organization, 'member');
 
     $result = new CreateTeam($member)->handle(toolRequest(['name' => 'Design Ops']));
 

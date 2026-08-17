@@ -2,8 +2,6 @@
 
 namespace App\Actions\Organizations;
 
-use App\Enums\OrganizationPermission;
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\Permission;
 use App\Models\Role;
@@ -19,26 +17,38 @@ class SeedDefaultRoles
         setPermissionsTeamId($organization->id);
 
         try {
-            foreach (OrganizationRole::cases() as $default) {
-                $role = Role::findOrCreate($default->value, 'web');
-
-                $role->syncPermissions(
-                    collect($default->permissions())->map(fn (OrganizationPermission $permission) => $permission->value)->all()
-                );
+            foreach ($this->defaults() as $name => $permissions) {
+                Role::findOrCreate($name, 'web')->syncPermissions($permissions);
             }
         } finally {
             setPermissionsTeamId($previousTeam);
         }
     }
 
+    /** @return array<string, array<int, string>> */
+    protected function defaults(): array
+    {
+        $catalog = $this->catalog();
+
+        return collect((array) config('roles.defaults'))
+            ->map(fn (array|string $permissions) => $permissions === '*' ? $catalog : (array) $permissions)
+            ->all();
+    }
+
     protected function ensurePermissionsExist(): void
     {
         $existing = Permission::pluck('name');
 
-        foreach (OrganizationPermission::cases() as $permission) {
-            if (! $existing->contains($permission->value)) {
-                Permission::create(['name' => $permission->value, 'guard_name' => 'web']);
+        foreach ($this->catalog() as $permission) {
+            if (! $existing->contains($permission)) {
+                Permission::create(['name' => $permission, 'guard_name' => 'web']);
             }
         }
+    }
+
+    /** @return array<int, string> */
+    protected function catalog(): array
+    {
+        return (array) config('roles.permissions');
     }
 }

@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\User;
@@ -29,11 +28,11 @@ class OrganizationFactory extends Factory
     public function withOwner(?User $owner = null): static
     {
         return $this->afterCreating(function (Organization $organization) use ($owner) {
-            $this->addMember($organization, $owner ?? User::factory()->create(), OrganizationRole::Owner);
+            $this->addMember($organization, $owner ?? User::factory()->create(), 'owner');
         });
     }
 
-    public function withMembers(int $count = 3, OrganizationRole $role = OrganizationRole::Member): static
+    public function withMembers(int $count = 3, string $role = 'member'): static
     {
         return $this->afterCreating(function (Organization $organization) use ($count, $role) {
             User::factory()
@@ -51,13 +50,13 @@ class OrganizationFactory extends Factory
             $this->addMember(
                 $organization,
                 $contact ?? User::factory()->create(),
-                OrganizationRole::Client,
+                'client',
                 $client,
             );
         });
     }
 
-    protected function addMember(Organization $organization, User $user, OrganizationRole $role, ?Client $client = null): void
+    protected function addMember(Organization $organization, User $user, string $role, ?Client $client = null): void
     {
         $organization->members()->attach($user, [
             'client_id' => $client?->id,

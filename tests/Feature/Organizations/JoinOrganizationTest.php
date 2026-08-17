@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
@@ -45,7 +44,7 @@ test('joining creates the account, accepts the invitation, and signs them in', f
     $user = User::where('email', 'lucy@acme.test')->sole();
 
     expect($user->name)->toBe('Lucy Alvarez');
-    expect($user->organizationRoleName($invitation->organization))->toBe(OrganizationRole::Client->value);
+    expect($user->organizationRoleName($invitation->organization))->toBe('client');
     expect($invitation->fresh()->isAccepted())->toBeTrue();
     expect(auth()->id())->toBe($user->id);
 });

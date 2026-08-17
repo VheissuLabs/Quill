@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\User;
 use Database\Seeders\Concerns\AttributesActivity;
@@ -39,7 +38,7 @@ class ContactSeeder extends Seeder
                         'client_id' => $client->id,
                     ]);
 
-                    $contact->assignOrganizationRole($client->organization, OrganizationRole::Client);
+                    $contact->assignOrganizationRole($client->organization, 'client');
                 }
             });
         }

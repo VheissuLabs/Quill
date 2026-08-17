@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Enums\TeamRole;
 use App\Models\Client;
 use App\Models\Organization;
@@ -14,7 +13,7 @@ test('a team carries the name and kind of its parent', function () {
 
     $organization->members()->attach($user);
 
-    $user->assignOrganizationRole($organization, OrganizationRole::Owner->value);
+    $user->assignOrganizationRole($organization, 'owner');
 
     $orgTeam = Team::factory()->heldBy($organization)->withMember($user, TeamRole::Owner)->create(['name' => 'Delivery']);
     $clientTeam = Team::factory()->heldBy($client)->withMember($user, TeamRole::Owner)->create(['name' => 'Development']);

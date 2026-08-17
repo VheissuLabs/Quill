@@ -4,7 +4,6 @@ use App\Ai\AssistantToolbox;
 use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\CreateProject;
 use App\Ai\Tools\ListProjects;
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Project;
@@ -128,7 +127,7 @@ test('a client in another organization cannot own the project', function () {
 });
 
 test('a member is refused and nothing is created', function () {
-    $member = memberOf($this->organization, OrganizationRole::Member);
+    $member = memberOf($this->organization, 'member');
 
     Client::factory()->heldBy($this->organization)->create(['name' => 'Acme Title']);
 
@@ -142,7 +141,7 @@ test('a member is refused and nothing is created', function () {
 });
 
 test('a member is not granted the create tool at all', function () {
-    $member = memberOf($this->organization, OrganizationRole::Member);
+    $member = memberOf($this->organization, 'member');
 
     $granted = collect(app(AssistantToolbox::class)->for($member))
         ->map(fn (AssistantTool $tool) => $tool->name());

@@ -2,10 +2,7 @@
 
 namespace App\Concerns;
 
-use App\Data\OrganizationPermissions;
 use App\Data\UserOrganization;
-use App\Enums\OrganizationPermission;
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\Role;
@@ -34,11 +31,11 @@ trait HasOrganizations
         return $this->organizations()->where('organizations.id', $organization->id)->exists();
     }
 
-    public function assignOrganizationRole(Organization $organization, OrganizationRole|Role|string $role): void
+    public function assignOrganizationRole(Organization $organization, Role|string $role): void
     {
         $this->withinOrganization($organization, function () use ($role) {
             $this->unsetRelation('roles');
-            $this->syncRoles([$role instanceof OrganizationRole ? $role->value : $role]);
+            $this->syncRoles([$role]);
         });
     }
 
@@ -57,15 +54,15 @@ trait HasOrganizations
 
     public function ownsOrganization(Organization $organization): bool
     {
-        return $this->organizationRoleName($organization) === OrganizationRole::Owner->value;
+        return $this->organizationRoleName($organization) === 'owner';
     }
 
     public function isClientContact(Organization $organization): bool
     {
-        return $this->organizationRoleName($organization) === OrganizationRole::Client->value;
+        return $this->organizationRoleName($organization) === 'client';
     }
 
-    public function hasOrganizationPermission(Organization $organization, OrganizationPermission $permission): bool
+    public function canInOrganization(Organization $organization, string $permission): bool
     {
         if (! $this->belongsToOrganization($organization)) {
             return false;
@@ -75,7 +72,7 @@ trait HasOrganizations
             $this->unsetRelation('roles');
             $this->forgetCachedPermissions();
 
-            return $this->hasPermissionTo($permission->value);
+            return $this->hasPermissionTo($permission);
         });
     }
 
@@ -92,6 +89,10 @@ trait HasOrganizations
 
         $this->update(['current_organization_id' => $organization->id]);
         $this->setRelation('currentOrganization', $organization);
+
+        setPermissionsTeamId($organization->id);
+        $this->unsetRelation('roles');
+        $this->forgetCachedPermissions();
 
         return true;
     }
@@ -132,24 +133,6 @@ trait HasOrganizations
             role: $role?->name,
             roleLabel: $role?->label(),
             isCurrent: $this->isCurrentOrganization($organization),
-        );
-    }
-
-    public function toOrganizationPermissions(Organization $organization): OrganizationPermissions
-    {
-        $granted = $this->organizationPermissionNames($organization);
-
-        return new OrganizationPermissions(
-            canUpdateOrganization: $granted->contains(OrganizationPermission::UpdateOrganization->value),
-            canDeleteOrganization: $granted->contains(OrganizationPermission::DeleteOrganization->value),
-            canAddMember: $granted->contains(OrganizationPermission::AddMember->value),
-            canUpdateMember: $granted->contains(OrganizationPermission::UpdateMember->value),
-            canRemoveMember: $granted->contains(OrganizationPermission::RemoveMember->value),
-            canCreateInvitation: $granted->contains(OrganizationPermission::CreateInvitation->value),
-            canCancelInvitation: $granted->contains(OrganizationPermission::CancelInvitation->value),
-            canCreateClient: $granted->contains(OrganizationPermission::CreateClient->value),
-            canUpdateClient: $granted->contains(OrganizationPermission::UpdateClient->value),
-            canDeleteClient: $granted->contains(OrganizationPermission::DeleteClient->value),
         );
     }
 

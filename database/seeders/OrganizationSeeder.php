@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 use Database\Seeders\Concerns\AttributesActivity;
@@ -17,20 +16,20 @@ class OrganizationSeeder extends Seeder
      * holds there. Two of them belong to other people — the test user is
      * working for them — which is why the roles differ.
      *
-     * @var array<string, array{owner: ?array{name: string, email: string}, role: OrganizationRole}>
+     * @var array<string, array{owner: ?array{name: string, email: string}, role: string}>
      */
     protected array $organizations = [
         'NotaryDash' => [
             'owner' => ['name' => 'Jen', 'email' => 'jen@notarydash.com'],
-            'role' => OrganizationRole::Admin,
+            'role' => 'admin',
         ],
         '92 Labs' => [
             'owner' => ['name' => 'Jerry', 'email' => 'jerry@92labs.com'],
-            'role' => OrganizationRole::Member,
+            'role' => 'member',
         ],
         'VheissuLabs' => [
             'owner' => null,
-            'role' => OrganizationRole::Owner,
+            'role' => 'owner',
         ],
     ];
 

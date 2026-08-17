@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
@@ -29,7 +28,7 @@ test('accepting an invitation creates the membership with its client and role', 
     $invited->refresh();
 
     expect($invited->belongsToOrganization($organization))->toBeTrue();
-    expect($invited->organizationRoleName($organization))->toBe(OrganizationRole::Client->value);
+    expect($invited->organizationRoleName($organization))->toBe('client');
     expect($invited->isClientContact($organization))->toBeTrue();
     expect($organization->memberships()->where('user_id', $invited->id)->sole()->client_id)->toBe($client->id);
     expect($invitation->fresh()->isAccepted())->toBeTrue();
