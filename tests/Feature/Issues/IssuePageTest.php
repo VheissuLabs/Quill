@@ -5,6 +5,7 @@ use App\Models\Issue;
 use App\Models\IssueType;
 use App\Models\Organization;
 use App\Models\Project;
+use App\Models\Team;
 
 test('the project page lists its open issues', function () {
     [$organization, $owner] = organizationWith('owner');
@@ -42,7 +43,24 @@ test('a member holding issue:create can file one', function () {
     expect($project->issues()->sole()->title)->toBe('Export is broken');
 });
 
-test('a contact cannot reach a project issue page', function () {
+test('a member holding issue:create can file one against a team-owned project', function () {
+    [$organization, $member] = organizationWith('member');
+    $team = Team::factory()->heldBy($organization)->create();
+    $project = Project::factory()->ownedBy($team)->create();
+    $type = IssueType::where('organization_id', $organization->id)->first();
+
+    $this->actingAs($member)
+        ->post(route('projects.issues.store', $project), [
+            'issue_type_id' => $type->id,
+            'title' => 'Export is broken',
+            'description' => 'Clicking export produces no file.',
+        ])
+        ->assertRedirect();
+
+    expect($project->issues()->sole()->client_id)->toBeNull();
+});
+
+test('a contact cannot reach a project issue page via the route or the policy', function () {
     [$organization, $owner] = organizationWith('owner');
     $client = Client::factory()->heldBy($organization)->create();
     $project = Project::factory()->ownedBy($client)->create();
@@ -50,10 +68,13 @@ test('a contact cannot reach a project issue page', function () {
     $contact = contactFor($client, 'Lucy Alvarez');
 
     $contact->switchOrganization($organization);
+    $contact = $contact->refresh();
 
-    $this->actingAs($contact->refresh())
+    $this->actingAs($contact)
         ->get(route('projects.issues.show', [$project, $issue->number]))
         ->assertForbidden();
+
+    expect($contact->can('view', $issue))->toBeFalse();
 });
 
 test('an issue in another organization is a not found', function () {

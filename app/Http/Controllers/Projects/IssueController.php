@@ -8,13 +8,12 @@ use App\Models\Client;
 use App\Models\Issue;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class IssueController extends Controller
 {
-    public function show(Request $request, Project $project, Issue $issue): Response
+    public function show(Project $project, Issue $issue): Response
     {
         $issue->load(['type', 'client', 'reporter']);
 

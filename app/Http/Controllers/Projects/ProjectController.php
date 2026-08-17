@@ -45,7 +45,7 @@ class ProjectController extends Controller
                 'description' => $project->description,
                 'defaultForClients' => $project->defaultForClients->pluck('name')->values(),
             ],
-            'issues' => $project->issues()->open()->with('type')->orderByDesc('number')->get()
+            'issues' => $project->issues()->open()->with(['type', 'client'])->orderByDesc('number')->get()
                 ->map(fn (Issue $issue) => [
                     'number' => $issue->number,
                     'title' => $issue->title,
