@@ -31,9 +31,18 @@ class RoleSeeder extends Seeder
             'project:update',
             'client:create',
             'client:update',
+            'issue:create',
+            'issue:update',
+            'issue:close',
         ],
-        'member' => [],
-        'client' => [],
+        'member' => [
+            'issue:create',
+            'issue:update',
+            'issue:close',
+        ],
+        'client' => [
+            'issue:create',
+        ],
     ];
 
     /** @var array<int, string> */
@@ -55,6 +64,9 @@ class RoleSeeder extends Seeder
         'client:create',
         'client:update',
         'client:delete',
+        'issue:create',
+        'issue:update',
+        'issue:close',
     ];
 
     public function run(): void

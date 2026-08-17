@@ -57,6 +57,11 @@ class Project extends Model
         return $this->hasMany(Client::class, 'default_project_id');
     }
 
+    public function issues(): HasMany
+    {
+        return $this->hasMany(Issue::class);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

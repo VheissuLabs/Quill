@@ -30,8 +30,8 @@ test('owner is granted the whole catalogue and admin cannot delete the organizat
     expect($granted('admin'))
         ->toContain('organization:update')
         ->not->toContain('organization:delete');
-    expect($granted('member'))->toBeEmpty();
-    expect($granted('client'))->toBeEmpty();
+    expect($granted('member'))->toContain('issue:create', 'issue:update', 'issue:close');
+    expect($granted('client')->all())->toBe(['issue:create']);
 });
 
 test('a role edited in one organization leaves the other alone', function () {
@@ -43,5 +43,17 @@ test('a role edited in one organization leaves the other alone', function () {
 
     $theirMember = Role::where('organization_id', $theirs->id)->where('name', 'member')->sole();
 
-    expect($theirMember->permissions)->toBeEmpty();
+    expect($theirMember->permissions->pluck('name'))->not->toContain('client:create');
 });
+
+test('a contact may file an issue and nothing else', function () {
+    $organization = Organization::factory()->create();
+
+    $granted = Role::where('organization_id', $organization->id)
+        ->where('name', 'client')
+        ->sole()
+        ->permissions
+        ->pluck('name');
+
+    expect($granted->all())->toBe(['issue:create']);
+})->note('Filing is how a contact uses Quill; everything else stays closed to them.');
