@@ -44,8 +44,12 @@ class TeamPolicy
         return $this->ownerOrGranted($user, $team, 'member:add');
     }
 
-    public function removeMember(User $user, Team $team): bool
+    public function removeMember(User $user, Team $team, ?User $member = null): bool
     {
+        if ($member !== null && $team->owner_id === $member->id) {
+            return false;
+        }
+
         return $this->ownerOrGranted($user, $team, 'member:remove');
     }
 

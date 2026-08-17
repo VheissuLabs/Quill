@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { router } from '@inertiajs/vue3'
     import { ref } from 'vue'
-    import OrganizationInvitationController from '@/actions/App/Http/Controllers/Organizations/OrganizationInvitationController'
+    import OrganizationMembershipController from '@/actions/App/Http/Controllers/Organizations/OrganizationMembershipController'
     import Stack from '@/components/Stack.vue'
     import { Button } from '@/components/ui/button'
     import {
@@ -23,14 +23,14 @@
     const processingCode = ref<string | null>(null)
 
     const accept = (invitation: DashboardOrganizationInvitation) => {
-        router.visit(OrganizationInvitationController.accept(invitation), {
+        router.visit(OrganizationMembershipController.store(invitation), {
             onStart: () => (processingCode.value = invitation.code),
             onFinish: () => (processingCode.value = null),
         })
     }
 
     const decline = (invitation: DashboardOrganizationInvitation) => {
-        router.visit(OrganizationInvitationController.decline(invitation), {
+        router.visit(OrganizationMembershipController.destroy(invitation), {
             onStart: () => (processingCode.value = invitation.code),
             onFinish: () => (processingCode.value = null),
             onSuccess: () => {

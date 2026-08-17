@@ -9,8 +9,6 @@ use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Notifications\Teams\TeamInvitation as TeamInvitationNotification;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 
@@ -18,9 +16,8 @@ class TeamInvitationController extends Controller
 {
     public function store(CreateTeamInvitationRequest $request, Team $team): RedirectResponse
     {
-        Gate::authorize('inviteMember', $team);
-
-        $invitation = $team->invitations()->create([
+        $invitation = TeamInvitation::create([
+            'team_id' => $team->id,
             'email' => $request->validated('email'),
             'invited_by' => $request->user()->id,
             'expires_at' => now()->addDays(3),
@@ -34,44 +31,21 @@ class TeamInvitationController extends Controller
         return to_route('teams.edit', ['team' => $team->slug]);
     }
 
-    public function destroy(Team $team, TeamInvitation $invitation): RedirectResponse
-    {
-        abort_unless($invitation->team_id === $team->id, 404);
-
-        Gate::authorize('cancelInvitation', $team);
+    public function destroy(
+        RespondToTeamInvitationRequest $request,
+        Team $team,
+        TeamInvitation $invitation,
+    ): RedirectResponse {
+        $declinedByInvitee = mb_strtolower($invitation->email) === mb_strtolower($request->user()->email);
 
         $invitation->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Invitation cancelled.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $declinedByInvitee
+            ? __('Invitation declined.')
+            : __('Invitation cancelled.')]);
 
-        return to_route('teams.edit', ['team' => $team->slug]);
-    }
-
-    public function accept(RespondToTeamInvitationRequest $request, TeamInvitation $invitation): RedirectResponse
-    {
-        $user = $request->user();
-
-        DB::transaction(function () use ($user, $invitation) {
-            $team = $invitation->team;
-
-            $team->memberships()->firstOrCreate(['user_id' => $user->id]);
-
-            $invitation->update(['accepted_at' => now()]);
-
-            $user->switchTeam($team);
-        });
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Invitation accepted.')]);
-
-        return to_route('dashboard');
-    }
-
-    public function decline(RespondToTeamInvitationRequest $request, TeamInvitation $invitation): RedirectResponse
-    {
-        $invitation->delete();
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Invitation declined.')]);
-
-        return to_route('dashboard');
+        return $declinedByInvitee
+            ? to_route('dashboard')
+            : to_route('teams.edit', ['team' => $team->slug]);
     }
 }

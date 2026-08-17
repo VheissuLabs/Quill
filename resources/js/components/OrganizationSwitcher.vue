@@ -10,7 +10,7 @@
         DropdownMenuLabel,
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu'
-    import { switchMethod } from '@/routes/organizations'
+    import { update as switchOrganizationRoute } from '@/routes/organizations/membership'
     import type { Organization } from '@/types'
 
     const props = withDefaults(
@@ -63,7 +63,7 @@
             return
         }
 
-        router.visit(switchMethod(organization.slug), {
+        router.visit(switchOrganizationRoute(organization.slug), {
             onFinish: () => router.reload(),
         })
     }

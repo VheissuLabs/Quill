@@ -1,7 +1,6 @@
 <script setup lang="ts">
     import { router } from '@inertiajs/vue3'
     import { ref } from 'vue'
-    import TeamInvitationController from '@/actions/App/Http/Controllers/Teams/TeamInvitationController'
     import Stack from '@/components/Stack.vue'
     import { Button } from '@/components/ui/button'
     import {
@@ -11,6 +10,8 @@
         DialogHeader,
         DialogTitle,
     } from '@/components/ui/dialog'
+    import { destroy as declineInvitationRoute } from '@/routes/invitations'
+    import { store as acceptInvitationRoute } from '@/routes/invitations/membership'
     import type { DashboardInvitation } from '@/types'
 
     type Props = {
@@ -23,22 +24,25 @@
     const processingCode = ref<string | null>(null)
 
     const acceptInvitation = (invitation: DashboardInvitation) => {
-        router.visit(TeamInvitationController.accept(invitation), {
+        router.visit(acceptInvitationRoute(invitation.code), {
             onStart: () => (processingCode.value = invitation.code),
             onFinish: () => (processingCode.value = null),
         })
     }
 
     const declineInvitation = (invitation: DashboardInvitation) => {
-        router.visit(TeamInvitationController.decline(invitation), {
-            onStart: () => (processingCode.value = invitation.code),
-            onFinish: () => (processingCode.value = null),
-            onSuccess: () => {
-                if (props.invitations.length === 1) {
-                    open.value = false
-                }
+        router.visit(
+            declineInvitationRoute([invitation.team.slug, invitation.code]),
+            {
+                onStart: () => (processingCode.value = invitation.code),
+                onFinish: () => (processingCode.value = null),
+                onSuccess: () => {
+                    if (props.invitations.length === 1) {
+                        open.value = false
+                    }
+                },
             },
-        })
+        )
     }
 </script>
 

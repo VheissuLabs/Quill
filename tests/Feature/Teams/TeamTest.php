@@ -240,7 +240,7 @@ test('members can leave non personal teams', function () {
 
     $response = $this
         ->actingAs($member)
-        ->delete(route('teams.leave', $team));
+        ->delete(route('teams.membership.destroy', $team));
 
     $response->assertRedirect(route('teams.index'));
     $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => "You left the team \"{$team->name}\""]);
@@ -267,7 +267,7 @@ test('leaving current team switches to alphabetically first remaining team', fun
 
     $response = $this
         ->actingAs($member)
-        ->delete(route('teams.leave', $zuluTeam));
+        ->delete(route('teams.membership.destroy', $zuluTeam));
 
     $response->assertRedirect(route('teams.index'));
 
@@ -281,7 +281,7 @@ test('personal teams cannot be left', function () {
 
     $response = $this
         ->actingAs($user)
-        ->delete(route('teams.leave', $personalTeam));
+        ->delete(route('teams.membership.destroy', $personalTeam));
 
     $response->assertForbidden();
 
@@ -297,7 +297,7 @@ test('team owners cannot leave their team', function () {
 
     $response = $this
         ->actingAs($owner)
-        ->delete(route('teams.leave', $team));
+        ->delete(route('teams.membership.destroy', $team));
 
     $response->assertForbidden();
 
@@ -310,7 +310,7 @@ test('users cannot leave teams they dont belong to', function () {
 
     $response = $this
         ->actingAs($user)
-        ->delete(route('teams.leave', $team));
+        ->delete(route('teams.membership.destroy', $team));
 
     $response->assertForbidden();
 });
@@ -383,7 +383,7 @@ test('users can switch teams', function () {
 
     $response = $this
         ->actingAs($user)
-        ->post(route('teams.switch', $team));
+        ->put(route('teams.membership.update', $team));
 
     $response->assertRedirect();
 
@@ -396,7 +396,7 @@ test('users cannot switch to team they dont belong to', function () {
 
     $response = $this
         ->actingAs($user)
-        ->post(route('teams.switch', $team));
+        ->put(route('teams.membership.update', $team));
 
     $response->assertForbidden();
 });
