@@ -5,7 +5,6 @@ namespace App\Ai\Tools;
 use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\Concerns\MatchesNames;
 use App\Ai\Tools\Concerns\ScopedToCurrentOrganization;
-use App\Enums\OrganizationPermission;
 use App\Models\Organization;
 use App\Models\Team;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -40,8 +39,8 @@ class RenameTeam implements AssistantTool
             return $this->withoutOrganization();
         }
 
-        if (! $this->user->hasOrganizationPermission($organization, OrganizationPermission::UpdateTeam)) {
-            return $this->refused('rename a team');
+        if (! $this->user->can('team:update')) {
+            return $this->refused('rename a team', 'team:update');
         }
 
         $newName = trim((string) $request['new_name']);

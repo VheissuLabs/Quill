@@ -3,7 +3,6 @@
 use App\Ai\Tools\RenameClient;
 use App\Ai\Tools\RenameProject;
 use App\Ai\Tools\RenameTeam;
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Project;
@@ -107,7 +106,7 @@ test('a project in another organization cannot be renamed', function () {
 });
 
 test('a member is refused and no project is renamed', function () {
-    $member = memberOf($this->organization, OrganizationRole::Member);
+    $member = memberOf($this->organization, 'member');
     $client = Client::factory()->heldBy($this->organization)->create(['name' => 'Acme Title']);
 
     Project::factory()->ownedBy($client)->create(['name' => 'Acme Website']);
@@ -197,7 +196,7 @@ test('a blank new name asks rather than renaming', function (string $newName) {
 })->with(['', '  ']);
 
 test('a member is refused and nothing changes', function () {
-    $member = memberOf($this->organization, OrganizationRole::Member);
+    $member = memberOf($this->organization, 'member');
 
     Client::factory()->heldBy($this->organization)->create(['name' => 'Acme Title']);
 

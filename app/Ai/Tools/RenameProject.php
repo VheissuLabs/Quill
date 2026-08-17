@@ -5,7 +5,6 @@ namespace App\Ai\Tools;
 use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\Concerns\MatchesNames;
 use App\Ai\Tools\Concerns\ScopedToCurrentOrganization;
-use App\Enums\OrganizationPermission;
 use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -40,8 +39,8 @@ class RenameProject implements AssistantTool
             return $this->withoutOrganization();
         }
 
-        if (! $this->user->hasOrganizationPermission($organization, OrganizationPermission::UpdateProject)) {
-            return $this->refused('rename a project');
+        if (! $this->user->can('project:update')) {
+            return $this->refused('rename a project', 'project:update');
         }
 
         $newName = trim((string) $request['new_name']);

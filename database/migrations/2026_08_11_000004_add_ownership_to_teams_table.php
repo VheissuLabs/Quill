@@ -20,6 +20,8 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
+            $table->foreignUuid('owner_id')->nullable()->after('slug')->constrained('users')->nullOnDelete();
+
             $table->nullableUuidMorphs('parent');
         });
     }
@@ -28,6 +30,7 @@ return new class extends Migration
     {
         Schema::table('teams', function (Blueprint $table) {
             $table->dropConstrainedForeignId('organization_id');
+            $table->dropConstrainedForeignId('owner_id');
             $table->dropMorphs('parent');
         });
     }

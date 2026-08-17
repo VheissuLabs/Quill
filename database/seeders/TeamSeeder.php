@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\TeamRole;
 use App\Models\Client;
 use App\Models\Team;
 use App\Models\User;
@@ -14,20 +13,25 @@ class TeamSeeder extends Seeder
 {
     use AttributesActivity, NamesDepartments;
 
-    /** @var array<string, array<string, TeamRole>> */
+    /**
+     * The departments working on each client's account, and whether the test user
+     * owns that team or merely belongs to it.
+     *
+     * @var array<string, array<string, bool>>
+     */
     protected array $teams = [
         'Acme Title Co' => [
-            'Engineering' => TeamRole::Owner,
-            'Design' => TeamRole::Admin,
+            'Engineering' => true,
+            'Design' => false,
         ],
         'Harbor Escrow' => [
-            'Quality Assurance' => TeamRole::Member,
+            'Quality Assurance' => false,
         ],
         'Ridgeline Outfitters' => [
-            'Client Services' => TeamRole::Member,
+            'Client Services' => false,
         ],
         'Wavelength Audio' => [
-            'Support' => TeamRole::Owner,
+            'Support' => true,
         ],
     ];
 
@@ -36,31 +40,38 @@ class TeamSeeder extends Seeder
         $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
         $delivery = Team::where('name', 'Delivery')->firstOrFail();
-        $delivery->members()->attach($user, ['role' => TeamRole::Admin->value]);
+        $delivery->update(['owner_id' => $user->id]);
+        $delivery->members()->attach($user);
         User::factory()->count(2)->create()->each(
-            fn (User $member) => $delivery->members()->attach($member, ['role' => TeamRole::Member->value]),
+            fn (User $member) => $delivery->members()->attach($member),
         );
-        $delivery->members()->attach(User::factory()->create(), ['role' => TeamRole::Owner->value]);
 
         foreach ($this->teams as $clientName => $teams) {
             $client = Client::where('name', $clientName)->firstOrFail();
 
-            $this->causedBy($this->ownerOf($client->organization), function () use ($client, $teams, $user) {
-                foreach ($teams as $name => $role) {
-                    $team = Team::factory()
-                        ->heldBy($client)
-                        ->withMember($user, $role)
-                        ->withMembers(2)
-                        ->create(['name' => $this->department($name)]);
+            $this->causedBy(
+                $this->ownerOf($client->organization),
+                fn () => collect($teams)->each(
+                    fn (bool $ownedByUser, string $name) => $this->seedTeam($client, $name, $ownedByUser, $user)
+                ),
+            );
+        }
+    }
 
-                    if ($role !== TeamRole::Owner) {
-                        $team->members()->attach(
-                            User::factory()->create(),
-                            ['role' => TeamRole::Owner->value],
-                        );
-                    }
-                }
-            });
+    protected function seedTeam(Client $client, string $name, bool $ownedByUser, User $user): void
+    {
+        $team = Team::factory()
+            ->heldBy($client)
+            ->withMember($user)
+            ->withMembers(2)
+            ->create(['name' => $this->department($name)]);
+
+        $owner = $ownedByUser ? $user : User::factory()->create();
+
+        $team->update(['owner_id' => $owner->id]);
+
+        if (! $ownedByUser) {
+            $team->members()->attach($owner);
         }
     }
 }

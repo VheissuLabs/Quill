@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Teams;
 
-use App\Enums\TeamRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Teams\CreateTeamInvitationRequest;
 use App\Http\Requests\Teams\RespondToTeamInvitationRequest;
@@ -23,7 +22,6 @@ class TeamInvitationController extends Controller
 
         $invitation = $team->invitations()->create([
             'email' => $request->validated('email'),
-            'role' => TeamRole::from($request->validated('role')),
             'invited_by' => $request->user()->id,
             'expires_at' => now()->addDays(3),
         ]);
@@ -56,10 +54,7 @@ class TeamInvitationController extends Controller
         DB::transaction(function () use ($user, $invitation) {
             $team = $invitation->team;
 
-            $team->memberships()->firstOrCreate(
-                ['user_id' => $user->id],
-                ['role' => $invitation->role],
-            );
+            $team->memberships()->firstOrCreate(['user_id' => $user->id]);
 
             $invitation->update(['accepted_at' => now()]);
 

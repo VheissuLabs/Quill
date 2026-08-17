@@ -1,7 +1,6 @@
 <?php
 
 use App\Ai\Tools\CreateClient;
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Team;
@@ -98,13 +97,13 @@ test('naming a team that does not exist creates nothing and lists the real ones'
 });
 
 test('a member is refused and nothing is created', function () {
-    $member = memberOf($this->organization, OrganizationRole::Member);
+    $member = memberOf($this->organization, 'member');
 
     $result = new CreateClient($member)->handle(toolRequest(['name' => 'Wayne Enterprises']));
 
     expect($result)
         ->toContain('does not have permission')
-        ->toContain('Member')
+        ->toContain('client:create')
         ->toContain('Nothing was changed');
 
     expect($this->organization->clients()->count())->toBe(0);

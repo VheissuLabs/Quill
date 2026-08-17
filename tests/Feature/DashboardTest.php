@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
@@ -30,7 +29,8 @@ test('dashboard includes pending invitations for the authenticated user', functi
     $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
     $team = Team::factory()->create(['name' => 'Laravel Team']);
 
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->update(['owner_id' => $owner->id]);
+    $team->members()->attach($owner);
 
     $invitation = TeamInvitation::factory()->create([
         'team_id' => $team->id,
@@ -59,7 +59,8 @@ test('dashboard does not include accepted invitations', function () {
     $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
     $team = Team::factory()->create();
 
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->update(['owner_id' => $owner->id]);
+    $team->members()->attach($owner);
 
     TeamInvitation::factory()->accepted()->create([
         'team_id' => $team->id,
@@ -83,7 +84,8 @@ test('dashboard excludes expired invitations without deleting them', function ()
     $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
     $team = Team::factory()->create();
 
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->update(['owner_id' => $owner->id]);
+    $team->members()->attach($owner);
 
     $invitation = TeamInvitation::factory()->expired()->create([
         'team_id' => $team->id,
@@ -111,7 +113,8 @@ test('dashboard does not include or delete other users invitations', function ()
     $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
     $team = Team::factory()->create();
 
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->update(['owner_id' => $owner->id]);
+    $team->members()->attach($owner);
 
     $invitation = TeamInvitation::factory()->expired()->create([
         'team_id' => $team->id,

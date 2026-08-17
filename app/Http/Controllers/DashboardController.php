@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Concerns\SummarizesActivity;
 use App\Data\ActivityEntry;
-use App\Enums\OrganizationPermission;
 use App\Models\Activity;
 use App\Models\OrganizationInvitation;
 use App\Models\TeamInvitation;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -54,7 +54,7 @@ class DashboardController extends Controller
                 'inviterName' => $invitation->inviter->name,
                 'organizationName' => $invitation->organization->name,
                 'clientName' => $invitation->client?->name,
-                'roleLabel' => $invitation->role->label(),
+                'roleLabel' => Str::headline($invitation->role),
             ]);
 
         return Inertia::render('Dashboard', [
@@ -69,7 +69,7 @@ class DashboardController extends Controller
     {
         $organization = $user->currentOrganization;
 
-        if ($organization === null || ! $user->hasOrganizationPermission($organization, OrganizationPermission::ViewActivity)) {
+        if ($organization === null || ! $user->can('activity:view')) {
             return null;
         }
 

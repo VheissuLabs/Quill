@@ -6,7 +6,6 @@ use App\Actions\Organizations\InviteContact;
 use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\Concerns\MatchesNames;
 use App\Ai\Tools\Concerns\ScopedToCurrentOrganization;
-use App\Enums\OrganizationPermission;
 use App\Models\Client;
 use App\Models\Organization;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -42,8 +41,8 @@ class CreateContact implements AssistantTool
             return $this->withoutOrganization();
         }
 
-        if (! $this->user->hasOrganizationPermission($organization, OrganizationPermission::AddMember)) {
-            return $this->refused('invite a contact');
+        if (! $this->user->can('member:add')) {
+            return $this->refused('invite a contact', 'member:add');
         }
 
         $email = mb_strtolower(trim((string) $request['email']));

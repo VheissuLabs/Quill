@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\User;
@@ -15,12 +14,12 @@ pest()->extend(TestCase::class)
 
 pest()->beforeEach(function () {
     $this->organization = Organization::factory()->create(['name' => 'NotaryDash']);
-    $this->admin = memberOf($this->organization, OrganizationRole::Admin);
+    $this->admin = memberOf($this->organization, 'admin');
 
     $this->actingAs($this->admin);
 })->in('Feature/Assistant');
 
-function memberOf(Organization $organization, OrganizationRole $role = OrganizationRole::Owner): User
+function memberOf(Organization $organization, string $role = 'owner'): User
 {
     $user = User::factory()->create();
 
@@ -34,14 +33,14 @@ function memberOf(Organization $organization, OrganizationRole $role = Organizat
 /**
  * @return array{Organization, User}
  */
-function organizationWith(OrganizationRole $role = OrganizationRole::Owner, string $name = 'NotaryDash'): array
+function organizationWith(string $role = 'owner', string $name = 'NotaryDash'): array
 {
     $organization = Organization::factory()->create(['name' => $name]);
 
     return [$organization, memberOf($organization, $role)];
 }
 
-function userInOrganization(string $organizationName = 'NotaryDash', OrganizationRole $role = OrganizationRole::Owner): User
+function userInOrganization(string $organizationName = 'NotaryDash', string $role = 'owner'): User
 {
     [, $user] = organizationWith($role, $organizationName);
 
@@ -59,7 +58,7 @@ function contactFor(Client $client, string $name, ?string $email = null): User
         'client_id' => $client->id,
     ]);
 
-    $contact->assignOrganizationRole($client->organization, OrganizationRole::Client);
+    $contact->assignOrganizationRole($client->organization, 'client');
 
     return $contact;
 }

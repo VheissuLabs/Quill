@@ -3,7 +3,6 @@
 use App\Ai\AssistantToolbox;
 use App\Ai\Contracts\AssistantTool;
 use App\Ai\Tools\ListCapabilities;
-use App\Enums\OrganizationRole;
 use App\Models\User;
 
 function grantedTo(User $user): array
@@ -32,13 +31,13 @@ test('an admin is granted the write tools', function () {
 });
 
 test('an owner is granted everything an admin is', function () {
-    $owner = memberOf($this->organization, OrganizationRole::Owner);
+    $owner = memberOf($this->organization, 'owner');
 
     expect(grantedTo($owner))->toBe(grantedTo($this->admin));
 });
 
 test('a member is granted no write tools at all', function () {
-    $member = memberOf($this->organization, OrganizationRole::Member);
+    $member = memberOf($this->organization, 'member');
 
     expect(grantedTo($member))->toBe([
         'describe_organization',
@@ -80,7 +79,7 @@ test('list_capabilities reports what this user can actually do', function () {
 });
 
 test('list_capabilities offers a member nothing it cannot do', function () {
-    $member = memberOf($this->organization, OrganizationRole::Member);
+    $member = memberOf($this->organization, 'member');
 
     $result = new ListCapabilities($member, app(AssistantToolbox::class)->for($member))
         ->handle(toolRequest());

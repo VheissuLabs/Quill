@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 
@@ -44,7 +43,7 @@ test('a member may join their organizations presence channel', function () {
 
     $organization->members()->attach($user);
 
-    $user->assignOrganizationRole($organization, OrganizationRole::Member->value);
+    $user->assignOrganizationRole($organization, 'member');
 
     authorizeChannel($user, 'presence-organizations.'.$organization->id)->assertOk();
 });
@@ -55,7 +54,7 @@ test('a client contact may join their own organizations presence channel', funct
 
     $organization->members()->attach($contact);
 
-    $contact->assignOrganizationRole($organization, OrganizationRole::Client->value);
+    $contact->assignOrganizationRole($organization, 'client');
 
     authorizeChannel($contact, 'presence-organizations.'.$organization->id)->assertOk();
 });
@@ -86,7 +85,7 @@ test('the presence payload carries the members name for display', function () {
 
     $organization->members()->attach($user);
 
-    $user->assignOrganizationRole($organization, OrganizationRole::Owner->value);
+    $user->assignOrganizationRole($organization, 'owner');
 
     $response = authorizeChannel($user, 'presence-organizations.'.$organization->id);
 

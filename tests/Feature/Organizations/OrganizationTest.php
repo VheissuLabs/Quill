@@ -1,7 +1,5 @@
 <?php
 
-use App\Enums\OrganizationPermission;
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 
@@ -44,26 +42,24 @@ test('members attach with a role that casts to the enum', function () {
 
     $organization->members()->attach($user);
 
-    $user->assignOrganizationRole($organization, OrganizationRole::Admin->value);
+    $user->assignOrganizationRole($organization, 'admin');
 
     expect($organization->members)->toHaveCount(1);
-    expect($user->organizationRoleName($organization))->toBe(OrganizationRole::Admin->value);
+    expect($user->organizationRoleName($organization))->toBe('admin');
     expect(Str::isUuid($organization->memberships->first()->id))->toBeTrue();
 });
 
-test('the owner is the member holding the owner role', function () {
+test('the owner is whoever the owner_id column names', function () {
     $organization = Organization::factory()->create();
     $owner = User::factory()->create();
     $member = User::factory()->create();
 
     $organization->members()->attach($owner);
-
-    $owner->assignOrganizationRole($organization, OrganizationRole::Owner->value);
     $organization->members()->attach($member);
-    $member->assignOrganizationRole($organization, OrganizationRole::Member->value);
+    $organization->update(['owner_id' => $owner->id]);
 
-    expect($organization->owner()->id)->toBe($owner->id);
-});
+    expect($organization->owner->id)->toBe($owner->id);
+})->note('Ownership is a column so it survives an owner renaming their own roles.');
 
 test('organizations soft delete', function () {
     $organization = Organization::factory()->create();
@@ -80,7 +76,7 @@ test('a user belongs to organizations they are a member of', function () {
 
     $organization->members()->attach($user);
 
-    $user->assignOrganizationRole($organization, OrganizationRole::Member->value);
+    $user->assignOrganizationRole($organization, 'member');
 
     expect($user->belongsToOrganization($organization))->toBeTrue();
     expect($user->belongsToOrganization($other))->toBeFalse();
@@ -93,13 +89,15 @@ test('a users organization role is readable and owners are identified', function
 
     $organization->members()->attach($owner);
 
-    $owner->assignOrganizationRole($organization, OrganizationRole::Owner->value);
+    $owner->assignOrganizationRole($organization, 'owner');
     $organization->members()->attach($member);
-    $member->assignOrganizationRole($organization, OrganizationRole::Member->value);
+    $member->assignOrganizationRole($organization, 'member');
 
-    expect($owner->organizationRoleName($organization))->toBe(OrganizationRole::Owner->value);
-    expect($owner->ownsOrganization($organization))->toBeTrue();
-    expect($member->ownsOrganization($organization))->toBeFalse();
+    $organization->update(['owner_id' => $owner->id]);
+
+    expect($owner->organizationRoleName($organization))->toBe('owner');
+    expect($organization->owner->is($owner))->toBeTrue();
+    expect($organization->owner->is($member))->toBeFalse();
 });
 
 test('a non member has no role and no permissions', function () {
@@ -107,20 +105,18 @@ test('a non member has no role and no permissions', function () {
     $organization = Organization::factory()->create();
 
     expect($user->organizationRole($organization))->toBeNull();
-    expect($user->hasOrganizationPermission($organization, OrganizationPermission::UpdateOrganization))->toBeFalse();
+    expect($user->canInOrganization($organization, 'organization:update'))->toBeFalse();
 });
 
 test('client contacts are identified and hold no permissions', function () {
-    $contact = User::factory()->create();
     $organization = Organization::factory()->create();
+    $client = App\Models\Client::factory()->heldBy($organization)->create();
 
-    $organization->members()->attach($contact);
-
-    $contact->assignOrganizationRole($organization, OrganizationRole::Client->value);
+    $contact = contactFor($client, 'Lucy Contact');
 
     expect($contact->isClientContact($organization))->toBeTrue();
-    expect($contact->hasOrganizationPermission($organization, OrganizationPermission::UpdateOrganization))->toBeFalse();
-    expect($contact->hasOrganizationPermission($organization, OrganizationPermission::CreateInvitation))->toBeFalse();
+    expect($contact->canInOrganization($organization, 'organization:update'))->toBeFalse();
+    expect($contact->canInOrganization($organization, 'invitation:create'))->toBeFalse();
 });
 
 test('members are not client contacts', function () {
@@ -129,7 +125,7 @@ test('members are not client contacts', function () {
 
     $organization->members()->attach($member);
 
-    $member->assignOrganizationRole($organization, OrganizationRole::Member->value);
+    $member->assignOrganizationRole($organization, 'member');
 
     expect($member->isClientContact($organization))->toBeFalse();
 });
@@ -142,9 +138,9 @@ test('a user can list the organizations they belong to', function () {
 
     $first->members()->attach($user);
 
-    $user->assignOrganizationRole($first, OrganizationRole::Owner->value);
+    $user->assignOrganizationRole($first, 'owner');
     $second->members()->attach($user);
-    $user->assignOrganizationRole($second, OrganizationRole::Client->value);
+    $user->assignOrganizationRole($second, 'client');
 
     expect($user->organizations()->pluck('organizations.id')->sort()->values()->all())
         ->toBe(collect([$first->id, $second->id])->sort()->values()->all());

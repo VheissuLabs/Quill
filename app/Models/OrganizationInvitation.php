@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\OrganizationRole;
 use Database\Factories\OrganizationInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -84,7 +83,7 @@ class OrganizationInvitation extends Model
     protected function casts(): array
     {
         return [
-            'role' => OrganizationRole::class,
+
             'expires_at' => 'datetime',
             'accepted_at' => 'datetime',
         ];

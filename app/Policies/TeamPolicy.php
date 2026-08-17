@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\TeamPermission;
 use App\Models\Team;
 use App\Models\User;
 
@@ -25,7 +24,12 @@ class TeamPolicy
 
     public function update(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::UpdateTeam);
+        return $this->ownerOrGranted($user, $team, 'team:update');
+    }
+
+    public function delete(User $user, Team $team): bool
+    {
+        return ! $team->is_personal && $this->ownerOrGranted($user, $team, 'team:delete');
     }
 
     public function leave(User $user, Team $team): bool
@@ -37,31 +41,31 @@ class TeamPolicy
 
     public function addMember(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::AddMember);
-    }
-
-    public function updateMember(User $user, Team $team): bool
-    {
-        return $user->hasTeamPermission($team, TeamPermission::UpdateMember);
+        return $this->ownerOrGranted($user, $team, 'member:add');
     }
 
     public function removeMember(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::RemoveMember);
+        return $this->ownerOrGranted($user, $team, 'member:remove');
     }
 
     public function inviteMember(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::CreateInvitation);
+        return $this->ownerOrGranted($user, $team, 'invitation:create');
     }
 
     public function cancelInvitation(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::CancelInvitation);
+        return $this->ownerOrGranted($user, $team, 'invitation:cancel');
     }
 
-    public function delete(User $user, Team $team): bool
+    /**
+     * Owning the team is enough on its own. Ownership is a column rather than a
+     * role, and a personal team's owner belongs to no organization to be granted
+     * anything by.
+     */
+    protected function ownerOrGranted(User $user, Team $team, string $permission): bool
     {
-        return ! $team->is_personal && $user->hasTeamPermission($team, TeamPermission::DeleteTeam);
+        return $user->ownsTeam($team) || $user->can($permission);
     }
 }

@@ -25,6 +25,7 @@ declare module '@inertiajs/core' {
             teams: Team[]
             currentOrganization: Organization | null
             organizations: Organization[]
+            permissions: string[]
             notifications: UserNotification[]
             unreadNotificationCount: number
             [key: string]: unknown

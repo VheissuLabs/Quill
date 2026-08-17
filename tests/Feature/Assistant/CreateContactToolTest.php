@@ -1,7 +1,6 @@
 <?php
 
 use App\Ai\Tools\CreateContact;
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
@@ -30,7 +29,7 @@ test('inviting an unknown email creates a pending invitation and mails it', func
 
     expect($invitation->email)->toBe('lucy@acme.test');
     expect($invitation->client_id)->toBe($this->client->id);
-    expect($invitation->role)->toBe(OrganizationRole::Client);
+    expect($invitation->role)->toBe('client');
     expect($invitation->isPending())->toBeTrue();
 
     Notification::assertSentOnDemand(
@@ -158,7 +157,7 @@ test('an ambiguous client invites nobody', function () {
 });
 
 test('a member is refused', function () {
-    $member = memberOf($this->organization, OrganizationRole::Member);
+    $member = memberOf($this->organization, 'member');
 
     $result = new CreateContact($member)->handle(toolRequest([
         'client' => 'Acme Title',

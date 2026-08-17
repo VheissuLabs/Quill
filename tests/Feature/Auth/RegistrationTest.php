@@ -1,7 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
-use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
@@ -16,7 +14,8 @@ test('registration screen can be rendered', function () {
 test('registration screen includes team invitation context', function () {
     $owner = User::factory()->create();
     $team = Team::factory()->create(['name' => 'Laravel Team']);
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->update(['owner_id' => $owner->id]);
+    $team->members()->attach($owner);
 
     $invitation = TeamInvitation::factory()->create([
         'team_id' => $team->id,
@@ -63,7 +62,7 @@ test('registering creates the organization the user named and puts them in it', 
     expect($organization)->not->toBeNull();
     expect($organization->name)->toBe('Acme Agency');
     expect($organization->slug)->toBe('acme-agency');
-    expect($user->organizationRoleName($organization))->toBe(OrganizationRole::Owner->value);
+    expect($user->organizationRoleName($organization))->toBe('owner');
     expect($user->organizations()->count())->toBe(1);
 });
 

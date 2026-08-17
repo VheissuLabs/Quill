@@ -1,6 +1,6 @@
 <script setup lang="ts">
-    import { Form, Head, router } from '@inertiajs/vue3'
-    import { ChevronDown, Mail, UserPlus, X } from '@lucide/vue'
+    import { Form, Head } from '@inertiajs/vue3'
+    import { Mail, UserPlus, X } from '@lucide/vue'
     import { computed, ref } from 'vue'
     import CancelInvitationModal from '@/components/CancelInvitationModal.vue'
     import DeleteTeamModal from '@/components/DeleteTeamModal.vue'
@@ -13,34 +13,20 @@
     import { Badge } from '@/components/ui/badge'
     import { Button } from '@/components/ui/button'
     import {
-        DropdownMenu,
-        DropdownMenuContent,
-        DropdownMenuItem,
-        DropdownMenuTrigger,
-    } from '@/components/ui/dropdown-menu'
-    import {
         Tooltip,
         TooltipContent,
         TooltipProvider,
         TooltipTrigger,
     } from '@/components/ui/tooltip'
     import { useInitials } from '@/composables/useInitials'
+    import { usePermissions } from '@/composables/usePermissions'
     import { edit, index, update } from '@/routes/teams'
-    import { update as updateMember } from '@/routes/teams/members'
-    import type {
-        RoleOption,
-        Team,
-        TeamInvitation,
-        TeamMember,
-        TeamPermissions,
-    } from '@/types'
+    import type { Team, TeamInvitation, TeamMember } from '@/types'
 
     type Props = {
         team: Team
         members: TeamMember[]
         invitations: TeamInvitation[]
-        permissions: TeamPermissions
-        availableRoles: RoleOption[]
     }
 
     const props = defineProps<Props>()
@@ -61,6 +47,7 @@
     })
 
     const { getInitials } = useInitials()
+    const { can } = usePermissions()
 
     const inviteDialogOpen = ref(false)
     const deleteDialogOpen = ref(false)
@@ -70,17 +57,10 @@
     const invitationToCancel = ref<TeamInvitation | null>(null)
 
     const pageTitle = computed(() =>
-        props.permissions.canUpdateTeam
+        can('team:update')
             ? `Edit ${props.team.name}`
             : `View ${props.team.name}`,
     )
-
-    const updateMemberRole = (member: TeamMember, newRole: string) => {
-        router.visit(updateMember([props.team.slug, member.id]), {
-            data: { role: newRole },
-            preserveScroll: true,
-        })
-    }
 
     const confirmRemoveMember = (member: TeamMember) => {
         memberToRemove.value = member
@@ -100,7 +80,7 @@
 
     <div class="flex flex-col space-y-10">
         <!-- Team Name Section -->
-        <div v-if="permissions.canUpdateTeam" class="space-y-6">
+        <div v-if="can('team:update')" class="space-y-6">
             <Heading
                 variant="small"
                 title="Team settings"
@@ -146,14 +126,14 @@
                     variant="small"
                     title="Team members"
                     :description="
-                        permissions.canCreateInvitation
+                        can('invitation:create')
                             ? 'Manage who belongs to this team'
                             : ''
                     "
                 />
 
                 <Button
-                    v-if="permissions.canCreateInvitation"
+                    v-if="can('invitation:create')"
                     data-test="invite-member-button"
                     @click="inviteDialogOpen = true"
                 >
@@ -190,46 +170,12 @@
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <DropdownMenu
-                            v-if="
-                                member.role !== 'owner' &&
-                                permissions.canUpdateMember
-                            "
-                        >
-                            <DropdownMenuTrigger as-child>
-                                <Button
-                                    data-test="member-role-trigger"
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    {{ member.role_label }}
-                                    <ChevronDown
-                                        class="ml-2 h-4 w-4 opacity-50"
-                                    />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem
-                                    v-for="role in availableRoles"
-                                    :key="role.value"
-                                    data-test="member-role-option"
-                                    @click="
-                                        updateMemberRole(member, role.value)
-                                    "
-                                >
-                                    {{ role.label }}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <Badge v-else variant="secondary">
-                            {{ member.role_label }}
+                        <Badge v-if="member.isOwner" variant="secondary">
+                            Owner
                         </Badge>
 
                         <TooltipProvider
-                            v-if="
-                                member.role !== 'owner' &&
-                                permissions.canRemoveMember
-                            "
+                            v-if="!member.isOwner && can('member:remove')"
                         >
                             <Tooltip>
                                 <TooltipTrigger as-child>
@@ -277,13 +223,10 @@
                             <div class="font-medium">
                                 {{ invitation.email }}
                             </div>
-                            <div class="text-sm text-muted-foreground">
-                                {{ invitation.role_label }}
-                            </div>
                         </div>
                     </div>
 
-                    <TooltipProvider v-if="permissions.canCancelInvitation">
+                    <TooltipProvider v-if="can('invitation:cancel')">
                         <Tooltip>
                             <TooltipTrigger as-child>
                                 <Button
@@ -305,10 +248,7 @@
         </div>
 
         <!-- Danger Zone -->
-        <div
-            v-if="permissions.canDeleteTeam && !team.isPersonal"
-            class="space-y-6"
-        >
+        <div v-if="can('team:delete') && !team.isPersonal" class="space-y-6">
             <Heading
                 variant="small"
                 title="Delete team"
@@ -336,9 +276,8 @@
     </div>
 
     <InviteMemberModal
-        v-if="permissions.canCreateInvitation"
+        v-if="can('invitation:create')"
         :team="team"
-        :available-roles="availableRoles"
         :open="inviteDialogOpen"
         @update:open="inviteDialogOpen = $event"
     />
@@ -358,7 +297,7 @@
     />
 
     <DeleteTeamModal
-        v-if="permissions.canDeleteTeam && !team.isPersonal"
+        v-if="can('team:delete') && !team.isPersonal"
         :team="team"
         :open="deleteDialogOpen"
         @update:open="deleteDialogOpen = $event"

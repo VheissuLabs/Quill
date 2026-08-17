@@ -1,7 +1,6 @@
 <script setup lang="ts">
     import { Form } from '@inertiajs/vue3'
     import { ref } from 'vue'
-    import FormField from '@/components/FormField.vue'
     import Stack from '@/components/Stack.vue'
     import TextInput from '@/components/TextInput.vue'
     import { Button } from '@/components/ui/button'
@@ -14,19 +13,11 @@
         DialogHeader,
         DialogTitle,
     } from '@/components/ui/dialog'
-    import {
-        Select,
-        SelectContent,
-        SelectItem,
-        SelectTrigger,
-        SelectValue,
-    } from '@/components/ui/select'
     import { store as storeInvitation } from '@/routes/teams/invitations'
-    import type { RoleOption, Team } from '@/types'
+    import type { Team } from '@/types'
 
     type Props = {
         team: Team
-        availableRoles: RoleOption[]
         open: boolean
     }
 
@@ -35,14 +26,12 @@
         'update:open': [value: boolean]
     }>()
 
-    const inviteRole = ref('member')
     const formKey = ref(0)
 
     function handleOpenChange(value: boolean) {
         emit('update:open', value)
 
         if (!value) {
-            inviteRole.value = 'member'
             formKey.value++
         }
     }
@@ -76,27 +65,6 @@
                             placeholder="colleague@example.com"
                             required
                         />
-
-                        <FormField label="Role" for="role" :error="errors.role">
-                            <Select
-                                v-model="inviteRole"
-                                name="role"
-                                data-test="invite-role"
-                            >
-                                <SelectTrigger class="w-full">
-                                    <SelectValue placeholder="Select a role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem
-                                        v-for="role in props.availableRoles"
-                                        :key="role.value"
-                                        :value="role.value"
-                                    >
-                                        {{ role.label }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </FormField>
                     </Stack>
 
                     <DialogFooter class="gap-2">

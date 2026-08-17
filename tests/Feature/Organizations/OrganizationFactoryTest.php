@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 
@@ -13,8 +12,8 @@ test('the trashed state creates a soft deleted organization', function () {
 test('the withOwner state attaches an owner', function () {
     $organization = Organization::factory()->withOwner()->create();
 
-    expect($organization->owner())->not->toBeNull();
-    expect($organization->members->first()->organizationRoleName($organization))->toBe(OrganizationRole::Owner->value);
+    expect($organization->owner)->not->toBeNull();
+    expect($organization->members->first()->organizationRoleName($organization))->toBe('owner');
 });
 
 test('the withOwner state accepts a specific user', function () {
@@ -22,7 +21,7 @@ test('the withOwner state accepts a specific user', function () {
 
     $organization = Organization::factory()->withOwner($owner)->create();
 
-    expect($owner->ownsOrganization($organization))->toBeTrue();
+    expect($organization->owner->is($owner))->toBeTrue();
 });
 
 test('the withMembers state attaches the requested number of members', function () {
@@ -30,14 +29,14 @@ test('the withMembers state attaches the requested number of members', function 
 
     expect($organization->members)->toHaveCount(4);
     expect($organization->members->map->organizationRoleName($organization)->unique()->all())
-        ->toBe([OrganizationRole::Member->value]);
+        ->toBe(['member']);
 });
 
 test('the withMembers state accepts a role', function () {
-    $organization = Organization::factory()->withMembers(2, OrganizationRole::Admin)->create();
+    $organization = Organization::factory()->withMembers(2, 'admin')->create();
 
     expect($organization->members->map->organizationRoleName($organization)->unique()->all())
-        ->toBe([OrganizationRole::Admin->value]);
+        ->toBe(['admin']);
 });
 
 test('the withClientContact state attaches a contact linked to a client', function () {
@@ -61,5 +60,5 @@ test('states compose', function () {
         ->create();
 
     expect($organization->members)->toHaveCount(4);
-    expect($organization->owner())->not->toBeNull();
+    expect($organization->owner)->not->toBeNull();
 });

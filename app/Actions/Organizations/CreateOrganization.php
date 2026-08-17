@@ -2,7 +2,6 @@
 
 namespace App\Actions\Organizations;
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -14,13 +13,14 @@ class CreateOrganization
         return DB::transaction(function () use ($user, $name) {
             $organization = Organization::create([
                 'name' => $name,
+                'owner_id' => $user->id,
             ]);
 
             $organization->memberships()->create([
                 'user_id' => $user->id,
             ]);
 
-            $user->assignOrganizationRole($organization, OrganizationRole::Owner);
+            $user->assignOrganizationRole($organization, 'owner');
             $user->switchOrganization($organization);
 
             return $organization;

@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\User;
 
@@ -34,8 +33,8 @@ test('the trashed state creates a soft deleted team', function () {
 test('the withOwner state attaches an owner', function () {
     $team = Team::factory()->withOwner()->create();
 
-    expect($team->owner())->not->toBeNull();
-    expect($team->memberships->first()->role)->toBe(TeamRole::Owner);
+    expect($team->owner)->not->toBeNull();
+    expect($team->owner_id)->toBe($team->memberships->first()->user_id);
 });
 
 test('the withOwner state accepts a specific user', function () {
@@ -50,13 +49,13 @@ test('the withMembers state attaches the requested number of members', function 
     $team = Team::factory()->withMembers(3)->create();
 
     expect($team->members)->toHaveCount(3);
-    expect($team->memberships->pluck('role')->unique()->all())->toBe([TeamRole::Member]);
+    expect($team->memberships)->toHaveCount(3);
 });
 
 test('the withMembers state accepts a role and a specific user', function () {
     $admin = User::factory()->create();
 
-    $team = Team::factory()->withMember($admin, TeamRole::Admin)->create();
+    $team = Team::factory()->withMember($admin)->create();
 
-    expect($admin->teamRole($team))->toBe(TeamRole::Admin);
+    expect($admin->belongsToTeam($team))->toBeTrue();
 });

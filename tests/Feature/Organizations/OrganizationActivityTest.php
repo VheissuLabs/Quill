@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Activity;
 use App\Models\Client;
 use App\Models\Organization;
@@ -17,7 +16,7 @@ function forgetSetupActivity(): void
 }
 
 test('creating and renaming are recorded against the organization', function () {
-    [$organization, $admin] = organizationWith(OrganizationRole::Admin);
+    [$organization, $admin] = organizationWith('admin');
 
     $this->actingAs($admin);
 
@@ -35,7 +34,7 @@ test('creating and renaming are recorded against the organization', function () 
 });
 
 test('activity from another organization is never included', function () {
-    [$mine, $admin] = organizationWith(OrganizationRole::Admin);
+    [$mine, $admin] = organizationWith('admin');
     $theirs = Organization::factory()->create(['name' => '92 Labs']);
 
     forgetSetupActivity();
@@ -51,7 +50,7 @@ test('activity from another organization is never included', function () {
 })->note('activity_log has no notion of a tenant, so organization_id is the whole boundary.');
 
 test('teams, clients, and invitations all land in the same history', function () {
-    [$organization, $admin] = organizationWith(OrganizationRole::Admin);
+    [$organization, $admin] = organizationWith('admin');
 
     $this->actingAs($admin);
 
@@ -76,7 +75,7 @@ test('teams, clients, and invitations all land in the same history', function ()
 });
 
 test('the organization id is stamped as the row is written', function () {
-    [$organization, $admin] = organizationWith(OrganizationRole::Admin);
+    [$organization, $admin] = organizationWith('admin');
 
     forgetSetupActivity();
 
@@ -87,7 +86,7 @@ test('the organization id is stamped as the row is written', function () {
 })->note('The published migration typed the keys as bigints, which UUIDs truncate to 0 on MySQL.');
 
 test('an admin sees the paginated history on the dashboard', function () {
-    [$organization, $admin] = organizationWith(OrganizationRole::Admin);
+    [$organization, $admin] = organizationWith('admin');
 
     $this->actingAs($admin);
 
@@ -108,7 +107,7 @@ test('an admin sees the paginated history on the dashboard', function () {
 });
 
 test('a later page returns the rest', function () {
-    [$organization, $admin] = organizationWith(OrganizationRole::Admin);
+    [$organization, $admin] = organizationWith('admin');
 
     $this->actingAs($admin);
 
@@ -127,7 +126,7 @@ test('a later page returns the rest', function () {
 });
 
 test('the summary reads as a sentence rather than an event name', function () {
-    [$organization, $admin] = organizationWith(OrganizationRole::Admin);
+    [$organization, $admin] = organizationWith('admin');
 
     $this->actingAs($admin);
 
@@ -146,7 +145,7 @@ test('the summary reads as a sentence rather than an event name', function () {
 });
 
 test('a member is not given the history at all', function () {
-    [$organization, $member] = organizationWith(OrganizationRole::Member);
+    [$organization, $member] = organizationWith('member');
 
     forgetSetupActivity();
 
@@ -159,7 +158,7 @@ test('a member is not given the history at all', function () {
 })->note('The permission gates the prop, so the data never reaches the browser.');
 
 test('an owner sees the history', function () {
-    [$organization, $owner] = organizationWith(OrganizationRole::Owner);
+    [$organization, $owner] = organizationWith('owner');
 
     forgetSetupActivity();
 
@@ -172,7 +171,7 @@ test('an owner sees the history', function () {
 });
 
 test('deleting an organization is logged and the history survives it', function () {
-    [$organization, $admin] = organizationWith(OrganizationRole::Admin);
+    [$organization, $admin] = organizationWith('admin');
 
     $this->actingAs($admin);
 
@@ -189,7 +188,7 @@ test('deleting an organization is logged and the history survives it', function 
 })->note('The log row is written after the organization is gone, so organization_id cannot be a foreign key.');
 
 test('membership and invitation entries read as sentences too', function () {
-    [$organization, $admin] = organizationWith(OrganizationRole::Admin);
+    [$organization, $admin] = organizationWith('admin');
 
     $this->actingAs($admin);
 
@@ -213,7 +212,7 @@ test('membership and invitation entries read as sentences too', function () {
 })->note('"Created organization membership" against a UUID tells an admin nothing.');
 
 test('personal teams are not organization history', function () {
-    [$organization, $admin] = organizationWith(OrganizationRole::Admin);
+    [$organization, $admin] = organizationWith('admin');
 
     forgetSetupActivity();
 
