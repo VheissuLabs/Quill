@@ -95,6 +95,11 @@ class Organization extends Model
         return $this->hasMany(Project::class);
     }
 
+    public function issueTypes(): HasMany
+    {
+        return $this->hasMany(IssueType::class);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';
