@@ -18,7 +18,7 @@ test('the assistant page renders with an empty transcript', function () {
         ->get(route('assistant'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('Assistant')
+            ->component('assistant/Show')
             ->where('messages', []),
         );
 });

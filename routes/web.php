@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Assistant\AssistantController;
-use App\Http\Controllers\Assistant\AssistantMessageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Organizations\JoinOrganizationController;
 use App\Http\Controllers\Organizations\OrganizationInvitationController;
@@ -28,8 +27,8 @@ Route::middleware(['auth', 'verified', DenyClientContacts::class])->group(functi
     Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
 
-    Route::get('assistant', AssistantController::class)->name('assistant');
-    Route::post('assistant/messages', [AssistantMessageController::class, 'store'])->name('assistant.messages.store');
+    Route::get('assistant', [AssistantController::class, 'show'])->name('assistant');
+    Route::post('assistant/messages', [AssistantController::class, 'store'])->name('assistant.messages.store');
 });
 
 Route::middleware(['auth'])->group(function () {
