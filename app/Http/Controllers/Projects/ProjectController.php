@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Projects;
 
 use App\Http\Controllers\Controller;
+use App\Models\Issue;
+use App\Models\IssueType;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -43,6 +45,18 @@ class ProjectController extends Controller
                 'description' => $project->description,
                 'defaultForClients' => $project->defaultForClients->pluck('name')->values(),
             ],
+            'issues' => $project->issues()->open()->with('type')->orderByDesc('number')->get()
+                ->map(fn (Issue $issue) => [
+                    'number' => $issue->number,
+                    'title' => $issue->title,
+                    'type' => $issue->type->name,
+                    'clientName' => $issue->client?->name,
+                ])->values(),
+            'closedIssueCount' => $project->issues()->closed()->count(),
+            'issueTypes' => IssueType::active()
+                ->where('organization_id', $project->organization_id)
+                ->orderBy('position')
+                ->get(['id', 'name']),
         ]);
     }
 }

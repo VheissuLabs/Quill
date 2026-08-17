@@ -1,5 +1,6 @@
 export * from './assistant'
 export * from './auth'
+export * from './issues'
 export * from './navigation'
 export * from './notifications'
 export * from './organizations'

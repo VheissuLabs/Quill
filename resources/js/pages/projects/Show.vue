@@ -1,6 +1,21 @@
 <script setup lang="ts">
-    import { Head } from '@inertiajs/vue3'
+    import { Head, Link } from '@inertiajs/vue3'
+    import { ref } from 'vue'
+    import CreateIssueModal from '@/components/CreateIssueModal.vue'
+    import { Button } from '@/components/ui/button'
+    import {
+        Table,
+        TableBody,
+        TableCell,
+        TableEmpty,
+        TableHead,
+        TableHeader,
+        TableRow,
+    } from '@/components/ui/table'
+    import { usePermissions } from '@/composables/usePermissions'
     import { show } from '@/routes/projects'
+    import { show as showIssue } from '@/routes/projects/issues'
+    import type { IssueListItem, IssueType } from '@/types'
 
     type Props = {
         project: {
@@ -12,6 +27,9 @@
             description: string | null
             defaultForClients: string[]
         }
+        issues: IssueListItem[]
+        closedIssueCount: number
+        issueTypes: IssueType[]
     }
 
     const props = defineProps<Props>()
@@ -26,6 +44,10 @@
             ],
         }),
     })
+
+    const { can } = usePermissions()
+
+    const createIssueDialogOpen = ref(false)
 </script>
 
 <template>
@@ -67,10 +89,89 @@
         </div>
 
         <div
-            data-test="project-issues-placeholder"
-            class="flex flex-1 items-center justify-center rounded-xl border border-sidebar-border/70 p-8 text-center text-sm text-muted-foreground dark:border-sidebar-border"
+            data-test="project-issues"
+            class="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
         >
-            Issues live here once they exist.
+            <div class="flex items-center justify-between border-b px-4 py-3">
+                <div>
+                    <h2 class="text-sm font-medium">Issues</h2>
+                    <p
+                        v-if="props.closedIssueCount > 0"
+                        data-test="project-issues-closed-count"
+                        class="text-xs text-muted-foreground"
+                    >
+                        {{ props.closedIssueCount }} closed
+                    </p>
+                </div>
+
+                <Button
+                    v-if="can('issue:create')"
+                    data-test="file-issue-button"
+                    @click="createIssueDialogOpen = true"
+                >
+                    File an issue
+                </Button>
+            </div>
+
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>#</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead class="text-right">Client</TableHead>
+                    </TableRow>
+                </TableHeader>
+
+                <TableBody>
+                    <TableEmpty
+                        v-if="props.issues.length === 0"
+                        :colspan="4"
+                        data-test="project-issues-empty"
+                    >
+                        No open issues.
+                    </TableEmpty>
+
+                    <template v-else>
+                        <TableRow
+                            v-for="issue in props.issues"
+                            :key="issue.number"
+                            data-test="project-issues-row"
+                        >
+                            <TableCell class="text-muted-foreground">
+                                #{{ issue.number }}
+                            </TableCell>
+                            <TableCell>
+                                <Link
+                                    :href="
+                                        showIssue([
+                                            props.project.slug,
+                                            issue.number,
+                                        ])
+                                    "
+                                    class="font-medium underline-offset-4 hover:underline"
+                                >
+                                    {{ issue.title }}
+                                </Link>
+                            </TableCell>
+                            <TableCell class="text-muted-foreground">
+                                {{ issue.type }}
+                            </TableCell>
+                            <TableCell class="text-right text-muted-foreground">
+                                {{ issue.clientName ?? '—' }}
+                            </TableCell>
+                        </TableRow>
+                    </template>
+                </TableBody>
+            </Table>
         </div>
     </div>
+
+    <CreateIssueModal
+        v-if="can('issue:create')"
+        :project="props.project.slug"
+        :issue-types="props.issueTypes"
+        :open="createIssueDialogOpen"
+        @update:open="createIssueDialogOpen = $event"
+    />
 </template>

@@ -3,6 +3,8 @@
 use App\Http\Controllers\Assistant\AssistantController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Organizations\OrganizationMembershipController;
+use App\Http\Controllers\Projects\IssueClosureController;
+use App\Http\Controllers\Projects\IssueController;
 use App\Http\Controllers\Projects\ProjectController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\Teams\TeamMembershipController;
@@ -29,6 +31,25 @@ Route::middleware(['auth', 'verified', DenyClientContacts::class])->group(functi
     Route::get('projects/{project}', [ProjectController::class, 'show'])
         ->middleware('can:view,project')
         ->name('projects.show');
+
+    Route::post('projects/{project}/issues', [IssueController::class, 'store'])
+        ->middleware(['can:view,project', 'can:issue:create'])
+        ->name('projects.issues.store');
+
+    Route::get('projects/{project}/issues/{issue:number}', [IssueController::class, 'show'])
+        ->middleware('can:view,issue')
+        ->scopeBindings()
+        ->name('projects.issues.show');
+
+    Route::post('projects/{project}/issues/{issue:number}/closure', [IssueClosureController::class, 'store'])
+        ->middleware(['can:view,issue', 'can:issue:close'])
+        ->scopeBindings()
+        ->name('projects.issues.closure.store');
+
+    Route::delete('projects/{project}/issues/{issue:number}/closure', [IssueClosureController::class, 'destroy'])
+        ->middleware(['can:view,issue', 'can:issue:close'])
+        ->scopeBindings()
+        ->name('projects.issues.closure.destroy');
 
     Route::get('assistant', [AssistantController::class, 'show'])->name('assistant');
     Route::post('assistant/messages', [AssistantController::class, 'store'])->name('assistant.messages.store');
