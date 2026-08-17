@@ -2,9 +2,7 @@
 
 use App\Http\Controllers\Assistant\AssistantController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Organizations\JoinOrganizationController;
-use App\Http\Controllers\Organizations\OrganizationInvitationAcceptanceController;
-use App\Http\Controllers\Organizations\OrganizationInvitationController;
+use App\Http\Controllers\Organizations\OrganizationMembershipController;
 use App\Http\Controllers\Projects\ProjectController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\DenyClientContacts;
@@ -14,9 +12,10 @@ use Illuminate\Support\Facades\Route;
 Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware('guest')->group(function () {
-    Route::get('join/{invitation}', [JoinOrganizationController::class, 'show'])->name('join.show');
-    Route::post('join/{invitation}', [JoinOrganizationController::class, 'store'])->name('join.store');
+    Route::get('join/{invitation}', [OrganizationMembershipController::class, 'create'])->name('join.create');
 });
+
+Route::post('join/{invitation}', [OrganizationMembershipController::class, 'store'])->name('join.store');
 
 Route::prefix('{current_team}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class])
@@ -36,9 +35,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
     Route::delete('invitations/{invitation}', [TeamInvitationController::class, 'decline'])->name('invitations.decline');
 
-    Route::post('organization-invitations/{invitation}/acceptance', [OrganizationInvitationAcceptanceController::class, 'store'])
-        ->name('organization-invitations.acceptance.store');
-    Route::delete('organization-invitations/{invitation}', [OrganizationInvitationController::class, 'destroy'])
+    Route::delete('organization-invitations/{invitation}', [OrganizationMembershipController::class, 'destroy'])
         ->name('organization-invitations.destroy');
 });
 

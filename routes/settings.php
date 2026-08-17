@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Organizations\CurrentOrganizationController;
+use App\Http\Controllers\Settings\CurrentOrganizationController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Teams\TeamController;
