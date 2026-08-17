@@ -6,12 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
-class OrganizationController extends Controller
+class CurrentOrganizationController extends Controller
 {
-    public function switch(Request $request, Organization $organization): RedirectResponse
+    public function update(Request $request, Organization $organization): RedirectResponse
     {
-        abort_unless($request->user()->belongsToOrganization($organization), 403);
+        Gate::authorize('view', $organization);
 
         $request->user()->switchOrganization($organization);
 

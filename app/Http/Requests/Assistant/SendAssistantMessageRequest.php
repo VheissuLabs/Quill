@@ -14,4 +14,9 @@ class SendAssistantMessageRequest extends FormRequest
             'message' => ['required', 'string', 'max:2000'],
         ];
     }
+
+    public function message(): string
+    {
+        return $this->validated('message');
+    }
 }

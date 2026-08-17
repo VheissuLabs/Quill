@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Organizations\OrganizationController;
+use App\Http\Controllers\Organizations\CurrentOrganizationController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Teams\TeamController;
@@ -33,8 +33,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('settings/teams', [TeamController::class, 'index'])->name('teams.index');
     Route::post('settings/teams', [TeamController::class, 'store'])->name('teams.store');
 
-    Route::post('settings/organizations/{organization}/switch', [OrganizationController::class, 'switch'])
-        ->name('organizations.switch');
+    Route::put('settings/current-organization/{organization}', [CurrentOrganizationController::class, 'update'])
+        ->name('current-organization.update');
 
     Route::middleware(EnsureTeamMembership::class)->group(function () {
         Route::get('settings/teams/{team}', [TeamController::class, 'edit'])->name('teams.edit');

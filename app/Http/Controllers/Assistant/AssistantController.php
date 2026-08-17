@@ -19,16 +19,12 @@ class AssistantController extends Controller
         ]);
     }
 
-    /**
-     * Streams over SSE rather than returning an Inertia response: an Inertia visit
-     * replaces page props, which is the wrong shape for token-by-token output.
-     */
     public function store(SendAssistantMessageRequest $request): StreamableAgentResponse
     {
         $user = $request->user();
 
         return QuillAssistant::make(user: $user)
             ->continueLastConversation($user)
-            ->stream($request->validated('message'));
+            ->stream($request->message());
     }
 }

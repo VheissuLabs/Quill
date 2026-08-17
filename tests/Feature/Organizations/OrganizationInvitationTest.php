@@ -22,7 +22,7 @@ test('accepting an invitation creates the membership with its client and role', 
     $invitation = pendingInvitationFor($client, $owner, 'lucy@acme.test');
 
     $this->actingAs($invited)
-        ->post(route('organization-invitations.accept', ['invitation' => $invitation->code]))
+        ->post(route('organization-invitations.acceptance.store', ['invitation' => $invitation->code]))
         ->assertRedirect();
 
     $invited->refresh();
@@ -45,7 +45,7 @@ test('an accepted contact appears against the client they represent', function (
     expect($client->contacts()->count())->toBe(0);
 
     $this->actingAs($invited)
-        ->post(route('organization-invitations.accept', ['invitation' => $invitation->code]))
+        ->post(route('organization-invitations.acceptance.store', ['invitation' => $invitation->code]))
         ->assertRedirect();
 
     expect($client->contacts()->with('user')->get()->pluck('user.name')->all())->toBe(['Lucy Alvarez']);
@@ -60,7 +60,7 @@ test('accepting puts the user into that organization', function () {
     $invitation = pendingInvitationFor($client, $owner, 'lucy@acme.test');
 
     $this->actingAs($invited)
-        ->post(route('organization-invitations.accept', ['invitation' => $invitation->code]));
+        ->post(route('organization-invitations.acceptance.store', ['invitation' => $invitation->code]));
 
     expect($invited->refresh()->isCurrentOrganization($organization))->toBeTrue();
 });
@@ -74,7 +74,7 @@ test('an invitation sent to someone else cannot be accepted', function () {
     $invitation = pendingInvitationFor($client, $owner, 'lucy@acme.test');
 
     $this->actingAs($stranger)
-        ->post(route('organization-invitations.accept', ['invitation' => $invitation->code]))
+        ->post(route('organization-invitations.acceptance.store', ['invitation' => $invitation->code]))
         ->assertSessionHasErrors('invitation');
 
     expect($stranger->refresh()->belongsToOrganization($organization))->toBeFalse();
@@ -94,7 +94,7 @@ test('an expired invitation cannot be accepted', function () {
     ]);
 
     $this->actingAs($invited)
-        ->post(route('organization-invitations.accept', ['invitation' => $invitation->code]))
+        ->post(route('organization-invitations.acceptance.store', ['invitation' => $invitation->code]))
         ->assertSessionHasErrors('invitation');
 
     expect($invited->refresh()->belongsToOrganization($organization))->toBeFalse();
@@ -113,7 +113,7 @@ test('an invitation cannot be accepted twice', function () {
     ]);
 
     $this->actingAs($invited)
-        ->post(route('organization-invitations.accept', ['invitation' => $invitation->code]))
+        ->post(route('organization-invitations.acceptance.store', ['invitation' => $invitation->code]))
         ->assertSessionHasErrors('invitation');
 });
 
@@ -124,7 +124,7 @@ test('a guest cannot accept an invitation', function () {
 
     $invitation = pendingInvitationFor($client, $owner, 'lucy@acme.test');
 
-    $this->post(route('organization-invitations.accept', ['invitation' => $invitation->code]))
+    $this->post(route('organization-invitations.acceptance.store', ['invitation' => $invitation->code]))
         ->assertRedirect(route('login'));
 });
 
@@ -137,7 +137,7 @@ test('declining deletes the invitation and grants nothing', function () {
     $invitation = pendingInvitationFor($client, $owner, 'lucy@acme.test');
 
     $this->actingAs($invited)
-        ->delete(route('organization-invitations.decline', ['invitation' => $invitation->code]))
+        ->delete(route('organization-invitations.destroy', ['invitation' => $invitation->code]))
         ->assertRedirect();
 
     expect(OrganizationInvitation::count())->toBe(0);
@@ -153,7 +153,7 @@ test('someone else cannot decline an invitation', function () {
     $invitation = pendingInvitationFor($client, $owner, 'lucy@acme.test');
 
     $this->actingAs($stranger)
-        ->delete(route('organization-invitations.decline', ['invitation' => $invitation->code]))
+        ->delete(route('organization-invitations.destroy', ['invitation' => $invitation->code]))
         ->assertSessionHasErrors('invitation');
 
     expect(OrganizationInvitation::count())->toBe(1);
