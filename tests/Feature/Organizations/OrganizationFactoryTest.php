@@ -12,7 +12,7 @@ test('the trashed state creates a soft deleted organization', function () {
 test('the withOwner state attaches an owner', function () {
     $organization = Organization::factory()->withOwner()->create();
 
-    expect($organization->owner())->not->toBeNull();
+    expect($organization->owner)->not->toBeNull();
     expect($organization->members->first()->organizationRoleName($organization))->toBe('owner');
 });
 
@@ -21,7 +21,7 @@ test('the withOwner state accepts a specific user', function () {
 
     $organization = Organization::factory()->withOwner($owner)->create();
 
-    expect($owner->ownsOrganization($organization))->toBeTrue();
+    expect($organization->owner->is($owner))->toBeTrue();
 });
 
 test('the withMembers state attaches the requested number of members', function () {
@@ -60,5 +60,5 @@ test('states compose', function () {
         ->create();
 
     expect($organization->members)->toHaveCount(4);
-    expect($organization->owner())->not->toBeNull();
+    expect($organization->owner)->not->toBeNull();
 });

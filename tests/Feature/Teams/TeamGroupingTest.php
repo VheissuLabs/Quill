@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\TeamRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Team;
@@ -15,8 +14,8 @@ test('a team carries the name and kind of its parent', function () {
 
     $user->assignOrganizationRole($organization, 'owner');
 
-    $orgTeam = Team::factory()->heldBy($organization)->withMember($user, TeamRole::Owner)->create(['name' => 'Delivery']);
-    $clientTeam = Team::factory()->heldBy($client)->withMember($user, TeamRole::Owner)->create(['name' => 'Development']);
+    $orgTeam = Team::factory()->heldBy($organization)->withMember($user)->create(['name' => 'Delivery']);
+    $clientTeam = Team::factory()->heldBy($client)->withMember($user)->create(['name' => 'Development']);
 
     expect($user->toUserTeam($orgTeam)->parentName)->toBe('NotaryDash');
     expect($user->toUserTeam($orgTeam)->parentType)->toBe('organization');

@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
@@ -27,7 +26,8 @@ test('memberships get uuid keys and join correctly', function () {
     $user = User::factory()->create();
     $team = Team::factory()->create();
 
-    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+    $team->update(['owner_id' => $user->id]);
+    $team->members()->attach($user);
 
     $membership = $team->memberships->first();
 

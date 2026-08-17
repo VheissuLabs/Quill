@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -46,20 +47,9 @@ class Organization extends Model
         return $this->hasMany(Role::class);
     }
 
-    public function membersWithRole(string $role): BelongsToMany
+    public function owner(): BelongsTo
     {
-        $name = $role;
-
-        return $this->members()->whereIn(
-            'users.id',
-            $this->roles()->where('name', $name)->first()?->users()->pluck('users.id') ?? []
-        );
-    }
-
-    public function owner(): ?Model
-    {
-        return $this->membersWithRole('owner')
-            ->first();
+        return $this->belongsTo(User::class, 'owner_id');
     }
 
     public function members(): BelongsToMany

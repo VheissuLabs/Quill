@@ -28,7 +28,11 @@ class OrganizationFactory extends Factory
     public function withOwner(?User $owner = null): static
     {
         return $this->afterCreating(function (Organization $organization) use ($owner) {
-            $this->addMember($organization, $owner ?? User::factory()->create(), 'owner');
+            $owner ??= User::factory()->create();
+
+            $organization->update(['owner_id' => $owner->id]);
+
+            $this->addMember($organization, $owner, 'owner');
         });
     }
 

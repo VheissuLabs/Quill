@@ -1,128 +1,69 @@
 <?php
 
-use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\User;
 
-test('team member roles can be updated by owners', function () {
-    $owner = User::factory()->create();
+test('a member holding member:remove can remove someone from a team', function () {
+    [$organization, $admin] = organizationWith('admin');
     $member = User::factory()->create();
-    $team = Team::factory()->create();
 
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-    $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+    $team = Team::factory()->heldBy($organization)->create();
+    $team->update(['owner_id' => $admin->id]);
+    $team->members()->attach($admin);
+    $team->members()->attach($member);
 
-    $response = $this
-        ->actingAs($owner)
-        ->patch(route('teams.members.update', [$team, $member]), [
-            'role' => TeamRole::Admin->value,
-        ]);
-
-    $response->assertRedirect(route('teams.edit', $team));
-
-    expect($team->members()->where('user_id', $member->id)->first()->pivot->role->value)->toEqual(TeamRole::Admin->value);
-});
-
-test('team member roles cannot be updated by non owners', function () {
-    $owner = User::factory()->create();
-    $admin = User::factory()->create();
-    $member = User::factory()->create();
-    $team = Team::factory()->create();
-
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-    $team->members()->attach($admin, ['role' => TeamRole::Admin->value]);
-    $team->members()->attach($member, ['role' => TeamRole::Member->value]);
-
-    $response = $this
-        ->actingAs($admin)
-        ->patch(route('teams.members.update', [$team, $member]), [
-            'role' => TeamRole::Admin->value,
-        ]);
-
-    $response->assertForbidden();
-});
-
-test('team members can be removed by owners', function () {
-    $owner = User::factory()->create();
-    $member = User::factory()->create();
-    $team = Team::factory()->create();
-
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-    $team->members()->attach($member, ['role' => TeamRole::Member->value]);
-
-    $response = $this
-        ->actingAs($owner)
-        ->delete(route('teams.members.destroy', [$team, $member]));
-
-    $response->assertRedirect(route('teams.edit', $team));
+    $this->actingAs($admin)
+        ->delete(route('teams.members.destroy', [$team, $member]))
+        ->assertRedirect(route('teams.edit', $team));
 
     expect($member->fresh()->belongsToTeam($team))->toBeFalse();
 });
 
-test('team members cannot be removed by non owners', function () {
-    $owner = User::factory()->create();
-    $admin = User::factory()->create();
-    $member = User::factory()->create();
-    $team = Team::factory()->create();
-
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-    $team->members()->attach($admin, ['role' => TeamRole::Admin->value]);
-    $team->members()->attach($member, ['role' => TeamRole::Member->value]);
-
-    $response = $this
-        ->actingAs($admin)
-        ->delete(route('teams.members.destroy', [$team, $member]));
-
-    $response->assertForbidden();
-});
-
-test('team owner cannot be removed', function () {
-    $owner = User::factory()->create();
-    $team = Team::factory()->create();
-
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-
-    $response = $this
-        ->actingAs($owner)
-        ->delete(route('teams.members.destroy', [$team, $owner]));
-
-    $response->assertForbidden();
-
-    expect($owner->fresh()->belongsToTeam($team))->toBeTrue();
-});
-
-test('team member role cannot be set to owner', function () {
+test('a member without member:remove cannot remove anyone', function () {
+    [$organization, $plainMember] = organizationWith('member');
     $owner = User::factory()->create();
     $member = User::factory()->create();
-    $team = Team::factory()->create();
 
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-    $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+    $team = Team::factory()->heldBy($organization)->create();
+    $team->update(['owner_id' => $owner->id]);
+    $team->members()->attach($owner);
+    $team->members()->attach($plainMember);
+    $team->members()->attach($member);
 
-    $response = $this
-        ->actingAs($owner)
-        ->patch(route('teams.members.update', [$team, $member]), [
-            'role' => TeamRole::Owner->value,
-        ]);
+    $this->actingAs($plainMember)
+        ->delete(route('teams.members.destroy', [$team, $member]))
+        ->assertForbidden();
 
-    $response->assertSessionHasErrors('role');
+    expect($member->fresh()->belongsToTeam($team))->toBeTrue();
+})->note('Team ownership grants nothing on its own now — the permission comes from the organization.');
 
-    expect($team->members()->where('user_id', $member->id)->first()->pivot->role->value)->toEqual(TeamRole::Member->value);
+test('the team owner cannot be removed', function () {
+    [$organization, $admin] = organizationWith('admin');
+
+    $team = Team::factory()->heldBy($organization)->create();
+    $team->update(['owner_id' => $admin->id]);
+    $team->members()->attach($admin);
+
+    $this->actingAs($admin)
+        ->delete(route('teams.members.destroy', [$team, $admin]))
+        ->assertForbidden();
+
+    expect($admin->fresh()->belongsToTeam($team))->toBeTrue();
 });
 
-test('removed member current team is set to personal team', function () {
-    $owner = User::factory()->create();
+test('a removed member falls back to their personal team', function () {
+    [$organization, $admin] = organizationWith('admin');
     $member = User::factory()->create();
     $personalTeam = $member->personalTeam();
-    $team = Team::factory()->create();
 
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-    $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+    $team = Team::factory()->heldBy($organization)->create();
+    $team->update(['owner_id' => $admin->id]);
+    $team->members()->attach($admin);
+    $team->members()->attach($member);
 
     $member->update(['current_team_id' => $team->id]);
 
-    $this
-        ->actingAs($owner)
+    $this->actingAs($admin)
         ->delete(route('teams.members.destroy', [$team, $member]));
 
     expect($member->fresh()->current_team_id)->toEqual($personalTeam->id);

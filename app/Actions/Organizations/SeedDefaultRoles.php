@@ -3,52 +3,61 @@
 namespace App\Actions\Organizations;
 
 use App\Models\Organization;
-use App\Models\Permission;
 use App\Models\Role;
+use Database\Seeders\RoleSeeder;
+use Illuminate\Support\Collection;
 
 class SeedDefaultRoles
 {
     public function handle(Organization $organization): void
     {
-        $this->ensurePermissionsExist();
-
-        $previousTeam = getPermissionsTeamId();
+        $previous = getPermissionsTeamId();
 
         setPermissionsTeamId($organization->id);
 
         try {
-            foreach ($this->defaults() as $name => $permissions) {
-                Role::findOrCreate($name, 'web')->syncPermissions($permissions);
+            foreach ($this->templates() as $template) {
+                /**
+                 * Created straight through Eloquent: Spatie's findOrCreate would match
+                 * the unscoped template and hand back the shared row instead of making
+                 * this organization its own copy.
+                 */
+                Role::firstOrCreate([
+                    'name' => $template->name,
+                    'guard_name' => 'web',
+                    'organization_id' => $organization->id,
+                ])->syncPermissions($template->permissions->pluck('name')->all());
             }
         } finally {
-            setPermissionsTeamId($previousTeam);
+            setPermissionsTeamId($previous);
         }
     }
 
-    /** @return array<string, array<int, string>> */
-    protected function defaults(): array
+    /**
+     * The unscoped roles are the starting point every organization is given a copy
+     * of, so an owner can reshape their own without touching anyone else's.
+     *
+     * @return Collection<int, Role>
+     */
+    protected function templates(): Collection
     {
-        $catalog = $this->catalog();
+        $templates = $this->unscopedRoles();
 
-        return collect((array) config('roles.defaults'))
-            ->map(fn (array|string $permissions) => $permissions === '*' ? $catalog : (array) $permissions)
-            ->all();
-    }
+        if ($templates->isEmpty()) {
+            new RoleSeeder()->run();
 
-    protected function ensurePermissionsExist(): void
-    {
-        $existing = Permission::pluck('name');
-
-        foreach ($this->catalog() as $permission) {
-            if (! $existing->contains($permission)) {
-                Permission::create(['name' => $permission, 'guard_name' => 'web']);
-            }
+            $templates = $this->unscopedRoles();
         }
+
+        return $templates;
     }
 
-    /** @return array<int, string> */
-    protected function catalog(): array
+    /** @return Collection<int, Role> */
+    protected function unscopedRoles(): Collection
     {
-        return (array) config('roles.permissions');
+        return Role::query()
+            ->whereNull('organization_id')
+            ->with('permissions')
+            ->get();
     }
 }

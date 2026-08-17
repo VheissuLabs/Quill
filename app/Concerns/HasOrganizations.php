@@ -31,12 +31,28 @@ trait HasOrganizations
         return $this->organizations()->where('organizations.id', $organization->id)->exists();
     }
 
+    /**
+     * Resolved to this organization's own row before assigning. Spatie will happily
+     * fall back to an unscoped role of the same name — which is the template every
+     * organization is copied from, not the copy this member should hold.
+     */
     public function assignOrganizationRole(Organization $organization, Role|string $role): void
     {
-        $this->withinOrganization($organization, function () use ($role) {
+        $this->withinOrganization($organization, function () use ($organization, $role) {
             $this->unsetRelation('roles');
-            $this->syncRoles([$role]);
+
+            $this->syncRoles([
+                $role instanceof Role ? $role : Role::query()
+                    ->where('organization_id', $organization->id)
+                    ->where('name', $role)
+                    ->firstOrFail(),
+            ]);
         });
+    }
+
+    public function organizationRoleName(Organization $organization): ?string
+    {
+        return $this->organizationRole($organization)?->name;
     }
 
     public function organizationRole(Organization $organization): ?Role
@@ -47,19 +63,12 @@ trait HasOrganizations
             ->first();
     }
 
-    public function organizationRoleName(Organization $organization): ?string
-    {
-        return $this->organizationRole($organization)?->name;
-    }
-
-    public function ownsOrganization(Organization $organization): bool
-    {
-        return $this->organizationRoleName($organization) === 'owner';
-    }
-
     public function isClientContact(Organization $organization): bool
     {
-        return $this->organizationRoleName($organization) === 'client';
+        return $this->organizationMemberships()
+            ->where('organization_id', $organization->id)
+            ->whereNotNull('client_id')
+            ->exists();
     }
 
     public function canInOrganization(Organization $organization, string $permission): bool

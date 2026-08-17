@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::table('organization_members', function (Blueprint $table) {
             $table->foreignUuid('client_id')
                 ->nullable()
-                ->after('role')
+                ->after('user_id')
                 ->constrained('clients')
                 ->cascadeOnDelete();
         });

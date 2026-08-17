@@ -26,8 +26,7 @@
     const leaveTeamDialogOpen = ref(false)
     const teamLeaving = ref<Team | null>(null)
 
-    const canLeaveTeam = (team: Team) =>
-        !team.isPersonal && team.role !== 'owner'
+    const canLeaveTeam = (team: Team) => !team.isPersonal && !team.isOwner
 
     const openLeaveTeamDialog = (team: Team) => {
         teamLeaving.value = team
@@ -81,9 +80,6 @@
                                 Personal
                             </Badge>
                         </div>
-                        <span class="text-sm text-muted-foreground">
-                            {{ team.roleLabel }}
-                        </span>
                     </div>
                 </div>
 
@@ -105,7 +101,7 @@
                             </TooltipContent>
                         </Tooltip>
 
-                        <Tooltip v-if="team.role === 'member'">
+                        <Tooltip v-if="!team.isOwner">
                             <TooltipTrigger as-child>
                                 <Button
                                     data-test="team-view-button"

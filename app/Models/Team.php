@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueSlugs;
-use App\Enums\TeamRole;
 use App\Observers\ParentIntegrityObserver;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -84,11 +83,9 @@ class Team extends Model
         return 'slug';
     }
 
-    public function owner(): ?Model
+    public function owner(): BelongsTo
     {
-        return $this->members()
-            ->wherePivot('role', TeamRole::Owner->value)
-            ->first();
+        return $this->belongsTo(User::class, 'owner_id');
     }
 
     public function organization(): BelongsTo
@@ -116,7 +113,6 @@ class Team extends Model
             'user_id'
         )
             ->using(Membership::class)
-            ->withPivot(['role'])
             ->withTimestamps();
     }
 

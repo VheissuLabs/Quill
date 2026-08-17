@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\TeamRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Team;
@@ -52,25 +51,26 @@ class TeamFactory extends Factory
 
     public function withOwner(?User $owner = null): static
     {
-        return $this->withMember($owner ?? User::factory()->create(), TeamRole::Owner);
-    }
+        return $this->afterCreating(function (Team $team) use ($owner) {
+            $owner ??= User::factory()->create();
 
-    public function withMember(User $member, TeamRole $role = TeamRole::Member): static
-    {
-        return $this->afterCreating(function (Team $team) use ($member, $role) {
-            $team->members()->attach($member, ['role' => $role->value]);
+            $team->update(['owner_id' => $owner->id]);
+            $team->members()->attach($owner);
         });
     }
 
-    public function withMembers(int $count = 3, TeamRole $role = TeamRole::Member): static
+    public function withMember(User $member): static
     {
-        return $this->afterCreating(function (Team $team) use ($count, $role) {
+        return $this->afterCreating(fn (Team $team) => $team->members()->attach($member));
+    }
+
+    public function withMembers(int $count = 3): static
+    {
+        return $this->afterCreating(function (Team $team) use ($count) {
             User::factory()
                 ->count($count)
                 ->create()
-                ->each(fn (User $user) => $team->members()->attach($user, [
-                    'role' => $role->value,
-                ]));
+                ->each(fn (User $user) => $team->members()->attach($user));
         });
     }
 }

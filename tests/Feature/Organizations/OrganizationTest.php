@@ -49,19 +49,17 @@ test('members attach with a role that casts to the enum', function () {
     expect(Str::isUuid($organization->memberships->first()->id))->toBeTrue();
 });
 
-test('the owner is the member holding the owner role', function () {
+test('the owner is whoever the owner_id column names', function () {
     $organization = Organization::factory()->create();
     $owner = User::factory()->create();
     $member = User::factory()->create();
 
     $organization->members()->attach($owner);
-
-    $owner->assignOrganizationRole($organization, 'owner');
     $organization->members()->attach($member);
-    $member->assignOrganizationRole($organization, 'member');
+    $organization->update(['owner_id' => $owner->id]);
 
-    expect($organization->owner()->id)->toBe($owner->id);
-});
+    expect($organization->owner->id)->toBe($owner->id);
+})->note('Ownership is a column so it survives an owner renaming their own roles.');
 
 test('organizations soft delete', function () {
     $organization = Organization::factory()->create();
@@ -95,9 +93,11 @@ test('a users organization role is readable and owners are identified', function
     $organization->members()->attach($member);
     $member->assignOrganizationRole($organization, 'member');
 
+    $organization->update(['owner_id' => $owner->id]);
+
     expect($owner->organizationRoleName($organization))->toBe('owner');
-    expect($owner->ownsOrganization($organization))->toBeTrue();
-    expect($member->ownsOrganization($organization))->toBeFalse();
+    expect($organization->owner->is($owner))->toBeTrue();
+    expect($organization->owner->is($member))->toBeFalse();
 });
 
 test('a non member has no role and no permissions', function () {
@@ -109,12 +109,10 @@ test('a non member has no role and no permissions', function () {
 });
 
 test('client contacts are identified and hold no permissions', function () {
-    $contact = User::factory()->create();
     $organization = Organization::factory()->create();
+    $client = App\Models\Client::factory()->heldBy($organization)->create();
 
-    $organization->members()->attach($contact);
-
-    $contact->assignOrganizationRole($organization, 'client');
+    $contact = contactFor($client, 'Lucy Contact');
 
     expect($contact->isClientContact($organization))->toBeTrue();
     expect($contact->canInOrganization($organization, 'organization:update'))->toBeFalse();

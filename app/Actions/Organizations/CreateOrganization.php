@@ -13,6 +13,7 @@ class CreateOrganization
         return DB::transaction(function () use ($user, $name) {
             $organization = Organization::create([
                 'name' => $name,
+                'owner_id' => $user->id,
             ]);
 
             $organization->memberships()->create([

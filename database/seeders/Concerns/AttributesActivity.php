@@ -20,8 +20,6 @@ trait AttributesActivity
 
     protected function ownerOf(Organization $organization): ?User
     {
-        $owner = $organization->owner();
-
-        return $owner instanceof User ? $owner : null;
+        return $organization->owner;
     }
 }

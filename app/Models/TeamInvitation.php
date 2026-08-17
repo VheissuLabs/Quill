@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\TeamRole;
 use Database\Factories\TeamInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -68,7 +67,6 @@ class TeamInvitation extends Model
     protected function casts(): array
     {
         return [
-            'role' => TeamRole::class,
             'expires_at' => 'datetime',
             'accepted_at' => 'datetime',
         ];

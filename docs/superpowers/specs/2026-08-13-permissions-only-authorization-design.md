@@ -1,7 +1,7 @@
 # Permissions Only
 
 **Date:** 2026-08-13
-**Status:** Designed, not built
+**Status:** Built
 
 Code names permissions and never roles. `$user->can('client:create')` is the only
 authorization idiom in the application.
@@ -9,9 +9,9 @@ authorization idiom in the application.
 ## The rule
 
 A role is a **named bundle of permissions inside one organization** — data an owner
-edits, and eventually a settings screen. Engineers own the permission catalog and
-nothing else. No branch anywhere in `app/`, `routes/`, or `resources/js/` may ask
-what role someone holds.
+edits, and eventually a settings screen. Permissions are rows too — engineers own
+nothing but the strings they check. No branch anywhere in `app/`, `routes/`, or
+`resources/js/` may ask what role someone holds, and `app/Enums` is empty.
 
 That single rule is what the rest of this document falls out of.
 
@@ -47,6 +47,10 @@ page needed both at once. Rejected on the same grounds.
 `team:update` means "may update teams in this organization". Nobody is an admin of
 Engineering and a plain member of Delivery.
 
+**Owning a team is still enough to manage it.** Ownership is a column, not a role,
+and a personal team's owner belongs to no organization that could grant them
+anything — so `TeamPolicy` allows either the owner or the holder of the permission.
+
 This deletes a working system rather than porting it: `TeamRole`,
 `TeamPermission`, the `team_members.role` column, `teamRole()`, `ownsTeam()`,
 `hasTeamPermission()`, `toTeamPermissions()`, and the `level()` / `isAtLeast()`
@@ -59,23 +63,29 @@ can now update every team in the organization. If per-team authority becomes a
 requirement, it arrives as team-scoped grants against a polymorphic scope — the
 alternative rejected above — and this decision is where to revisit.
 
-## One permission catalog
+## There is no permission enum, and no catalogue in code
 
-`OrganizationPermission` and `TeamPermission` merge into `App\Enums\Permission`.
-Six names collided across the two enums (`member:add`, `member:update`,
-`member:remove`, `invitation:create`, `invitation:cancel`, `team:update`); with one
-scope there is one meaning for each, so the merge is a deduplication rather than a
-rename.
+`app/Enums` is empty. Permissions are rows in the `permissions` table and code
+names the one it needs as a string: `$user->can('client:create')`. The six names
+that collided across the two old enums (`member:add`, `member:update`,
+`member:remove`, `invitation:create`, `invitation:cancel`, `team:update`) are one
+row each, because there is one scope for them to mean something in.
 
-Spatie permissions are global rows keyed by `(name, guard_name)`. Roles are
-per-organization. That split is already what the code does and does not change.
+`database/seeders/RoleSeeder.php` inserts the starting catalogue and the starting
+bundles. It is a bootstrap, not a runtime authority: nothing reads it to answer an
+authorization question, and an owner editing roles later changes rows.
 
 ## Roles become data
 
-The default bundles move out of `OrganizationRole::permissions()` into
-`config/roles.php`, read by `SeedDefaultRoles` when an organization is created.
-Owner, Admin, Member and Client stay as the seeded defaults — an owner may then
-rename them, change what they grant, or add their own.
+Default bundles are seeded as **unscoped roles** — `roles.organization_id` is null.
+`SeedDefaultRoles` copies them into each new organization, so an owner reshaping
+their own roles cannot reshape anyone else's.
+
+One trap this created, worth keeping: Spatie treats an unscoped role as a global
+one and will resolve `syncRoles('admin')` to the *template* rather than the
+organization's copy. `assignOrganizationRole()` therefore resolves the scoped `Role`
+row itself and passes the model, and `SeedDefaultRoles` creates copies through
+Eloquent rather than Spatie's `findOrCreate`.
 
 `OrganizationRole` and `TeamRole` are deleted. Two places still carry a role *name*
 as a string, which is data and not a check:
@@ -92,10 +102,11 @@ role. Both become real `owner_id` columns, because a role lookup is exactly what
 this design forbids and because ownership must survive an owner renaming their own
 role bundles in settings.
 
-- `organizations.owner_id` — non-null, the user who created it.
-- `teams.owner_id` — non-null; for a personal team, its user.
+- `organizations.owner_id` — the user who created it.
+- `teams.owner_id` — for a personal team, its user.
 
-An observer holds the invariant. `membersWithRole()` is deleted.
+Both are nullable at the database level, because a team or organization can outlive
+the user row it points at (`nullOnDelete`). `membersWithRole()` is deleted.
 
 ## Contacts come from the membership
 
@@ -147,20 +158,16 @@ against the real MySQL schema and not only the SQLite suite.
 
 Each step leaves the app usable in a browser and the suite green.
 
-1. **`App\Enums\Permission` and the scope middleware.** Policies and requests move
-   to `$user->can()`. Roles are still seeded from the enum, so nothing else moves
-   yet.
-2. **Ownership columns.** `owner_id` on both tables, observer, seeders and
-   factories updated, `membersWithRole()` and `ownsOrganization()` deleted.
-3. **`config/roles.php`.** Bundles become data; `OrganizationRole` deleted;
-   invitations carry a validated role name.
-4. **Delete the team role system.** `TeamRole`, `TeamPermission`,
-   `team_members.role`, the `HasTeams` role helpers, `EnsureTeamMembership`'s
-   minimum role.
-5. **Frontend `can()`.** Granted-permission list on the shared props, DTOs and
-   their TypeScript types deleted.
-6. **Contacts from membership data.** `DenyClientContacts` reads `client_id`;
-   `isClientContact()` deleted.
+Built as one change rather than in steps, because the halfway states each left a
+role enum standing.
+
+1. Permission strings and the scope middleware; policies stop mirroring permissions.
+2. `RoleSeeder` plus unscoped templates; `config/roles.php` and every enum deleted.
+3. Ownership columns replace the Owner-role lookups.
+4. The team role system is deleted outright.
+5. Shared props carry the granted permission names; `usePermissions()` replaces the
+   boolean DTOs.
+6. `DenyClientContacts` reads `client_id`.
 
 ## Testing
 
@@ -170,15 +177,14 @@ becomes `organizationWith(['client:create', 'team:create'])`.
 
 - A user granted `client:create` may create a client; one without it is refused.
 - A grant in one organization does not apply in another — the scope boundary.
-- The seeded default bundles grant what `config/roles.php` says, asserted once
-  rather than in every test.
+- The seeded templates are unscoped and every organization receives a copy.
 - `owner_id` is set on create for organizations, teams and personal teams, and an
   observer refuses null.
 - A contact (membership with `client_id`) cannot reach the assistant; staff can.
 - A user with `team:update` may update any team in the organization — the
   behaviour change, asserted deliberately so it is not mistaken for a bug.
-- Nothing in `app/` references a role name: an architecture test greps for the
-  deleted enums so the rule cannot rot.
+- A team member without `member:remove` is refused, and the team's owner is not.
+- A role edited in one organization leaves the other organization's copy alone.
 
 ## Failure modes
 
