@@ -45,8 +45,6 @@ class TeamMembershipController extends Controller
         $member = $user ?? $request->user();
         $isSelf = $user === null;
 
-        abort_if($team->owner_id === $member->id, 403, __('The team owner cannot be removed.'));
-
         $team->memberships()
             ->where('user_id', $member->id)
             ->delete();

@@ -16,7 +16,8 @@ class TeamInvitationController extends Controller
 {
     public function store(CreateTeamInvitationRequest $request, Team $team): RedirectResponse
     {
-        $invitation = $team->invitations()->create([
+        $invitation = TeamInvitation::create([
+            'team_id' => $team->id,
             'email' => $request->validated('email'),
             'invited_by' => $request->user()->id,
             'expires_at' => now()->addDays(3),
@@ -35,18 +36,16 @@ class TeamInvitationController extends Controller
         Team $team,
         TeamInvitation $invitation,
     ): RedirectResponse {
-        abort_if($invitation->team_id !== $team->id, 404);
-
-        $cancelledByMember = $request->user()->belongsToTeam($team);
+        $declinedByInvitee = mb_strtolower($invitation->email) === mb_strtolower($request->user()->email);
 
         $invitation->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => $cancelledByMember
-            ? __('Invitation cancelled.')
-            : __('Invitation declined.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $declinedByInvitee
+            ? __('Invitation declined.')
+            : __('Invitation cancelled.')]);
 
-        return $cancelledByMember
-            ? to_route('teams.edit', ['team' => $team->slug])
-            : to_route('dashboard');
+        return $declinedByInvitee
+            ? to_route('dashboard')
+            : to_route('teams.edit', ['team' => $team->slug]);
     }
 }

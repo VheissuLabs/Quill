@@ -26,7 +26,9 @@ Route::prefix('{current_team}')
 
 Route::middleware(['auth', 'verified', DenyClientContacts::class])->group(function () {
     Route::get('projects', [ProjectController::class, 'index'])->name('projects.index');
-    Route::get('projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
+    Route::get('projects/{project}', [ProjectController::class, 'show'])
+        ->middleware('can:view,project')
+        ->name('projects.show');
 
     Route::get('assistant', [AssistantController::class, 'show'])->name('assistant');
     Route::post('assistant/messages', [AssistantController::class, 'store'])->name('assistant.messages.store');
@@ -36,6 +38,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('invitations/{invitation}/membership', [TeamMembershipController::class, 'store'])
         ->name('invitations.membership.store');
     Route::delete('teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])
+        ->scopeBindings()
         ->name('invitations.destroy');
 
     Route::put('organizations/{organization}/membership', [OrganizationMembershipController::class, 'update'])

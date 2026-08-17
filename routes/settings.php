@@ -50,7 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('teams.membership.destroy');
 
         Route::delete('settings/teams/{team}/members/{user}', [TeamMembershipController::class, 'destroy'])
-            ->middleware('can:removeMember,team')
+            ->middleware('can:removeMember,team,user')
             ->name('teams.members.destroy');
 
         Route::post('settings/teams/{team}/invitations', [TeamInvitationController::class, 'store'])
@@ -58,6 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('teams.invitations.store');
         Route::delete('settings/teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])
             ->middleware('can:cancelInvitation,team')
+            ->scopeBindings()
             ->name('teams.invitations.destroy');
     });
 });
