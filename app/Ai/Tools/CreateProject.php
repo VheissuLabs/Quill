@@ -42,7 +42,7 @@ class CreateProject implements AssistantTool
         }
 
         if (! $this->user->can('project:create')) {
-            return $this->refused('create a project');
+            return $this->refused('create a project', 'project:create');
         }
 
         $name = trim((string) $request['name']);

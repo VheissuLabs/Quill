@@ -25,16 +25,17 @@ trait ScopedToCurrentOrganization
         return 'The user is not currently working in any organization, so there is nothing to report.';
     }
 
-    protected function refused(string $action): string
+    /**
+     * Names the missing permission rather than the user's role. Which bundle grants
+     * it is an organization setting, so the permission is the durable fact and the
+     * one an owner can act on.
+     */
+    protected function refused(string $action, string $permission): string
     {
-        $role = $this->user->currentOrganization === null
-            ? null
-            : $this->user->organizationRole($this->user->currentOrganization);
-
         return sprintf(
-            'The user does not have permission to %s in this organization. Their role is %s. Nothing was changed.',
+            'The user does not have permission to %s in this organization. They are missing [%s]. Nothing was changed.',
             $action,
-            $role?->label() ?? 'unknown',
+            $permission,
         );
     }
 }

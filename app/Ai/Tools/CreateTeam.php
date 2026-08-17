@@ -41,7 +41,7 @@ class CreateTeam implements AssistantTool
         }
 
         if (! $this->user->can('team:create')) {
-            return $this->refused('create a team');
+            return $this->refused('create a team', 'team:create');
         }
 
         $name = trim((string) $request['name']);

@@ -88,7 +88,7 @@ test('a member is refused and nothing is created', function () {
 
     expect($result)
         ->toContain('does not have permission')
-        ->toContain('Member');
+        ->toContain('team:create');
 
     expect($this->organization->teams()->count())->toBe(0);
 });

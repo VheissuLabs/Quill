@@ -40,6 +40,7 @@ class TeamSeeder extends Seeder
         $user = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
         $delivery = Team::where('name', 'Delivery')->firstOrFail();
+        $delivery->update(['owner_id' => $user->id]);
         $delivery->members()->attach($user);
         User::factory()->count(2)->create()->each(
             fn (User $member) => $delivery->members()->attach($member),

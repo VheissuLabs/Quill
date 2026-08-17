@@ -40,7 +40,7 @@ class RenameTeam implements AssistantTool
         }
 
         if (! $this->user->can('team:update')) {
-            return $this->refused('rename a team');
+            return $this->refused('rename a team', 'team:update');
         }
 
         $newName = trim((string) $request['new_name']);

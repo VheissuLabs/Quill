@@ -103,7 +103,7 @@ test('a member is refused and nothing is created', function () {
 
     expect($result)
         ->toContain('does not have permission')
-        ->toContain('Member')
+        ->toContain('client:create')
         ->toContain('Nothing was changed');
 
     expect($this->organization->clients()->count())->toBe(0);

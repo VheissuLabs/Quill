@@ -40,7 +40,7 @@ class RenameProject implements AssistantTool
         }
 
         if (! $this->user->can('project:update')) {
-            return $this->refused('rename a project');
+            return $this->refused('rename a project', 'project:update');
         }
 
         $newName = trim((string) $request['new_name']);

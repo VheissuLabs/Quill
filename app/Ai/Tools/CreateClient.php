@@ -41,7 +41,7 @@ class CreateClient implements AssistantTool
         }
 
         if (! $this->user->can('client:create')) {
-            return $this->refused('create a client');
+            return $this->refused('create a client', 'client:create');
         }
 
         $name = trim((string) $request['name']);

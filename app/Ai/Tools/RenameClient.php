@@ -40,7 +40,7 @@ class RenameClient implements AssistantTool
         }
 
         if (! $this->user->can('client:update')) {
-            return $this->refused('rename a client');
+            return $this->refused('rename a client', 'client:update');
         }
 
         $newName = trim((string) $request['new_name']);

@@ -42,7 +42,7 @@ class CreateContact implements AssistantTool
         }
 
         if (! $this->user->can('member:add')) {
-            return $this->refused('invite a contact');
+            return $this->refused('invite a contact', 'member:add');
         }
 
         $email = mb_strtolower(trim((string) $request['email']));
