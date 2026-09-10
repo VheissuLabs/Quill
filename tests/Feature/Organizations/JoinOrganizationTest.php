@@ -21,7 +21,7 @@ function invitationFor(string $email = 'lucy@acme.test', string $clientName = 'A
 test('the join page shows who invited them and to what', function () {
     $invitation = invitationFor();
 
-    $this->get(route('join.show', ['invitation' => $invitation->code]))
+    $this->get(route('join.create', ['invitation' => $invitation->code]))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('auth/Join')
@@ -97,7 +97,7 @@ test('someone who already has an account is sent to log in instead', function ()
 
     User::factory()->create(['email' => 'lucy@acme.test']);
 
-    $this->get(route('join.show', ['invitation' => $invitation->code]))
+    $this->get(route('join.create', ['invitation' => $invitation->code]))
         ->assertRedirect(route('login'));
 
     $this->post(route('join.store', ['invitation' => $invitation->code]), [
@@ -115,7 +115,7 @@ test('an expired invitation cannot be joined', function () {
 
     $invitation->update(['expires_at' => now()->subDay()]);
 
-    $this->get(route('join.show', ['invitation' => $invitation->code]))
+    $this->get(route('join.create', ['invitation' => $invitation->code]))
         ->assertRedirect(route('login'));
 
     $this->post(route('join.store', ['invitation' => $invitation->code]), [
@@ -142,7 +142,7 @@ test('an accepted invitation cannot be joined again', function () {
 });
 
 test('an unknown code is a not found', function () {
-    $this->get(route('join.show', ['invitation' => 'nonsense']))->assertNotFound();
+    $this->get(route('join.create', ['invitation' => 'nonsense']))->assertNotFound();
 });
 
 test('a name and a confirmed password are required', function () {
@@ -161,7 +161,7 @@ test('a signed in user is not shown the join page', function () {
     $invitation = invitationFor();
 
     $this->actingAs(User::factory()->create())
-        ->get(route('join.show', ['invitation' => $invitation->code]))
+        ->get(route('join.create', ['invitation' => $invitation->code]))
         ->assertRedirect();
 })->note('The guest middleware keeps someone from joining while signed in as somebody else.');
 
@@ -171,5 +171,5 @@ test('the invitation email links to the join page', function () {
     $mail = new App\Notifications\Organizations\OrganizationInvitation($invitation)
         ->toMail($invitation->inviter);
 
-    expect($mail->actionUrl)->toBe(route('join.show', ['invitation' => $invitation->code]));
+    expect($mail->actionUrl)->toBe(route('join.create', ['invitation' => $invitation->code]));
 });

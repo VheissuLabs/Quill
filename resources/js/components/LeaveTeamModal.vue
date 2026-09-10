@@ -11,7 +11,7 @@
         DialogHeader,
         DialogTitle,
     } from '@/components/ui/dialog'
-    import { leave as leaveTeamAction } from '@/routes/teams'
+    import { destroy as leaveTeamAction } from '@/routes/teams/membership'
     import type { Team } from '@/types'
 
     type Props = {

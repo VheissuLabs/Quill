@@ -1,11 +1,10 @@
 <?php
 
-use App\Http\Controllers\Organizations\OrganizationController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Teams\TeamInvitationController;
-use App\Http\Controllers\Teams\TeamMemberController;
+use App\Http\Controllers\Teams\TeamMembershipController;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
@@ -33,21 +32,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('settings/teams', [TeamController::class, 'index'])->name('teams.index');
     Route::post('settings/teams', [TeamController::class, 'store'])->name('teams.store');
 
-    Route::post('settings/organizations/{organization}/switch', [OrganizationController::class, 'switch'])
-        ->name('organizations.switch');
-
     Route::middleware(EnsureTeamMembership::class)->group(function () {
         Route::get('settings/teams/{team}', [TeamController::class, 'edit'])->name('teams.edit');
-        Route::patch('settings/teams/{team}', [TeamController::class, 'update'])->name('teams.update');
-        Route::delete('settings/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
-        Route::post('settings/teams/{team}/switch', [TeamController::class, 'switch'])->name('teams.switch');
+        Route::patch('settings/teams/{team}', [TeamController::class, 'update'])
+            ->middleware('can:update,team')
+            ->name('teams.update');
+        Route::delete('settings/teams/{team}', [TeamController::class, 'destroy'])
+            ->middleware('can:delete,team')
+            ->name('teams.destroy');
 
-        Route::delete('settings/teams/{team}/leave', [TeamController::class, 'leave'])->name('teams.leave');
+        Route::put('settings/teams/{team}/membership', [TeamMembershipController::class, 'update'])
+            ->middleware('can:view,team')
+            ->name('teams.membership.update');
 
-        Route::delete('settings/teams/{team}/members/{user}', [TeamMemberController::class, 'destroy'])->name('teams.members.destroy');
+        Route::delete('settings/teams/{team}/membership', [TeamMembershipController::class, 'destroy'])
+            ->middleware('can:leave,team')
+            ->name('teams.membership.destroy');
 
-        Route::post('settings/teams/{team}/invitations', [TeamInvitationController::class, 'store'])->name('teams.invitations.store');
-        Route::delete('settings/teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])->name('teams.invitations.destroy');
+        Route::delete('settings/teams/{team}/members/{user}', [TeamMembershipController::class, 'destroy'])
+            ->middleware('can:removeMember,team,user')
+            ->name('teams.members.destroy');
+
+        Route::post('settings/teams/{team}/invitations', [TeamInvitationController::class, 'store'])
+            ->middleware('can:inviteMember,team')
+            ->name('teams.invitations.store');
+        Route::delete('settings/teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])
+            ->middleware('can:cancelInvitation,team')
+            ->scopeBindings()
+            ->name('teams.invitations.destroy');
     });
 });
 

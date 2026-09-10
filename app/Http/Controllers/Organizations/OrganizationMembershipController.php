@@ -5,18 +5,21 @@ namespace App\Http\Controllers\Organizations;
 use App\Actions\Organizations\AcceptInvitation;
 use App\Actions\Organizations\JoinFromInvitation;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Organizations\JoinOrganizationRequest;
+use App\Http\Requests\Organizations\RespondToOrganizationInvitationRequest;
+use App\Http\Requests\Organizations\StoreOrganizationMembershipRequest;
+use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class JoinOrganizationController extends Controller
+class OrganizationMembershipController extends Controller
 {
-    public function show(OrganizationInvitation $invitation): Response|RedirectResponse
+    public function create(OrganizationInvitation $invitation): Response|RedirectResponse
     {
         if (! $invitation->isPending()) {
             return $this->rejected($invitation);
@@ -46,11 +49,21 @@ class JoinOrganizationController extends Controller
     }
 
     public function store(
-        JoinOrganizationRequest $request,
+        StoreOrganizationMembershipRequest $request,
         OrganizationInvitation $invitation,
         JoinFromInvitation $joinFromInvitation,
         AcceptInvitation $acceptInvitation,
     ): RedirectResponse {
+        $user = $request->user();
+
+        if ($user !== null) {
+            $acceptInvitation->handle($user, $invitation);
+
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('Invitation accepted.')]);
+
+            return to_route('dashboard', ['current_team' => $user->currentTeam?->slug]);
+        }
+
         if (! $invitation->isPending()) {
             return $this->rejected($invitation);
         }
@@ -59,13 +72,11 @@ class JoinOrganizationController extends Controller
             return to_route('login');
         }
 
-        $user = $joinFromInvitation->handle(
+        Auth::login($joinFromInvitation->handle(
             $invitation,
             $request->validated('name'),
             $request->validated('password'),
-        );
-
-        Auth::login($user);
+        ));
 
         $request->session()->regenerate();
 
@@ -77,6 +88,24 @@ class JoinOrganizationController extends Controller
         ]);
 
         return to_route('home');
+    }
+
+    public function update(Request $request, Organization $organization): RedirectResponse
+    {
+        $request->user()->switchOrganization($organization);
+
+        return back();
+    }
+
+    public function destroy(
+        RespondToOrganizationInvitationRequest $request,
+        OrganizationInvitation $invitation,
+    ): RedirectResponse {
+        $invitation->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Invitation declined.')]);
+
+        return to_route('dashboard', ['current_team' => $request->user()->currentTeam?->slug]);
     }
 
     protected function accountExistsFor(OrganizationInvitation $invitation): bool

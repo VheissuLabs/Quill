@@ -13,7 +13,7 @@ test('a user can switch to an organization they belong to', function () {
 
     $response = $this
         ->actingAs($user)
-        ->post(route('organizations.switch', $organization));
+        ->put(route('organizations.membership.update', $organization));
 
     $response->assertRedirect();
 
@@ -30,7 +30,7 @@ test('a client contact can switch into their organization', function () {
 
     $this
         ->actingAs($user)
-        ->post(route('organizations.switch', $organization))
+        ->put(route('organizations.membership.update', $organization))
         ->assertRedirect();
 
     expect($user->fresh()->current_organization_id)->toBe($organization->id);
@@ -42,7 +42,7 @@ test('a user cannot switch to an organization they do not belong to', function (
 
     $response = $this
         ->actingAs($user)
-        ->post(route('organizations.switch', $organization));
+        ->put(route('organizations.membership.update', $organization));
 
     $response->assertForbidden();
 
@@ -53,13 +53,13 @@ test('guests cannot switch organizations', function () {
     $organization = Organization::factory()->create();
 
     $this
-        ->post(route('organizations.switch', $organization))
+        ->put(route('organizations.membership.update', $organization))
         ->assertRedirect(route('login'));
 });
 
 test('the switch route resolves an organization by slug', function () {
     $organization = Organization::factory()->create(['name' => 'Notary Dash']);
 
-    expect(route('organizations.switch', $organization))
+    expect(route('organizations.membership.update', $organization))
         ->toContain('notary-dash');
 });

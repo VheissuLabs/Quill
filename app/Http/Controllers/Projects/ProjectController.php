@@ -35,21 +35,11 @@ class ProjectController extends Controller
 
     public function show(Request $request, Project $project): Response
     {
-        $user = $request->user();
-        $organization = $user->currentOrganization;
-
-        abort_unless(
-            $organization !== null
-                && $project->organization_id === $organization->id
-                && $user->belongsToOrganization($organization),
-            404,
-        );
-
         $project->load('owner', 'defaultForClients');
 
         return Inertia::render('projects/Show', [
             'project' => [
-                ...(array) $user->toUserProject($project),
+                ...(array) $request->user()->toUserProject($project),
                 'description' => $project->description,
                 'defaultForClients' => $project->defaultForClients->pluck('name')->values(),
             ],

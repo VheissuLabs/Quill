@@ -11,7 +11,6 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -69,8 +68,6 @@ class TeamController extends Controller
 
     public function update(SaveTeamRequest $request, Team $team): RedirectResponse
     {
-        Gate::authorize('update', $team);
-
         $team = DB::transaction(function () use ($request, $team) {
             $team = Team::whereKey($team->id)->lockForUpdate()->firstOrFail();
 
@@ -82,38 +79,6 @@ class TeamController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Team updated.')]);
 
         return to_route('teams.edit', ['team' => $team->slug]);
-    }
-
-    public function switch(Request $request, Team $team): RedirectResponse
-    {
-        abort_unless($request->user()->belongsToTeam($team), 403);
-
-        $request->user()->switchTeam($team);
-
-        return back();
-    }
-
-    public function leave(Request $request, Team $team): RedirectResponse
-    {
-        Gate::authorize('leave', $team);
-
-        $user = $request->user();
-
-        $fallbackTeam = $user->isCurrentTeam($team)
-            ? $user->fallbackTeam($team)
-            : null;
-
-        $team->memberships()
-            ->where('user_id', $user->id)
-            ->delete();
-
-        if ($fallbackTeam) {
-            $user->switchTeam($fallbackTeam);
-        }
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('You left the team ":name"', ['name' => $team->name])]);
-
-        return to_route('teams.index');
     }
 
     public function destroy(DeleteTeamRequest $request, Team $team): RedirectResponse

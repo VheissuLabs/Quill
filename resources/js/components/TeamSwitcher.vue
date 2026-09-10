@@ -12,7 +12,7 @@
         DropdownMenuSeparator,
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu'
-    import { switchMethod } from '@/routes/teams'
+    import { update as switchTeamRoute } from '@/routes/teams/membership'
     import type { Team, TeamGroup } from '@/types'
 
     const props = withDefaults(
@@ -97,7 +97,7 @@
     const switchTeam = (team: Team) => {
         const previousTeamSlug = currentTeam.value?.slug
 
-        router.visit(switchMethod(team.slug), {
+        router.visit(switchTeamRoute(team.slug), {
             onFinish: () => {
                 if (!previousTeamSlug || typeof window === 'undefined') {
                     router.reload()
