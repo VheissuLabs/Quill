@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { ChevronUp, FolderKanban, Globe, Lock, Plus } from '@lucide/vue';
+import {
+    ArrowRight,
+    ChevronUp,
+    FolderKanban,
+    Globe,
+    Lightbulb,
+    Lock,
+    Plus,
+    ThumbsUp,
+} from '@lucide/vue';
+import { computed } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FeatureStatusBadge from '@/components/FeatureStatusBadge.vue';
 import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue';
@@ -29,7 +39,7 @@ type Props = {
     permissions: OrganizationPermissions;
 };
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 defineOptions({
     layout: (props: { currentOrganization?: Organization | null }) => ({
@@ -43,6 +53,24 @@ defineOptions({
         ],
     }),
 });
+
+const statCards = computed(() => [
+    {
+        label: 'Boards',
+        value: props.stats.projectsCount,
+        icon: FolderKanban,
+    },
+    {
+        label: 'Open requests',
+        value: props.stats.openFeaturesCount,
+        icon: Lightbulb,
+    },
+    {
+        label: 'Votes cast',
+        value: props.stats.votesCount,
+        icon: ThumbsUp,
+    },
+]);
 </script>
 
 <template>
@@ -75,106 +103,133 @@ defineOptions({
         </div>
 
         <template v-if="projects.length > 0">
-            <dl class="grid gap-4 sm:grid-cols-3">
-                <div class="rounded-xl border p-5">
-                    <dt
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
-                    >
-                        Boards
-                    </dt>
-                    <dd class="mt-2 text-3xl font-semibold tabular-nums">
-                        {{ stats.projectsCount }}
-                    </dd>
-                </div>
-                <div class="rounded-xl border p-5">
-                    <dt
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
-                    >
-                        Open requests
-                    </dt>
-                    <dd class="mt-2 text-3xl font-semibold tabular-nums">
-                        {{ stats.openFeaturesCount }}
-                    </dd>
-                </div>
-                <div class="rounded-xl border p-5">
-                    <dt
-                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
-                    >
-                        Votes cast
-                    </dt>
-                    <dd class="mt-2 text-3xl font-semibold tabular-nums">
-                        {{ stats.votesCount }}
-                    </dd>
-                </div>
-            </dl>
-
-            <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
-                <section class="space-y-4">
-                    <h2 class="font-semibold">Boards</h2>
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <Link
-                            v-for="project in projects"
-                            :key="project.id"
-                            :href="
-                                showBoard([
-                                    currentOrganization.slug,
-                                    project.slug,
-                                ])
-                            "
-                            data-test="dashboard-project"
-                            class="bg-card hover:border-foreground/20 flex flex-col gap-3 rounded-xl border p-5 transition-colors"
+            <div
+                class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_440px]"
+            >
+                <div class="flex flex-col gap-8">
+                    <dl class="grid gap-4 sm:grid-cols-3">
+                        <div
+                            v-for="stat in statCards"
+                            :key="stat.label"
+                            class="bg-card flex items-center gap-4 rounded-xl border p-5 shadow-sm"
                         >
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <p class="truncate font-medium">
-                                        {{ project.name }}
-                                    </p>
-                                    <p
-                                        v-if="project.clientName"
-                                        class="text-muted-foreground truncate text-sm"
-                                    >
-                                        {{ project.clientName }}
-                                    </p>
-                                </div>
-                                <Badge variant="secondary" class="gap-1">
-                                    <Globe
-                                        v-if="project.visibility === 'public'"
-                                    />
-                                    <Lock v-else />
-                                    {{ project.visibilityLabel }}
-                                </Badge>
+                            <div
+                                class="bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg"
+                            >
+                                <component
+                                    :is="stat.icon"
+                                    class="text-muted-foreground size-5"
+                                />
                             </div>
-                            <p
-                                v-if="project.description"
-                                class="text-muted-foreground line-clamp-2 text-sm"
+                            <div class="min-w-0">
+                                <dt
+                                    class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                                >
+                                    {{ stat.label }}
+                                </dt>
+                                <dd
+                                    class="mt-1 text-2xl font-semibold tabular-nums"
+                                >
+                                    {{ stat.value }}
+                                </dd>
+                            </div>
+                        </div>
+                    </dl>
+
+                    <section class="space-y-4">
+                        <div class="flex items-baseline justify-between gap-4">
+                            <h2 class="font-semibold">Boards</h2>
+                            <span
+                                class="text-muted-foreground text-sm tabular-nums"
                             >
-                                {{ project.description }}
-                            </p>
-                            <p
-                                class="text-muted-foreground mt-auto text-sm tabular-nums"
+                                {{ projects.length }}
+                                {{ projects.length === 1 ? 'board' : 'boards' }}
+                            </span>
+                        </div>
+                        <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                            <Link
+                                v-for="project in projects"
+                                :key="project.id"
+                                :href="
+                                    showBoard([
+                                        currentOrganization.slug,
+                                        project.slug,
+                                    ])
+                                "
+                                data-test="dashboard-project"
+                                class="group bg-card hover:border-foreground/20 flex flex-col gap-3 rounded-xl border p-5 shadow-sm transition-all hover:shadow-md"
                             >
-                                <span class="text-foreground font-medium">
-                                    {{ project.openFeaturesCount }} open
-                                </span>
-                                · {{ project.featuresCount }} total
-                            </p>
-                        </Link>
-                    </div>
-                </section>
+                                <div
+                                    class="flex items-start justify-between gap-3"
+                                >
+                                    <div class="min-w-0">
+                                        <p class="truncate font-medium">
+                                            {{ project.name }}
+                                        </p>
+                                        <p
+                                            v-if="project.clientName"
+                                            class="text-muted-foreground truncate text-sm"
+                                        >
+                                            {{ project.clientName }}
+                                        </p>
+                                    </div>
+                                    <Badge variant="secondary" class="gap-1">
+                                        <Globe
+                                            v-if="
+                                                project.visibility === 'public'
+                                            "
+                                        />
+                                        <Lock v-else />
+                                        {{ project.visibilityLabel }}
+                                    </Badge>
+                                </div>
+                                <p
+                                    v-if="project.description"
+                                    class="text-muted-foreground line-clamp-2 text-sm"
+                                >
+                                    {{ project.description }}
+                                </p>
+                                <div
+                                    class="text-muted-foreground mt-auto flex items-center justify-between gap-3 text-sm tabular-nums"
+                                >
+                                    <p>
+                                        <span
+                                            class="text-foreground font-medium"
+                                        >
+                                            {{ project.openFeaturesCount }} open
+                                        </span>
+                                        · {{ project.featuresCount }} total
+                                    </p>
+                                    <span
+                                        class="text-foreground flex items-center gap-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                                    >
+                                        Open board
+                                        <ArrowRight class="size-3.5" />
+                                    </span>
+                                </div>
+                            </Link>
+                        </div>
+                    </section>
+                </div>
 
                 <section class="space-y-4">
-                    <h2 class="font-semibold">Recent requests</h2>
+                    <div class="flex items-baseline justify-between gap-4">
+                        <h2 class="font-semibold">Recent requests</h2>
+                        <span class="text-muted-foreground text-sm">
+                            Newest first
+                        </span>
+                    </div>
                     <ol
                         v-if="recentFeatures.length > 0"
-                        class="divide-y rounded-xl border"
+                        class="bg-card divide-y overflow-hidden rounded-xl border shadow-sm"
                     >
                         <li
                             v-for="feature in recentFeatures"
                             :key="feature.id"
-                            class="flex items-start gap-3 p-4"
+                            class="hover:bg-accent/40 flex items-start gap-3 p-4 transition-colors"
                         >
                             <span
-                                class="text-muted-foreground flex w-10 shrink-0 flex-col items-center text-xs tabular-nums"
+                                class="bg-muted text-muted-foreground flex w-10 shrink-0 flex-col items-center rounded-md py-1.5 text-xs font-medium tabular-nums"
                             >
                                 <ChevronUp class="size-3.5" />
                                 {{ feature.votesCount }}
