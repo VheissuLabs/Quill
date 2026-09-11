@@ -26,6 +26,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Activitylog\Models\Activity;
 
 class IssueController extends Controller
 {
@@ -65,6 +66,9 @@ class IssueController extends Controller
         return Inertia::render('issues/Index', [
             'issues' => $issues,
             'filters' => $filters,
+            'activity' => $user->hasOrganizationPermission($currentOrganization, OrganizationPermission::ViewActivity)
+                ? $this->recentActivity($projectIds, $team)
+                : [],
             ...$this->formOptions($currentOrganization, $user, $team),
             'permissions' => $user->toOrganizationPermissions($currentOrganization),
         ]);
@@ -179,6 +183,44 @@ class IssueController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Issue deleted.')]);
 
         return to_route('issues.index');
+    }
+
+    /**
+     * Get the latest changes to the team's issues: those belonging to the current team or to no
+     * team yet, across the backlog and every sprint. Entries whose issue has since been deleted
+     * are left out.
+     *
+     * @param  Collection<int, int>  $projectIds
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function recentActivity(Collection $projectIds, ?Team $team): Collection
+    {
+        $issueIds = Issue::query()
+            ->select('id')
+            ->whereIn('project_id', $projectIds)
+            ->when($team, fn (Builder $query, Team $team) => $query->where(fn (Builder $query) => $query->where('team_id', $team->id)->orWhereNull('team_id')));
+
+        return Activity::query()
+            ->where('log_name', 'issues')
+            ->where('subject_type', (new Issue)->getMorphClass())
+            ->whereIn('subject_id', $issueIds)
+            ->with(['causer', 'subject.project'])
+            ->latest('id')
+            ->limit(20)
+            ->get()
+            ->map(function (Activity $activity) {
+                /** @var Issue $issue */
+                $issue = $activity->subject;
+
+                return [
+                    ...(array) ActivitySummary::fromActivity($activity),
+                    'issue' => [
+                        'id' => $issue->id,
+                        'reference' => $issue->reference(),
+                        'title' => $issue->title,
+                    ],
+                ];
+            });
     }
 
     /**

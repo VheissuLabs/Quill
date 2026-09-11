@@ -1,4 +1,4 @@
-import type { FeatureComment, FeatureStatus } from './portal';
+import type { ActivityEntry, FeatureComment, FeatureStatus } from './portal';
 import type { SelectOption } from './projects';
 
 export type IssueStatus =
@@ -38,6 +38,10 @@ export type IssueListItem = {
     assigneeName: string | null;
     hasFeature: boolean;
     createdAt: string;
+};
+
+export type IssueActivityEntry = ActivityEntry & {
+    issue: Pick<IssueListItem, 'id' | 'reference' | 'title'>;
 };
 
 export type IssueDetail = IssueListItem & {

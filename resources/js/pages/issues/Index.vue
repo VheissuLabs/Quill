@@ -8,6 +8,7 @@ import CreateIssueModal from '@/components/CreateIssueModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import IssueRow from '@/components/IssueRow.vue';
+import TeamActivityFeed from '@/components/TeamActivityFeed.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +23,7 @@ import { index, update } from '@/routes/issues';
 import { update as updateOrder } from '@/routes/issues/order';
 import { show as showSprint } from '@/routes/sprints';
 import type {
+    IssueActivityEntry,
     IssueFilters,
     IssueFormOptions,
     IssueListItem,
@@ -34,6 +36,7 @@ type Props = IssueFormOptions & {
     currentOrganization: Organization;
     issues: IssueListItem[];
     filters: IssueFilters;
+    activity: IssueActivityEntry[];
     permissions: OrganizationPermissions;
 };
 
@@ -227,7 +230,7 @@ const totalPoints = computed(() =>
                 title="Issues"
                 :description="
                     currentTeam
-                        ? `${currentTeam.name}'s backlog on the left, its sprints on the right. Drag an issue onto a sprint to plan it, or back into the list to unplan it.`
+                        ? `${currentTeam.name}'s backlog, with its sprints below. Drag an issue onto a sprint to plan it, or back into the list to unplan it.`
                         : 'Every open issue. Create a team to start planning sprints.'
                 "
             />
@@ -242,262 +245,288 @@ const totalPoints = computed(() =>
             </CreateIssueModal>
         </div>
 
-        <div class="grid gap-8 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <section class="space-y-4">
-                <div class="flex flex-wrap items-center gap-2">
-                    <Select v-model="statusFilter">
-                        <SelectTrigger
-                            class="w-40"
-                            data-test="issue-status-filter"
-                        >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem :value="all">Open issues</SelectItem>
-                            <SelectItem
-                                v-for="status in statuses"
-                                :key="status.value"
-                                :value="status.value"
+        <div
+            :class="[
+                'grid gap-8',
+                permissions.canViewActivity &&
+                    '2xl:grid-cols-[minmax(0,1fr)_400px]',
+            ]"
+        >
+            <div class="grid gap-8">
+                <section class="space-y-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <Select v-model="statusFilter">
+                            <SelectTrigger
+                                class="w-40"
+                                data-test="issue-status-filter"
                             >
-                                {{ status.label }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Select v-model="projectFilter">
-                        <SelectTrigger class="w-44">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem :value="all">All projects</SelectItem>
-                            <SelectItem
-                                v-for="project in projects"
-                                :key="project.id"
-                                :value="project.slug"
-                            >
-                                {{ project.name }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Button
-                        :variant="assignedToMe ? 'secondary' : 'ghost'"
-                        size="sm"
-                        data-test="issue-assignee-filter"
-                        @click="
-                            applyFilters({
-                                assignee: assignedToMe ? null : 'me',
-                            })
-                        "
-                    >
-                        Assigned to me
-                    </Button>
-
-                    <span
-                        class="text-muted-foreground ml-auto text-sm tabular-nums"
-                    >
-                        {{ list.length }}
-                        {{ list.length === 1 ? 'issue' : 'issues' }}
-                        <template v-if="totalPoints > 0">
-                            · {{ totalPoints }} pts
-                        </template>
-                    </span>
-                </div>
-
-                <draggable
-                    :list="list"
-                    group="issues"
-                    item-key="id"
-                    :force-fallback="true"
-                    draggable="[data-issue-id]"
-                    data-backlog-list
-                    :class="[
-                        'divide-y rounded-xl border transition-colors',
-                        isHovered({ kind: 'backlog' }) &&
-                            'border-foreground ring-foreground/20 ring-2',
-                    ]"
-                    ghost-class="opacity-40"
-                    :animation="150"
-                    @start="onDragStart"
-                    @end="onDragEnd($event, null)"
-                    @change="onListChange"
-                >
-                    <template #item="{ element: issue }">
-                        <div
-                            data-test="issue-row"
-                            :data-issue-id="issue.id"
-                            class="bg-card flex cursor-grab items-center px-4 py-3 first:rounded-t-xl last:rounded-b-xl active:cursor-grabbing"
-                        >
-                            <IssueRow
-                                :organization="currentOrganization.slug"
-                                :issue="issue"
-                            />
-                        </div>
-                    </template>
-                    <template #footer>
-                        <EmptyState
-                            v-if="list.length === 0"
-                            class="border-0"
-                            :icon="ListTodo"
-                            title="No issues here"
-                            description="Nothing matches these filters. Create an issue, or convert a feature request from one of your boards."
-                        >
-                            <CreateIssueModal
-                                :organization="currentOrganization.slug"
-                                :options="options"
-                            >
-                                <Button variant="outline"
-                                    ><Plus /> New issue</Button
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem :value="all"
+                                    >Open issues</SelectItem
                                 >
-                            </CreateIssueModal>
-                        </EmptyState>
-                    </template>
-                </draggable>
-            </section>
+                                <SelectItem
+                                    v-for="status in statuses"
+                                    :key="status.value"
+                                    :value="status.value"
+                                >
+                                    {{ status.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
 
-            <aside class="space-y-3 xl:sticky xl:top-20 xl:self-start">
-                <h2
-                    class="text-muted-foreground px-1 text-xs font-medium tracking-wide uppercase"
-                >
-                    Sprints
-                </h2>
+                        <Select v-model="projectFilter">
+                            <SelectTrigger class="w-44">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem :value="all"
+                                    >All projects</SelectItem
+                                >
+                                <SelectItem
+                                    v-for="project in projects"
+                                    :key="project.id"
+                                    :value="project.slug"
+                                >
+                                    {{ project.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
 
-                <div
-                    v-for="sprint in sprints"
-                    :key="sprint.id"
-                    :data-sprint-id="sprint.id"
-                    :data-test="`sprint-drop-${sprint.id}`"
-                    :class="[
-                        'bg-card rounded-xl border transition-colors',
-                        dragging && 'border-foreground/40 border-dashed',
-                        isHovered({ kind: 'sprint', id: sprint.id }) &&
-                            'border-foreground ring-foreground/20 ring-2',
-                    ]"
-                >
-                    <div class="flex items-start justify-between gap-2 p-4">
-                        <div class="min-w-0">
-                            <Link
-                                :href="
-                                    showSprint([
-                                        currentOrganization.slug,
-                                        sprint.id,
-                                    ])
-                                "
-                                class="block truncate text-sm font-medium hover:underline"
-                            >
-                                {{ sprint.name }}
-                            </Link>
-                            <p class="text-muted-foreground mt-0.5 text-xs">
-                                {{ sprint.teamName }} ·
-                                {{
-                                    formatDateRange(
-                                        sprint.startsAt,
-                                        sprint.endsAt,
-                                    )
-                                }}
-                            </p>
-                            <div class="mt-2 flex items-center gap-1.5">
-                                <Badge variant="secondary" class="tabular-nums">
-                                    {{ sprint.issuesCount }}
-                                    {{
-                                        sprint.issuesCount === 1
-                                            ? 'issue'
-                                            : 'issues'
-                                    }}
-                                </Badge>
-                                <Badge variant="secondary" class="tabular-nums">
-                                    {{ sprint.points }} pts
-                                </Badge>
-                            </div>
-                        </div>
-                        <span class="flex shrink-0 items-center gap-1">
-                            <Badge
-                                :variant="
-                                    sprint.status === 'active'
-                                        ? 'default'
-                                        : 'secondary'
-                                "
-                            >
-                                {{ sprint.statusLabel }}
-                            </Badge>
-                            <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                data-test="sprint-toggle"
-                                :aria-expanded="
-                                    !collapsedSprints.has(sprint.id)
-                                "
-                                :aria-label="
-                                    collapsedSprints.has(sprint.id)
-                                        ? 'Expand sprint'
-                                        : 'Collapse sprint'
-                                "
-                                @click="toggleSprint(sprint.id)"
-                            >
-                                <ChevronDown
-                                    class="transition-transform"
-                                    :class="
-                                        collapsedSprints.has(sprint.id) &&
-                                        '-rotate-90'
-                                    "
-                                />
-                            </Button>
+                        <Button
+                            :variant="assignedToMe ? 'secondary' : 'ghost'"
+                            size="sm"
+                            data-test="issue-assignee-filter"
+                            @click="
+                                applyFilters({
+                                    assignee: assignedToMe ? null : 'me',
+                                })
+                            "
+                        >
+                            Assigned to me
+                        </Button>
+
+                        <span
+                            class="text-muted-foreground ml-auto text-sm tabular-nums"
+                        >
+                            {{ list.length }}
+                            {{ list.length === 1 ? 'issue' : 'issues' }}
+                            <template v-if="totalPoints > 0">
+                                · {{ totalPoints }} pts
+                            </template>
                         </span>
                     </div>
 
                     <draggable
-                        v-if="
-                            !collapsedSprints.has(sprint.id) &&
-                            sprint.issues.length > 0
-                        "
-                        :list="sprintLists[sprint.id]"
-                        :group="`sprint-${sprint.id}`"
-                        :sort="false"
+                        :list="list"
+                        group="issues"
                         item-key="id"
                         :force-fallback="true"
-                        tag="ul"
-                        class="divide-y border-t"
+                        draggable="[data-issue-id]"
+                        data-backlog-list
+                        :class="[
+                            'divide-y rounded-xl border transition-colors',
+                            isHovered({ kind: 'backlog' }) &&
+                                'border-foreground ring-foreground/20 ring-2',
+                        ]"
                         ghost-class="opacity-40"
+                        :animation="150"
                         @start="onDragStart"
-                        @end="onDragEnd($event, sprint.id)"
+                        @end="onDragEnd($event, null)"
+                        @change="onListChange"
                     >
                         <template #item="{ element: issue }">
-                            <li
+                            <div
+                                data-test="issue-row"
                                 :data-issue-id="issue.id"
-                                class="flex cursor-grab items-center px-4 py-2.5 active:cursor-grabbing"
+                                class="bg-card flex cursor-grab items-center px-4 py-3 first:rounded-t-xl last:rounded-b-xl active:cursor-grabbing"
                             >
                                 <IssueRow
                                     :organization="currentOrganization.slug"
                                     :issue="issue"
-                                    :show-sprint="false"
                                 />
-                            </li>
+                            </div>
+                        </template>
+                        <template #footer>
+                            <EmptyState
+                                v-if="list.length === 0"
+                                class="border-0"
+                                :icon="ListTodo"
+                                title="No issues here"
+                                description="Nothing matches these filters. Create an issue, or convert a feature request from one of your boards."
+                            >
+                                <CreateIssueModal
+                                    :organization="currentOrganization.slug"
+                                    :options="options"
+                                >
+                                    <Button variant="outline"
+                                        ><Plus /> New issue</Button
+                                    >
+                                </CreateIssueModal>
+                            </EmptyState>
                         </template>
                     </draggable>
-                    <p
-                        v-else-if="!collapsedSprints.has(sprint.id)"
-                        class="text-muted-foreground border-t px-4 py-3 text-xs"
-                    >
-                        Nothing planned yet. Drag an issue onto this card, or
-                        drag a planned issue back into the list to unplan it.
-                    </p>
-                </div>
+                </section>
 
-                <div
-                    v-if="sprints.length === 0"
-                    class="text-muted-foreground rounded-xl border border-dashed p-4 text-center text-xs"
-                >
-                    <Timer class="mx-auto mb-2 size-4" />
-                    <template v-if="currentTeam">
-                        No open sprints for {{ currentTeam.name }}. Create one
-                        on the Sprints page to start planning.
-                    </template>
-                    <template v-else>
-                        Sprints belong to teams. Create a team to start
-                        planning.
-                    </template>
-                </div>
-            </aside>
+                <aside class="space-y-3">
+                    <h2
+                        class="text-muted-foreground px-1 text-xs font-medium tracking-wide uppercase"
+                    >
+                        Sprints
+                    </h2>
+
+                    <div
+                        v-for="sprint in sprints"
+                        :key="sprint.id"
+                        :data-sprint-id="sprint.id"
+                        :data-test="`sprint-drop-${sprint.id}`"
+                        :class="[
+                            'bg-card rounded-xl border transition-colors',
+                            dragging && 'border-foreground/40 border-dashed',
+                            isHovered({ kind: 'sprint', id: sprint.id }) &&
+                                'border-foreground ring-foreground/20 ring-2',
+                        ]"
+                    >
+                        <div class="flex items-start justify-between gap-2 p-4">
+                            <div class="min-w-0">
+                                <Link
+                                    :href="
+                                        showSprint([
+                                            currentOrganization.slug,
+                                            sprint.id,
+                                        ])
+                                    "
+                                    class="block truncate text-sm font-medium hover:underline"
+                                >
+                                    {{ sprint.name }}
+                                </Link>
+                                <p class="text-muted-foreground mt-0.5 text-xs">
+                                    {{ sprint.teamName }} ·
+                                    {{
+                                        formatDateRange(
+                                            sprint.startsAt,
+                                            sprint.endsAt,
+                                        )
+                                    }}
+                                </p>
+                                <div class="mt-2 flex items-center gap-1.5">
+                                    <Badge
+                                        variant="secondary"
+                                        class="tabular-nums"
+                                    >
+                                        {{ sprint.issuesCount }}
+                                        {{
+                                            sprint.issuesCount === 1
+                                                ? 'issue'
+                                                : 'issues'
+                                        }}
+                                    </Badge>
+                                    <Badge
+                                        variant="secondary"
+                                        class="tabular-nums"
+                                    >
+                                        {{ sprint.points }} pts
+                                    </Badge>
+                                </div>
+                            </div>
+                            <span class="flex shrink-0 items-center gap-1">
+                                <Badge
+                                    :variant="
+                                        sprint.status === 'active'
+                                            ? 'default'
+                                            : 'secondary'
+                                    "
+                                >
+                                    {{ sprint.statusLabel }}
+                                </Badge>
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    data-test="sprint-toggle"
+                                    :aria-expanded="
+                                        !collapsedSprints.has(sprint.id)
+                                    "
+                                    :aria-label="
+                                        collapsedSprints.has(sprint.id)
+                                            ? 'Expand sprint'
+                                            : 'Collapse sprint'
+                                    "
+                                    @click="toggleSprint(sprint.id)"
+                                >
+                                    <ChevronDown
+                                        class="transition-transform"
+                                        :class="
+                                            collapsedSprints.has(sprint.id) &&
+                                            '-rotate-90'
+                                        "
+                                    />
+                                </Button>
+                            </span>
+                        </div>
+
+                        <draggable
+                            v-if="
+                                !collapsedSprints.has(sprint.id) &&
+                                sprint.issues.length > 0
+                            "
+                            :list="sprintLists[sprint.id]"
+                            :group="`sprint-${sprint.id}`"
+                            :sort="false"
+                            item-key="id"
+                            :force-fallback="true"
+                            tag="ul"
+                            class="divide-y border-t"
+                            ghost-class="opacity-40"
+                            @start="onDragStart"
+                            @end="onDragEnd($event, sprint.id)"
+                        >
+                            <template #item="{ element: issue }">
+                                <li
+                                    :data-issue-id="issue.id"
+                                    class="flex cursor-grab items-center px-4 py-2.5 active:cursor-grabbing"
+                                >
+                                    <IssueRow
+                                        :organization="currentOrganization.slug"
+                                        :issue="issue"
+                                        :show-sprint="false"
+                                    />
+                                </li>
+                            </template>
+                        </draggable>
+                        <p
+                            v-else-if="!collapsedSprints.has(sprint.id)"
+                            class="text-muted-foreground border-t px-4 py-3 text-xs"
+                        >
+                            Nothing planned yet. Drag an issue onto this card,
+                            or drag a planned issue back into the list to unplan
+                            it.
+                        </p>
+                    </div>
+
+                    <div
+                        v-if="sprints.length === 0"
+                        class="text-muted-foreground rounded-xl border border-dashed p-4 text-center text-xs"
+                    >
+                        <Timer class="mx-auto mb-2 size-4" />
+                        <template v-if="currentTeam">
+                            No open sprints for {{ currentTeam.name }}. Create
+                            one on the Sprints page to start planning.
+                        </template>
+                        <template v-else>
+                            Sprints belong to teams. Create a team to start
+                            planning.
+                        </template>
+                    </div>
+                </aside>
+            </div>
+
+            <TeamActivityFeed
+                v-if="permissions.canViewActivity"
+                :entries="activity"
+                :organization="currentOrganization.slug"
+                class="2xl:sticky 2xl:top-20 2xl:self-start"
+            />
         </div>
     </div>
 </template>
