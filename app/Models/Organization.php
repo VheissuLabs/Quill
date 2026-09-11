@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * The tenant. Members hold a role per organization, stored through spatie/laravel-permission
@@ -28,7 +30,7 @@ use Illuminate\Support\Facades\DB;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, OrganizationInvitation> $invitations
- * @property-read Collection<int, Membership> $memberships
+ * @property-read Collection<int, OrganizationMembership> $memberships
  * @property-read Collection<int, User> $members
  * @property-read Collection<int, Team> $teams
  * @property-read Collection<int, Client> $clients
@@ -40,7 +42,7 @@ use Illuminate\Support\Facades\DB;
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
-    use GeneratesUniqueOrganizationSlugs, HasFactory, SoftDeletes;
+    use GeneratesUniqueOrganizationSlugs, HasFactory, LogsActivity, SoftDeletes;
 
     /**
      * Bootstrap the model and its traits.
@@ -77,23 +79,23 @@ class Organization extends Model
     /**
      * Get all members of this organization.
      *
-     * @return BelongsToMany<User, $this, Membership, 'pivot'>
+     * @return BelongsToMany<User, $this, OrganizationMembership, 'pivot'>
      */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'organization_members', 'organization_id', 'user_id')
-            ->using(Membership::class)
+            ->using(OrganizationMembership::class)
             ->withTimestamps();
     }
 
     /**
      * Get all memberships for this organization.
      *
-     * @return HasMany<Membership, $this>
+     * @return HasMany<OrganizationMembership, $this>
      */
     public function memberships(): HasMany
     {
-        return $this->hasMany(Membership::class);
+        return $this->hasMany(OrganizationMembership::class);
     }
 
     /**
@@ -186,7 +188,7 @@ class Organization extends Model
         DB::transaction(function () use ($user) {
             $this->asPermissionsTeam(fn () => $user->syncRoles([]));
 
-            $this->memberships()->where('user_id', $user->id)->delete();
+            $this->memberships()->where('user_id', $user->id)->first()?->delete();
         });
 
         $user->unsetRelation('organizationRoles');
@@ -214,5 +216,17 @@ class Organization extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * Log renames and slug changes.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('organizations')
+            ->logOnly(['name', 'slug'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 }

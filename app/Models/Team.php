@@ -13,8 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A department within an organization, such as Marketing or Development.
@@ -27,6 +27,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
  * @property Carbon|null $updated_at
  * @property-read Organization $organization
  * @property-read Collection<int, User> $members
+ * @property-read Collection<int, TeamMembership> $memberships
  * @property-read Collection<int, Sprint> $sprints
  * @property-read Collection<int, BoardColumn> $columns
  * @property-read Collection<int, Project> $projects
@@ -58,12 +59,23 @@ class Team extends Model
     /**
      * Get the members of the team.
      *
-     * @return BelongsToMany<User, $this>
+     * @return BelongsToMany<User, $this, TeamMembership, 'pivot'>
      */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'team_members')
+            ->using(TeamMembership::class)
             ->withTimestamps();
+    }
+
+    /**
+     * Get the team's membership records.
+     *
+     * @return HasMany<TeamMembership, $this>
+     */
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(TeamMembership::class);
     }
 
     /**

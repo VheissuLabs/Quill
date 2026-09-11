@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A comment on a feature request. Comments form one level of threads: a reply points at the
@@ -37,7 +39,7 @@ use Illuminate\Support\Carbon;
 class Comment extends Model
 {
     /** @use HasFactory<CommentFactory> */
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     /**
      * Get the feature the comment was left on.
@@ -122,5 +124,17 @@ class Comment extends Model
         return [
             'is_internal' => 'boolean',
         ];
+    }
+
+    /**
+     * Log comments and edits to them.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('comments')
+            ->logOnly(['feature_id', 'parent_id', 'user_id', 'body', 'is_internal'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 }

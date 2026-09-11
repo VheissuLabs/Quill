@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * @property int $id
@@ -29,7 +31,7 @@ use Illuminate\Support\Str;
 class OrganizationInvitation extends Model
 {
     /** @use HasFactory<OrganizationInvitationFactory> */
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     /**
      * Bootstrap the model and its traits.
@@ -109,5 +111,17 @@ class OrganizationInvitation extends Model
     public function getRouteKeyName(): string
     {
         return 'code';
+    }
+
+    /**
+     * Log who was invited, by whom, and when they accepted.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('organization_invitations')
+            ->logOnly(['organization_id', 'email', 'role', 'invited_by', 'expires_at', 'accepted_at'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 }

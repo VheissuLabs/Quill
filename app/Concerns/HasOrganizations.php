@@ -6,8 +6,8 @@ use App\Data\OrganizationPermissions;
 use App\Data\UserOrganization;
 use App\Enums\OrganizationPermission;
 use App\Enums\OrganizationRole;
-use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\OrganizationMembership;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,11 +43,11 @@ trait HasOrganizations
     /**
      * Get all of the memberships for the user.
      *
-     * @return HasMany<Membership, $this>
+     * @return HasMany<OrganizationMembership, $this>
      */
     public function organizationMemberships(): HasMany
     {
-        return $this->hasMany(Membership::class, 'user_id');
+        return $this->hasMany(OrganizationMembership::class, 'user_id');
     }
 
     /**

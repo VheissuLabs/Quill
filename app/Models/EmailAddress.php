@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * An additional email address on a user's account. Once verified, invitations sent to it
@@ -29,7 +31,7 @@ use Illuminate\Support\Facades\Notification;
 class EmailAddress extends Model
 {
     /** @use HasFactory<EmailAddressFactory> */
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     /**
      * Get the user the address belongs to.
@@ -86,5 +88,17 @@ class EmailAddress extends Model
         return [
             'verified_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Log added addresses and verifications.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('email_addresses')
+            ->logOnly(['user_id', 'email', 'verified_at'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 }

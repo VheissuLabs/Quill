@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * @property int $id
@@ -17,8 +19,10 @@ use Illuminate\Support\Carbon;
  * @property-read User $user
  */
 #[Fillable(['organization_id', 'user_id'])]
-class Membership extends Pivot
+class OrganizationMembership extends Pivot
 {
+    use LogsActivity;
+
     /**
      * The table associated with the model.
      *
@@ -51,5 +55,17 @@ class Membership extends Pivot
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Log who joins and leaves the organization.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('organization_members')
+            ->logOnly(['organization_id', 'user_id'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 }

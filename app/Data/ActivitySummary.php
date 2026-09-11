@@ -5,13 +5,18 @@ namespace App\Data;
 use App\Enums\FeatureStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
+use App\Enums\OrganizationRole;
 use App\Enums\ProjectVisibility;
 use App\Enums\SprintStatus;
 use App\Models\BoardColumn;
 use App\Models\Client;
+use App\Models\Comment;
+use App\Models\Feature;
+use App\Models\Organization;
 use App\Models\Sprint;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
@@ -82,6 +87,17 @@ readonly class ActivitySummary
             'assignee_id' => 'Assignee',
             'team_id' => 'Team',
             'client_id' => 'Client',
+            'organization_id' => 'Organization',
+            'user_id' => 'Member',
+            'feature_id' => 'Feature',
+            'parent_id' => 'Reply to',
+            'invited_by' => 'Invited by',
+            'is_internal' => 'Internal',
+            'direction' => 'Vote',
+            'email_verified_at' => 'Email verified',
+            'two_factor_confirmed_at' => 'Two-factor confirmed',
+            'current_organization_id' => 'Current organization',
+            'current_team_id' => 'Current team',
             'starts_at' => 'Start date',
             'ends_at' => 'End date',
             default => Str::headline($attribute),
@@ -109,7 +125,22 @@ readonly class ActivitySummary
             'assignee_id' => self::nameOf(User::class, $value, __('a deleted user')),
             'team_id' => self::nameOf(Team::class, $value, __('a deleted team')),
             'client_id' => self::nameOf(Client::class, $value, __('a deleted client')),
-            'starts_at', 'ends_at' => Str::of((string) $value)->substr(0, 10)->toString(),
+            'organization_id' => self::nameOf(Organization::class, $value, __('a deleted organization')),
+            'user_id' => self::nameOf(User::class, $value, __('a deleted user')),
+            'feature_id' => self::nameOf(Feature::class, $value, __('a deleted request'), 'title'),
+            'parent_id' => self::nameOf(Comment::class, $value, __('a deleted comment'), 'body'),
+            'invited_by' => self::nameOf(User::class, $value, __('a deleted user')),
+            'current_organization_id' => self::nameOf(Organization::class, $value, __('a deleted organization')),
+            'current_team_id' => self::nameOf(Team::class, $value, __('a deleted team')),
+            'role' => OrganizationRole::tryFrom((string) $value)?->label() ?? (string) $value,
+            'direction' => match ((int) $value) {
+                1 => __('Upvote'),
+                -1 => __('Downvote'),
+                default => (string) $value,
+            },
+            'is_internal' => $value ? __('Yes') : __('No'),
+            'starts_at', 'ends_at', 'expires_at', 'accepted_at', 'verified_at', 'email_verified_at', 'two_factor_confirmed_at' => Str::of((string) $value)->substr(0, 10)->toString(),
+            'body' => Str::limit((string) $value, 80),
             'description' => Str::limit((string) $value, 80),
             default => (string) $value,
         };
@@ -118,12 +149,12 @@ readonly class ActivitySummary
     /**
      * Look up the name of a related model by id, falling back when it no longer exists.
      *
-     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
+     * @param  class-string<Model>  $model
      */
-    protected static function nameOf(string $model, mixed $id, string $fallback): string
+    protected static function nameOf(string $model, mixed $id, string $fallback, string $column = 'name'): string
     {
-        $name = $model::query()->whereKey($id)->value('name');
+        $name = $model::query()->whereKey($id)->value($column);
 
-        return is_string($name) ? $name : $fallback;
+        return is_string($name) ? Str::limit($name, 80) : $fallback;
     }
 }

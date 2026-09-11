@@ -1,15 +1,23 @@
 <?php
 
+use App\Data\ActivitySummary;
 use App\Enums\FeatureStatus;
+use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationRole;
+use App\Models\Comment;
+use App\Models\EmailAddress;
 use App\Models\Feature;
 use App\Models\Issue;
+use App\Models\Organization;
+use App\Models\OrganizationInvitation;
 use App\Models\Project;
 use App\Models\Sprint;
 use App\Models\Team;
+use App\Models\TeamMembership;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Activitylog\Models\Activity;
 
 test('feature status changes are logged with who made them and shown to members', function () {
     $project = Project::factory()->public()->create();
@@ -47,7 +55,7 @@ test('feature status changes are logged with who made them and shown to members'
 
 test('planning an issue logs the sprint and status with related names resolved', function () {
     $member = User::factory()->create(['name' => 'Grace Hopper']);
-    $organization = \App\Models\Organization::factory()->create();
+    $organization = Organization::factory()->create();
     $organization->addMember($member, OrganizationRole::Admin);
     $project = Project::factory()->for($organization)->create();
     $team = Team::factory()->for($organization)->create(['name' => 'Development']);
@@ -83,4 +91,133 @@ test('activity is only shown to people with the view activity permission', funct
             ->where('viewer.canViewActivity', false)
             ->where('activity', []),
         );
+});
+
+test('the issues index lists recent activity for the current team with the issue referenced', function () {
+    $admin = User::factory()->create(['name' => 'Ada Lovelace']);
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, OrganizationRole::Admin);
+    $project = Project::factory()->for($organization)->create(['name' => 'Quill']);
+    $development = Team::factory()->for($organization)->create(['name' => 'Development']);
+    $marketing = Team::factory()->for($organization)->create(['name' => 'Marketing']);
+    $admin->switchOrganization($organization);
+    $admin->switchTeam($development);
+    $devIssue = Issue::factory()->for($project)->for($development)->create(['title' => 'Dev work']);
+    $untriaged = Issue::factory()->for($project)->create(['title' => 'Untriaged']);
+    $campaign = Issue::factory()->for($project)->for($marketing)->create(['title' => 'Campaign']);
+
+    $this->actingAs($admin);
+    $devIssue->update(['priority' => IssuePriority::High]);
+    $untriaged->update(['priority' => IssuePriority::Low]);
+    $campaign->update(['priority' => IssuePriority::Urgent]);
+
+    $this->get(route('issues.index', ['current_organization' => $organization]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('issues/Index')
+            ->where('permissions.canViewActivity', true)
+            ->where('activity', fn ($entries) => collect($entries)->pluck('issue.title')->all() === ['Untriaged', 'Dev work', 'Untriaged', 'Dev work'])
+            ->where('activity.0.event', 'updated')
+            ->where('activity.0.causerName', 'Ada Lovelace')
+            ->where('activity.0.issue.id', $untriaged->id)
+            ->where('activity.0.issue.reference', "Quill #{$untriaged->number}")
+            ->where('activity.0.changes.0.field', 'Priority')
+            ->where('activity.0.changes.0.to', 'Low'),
+        );
+});
+
+test('the issues index sends no activity to members without the view activity permission', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, OrganizationRole::Member);
+    $project = Project::factory()->for($organization)->create();
+    Issue::factory()->for($project)->create()->update(['priority' => IssuePriority::High]);
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('permissions.canViewActivity', false)
+            ->where('activity', []),
+        );
+});
+
+test('adding and removing a team member is logged with the member named', function () {
+    $admin = User::factory()->create(['name' => 'Ada Lovelace']);
+    $member = User::factory()->create(['name' => 'Grace Hopper']);
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($member, OrganizationRole::Member);
+    $team = Team::factory()->for($organization)->create(['name' => 'Development']);
+
+    $this->actingAs($admin)
+        ->post(route('teams.members.store', ['current_organization' => $organization, 'team' => $team]), ['user_id' => $member->id])
+        ->assertRedirect();
+    $this->actingAs($admin)
+        ->delete(route('teams.members.destroy', ['current_organization' => $organization, 'team' => $team, 'member' => $member]))
+        ->assertRedirect();
+
+    $entries = Activity::query()->where('log_name', 'team_members')->oldest('id')->get();
+
+    expect($entries)->toHaveCount(2);
+    expect($entries[0])
+        ->event->toBe('created')
+        ->subject_type->toBe(TeamMembership::class)
+        ->causer_id->toBe($admin->id);
+    expect($entries[1])
+        ->event->toBe('deleted')
+        ->causer_id->toBe($admin->id);
+    expect(ActivitySummary::fromActivity($entries[0])->changes)
+        ->toContain(['field' => 'Team', 'from' => null, 'to' => 'Development'])
+        ->toContain(['field' => 'Member', 'from' => null, 'to' => 'Grace Hopper']);
+});
+
+test('joining and leaving an organization is logged', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create(['name' => 'Grace Hopper']);
+    $organization = Organization::factory()->create(['name' => 'Acme']);
+    $organization->addMember($owner, OrganizationRole::Owner);
+
+    $organization->addMember($member, OrganizationRole::Member);
+    $membershipId = $organization->memberships()->where('user_id', $member->id)->value('id');
+    $organization->removeMember($member);
+
+    $entries = Activity::query()
+        ->where('log_name', 'organization_members')
+        ->where('subject_id', $membershipId)
+        ->oldest('id')
+        ->get();
+
+    expect($entries->pluck('event')->all())->toBe(['created', 'deleted']);
+    expect(ActivitySummary::fromActivity($entries[0])->changes)
+        ->toContain(['field' => 'Organization', 'from' => null, 'to' => 'Acme'])
+        ->toContain(['field' => 'Member', 'from' => null, 'to' => 'Grace Hopper']);
+    expect($organization->members()->whereKey($member->id)->exists())->toBeFalse();
+});
+
+test('every model records its creation in its own log', function (string $model, string $logName) {
+    $subject = $model::factory()->create();
+
+    $entry = Activity::query()->where('log_name', $logName)->where('subject_id', $subject->getKey())->latest('id')->first();
+
+    expect($entry)->not->toBeNull()
+        ->event->toBe('created')
+        ->subject_type->toBe($model);
+})->with([
+    'organizations' => [Organization::class, 'organizations'],
+    'invitations' => [OrganizationInvitation::class, 'organization_invitations'],
+    'comments' => [Comment::class, 'comments'],
+    'email addresses' => [EmailAddress::class, 'email_addresses'],
+    'users' => [User::class, 'users'],
+]);
+
+test('user activity never includes passwords, secrets or tokens', function () {
+    $user = User::factory()->create(['name' => 'Grace Hopper']);
+
+    $user->update(['name' => 'Grace Brewster Hopper', 'password' => 'new-secret', 'remember_token' => 'token']);
+
+    $entries = Activity::query()->where('log_name', 'users')->where('subject_id', $user->id)->get();
+    $loggedAttributes = $entries->flatMap(fn (Activity $entry) => array_keys($entry->attribute_changes['attributes']))->unique()->values()->all();
+
+    expect($loggedAttributes)->not->toContain('password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes');
+    expect(ActivitySummary::fromActivity($entries->last())->changes)
+        ->toBe([['field' => 'Name', 'from' => 'Grace Hopper', 'to' => 'Grace Brewster Hopper']]);
 });

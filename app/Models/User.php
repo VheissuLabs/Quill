@@ -19,6 +19,8 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -39,7 +41,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Organization|null $currentOrganization
  * @property-read Team|null $currentTeam
  * @property-read Collection<int, Organization> $ownedOrganizations
- * @property-read Collection<int, Membership> $organizationMemberships
+ * @property-read Collection<int, OrganizationMembership> $organizationMemberships
  * @property-read Collection<int, Organization> $organizations
  * @property-read Collection<int, Team> $teams
  * @property-read Collection<int, Feature> $features
@@ -52,7 +54,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasOrganizations, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, HasOrganizations, HasRoles, LogsActivity, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
      * Get the additional email addresses on the account.
@@ -185,5 +187,17 @@ class User extends Authenticatable implements PasskeyUser
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Log profile, security and context changes. Passwords, secrets and tokens are never logged.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('users')
+            ->logOnly(['name', 'email', 'timezone', 'email_verified_at', 'two_factor_confirmed_at', 'current_organization_id', 'current_team_id'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 }

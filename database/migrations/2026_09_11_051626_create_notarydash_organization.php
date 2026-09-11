@@ -16,6 +16,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        activity()->disableLogging();
+
         $karl = User::where('email', 'karl@vheissulabs.com')->firstOrFail();
 
         $karl->emailAddresses()->updateOrCreate(
@@ -26,6 +28,8 @@ return new class extends Migration
         $organization = Organization::firstOrCreate(['slug' => 'notarydash'], ['name' => 'NotaryDash']);
 
         $organization->addMember($karl, OrganizationRole::Owner);
+
+        activity()->enableLogging();
     }
 
     /**
