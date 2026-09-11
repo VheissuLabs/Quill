@@ -1,0 +1,182 @@
+<?php
+
+use App\Enums\IssueStatus;
+use App\Enums\OrganizationRole;
+use App\Enums\SprintStatus;
+use App\Models\Issue;
+use App\Models\Organization;
+use App\Models\Project;
+use App\Models\Sprint;
+use App\Models\Team;
+use App\Models\User;
+
+test('sprints can be created by admins for one of the organization teams', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, OrganizationRole::Admin);
+    $team = Team::factory()->for($organization)->create();
+
+    $response = $this
+        ->actingAs($admin)
+        ->post(route('sprints.store', ['current_organization' => $organization]), [
+            'name' => 'Sprint 1',
+            'starts_at' => '2026-09-14',
+            'ends_at' => '2026-09-25',
+        ]);
+
+    $sprint = Sprint::firstWhere('name', 'Sprint 1');
+
+    $response->assertRedirect(route('sprints.show', ['current_organization' => $organization, 'sprint' => $sprint]));
+
+    expect($sprint)
+        ->team_id->toBe($team->id)
+        ->status->toBe(SprintStatus::Planned);
+});
+
+test('sprints cannot be created by members, and need a team to exist', function () {
+    $organization = Organization::factory()->create();
+    $member = User::factory()->create();
+    $organization->addMember($member, OrganizationRole::Member);
+    $admin = User::factory()->create();
+    $organization->addMember($admin, OrganizationRole::Admin);
+
+    $payload = ['name' => 'Sprint 1', 'starts_at' => '2026-09-14', 'ends_at' => '2026-09-25'];
+
+    $this->actingAs($admin)
+        ->post(route('sprints.store', ['current_organization' => $organization]), $payload)
+        ->assertStatus(409);
+
+    Team::factory()->for($organization)->create();
+
+    $this->actingAs($member)
+        ->post(route('sprints.store', ['current_organization' => $organization]), $payload)
+        ->assertForbidden();
+});
+
+test('the sprints index shows the current team only', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, OrganizationRole::Member);
+    $development = Team::factory()->for($organization)->create(['name' => 'Development']);
+    $marketing = Team::factory()->for($organization)->create(['name' => 'Marketing']);
+    Sprint::factory()->for($development)->create(['name' => 'Dev sprint']);
+    Sprint::factory()->for($marketing)->create(['name' => 'Marketing sprint']);
+    $member->switchOrganization($organization);
+    $member->switchTeam($marketing);
+
+    $this->actingAs($member)
+        ->get(route('sprints.index', ['current_organization' => $organization]))
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('sprints', 1)
+            ->where('sprints.0.name', 'Marketing sprint'),
+        );
+});
+
+test('completing a sprint returns unfinished issues to the backlog', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, OrganizationRole::Admin);
+    $project = Project::factory()->for($organization)->create();
+    $sprint = Sprint::factory()->for(Team::factory()->for($organization))->active()->create();
+    $done = Issue::factory()->for($project)->for($sprint)->create(['status' => IssueStatus::Done]);
+    $unfinished = Issue::factory()->for($project)->for($sprint)->create(['status' => IssueStatus::InProgress]);
+
+    $this->actingAs($admin)
+        ->delete(route('sprints.complete', ['current_organization' => $organization, 'sprint' => $sprint]))
+        ->assertRedirect();
+
+    expect($sprint->fresh())
+        ->status->toBe(SprintStatus::Completed)
+        ->completed_at->not->toBeNull();
+    expect($done->fresh()->sprint_id)->toBe($sprint->id);
+    expect($unfinished->fresh())
+        ->sprint_id->toBeNull()
+        ->status->toBe(IssueStatus::Backlog);
+});
+
+test('only planned sprints can be started', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, OrganizationRole::Admin);
+    $planned = Sprint::factory()->for(Team::factory()->for($organization))->create();
+    $completed = Sprint::factory()->for(Team::factory()->for($organization))->completed()->create();
+
+    $this->actingAs($admin)
+        ->post(route('sprints.start', ['current_organization' => $organization, 'sprint' => $planned]))
+        ->assertRedirect();
+
+    expect($planned->fresh()->status)->toBe(SprintStatus::Active);
+
+    $this->actingAs($admin)
+        ->post(route('sprints.start', ['current_organization' => $organization, 'sprint' => $completed]))
+        ->assertStatus(409);
+});
+
+test('a board column update sets status and order and plans backlog issues into the sprint', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, OrganizationRole::Member);
+    $project = Project::factory()->for($organization)->create();
+    $team = Team::factory()->for($organization)->create();
+    $sprint = Sprint::factory()->for($team)->active()->create();
+    $inProgress = $team->columns()->where('status', IssueStatus::InProgress)->firstOrFail();
+    $planned = Issue::factory()->for($project)->for($sprint)->create(['status' => IssueStatus::Todo]);
+    $fromBacklog = Issue::factory()->for($project)->create();
+
+    $this->actingAs($member)
+        ->put(route('sprints.columns.update', ['current_organization' => $organization, 'sprint' => $sprint, 'column' => $inProgress]), [
+            'issue_ids' => [$fromBacklog->id, $planned->id],
+        ])
+        ->assertRedirect();
+
+    expect($fromBacklog->fresh())
+        ->sprint_id->toBe($sprint->id)
+        ->team_id->toBe($team->id)
+        ->board_column_id->toBe($inProgress->id)
+        ->status->toBe(IssueStatus::InProgress)
+        ->position->toBe(0);
+    expect($planned->fresh())
+        ->board_column_id->toBe($inProgress->id)
+        ->status->toBe(IssueStatus::InProgress)
+        ->position->toBe(1);
+});
+
+test('board columns reject issues from another organization and columns of another team', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, OrganizationRole::Member);
+    $team = Team::factory()->for($organization)->create();
+    $sprint = Sprint::factory()->for($team)->active()->create();
+    $otherTeamColumn = Team::factory()->for($organization)->create()->columns()->firstOrFail();
+    $foreignIssue = Issue::factory()->create();
+
+    $this->actingAs($member)
+        ->put(route('sprints.columns.update', ['current_organization' => $organization, 'sprint' => $sprint, 'column' => $team->columns()->firstOrFail()]), [
+            'issue_ids' => [$foreignIssue->id],
+        ])
+        ->assertSessionHasErrors('issue_ids.0');
+
+    $this->actingAs($member)
+        ->put(route('sprints.columns.update', ['current_organization' => $organization, 'sprint' => $sprint, 'column' => $otherTeamColumn]), [
+            'issue_ids' => [],
+        ])
+        ->assertNotFound();
+});
+
+test('sprint summaries total the points of their issues', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, OrganizationRole::Member);
+    $project = Project::factory()->for($organization)->create();
+    $sprint = Sprint::factory()->for(Team::factory()->for($organization))->active()->create();
+    Issue::factory()->for($project)->for($sprint)->create(['points' => 3]);
+    Issue::factory()->for($project)->for($sprint)->create(['points' => 5]);
+    Issue::factory()->for($project)->for($sprint)->create(['points' => null]);
+
+    $this->actingAs($member)
+        ->get(route('sprints.index', ['current_organization' => $organization]))
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('sprints.0.points', 8)
+            ->where('sprints.0.issuesCount', 3),
+        );
+});

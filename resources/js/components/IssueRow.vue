@@ -1,0 +1,62 @@
+<script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
+import { Lightbulb } from '@lucide/vue';
+import IssuePriorityBadge from '@/components/IssuePriorityBadge.vue';
+import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
+import { show } from '@/routes/issues';
+import type { IssueListItem } from '@/types';
+
+withDefaults(
+    defineProps<{
+        organization: string;
+        issue: IssueListItem;
+        showSprint?: boolean;
+    }>(),
+    {
+        showSprint: true,
+    },
+);
+</script>
+
+<template>
+    <div class="flex min-w-0 flex-1 items-center gap-4">
+        <IssuePriorityBadge
+            :priority="issue.priority"
+            :label="issue.priorityLabel"
+        />
+        <span
+            class="text-muted-foreground w-28 shrink-0 truncate text-xs tabular-nums"
+        >
+            {{ issue.project.name }} #{{ issue.number }}
+        </span>
+        <Link
+            :href="show([organization, issue.id])"
+            class="min-w-0 flex-1 truncate text-sm font-medium hover:underline"
+        >
+            {{ issue.title }}
+        </Link>
+        <Lightbulb
+            v-if="issue.hasFeature"
+            class="text-muted-foreground size-3.5 shrink-0"
+            aria-label="Converted from a feature request"
+        />
+        <span
+            v-if="issue.points !== null"
+            class="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums"
+        >
+            {{ issue.points }}
+        </span>
+        <span
+            v-if="showSprint && issue.sprintName"
+            class="text-muted-foreground hidden truncate text-xs md:inline"
+        >
+            {{ issue.sprintName }}
+        </span>
+        <IssueStatusBadge :status="issue.status" :label="issue.statusLabel" />
+        <span
+            class="text-muted-foreground hidden w-28 shrink-0 truncate text-right text-xs lg:inline"
+        >
+            {{ issue.assigneeName ?? 'Unassigned' }}
+        </span>
+    </div>
+</template>

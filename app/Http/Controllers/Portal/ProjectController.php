@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Http\Controllers\Portal;
+
+use App\Data\FeatureSummary;
+use App\Enums\FeatureStatus;
+use App\Enums\OrganizationPermission;
+use App\Http\Controllers\Controller;
+use App\Models\Feature;
+use App\Models\Organization;
+use App\Models\Project;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ProjectController extends Controller
+{
+    /**
+     * Display the project's feature board.
+     */
+    public function show(Request $request, Organization $organization, Project $project): Response|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user && ! $project->isPublic()) {
+            return redirect()->guest(route('login'));
+        }
+
+        Gate::authorize('view', $project);
+
+        $status = FeatureStatus::tryFrom((string) $request->query('status'));
+        $sort = $request->query('sort') === 'new' ? 'new' : 'top';
+
+        $countsByStatus = $project->features()
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $features = $project->features()
+            ->with('author')
+            ->withVoteSummary($user)
+            ->withCount(['comments' => fn ($query) => $query->public()])
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->when($sort === 'top', fn ($query) => $query->orderByRaw('coalesce(score, 0) desc'))
+            ->latest()
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (Feature $feature) => FeatureSummary::fromFeature($feature));
+
+        return Inertia::render('portal/Project', [
+            'organization' => ['name' => $organization->name, 'slug' => $organization->slug],
+            'project' => [
+                'name' => $project->name,
+                'slug' => $project->slug,
+                'description' => $project->description,
+                'visibility' => $project->visibility->value,
+            ],
+            'features' => $features,
+            'filters' => ['status' => $status?->value, 'sort' => $sort],
+            'statuses' => collect(FeatureStatus::cases())->map(fn (FeatureStatus $status) => [
+                'value' => $status->value,
+                'label' => $status->label(),
+                'count' => (int) ($countsByStatus[$status->value] ?? 0),
+            ]),
+            'totalCount' => (int) $countsByStatus->sum(),
+            'viewer' => [
+                'isMember' => $user?->belongsToOrganization($organization) ?? false,
+                'canCreateFeature' => $user?->can('create', [Feature::class, $project]) ?? false,
+                'canManageFeatures' => $user?->hasOrganizationPermission($organization, OrganizationPermission::ManageFeatures) ?? false,
+            ],
+        ]);
+    }
+}

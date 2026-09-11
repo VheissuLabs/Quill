@@ -1,0 +1,641 @@
+<script setup lang="ts">
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { ChevronDown, ChevronUp, Lightbulb, Pencil, Trash2 } from '@lucide/vue';
+import { computed, ref, watch } from 'vue';
+import ActivityFeed from '@/components/ActivityFeed.vue';
+import CommentBody from '@/components/CommentBody.vue';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import FeatureStatusBadge from '@/components/FeatureStatusBadge.vue';
+import Heading from '@/components/Heading.vue';
+import InputError from '@/components/InputError.vue';
+import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { formatDate } from '@/lib/dates';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useInitials } from '@/composables/useInitials';
+import { destroy, index, show, update } from '@/routes/issues';
+import { show as showFeature } from '@/routes/portal/features';
+import { show as showSprint } from '@/routes/sprints';
+import type {
+    ActivityEntry,
+    IssueDetail,
+    IssueFormOptions,
+    IssueOriginFeature,
+    Organization,
+    OrganizationPermissions,
+} from '@/types';
+
+type Props = IssueFormOptions & {
+    currentOrganization: Organization;
+    issue: IssueDetail;
+    feature: IssueOriginFeature | null;
+    activity: ActivityEntry[];
+    permissions: OrganizationPermissions;
+};
+
+const props = defineProps<Props>();
+
+defineOptions({
+    layout: (props: {
+        currentOrganization: Organization;
+        issue: IssueDetail;
+    }) => ({
+        breadcrumbs: [
+            {
+                title: 'Issues',
+                href: index(props.currentOrganization.slug),
+            },
+            {
+                title: props.issue.reference,
+                href: show([props.currentOrganization.slug, props.issue.id]),
+            },
+        ],
+    }),
+});
+
+const { getInitials } = useInitials();
+
+const none = 'none';
+const editing = ref(false);
+const deleteDialogOpen = ref(false);
+
+const routeArgs = computed((): [string, number] => [
+    props.currentOrganization.slug,
+    props.issue.id,
+]);
+
+const detailsForm = useForm({
+    title: props.issue.title,
+    description: props.issue.description ?? '',
+});
+
+const saveDetails = () => {
+    detailsForm.submit(update(routeArgs.value), {
+        preserveScroll: true,
+        onSuccess: () => (editing.value = false),
+    });
+};
+
+const patch = (data: Record<string, string | number | null>) => {
+    router.visit(update(routeArgs.value), { data, preserveScroll: true });
+};
+
+const toId = (value: string) => (value === none ? null : Number(value));
+
+/**
+ * While an issue is on a board its stage is one of the team's columns; off the board it is a
+ * plain status. Both are offered in one select, encoded as "column:ID" or "status:VALUE".
+ */
+const stageOptions = computed(() => {
+    const onBoard =
+        props.issue.sprintId !== null && props.issue.columns.length > 0;
+
+    if (onBoard) {
+        return [
+            ...props.issue.columns.map((column) => ({
+                value: `column:${column.id}`,
+                label: column.name,
+            })),
+            { value: 'status:cancelled', label: 'Cancelled' },
+        ];
+    }
+
+    return props.statuses
+        .filter((status) =>
+            ['backlog', 'done', 'cancelled'].includes(status.value),
+        )
+        .map((status) => ({
+            value: `status:${status.value}`,
+            label: status.label,
+        }));
+});
+
+const currentStage = computed(() =>
+    props.issue.boardColumnId
+        ? `column:${props.issue.boardColumnId}`
+        : `status:${props.issue.status}`,
+);
+
+const changeStage = (value: string) => {
+    const [kind, id] = value.split(':');
+
+    patch(kind === 'column' ? { board_column_id: Number(id) } : { status: id });
+};
+
+const points = ref(
+    props.issue.points === null ? '' : String(props.issue.points),
+);
+
+watch(
+    () => props.issue.points,
+    (value) => (points.value = value === null ? '' : String(value)),
+);
+
+const savePoints = () => {
+    const value = points.value === '' ? null : Number(points.value);
+
+    if (value !== props.issue.points) {
+        patch({ points: value });
+    }
+};
+
+const sprintsForTeam = computed(() =>
+    props.issue.teamId
+        ? props.sprints.filter((sprint) => sprint.teamId === props.issue.teamId)
+        : props.sprints,
+);
+
+const currentSprint = computed(() =>
+    props.sprints.find((sprint) => sprint.id === props.issue.sprintId),
+);
+</script>
+
+<template>
+    <Head :title="`${issue.reference} ${issue.title}`" />
+
+    <div class="grid gap-10 p-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div class="min-w-0 space-y-10">
+            <div class="space-y-4">
+                <p class="text-muted-foreground text-sm tabular-nums">
+                    {{ issue.reference }}
+                </p>
+
+                <form
+                    v-if="editing"
+                    class="space-y-4"
+                    @submit.prevent="saveDetails"
+                >
+                    <div class="grid gap-2">
+                        <Label for="title">Title</Label>
+                        <Input
+                            id="title"
+                            v-model="detailsForm.title"
+                            data-test="edit-issue-title"
+                            required
+                        />
+                        <InputError :message="detailsForm.errors.title" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="description">Description</Label>
+                        <Textarea
+                            id="description"
+                            v-model="detailsForm.description"
+                            data-test="edit-issue-description"
+                            class="min-h-40"
+                        />
+                        <InputError :message="detailsForm.errors.description" />
+                    </div>
+                    <div class="flex gap-2">
+                        <Button
+                            type="submit"
+                            data-test="edit-issue-save"
+                            :disabled="detailsForm.processing"
+                        >
+                            Save
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            @click="editing = false"
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </form>
+
+                <template v-else>
+                    <div class="flex items-start justify-between gap-4">
+                        <h1
+                            class="text-2xl font-semibold tracking-tight text-balance"
+                        >
+                            {{ issue.title }}
+                        </h1>
+                        <div class="flex shrink-0 items-center gap-1">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                data-test="edit-issue-button"
+                                aria-label="Edit issue"
+                                @click="editing = true"
+                            >
+                                <Pencil />
+                            </Button>
+                            <Button
+                                v-if="permissions.canManageIssues"
+                                variant="ghost"
+                                size="icon-sm"
+                                data-test="delete-issue-button"
+                                aria-label="Delete issue"
+                                @click="deleteDialogOpen = true"
+                            >
+                                <Trash2 />
+                            </Button>
+                        </div>
+                    </div>
+                    <p
+                        v-if="issue.description"
+                        class="max-w-prose leading-7 whitespace-pre-line"
+                    >
+                        {{ issue.description }}
+                    </p>
+                    <p v-else class="text-muted-foreground text-sm italic">
+                        No description yet.
+                    </p>
+                </template>
+            </div>
+
+            <section v-if="feature" class="space-y-5 border-t pt-8">
+                <Heading variant="small" title="Context" />
+
+                <div class="rounded-xl border p-5">
+                    <div
+                        class="flex flex-wrap items-start justify-between gap-3"
+                    >
+                        <div class="flex items-start gap-3">
+                            <span
+                                class="bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg"
+                            >
+                                <Lightbulb
+                                    class="text-muted-foreground size-4"
+                                />
+                            </span>
+                            <div>
+                                <Link
+                                    :href="
+                                        showFeature([
+                                            currentOrganization.slug,
+                                            issue.project.slug,
+                                            feature.id,
+                                        ])
+                                    "
+                                    class="font-medium hover:underline"
+                                >
+                                    {{ feature.title }}
+                                </Link>
+                                <p class="text-muted-foreground text-sm">
+                                    Requested
+                                    <template v-if="feature.authorName">
+                                        by {{ feature.authorName }}
+                                    </template>
+                                    on {{ formatDate(feature.createdAt) }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="text-muted-foreground inline-flex items-center gap-1 text-sm tabular-nums"
+                            >
+                                <ChevronUp class="size-4" />
+                                {{ feature.votesCount }}
+                            </span>
+                            <span
+                                v-if="feature.downvotesCount > 0"
+                                class="text-destructive inline-flex items-center gap-1 text-sm tabular-nums"
+                            >
+                                <ChevronDown class="size-4" />
+                                {{ feature.downvotesCount }}
+                            </span>
+                            <FeatureStatusBadge
+                                :status="feature.status"
+                                :label="feature.statusLabel"
+                            />
+                        </div>
+                    </div>
+
+                    <ol
+                        v-if="feature.comments.length > 0"
+                        class="mt-5 space-y-4 border-t pt-5"
+                    >
+                        <li
+                            v-for="comment in feature.comments"
+                            :key="comment.id"
+                            class="space-y-3"
+                        >
+                            <div class="flex gap-3">
+                                <Avatar class="size-7 shrink-0">
+                                    <AvatarFallback class="text-[10px]">
+                                        {{
+                                            getInitials(
+                                                comment.authorName ?? '?',
+                                            )
+                                        }}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div class="min-w-0 space-y-0.5">
+                                    <p class="text-xs">
+                                        <span class="font-medium">
+                                            {{
+                                                comment.authorName ??
+                                                'Deleted user'
+                                            }}
+                                        </span>
+                                        <span class="text-muted-foreground">
+                                            ·
+                                            {{ formatDate(comment.createdAt) }}
+                                        </span>
+                                        <span
+                                            v-if="comment.isInternal"
+                                            class="text-muted-foreground ml-1"
+                                        >
+                                            · Internal
+                                        </span>
+                                    </p>
+                                    <CommentBody
+                                        :body="comment.body"
+                                        :mentions="comment.mentions"
+                                    />
+                                </div>
+                            </div>
+                            <ol
+                                v-if="comment.replies.length > 0"
+                                class="ml-10 space-y-3 border-l pl-3"
+                            >
+                                <li
+                                    v-for="reply in comment.replies"
+                                    :key="reply.id"
+                                    class="space-y-0.5"
+                                >
+                                    <p class="text-xs">
+                                        <span class="font-medium">
+                                            {{
+                                                reply.authorName ??
+                                                'Deleted user'
+                                            }}
+                                        </span>
+                                        <span class="text-muted-foreground">
+                                            · {{ formatDate(reply.createdAt) }}
+                                        </span>
+                                    </p>
+                                    <CommentBody
+                                        :body="reply.body"
+                                        :mentions="reply.mentions"
+                                    />
+                                </li>
+                            </ol>
+                        </li>
+                    </ol>
+                    <p v-else class="text-muted-foreground mt-4 text-sm">
+                        No discussion on the request yet.
+                    </p>
+                </div>
+            </section>
+        </div>
+
+        <aside class="space-y-5 lg:sticky lg:top-20 lg:self-start">
+            <dl class="space-y-4 text-sm">
+                <div class="space-y-1.5">
+                    <dt
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                    >
+                        Status
+                    </dt>
+                    <dd>
+                        <Select
+                            :model-value="issue.status"
+                            @update:model-value="
+                                patch({ status: String($event) })
+                            "
+                        >
+                            <SelectTrigger
+                                class="h-8 w-full"
+                                data-test="issue-status-select"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="status in statuses"
+                                    :key="status.value"
+                                    :value="status.value"
+                                >
+                                    {{ status.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </dd>
+                </div>
+
+                <div class="space-y-1.5">
+                    <dt
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                    >
+                        Priority
+                    </dt>
+                    <dd>
+                        <Select
+                            :model-value="issue.priority"
+                            @update:model-value="
+                                patch({ priority: String($event) })
+                            "
+                        >
+                            <SelectTrigger class="h-8 w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="priority in priorities"
+                                    :key="priority.value"
+                                    :value="priority.value"
+                                >
+                                    {{ priority.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </dd>
+                </div>
+
+                <div class="space-y-1.5">
+                    <dt
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                    >
+                        Points
+                    </dt>
+                    <dd>
+                        <Input
+                            v-model="points"
+                            type="number"
+                            min="0"
+                            class="h-8"
+                            data-test="issue-points-input"
+                            placeholder="Estimate"
+                            @blur="savePoints"
+                            @keydown.enter.prevent="savePoints"
+                        />
+                    </dd>
+                </div>
+
+                <div class="space-y-1.5">
+                    <dt
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                    >
+                        Assignee
+                    </dt>
+                    <dd>
+                        <Select
+                            :model-value="
+                                issue.assigneeId
+                                    ? String(issue.assigneeId)
+                                    : none
+                            "
+                            @update:model-value="
+                                patch({ assignee_id: toId(String($event)) })
+                            "
+                        >
+                            <SelectTrigger class="h-8 w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem :value="none"
+                                    >Unassigned</SelectItem
+                                >
+                                <SelectItem
+                                    v-for="member in members"
+                                    :key="member.id"
+                                    :value="String(member.id)"
+                                >
+                                    {{ member.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </dd>
+                </div>
+
+                <div class="space-y-1.5">
+                    <dt
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                    >
+                        Team
+                    </dt>
+                    <dd>
+                        <Select
+                            :model-value="
+                                issue.teamId ? String(issue.teamId) : none
+                            "
+                            @update:model-value="
+                                patch({ team_id: toId(String($event)) })
+                            "
+                        >
+                            <SelectTrigger class="h-8 w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem :value="none">No team</SelectItem>
+                                <SelectItem
+                                    v-for="team in teams"
+                                    :key="team.id"
+                                    :value="String(team.id)"
+                                >
+                                    {{ team.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </dd>
+                </div>
+
+                <div class="space-y-1.5">
+                    <dt
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                    >
+                        Sprint
+                    </dt>
+                    <dd class="space-y-1.5">
+                        <Select
+                            :model-value="
+                                issue.sprintId ? String(issue.sprintId) : none
+                            "
+                            @update:model-value="
+                                patch({ sprint_id: toId(String($event)) })
+                            "
+                        >
+                            <SelectTrigger
+                                class="h-8 w-full"
+                                data-test="issue-sprint-select"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem :value="none">Backlog</SelectItem>
+                                <SelectItem
+                                    v-for="sprint in sprintsForTeam"
+                                    :key="sprint.id"
+                                    :value="String(sprint.id)"
+                                >
+                                    {{ sprint.name }} · {{ sprint.teamName }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Link
+                            v-if="currentSprint"
+                            :href="
+                                showSprint([
+                                    currentOrganization.slug,
+                                    currentSprint.id,
+                                ])
+                            "
+                            class="text-muted-foreground hover:text-foreground block text-xs underline underline-offset-4"
+                        >
+                            Open sprint board
+                        </Link>
+                    </dd>
+                </div>
+
+                <div class="space-y-1.5 border-t pt-4">
+                    <dt
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                    >
+                        Created
+                    </dt>
+                    <dd>
+                        {{ formatDate(issue.createdAt) }}
+                        <span
+                            v-if="issue.creatorName"
+                            class="text-muted-foreground"
+                        >
+                            by {{ issue.creatorName }}
+                        </span>
+                    </dd>
+                </div>
+                <div v-if="issue.completedAt" class="space-y-1.5">
+                    <dt
+                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                    >
+                        Completed
+                    </dt>
+                    <dd>{{ formatDate(issue.completedAt) }}</dd>
+                </div>
+            </dl>
+
+            <ActivityFeed
+                class="border-t pt-5"
+                :entries="activity"
+                subject="issue"
+            />
+
+            <IssueStatusBadge
+                class="sr-only"
+                :status="issue.status"
+                :label="issue.statusLabel"
+            />
+        </aside>
+    </div>
+
+    <ConfirmDeleteModal
+        v-model:open="deleteDialogOpen"
+        title="Delete issue"
+        confirm-label="Delete issue"
+        :href="destroy(routeArgs)"
+    >
+        This permanently deletes <strong>{{ issue.reference }}</strong
+        >. The feature request it came from, if any, is kept.
+    </ConfirmDeleteModal>
+</template>
