@@ -7,7 +7,6 @@ use App\Enums\FeatureStatus;
 use App\Enums\VoteDirection;
 use App\Models\Feature;
 use App\Models\User;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -77,7 +76,11 @@ class RunCommentCommands
             ['ability' => 'convert', 'name' => 'convert', 'usage' => '/convert', 'description' => 'Convert into a backlog issue'],
         ])
             ->filter(fn (array $command) => $user->can($command['ability'], $feature))
-            ->map(fn (array $command) => Arr::except($command, 'ability'))
+            ->map(fn (array $command) => [
+                'name' => $command['name'],
+                'usage' => $command['usage'],
+                'description' => $command['description'],
+            ])
             ->values()
             ->all();
     }
