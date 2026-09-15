@@ -4,19 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use Illuminate\Support\Carbon;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/**
- * @property int $id
- * @property int $team_id
- * @property int $user_id
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read Team $team
- * @property-read User $user
- */
+/** @mixin IdeHelperTeamMembership */
 class TeamMembership extends Pivot
 {
     use LogsActivity;

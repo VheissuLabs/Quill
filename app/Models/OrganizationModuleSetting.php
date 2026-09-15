@@ -7,22 +7,8 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
-/**
- * An organization-level module or capability override.
- *
- * Missing settings are enabled by default; rows are written when an owner changes a setting.
- *
- * @property int $id
- * @property int $organization_id
- * @property string $module
- * @property string $capability
- * @property bool $enabled
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read Organization $organization
- */
+/** @mixin IdeHelperOrganizationModuleSetting */
 #[UseFactory(OrganizationModuleSettingFactory::class)]
 class OrganizationModuleSetting extends Model
 {

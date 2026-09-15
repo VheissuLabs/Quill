@@ -6,35 +6,15 @@ use Database\Factories\CommentFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/**
- * A comment on a feature request. Comments form one level of threads: a reply points at the
- * top-level comment it belongs to. Internal comments are only shown to members of the
- * organization that owns the project.
- *
- * @property int $id
- * @property int $feature_id
- * @property int|null $parent_id
- * @property int|null $user_id
- * @property string $body
- * @property bool $is_internal
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read Feature $feature
- * @property-read Comment|null $parent
- * @property-read Collection<int, Comment> $replies
- * @property-read User|null $author
- * @property-read Collection<int, User> $mentions
- */
+/** @mixin IdeHelperComment */
 #[UseFactory(CommentFactory::class)]
 class Comment extends Model
 {

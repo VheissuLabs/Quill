@@ -8,38 +8,16 @@ use Database\Factories\FeatureFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/**
- * A feature request submitted to a project's board.
- *
- * @property int $id
- * @property int $project_id
- * @property int|null $user_id
- * @property string $title
- * @property string|null $description
- * @property FeatureStatus $status
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read int|null $votes_count
- * @property-read int|null $downvotes_count
- * @property-read int|null $score
- * @property-read int|null $user_vote
- * @property-read int|null $comments_count
- * @property-read Project $project
- * @property-read User|null $author
- * @property-read Collection<int, Vote> $votes
- * @property-read Collection<int, Comment> $comments
- * @property-read Issue|null $issue
- */
+/** @mixin IdeHelperFeature */
 #[UseFactory(FeatureFactory::class)]
 class Feature extends Model
 {
@@ -100,8 +78,8 @@ class Feature extends Model
         return $this->hasMany(Comment::class);
     }
 
-    /** @return \Illuminate\Support\Collection<int, User> */
-    public function mentionableUsers(): \Illuminate\Support\Collection
+    /** @return Collection<int, User> */
+    public function mentionableUsers(): Collection
     {
         return $this->project->organization->members()->get()
             ->when($this->author, fn ($users) => $users->push($this->author))

@@ -21,6 +21,7 @@
         "spatie/laravel-permission": "^8.3"
     },
     "require-dev": {
+        "barryvdh/laravel-ide-helper": "^3.7",
         "fakerphp/faker": "^1.24",
         "larastan/larastan": "^3.9",
         "laravel/boost": "^2.2",
@@ -72,6 +73,9 @@
         ],
         "types:check": [
             "phpstan analyse"
+        ],
+        "ide-helper": [
+            "@php artisan ide-helper:models -M -R --no-interaction"
         ],
         "test": [
             "@php artisan config:clear --ansi",

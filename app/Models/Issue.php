@@ -9,40 +9,11 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/**
- * A unit of work on a project, numbered per project and optionally born from a feature request.
- *
- * @property int $id
- * @property int $project_id
- * @property int|null $team_id
- * @property int|null $sprint_id
- * @property int|null $board_column_id
- * @property int|null $feature_id
- * @property int|null $assignee_id
- * @property int|null $created_by
- * @property int $number
- * @property string $title
- * @property string|null $description
- * @property IssueStatus $status
- * @property IssuePriority $priority
- * @property int|null $points
- * @property int $position
- * @property Carbon|null $completed_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read Project $project
- * @property-read Team|null $team
- * @property-read Sprint|null $sprint
- * @property-read BoardColumn|null $boardColumn
- * @property-read Feature|null $feature
- * @property-read User|null $assignee
- * @property-read User|null $creator
- */
+/** @mixin IdeHelperIssue */
 #[UseFactory(IssueFactory::class)]
 class Issue extends Model
 {

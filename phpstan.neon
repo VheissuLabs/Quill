@@ -12,6 +12,10 @@ parameters:
 
     level: 7
 
+    # Model properties live in the generated mixins rather than in each model.
+    scanFiles:
+        - _ide_helper_models.php
+
     ignoreErrors:
         # The factory is named by #[UseFactory] on the model, so the generic on the
         # trait would only say it again.

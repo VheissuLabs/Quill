@@ -13,30 +13,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/**
- * A time box in which a team commits to a set of issues.
- *
- * @property int $id
- * @property string $owner_type
- * @property int $owner_id
- * @property string $name
- * @property Carbon $starts_at
- * @property Carbon $ends_at
- * @property SprintStatus $status
- * @property Carbon|null $completed_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read int|null $issues_count
- * @property-read int|null $done_issues_count
- * @property-read int|float|string|null $issues_sum_points
- * @property-read Organization|Team $owner
- * @property-read Collection<int, Issue> $issues
- */
+/** @mixin IdeHelperSprint */
 #[UseFactory(SprintFactory::class)]
 #[ObservedBy(SprintObserver::class)]
 class Sprint extends Model

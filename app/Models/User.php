@@ -7,50 +7,22 @@ use App\Concerns\HasOrganizations;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
-/**
- * @property int $id
- * @property string $name
- * @property string $email
- * @property Carbon|null $email_verified_at
- * @property string|null $timezone
- * @property string $password
- * @property string|null $two_factor_secret
- * @property string|null $two_factor_recovery_codes
- * @property Carbon|null $two_factor_confirmed_at
- * @property string|null $remember_token
- * @property int|null $current_organization_id
- * @property int|null $current_team_id
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read Organization|null $currentOrganization
- * @property-read Team|null $currentTeam
- * @property-read Collection<int, Organization> $ownedOrganizations
- * @property-read Collection<int, OrganizationMembership> $organizationMemberships
- * @property-read Collection<int, Role> $organizationRoles
- * @property-read Collection<int, Organization> $organizations
- * @property-read Collection<int, Team> $teams
- * @property-read Collection<int, Feature> $features
- * @property-read Collection<int, Vote> $votes
- * @property-read Collection<int, Issue> $assignedIssues
- * @property-read Collection<int, EmailAddress> $emailAddresses
- */
+/** @mixin IdeHelperUser */
 #[UseFactory(UserFactory::class)]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
@@ -65,8 +37,8 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(EmailAddress::class);
     }
 
-    /** @return \Illuminate\Support\Collection<int, lowercase-string> */
-    public function verifiedEmailAddresses(): \Illuminate\Support\Collection
+    /** @return Collection<int, lowercase-string> */
+    public function verifiedEmailAddresses(): Collection
     {
         return $this->emailAddresses()
             ->verified()

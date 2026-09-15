@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -29,29 +28,7 @@ use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
-/**
- * The tenant. Members hold a role per organization, stored through spatie/laravel-permission
- * with the organization acting as the permission "team".
- *
- * @property int $id
- * @property string $name
- * @property string $slug
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property string|null $logo_path
- * @property Carbon|null $deleted_at
- * @property-read Collection<int, OrganizationInvitation> $invitations
- * @property-read Collection<int, OrganizationMembership> $memberships
- * @property-read Collection<int, User> $members
- * @property-read Collection<int, Team> $teams
- * @property-read Collection<int, Client> $clients
- * @property-read Collection<int, Project> $projects
- * @property-read Collection<int, Issue> $issues
- * @property-read Collection<int, Sprint> $sprints
- * @property-read Collection<int, BoardColumn> $columns
- * @property-read Collection<int, OrganizationModuleSetting> $capabilitySettings
- * @property-read Collection<int, Role> $roles
- */
+/** @mixin IdeHelperOrganization */
 #[UseFactory(OrganizationFactory::class)]
 #[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model

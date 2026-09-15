@@ -10,23 +10,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/**
- * An additional email address on a user's account. Once verified, invitations sent to it
- * reach the account and it can be used to log in.
- *
- * @property int $id
- * @property int $user_id
- * @property string $email
- * @property Carbon|null $verified_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read User $user
- */
+/** @mixin IdeHelperEmailAddress */
 #[UseFactory(EmailAddressFactory::class)]
 class EmailAddress extends Model
 {

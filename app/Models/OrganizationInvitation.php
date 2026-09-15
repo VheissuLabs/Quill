@@ -9,26 +9,11 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Models\Role;
 
-/**
- * @property int $id
- * @property string $code
- * @property int $organization_id
- * @property string $email
- * @property int $role_id
- * @property int $invited_by
- * @property Carbon|null $expires_at
- * @property Carbon|null $accepted_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read Organization $organization
- * @property-read User $inviter
- * @property-read Role $role
- */
+/** @mixin IdeHelperOrganizationInvitation */
 #[UseFactory(OrganizationInvitationFactory::class)]
 #[ObservedBy(OrganizationInvitationObserver::class)]
 class OrganizationInvitation extends Model

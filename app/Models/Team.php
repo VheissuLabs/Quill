@@ -9,35 +9,17 @@ use App\Observers\TeamObserver;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/**
- * A department within an organization, such as Marketing or Development.
- *
- * @property int $id
- * @property int $organization_id
- * @property string $name
- * @property string $slug
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read Organization $organization
- * @property-read Collection<int, User> $members
- * @property-read Collection<int, TeamMembership> $memberships
- * @property-read Collection<int, Sprint> $sprints
- * @property-read Collection<int, BoardColumn> $columns
- * @property-read Collection<int, Project> $projects
- * @property-read Collection<int, Issue> $issues
- */
+/** @mixin IdeHelperTeam */
 #[UseFactory(TeamFactory::class)]
 #[ObservedBy(TeamObserver::class)]
 class Team extends Model
