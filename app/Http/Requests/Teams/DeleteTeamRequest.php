@@ -12,8 +12,8 @@ class DeleteTeamRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * Leaving the target out deletes the team outright; naming another team of the same
-     * organization moves the team's work there first.
+     * The team's work always goes somewhere: to another team of the same organization when one
+     * is named, and back to the organization itself when none is.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -42,7 +42,7 @@ class DeleteTeamRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'target_team_id.exists' => __('Choose another team from this organization to move the work to.'),
+            'target_team_id.exists' => __('Choose another team from this organization, or leave it with the organization.'),
         ];
     }
 }

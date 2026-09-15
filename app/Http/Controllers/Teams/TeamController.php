@@ -120,7 +120,8 @@ class TeamController extends Controller
     }
 
     /**
-     * Delete the specified team.
+     * Delete the specified team, handing its board and its work to another team or back to the
+     * organization. Nothing is thrown away.
      */
     public function destroy(DeleteTeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
@@ -128,19 +129,11 @@ class TeamController extends Controller
 
         $target = $request->filled('target_team_id')
             ? $currentOrganization->teams()->whereKey($request->integer('target_team_id'))->firstOrFail()
-            : null;
-
-        if (! $target) {
-            $team->delete();
-
-            Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted.')]);
-
-            return to_route('teams.index');
-        }
+            : $currentOrganization;
 
         $team->mergeInto($target);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team merged into ":name".', ['name' => $target->name])]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted, its work moved to ":name".', ['name' => $target->name])]);
 
         return to_route('teams.index');
     }

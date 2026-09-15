@@ -24,7 +24,7 @@ import type { TeamMergeTarget } from '@/types';
 
 const props = defineProps<{
     open: boolean;
-    organization: string;
+    organization: { name: string; slug: string };
     team: { name: string; slug: string } | null;
     otherTeams: TeamMergeTarget[];
 }>();
@@ -33,22 +33,19 @@ const emit = defineEmits<{
     'update:open': [value: boolean];
 }>();
 
-const DELETE_ONLY = 'none';
+const ORGANIZATION = 'organization';
 
-const destination = ref(DELETE_ONLY);
+const destination = ref(ORGANIZATION);
 const processing = ref(false);
 
 /**
- * Default to keeping the work: the first other team, falling back to a plain delete
- * when this is the only team in the organization.
+ * The organization takes the work back by default. Nothing is thrown away either way.
  */
 watch(
     () => props.open,
     (open) => {
         if (open) {
-            destination.value = props.otherTeams[0]
-                ? String(props.otherTeams[0].id)
-                : DELETE_ONLY;
+            destination.value = ORGANIZATION;
         }
     },
 );
@@ -62,7 +59,7 @@ const confirm = () => {
         return;
     }
 
-    router.delete(destroy([props.organization, props.team.slug]), {
+    router.delete(destroy([props.organization.slug, props.team.slug]), {
         data: movingTo.value ? { target_team_id: movingTo.value.id } : {},
         preserveScroll: true,
         onStart: () => (processing.value = true),
@@ -78,22 +75,19 @@ const confirm = () => {
             <DialogHeader>
                 <DialogTitle>Delete {{ team?.name }}</DialogTitle>
                 <DialogDescription>
-                    <template v-if="movingTo">
-                        Its members, projects, sprints and issues move to
-                        <strong>{{ movingTo.name }}</strong
-                        >. Issues keep their status and land in the matching
-                        column on that board.
-                    </template>
-                    <template v-else>
-                        Its sprints and board columns are deleted and its issues
-                        return to the backlog. Members stay in the organization,
-                        and boards restricted to this team become visible to
-                        every organization member.
+                    Its sprints and issues move to
+                    <strong>{{ movingTo?.name ?? organization.name }}</strong
+                    >, keeping their status and landing in the matching column
+                    on that board.
+                    <template v-if="!movingTo">
+                        Members stay in the organization, and boards restricted
+                        to this team become visible to every organization
+                        member.
                     </template>
                 </DialogDescription>
             </DialogHeader>
 
-            <div v-if="otherTeams.length > 0" class="grid gap-2">
+            <div class="grid gap-2">
                 <Label for="delete-team-destination">Move its work to</Label>
                 <Select v-model="destination">
                     <SelectTrigger
@@ -104,15 +98,15 @@ const confirm = () => {
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                        <SelectItem :value="ORGANIZATION">
+                            {{ organization.name }} (no team)
+                        </SelectItem>
                         <SelectItem
                             v-for="option in otherTeams"
                             :key="option.id"
                             :value="String(option.id)"
                         >
                             {{ option.name }}
-                        </SelectItem>
-                        <SelectItem :value="DELETE_ONLY">
-                            Nowhere — delete the work too
                         </SelectItem>
                     </SelectContent>
                 </Select>
@@ -129,7 +123,7 @@ const confirm = () => {
                     :disabled="processing"
                     @click="confirm"
                 >
-                    {{ movingTo ? 'Move and delete team' : 'Delete team' }}
+                    Move and delete team
                 </Button>
             </DialogFooter>
         </DialogContent>

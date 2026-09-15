@@ -248,7 +248,7 @@ const confirmRemoveMember = (member: TeamMember) => {
 
     <DeleteTeamModal
         v-model:open="deleteDialogOpen"
-        :organization="currentOrganization.slug"
+        :organization="currentOrganization"
         :team="team"
         :other-teams="otherTeams"
     />

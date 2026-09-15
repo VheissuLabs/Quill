@@ -162,7 +162,7 @@ defineOptions({
 
     <DeleteTeamModal
         v-model:open="deleteDialogOpen"
-        :organization="props.currentOrganization.slug"
+        :organization="props.currentOrganization"
         :team="teamToDelete"
         :other-teams="teams.filter((team) => team.id !== teamToDelete?.id)"
     />

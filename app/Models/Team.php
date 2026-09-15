@@ -95,21 +95,33 @@ class Team extends Model
      * work is planned into another team's sprint. Work whose status has no column over there
      * returns to the backlog rather than landing in a column that means something else.
      *
+     * The target is another team, or the organization taking the work back when the team is the
+     * last one standing or simply not wanted any more. Handing back to the organization drops the
+     * team restriction on its private projects and leaves everyone a plain organization member.
+     *
      * The move is written in bulk, so the issues, sprints and memberships it touches record no
-     * activity of their own; the target team gets one entry describing the merge instead.
+     * activity of their own; the target gets one entry describing the merge instead.
      */
-    public function mergeInto(self $target): void
+    public function mergeInto(Organization|self $target): void
     {
-        if ($target->is($this) || $target->organization_id !== $this->organization_id) {
-            throw new InvalidArgumentException('A team can only be merged into another team in the same organization.');
+        $targetOrganization = $target instanceof self ? $target->organization_id : $target->getKey();
+
+        if ($target->is($this) || $targetOrganization !== $this->organization_id) {
+            throw new InvalidArgumentException('A team can only be merged into its own organization or another team in it.');
         }
 
         DB::transaction(function () use ($target) {
             $projectIds = $this->projects()->pluck('projects.id');
             $issuesMoved = $this->issues()->count();
 
-            $attached = $target->members()->syncWithoutDetaching($this->members()->pluck('users.id'))['attached'];
-            $target->projects()->syncWithoutDetaching($projectIds);
+            $attached = $target instanceof self
+                ? $target->members()->syncWithoutDetaching($this->members()->pluck('users.id'))['attached']
+                : [];
+
+            if ($target instanceof self) {
+                $target->projects()->syncWithoutDetaching($projectIds);
+            }
+
             $this->projects()->detach();
 
             $sprintsMoved = $this->sprints()->update([
@@ -119,7 +131,8 @@ class Team extends Model
 
             $this->moveIssuesTo($target);
 
-            User::where('current_team_id', $this->id)->update(['current_team_id' => $target->id]);
+            User::where('current_team_id', $this->id)
+                ->update(['current_team_id' => $target instanceof self ? $target->getKey() : null]);
 
             activity('teams')
                 ->on($target)
@@ -148,10 +161,11 @@ class Team extends Model
     }
 
     /**
-     * Repoint the team's issues at another team's board, column by column.
+     * Repoint the team's issues at the target's board, column by column.
      */
-    private function moveIssuesTo(self $target): void
+    private function moveIssuesTo(Organization|self $target): void
     {
+        $teamId = $target instanceof self ? $target->getKey() : null;
         $targetColumns = $target->columns()->get();
 
         foreach ($this->columns()->get() as $column) {
@@ -159,7 +173,7 @@ class Team extends Model
 
             if ($destination) {
                 $this->issues()->where('board_column_id', $column->id)
-                    ->update(['board_column_id' => $destination->id, 'team_id' => $target->id]);
+                    ->update(['board_column_id' => $destination->id, 'team_id' => $teamId]);
 
                 continue;
             }
@@ -169,10 +183,10 @@ class Team extends Model
                 ->update(['status' => IssueStatus::Backlog->value]);
 
             $this->issues()->where('board_column_id', $column->id)
-                ->update(['board_column_id' => null, 'team_id' => $target->id]);
+                ->update(['board_column_id' => null, 'team_id' => $teamId]);
         }
 
-        $this->issues()->update(['team_id' => $target->id]);
+        $this->issues()->update(['team_id' => $teamId]);
     }
 
     /**

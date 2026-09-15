@@ -206,6 +206,48 @@ test('merging a team moves its members, projects, sprints and issues to the targ
     expect($issue->board_column_id)->toBe($target->columns->firstWhere('status', IssueStatus::InProgress)->id);
 });
 
+test('deleting a team with no destination hands its board back to the organization', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, 'Admin');
+
+    $team = Team::factory()->for($organization)->create();
+
+    $mover = User::factory()->create();
+    $organization->addMember($mover, 'Member');
+    $team->members()->attach($mover);
+    $mover->update(['current_team_id' => $team->id]);
+
+    $project = Project::factory()->for($organization)->create(['visibility' => ProjectVisibility::Private]);
+    $project->teams()->attach($team);
+
+    $sprint = Sprint::factory()->for($team, 'owner')->create();
+    $inProgress = $team->columns->firstWhere('status', IssueStatus::InProgress);
+    $issue = Issue::factory()->for($project)->create([
+        'team_id' => $team->id,
+        'sprint_id' => $sprint->id,
+        'board_column_id' => $inProgress->id,
+        'status' => IssueStatus::InProgress,
+    ]);
+
+    $this
+        ->actingAs($admin)
+        ->delete(route('teams.destroy', ['current_organization' => $organization, 'team' => $team]))
+        ->assertRedirect(route('teams.index', ['current_organization' => $organization]));
+
+    $this->assertModelMissing($team);
+
+    expect($sprint->fresh()->owner->is($organization))->toBeTrue();
+    expect($mover->fresh()->current_team_id)->toBeNull();
+    expect($project->teams()->count())->toBe(0);
+
+    $issue->refresh();
+    expect($issue->team_id)->toBeNull();
+    expect($issue->status)->toBe(IssueStatus::InProgress);
+    expect($issue->boardColumn->owner->is($organization))->toBeTrue();
+    expect($issue->boardColumn->status)->toBe(IssueStatus::InProgress);
+});
+
 test('merging returns work to the backlog when the target board has no column for its status', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
