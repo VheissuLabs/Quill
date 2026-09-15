@@ -252,8 +252,8 @@ const totalPoints = computed(() =>
                     '2xl:grid-cols-[minmax(0,1fr)_400px]',
             ]"
         >
-            <div class="grid gap-8">
-                <section class="space-y-4">
+            <div class="grid min-w-0 gap-8">
+                <section class="min-w-0 space-y-4">
                     <div class="flex flex-wrap items-center gap-2">
                         <Select v-model="statusFilter">
                             <SelectTrigger
@@ -371,7 +371,7 @@ const totalPoints = computed(() =>
                     </div>
                 </section>
 
-                <aside class="space-y-3">
+                <aside class="min-w-0 space-y-3">
                     <h2
                         class="text-muted-foreground px-1 text-xs font-medium tracking-wide uppercase"
                     >

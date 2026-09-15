@@ -22,11 +22,14 @@ const notifications = computed(() => page.props.notifications);
 
 /**
  * New notifications arrive on the user's private channel; refetch just the shared prop so the
- * badge and list update without a full visit.
+ * badge and list update without a full visit. Browser only: the composable connects to Reverb
+ * synchronously in setup, which has no key (or WebSocket) to work with during server rendering.
  */
-useEchoNotification(`App.Models.User.${user.value.id}`, () => {
-    router.reload({ only: ['notifications'] });
-});
+if (!import.meta.env.SSR) {
+    useEchoNotification(`App.Models.User.${user.value.id}`, () => {
+        router.reload({ only: ['notifications'] });
+    });
+}
 
 const open = (notification: AppNotification) => {
     router.visit(read(notification.id));
