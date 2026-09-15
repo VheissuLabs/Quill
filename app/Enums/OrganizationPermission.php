@@ -25,9 +25,6 @@ enum OrganizationPermission: string
 
     case ManageRoles = 'role:manage';
 
-    /**
-     * Get the display label for the permission.
-     */
     public function label(): string
     {
         return match ($this) {

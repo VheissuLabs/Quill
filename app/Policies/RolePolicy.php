@@ -41,9 +41,6 @@ class RolePolicy
         return ! $role->is_owner && $this->create($user, $this->organizationOf($role));
     }
 
-    /**
-     * Get the organization that defines the role.
-     */
     protected function organizationOf(Role $role): Organization
     {
         return Organization::findOrFail($role->getAttribute(config('permission.column_names.team_foreign_key')));

@@ -14,9 +14,6 @@ use Inertia\Inertia;
 
 class FeatureStatusController extends Controller
 {
-    /**
-     * Change the feature's status.
-     */
     public function update(UpdateFeatureStatusRequest $request, Organization $organization, Project $project, Feature $feature): RedirectResponse
     {
         Gate::authorize('updateStatus', $feature);

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Teams;
 
-use App\Enums\IssueStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Teams\SaveBoardColumnRequest;
 use App\Models\BoardColumn;

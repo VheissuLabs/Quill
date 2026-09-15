@@ -10,9 +10,6 @@ enum IssuePriority: string
     case High = 'high';
     case Urgent = 'urgent';
 
-    /**
-     * Get the display label for the priority.
-     */
     public function label(): string
     {
         return match ($this) {

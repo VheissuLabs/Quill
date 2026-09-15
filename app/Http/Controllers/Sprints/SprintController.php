@@ -62,9 +62,6 @@ class SprintController extends Controller
         return to_route('sprints.show', ['sprint' => $sprint]);
     }
 
-    /**
-     * Display the sprint board.
-     */
     public function show(Request $request, Organization $currentOrganization, Sprint $sprint): Response
     {
         Gate::authorize('view', $sprint);
@@ -93,9 +90,6 @@ class SprintController extends Controller
         ]);
     }
 
-    /**
-     * Update the sprint's details.
-     */
     public function update(SaveSprintRequest $request, Organization $currentOrganization, Sprint $sprint): RedirectResponse
     {
         Gate::authorize('update', $sprint);

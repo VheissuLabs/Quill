@@ -20,9 +20,6 @@ class NotificationController extends Controller
         return redirect($notification->data['url'] ?? url()->previous());
     }
 
-    /**
-     * Mark every unread notification as read.
-     */
     public function readAll(Request $request): RedirectResponse
     {
         $request->user()->unreadNotifications->markAsRead();
@@ -30,9 +27,6 @@ class NotificationController extends Controller
         return back();
     }
 
-    /**
-     * Remove one notification.
-     */
     public function destroy(Request $request, DatabaseNotification $notification): RedirectResponse
     {
         abort_unless($notification->notifiable()->is($request->user()), 404);
@@ -42,9 +36,6 @@ class NotificationController extends Controller
         return back();
     }
 
-    /**
-     * Remove every notification.
-     */
     public function destroyAll(Request $request): RedirectResponse
     {
         $request->user()->notifications()->delete();

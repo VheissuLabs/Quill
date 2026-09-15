@@ -35,9 +35,6 @@ class OrganizationController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created organization.
-     */
     public function store(SaveOrganizationRequest $request, CreateOrganization $createOrganization): RedirectResponse
     {
         $organization = $createOrganization->handle($request->user(), $request->validated('name'));
@@ -47,9 +44,6 @@ class OrganizationController extends Controller
         return to_route('organizations.edit', ['current_organization' => $organization->slug]);
     }
 
-    /**
-     * Show the organization edit page.
-     */
     public function edit(Request $request, Organization $currentOrganization): Response
     {
         $user = $request->user();
@@ -109,9 +103,6 @@ class OrganizationController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified organization.
-     */
     public function update(SaveOrganizationRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('update', $currentOrganization);
@@ -147,9 +138,6 @@ class OrganizationController extends Controller
         return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
     }
 
-    /**
-     * Switch the user's current organization.
-     */
     public function switch(Request $request, Organization $organization): RedirectResponse
     {
         abort_unless($request->user()->belongsToOrganization($organization), 403);
@@ -191,9 +179,6 @@ class OrganizationController extends Controller
         return route($route->getName(), ['current_organization' => $organization]).($query ? "?{$query}" : '');
     }
 
-    /**
-     * Leave the specified organization.
-     */
     public function leave(Request $request, Organization $organization): RedirectResponse
     {
         Gate::authorize('leave', $organization);
@@ -211,9 +196,6 @@ class OrganizationController extends Controller
         return to_route('organizations.index');
     }
 
-    /**
-     * Delete the specified organization.
-     */
     public function destroy(DeleteOrganizationRequest $request, Organization $currentOrganization): RedirectResponse
     {
         $user = $request->user();

@@ -47,9 +47,6 @@ class DeleteOrganizationRequest extends FormRequest
         ];
     }
 
-    /**
-     * Get the organization associated with the request.
-     */
     private function organization(): Organization
     {
         $organization = $this->route('current_organization');

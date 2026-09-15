@@ -2,14 +2,10 @@
 
 namespace App\Concerns;
 
-use App\Models\Organization;
 use Illuminate\Support\Str;
 
 trait GeneratesUniqueOrganizationSlugs
 {
-    /**
-     * Generate a unique slug for the organization.
-     */
     public static function generateUniqueOrganizationSlug(string $name, ?int $excludeId = null): string
     {
         $defaultSlug = Str::slug($name);

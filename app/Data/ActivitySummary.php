@@ -76,9 +76,6 @@ readonly class ActivitySummary
         return $activities->map(fn (Activity $activity) => self::fromActivity($activity));
     }
 
-    /**
-     * Turn an attribute name into a label.
-     */
     protected static function label(string $attribute): string
     {
         return match ($attribute) {

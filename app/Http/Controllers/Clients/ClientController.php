@@ -15,9 +15,6 @@ use Inertia\Response;
 
 class ClientController extends Controller
 {
-    /**
-     * Display the organization's clients.
-     */
     public function index(Request $request, Organization $currentOrganization): Response
     {
         Gate::authorize('viewAny', [Client::class, $currentOrganization]);
@@ -37,9 +34,6 @@ class ClientController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created client.
-     */
     public function store(SaveClientRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Client::class, $currentOrganization]);
@@ -51,9 +45,6 @@ class ClientController extends Controller
         return to_route('clients.index');
     }
 
-    /**
-     * Show the client edit page.
-     */
     public function edit(Request $request, Organization $currentOrganization, Client $client): Response
     {
         Gate::authorize('view', $client);
@@ -77,9 +68,6 @@ class ClientController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified client.
-     */
     public function update(SaveClientRequest $request, Organization $currentOrganization, Client $client): RedirectResponse
     {
         Gate::authorize('update', $client);

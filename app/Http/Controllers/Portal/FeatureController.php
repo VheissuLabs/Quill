@@ -23,9 +23,6 @@ use Inertia\Response;
 
 class FeatureController extends Controller
 {
-    /**
-     * Display a feature and its discussion.
-     */
     public function show(Request $request, Organization $organization, Project $project, Feature $feature): Response|RedirectResponse
     {
         $user = $request->user();
@@ -106,9 +103,6 @@ class FeatureController extends Controller
         return to_route('portal.features.show', [$organization, $project, $feature]);
     }
 
-    /**
-     * Update the feature's title and description.
-     */
     public function update(SaveFeatureRequest $request, Organization $organization, Project $project, Feature $feature): RedirectResponse
     {
         Gate::authorize('update', $feature);
@@ -120,9 +114,6 @@ class FeatureController extends Controller
         return back();
     }
 
-    /**
-     * Delete the feature.
-     */
     public function destroy(Organization $organization, Project $project, Feature $feature): RedirectResponse
     {
         Gate::authorize('delete', $feature);

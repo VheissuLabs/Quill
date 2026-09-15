@@ -73,9 +73,6 @@ class IssueController extends Controller
         ]);
     }
 
-    /**
-     * Create an issue.
-     */
     public function store(StoreIssueRequest $request, Organization $currentOrganization, CreateIssue $createIssue): RedirectResponse
     {
         Gate::authorize('create', [Issue::class, $currentOrganization]);
@@ -99,9 +96,6 @@ class IssueController extends Controller
         return to_route('issues.show', ['issue' => $issue]);
     }
 
-    /**
-     * Display an issue.
-     */
     public function show(Request $request, Organization $currentOrganization, Issue $issue): Response
     {
         Gate::authorize('view', $issue);
@@ -168,9 +162,6 @@ class IssueController extends Controller
         return back();
     }
 
-    /**
-     * Delete the issue.
-     */
     public function destroy(Organization $currentOrganization, Issue $issue): RedirectResponse
     {
         Gate::authorize('delete', $issue);

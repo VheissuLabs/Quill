@@ -10,9 +10,6 @@ enum FeatureStatus: string
     case Completed = 'completed';
     case Declined = 'declined';
 
-    /**
-     * Get the display label for the status.
-     */
     public function label(): string
     {
         return match ($this) {

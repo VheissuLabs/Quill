@@ -30,9 +30,6 @@ class OrganizationInvitation extends Notification implements ShouldQueue
         return ['mail'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail(object $notifiable): MailMessage
     {
         $organization = $this->invitation->organization;

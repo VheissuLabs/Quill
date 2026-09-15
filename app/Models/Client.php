@@ -52,9 +52,6 @@ class Client extends Model
         return $this->hasMany(Project::class);
     }
 
-    /**
-     * Record client renames.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -64,9 +61,6 @@ class Client extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the route key for the model.
-     */
     public function getRouteKeyName(): string
     {
         return 'slug';

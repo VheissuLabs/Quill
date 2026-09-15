@@ -81,9 +81,6 @@ class Organization extends Model
         return $this->logo_path ? Storage::url($this->logo_path) : null;
     }
 
-    /**
-     * Determine whether an organization module is enabled.
-     */
     public function isModuleEnabled(OrganizationModule $module): bool
     {
         return $this->settingEnabled($module->value, '');
@@ -242,9 +239,6 @@ class Organization extends Model
         return $this->roles()->where('name', $name)->first();
     }
 
-    /**
-     * Get the locked owner role.
-     */
     public function ownerRole(): Role
     {
         return $this->roles()->where('is_owner', true)->firstOrFail();
@@ -474,9 +468,6 @@ class Organization extends Model
         }
     }
 
-    /**
-     * Get the route key for the model.
-     */
     public function getRouteKeyName(): string
     {
         return 'slug';

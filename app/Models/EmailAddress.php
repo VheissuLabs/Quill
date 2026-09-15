@@ -51,17 +51,11 @@ class EmailAddress extends Model
         return $this->verified_at !== null;
     }
 
-    /**
-     * Mark the address as verified.
-     */
     public function markAsVerified(): void
     {
         $this->forceFill(['verified_at' => now()])->save();
     }
 
-    /**
-     * Send the verification link to the address itself.
-     */
     public function sendVerificationNotification(): void
     {
         Notification::route('mail', $this->email)->notify(new VerifyEmailAddress($this));

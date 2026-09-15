@@ -12,9 +12,6 @@ use Inertia\Inertia;
 
 class SprintStateController extends Controller
 {
-    /**
-     * Start the sprint.
-     */
     public function store(Organization $currentOrganization, Sprint $sprint): RedirectResponse
     {
         Gate::authorize('update', $sprint);

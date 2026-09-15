@@ -27,9 +27,6 @@ class TeamMemberController extends Controller
         return back();
     }
 
-    /**
-     * Remove a member from the team.
-     */
     public function destroy(Organization $currentOrganization, Team $team, User $member): RedirectResponse
     {
         Gate::authorize('update', $team);

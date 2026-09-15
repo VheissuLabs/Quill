@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Notifications\MentionedInComment;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia;
 
 test('a mention notifies through the database and broadcast channels with a link to the request', function () {
     Notification::fake();
@@ -43,7 +44,7 @@ test('notifications are shared with the page and can be marked as read', functio
 
     $this->actingAs($user)
         ->get(route('dashboard'))
-        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('notifications.unreadCount', 2)
             ->has('notifications.items', 2),
         );

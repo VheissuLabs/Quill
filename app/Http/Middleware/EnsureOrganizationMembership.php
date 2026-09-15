@@ -29,9 +29,6 @@ class EnsureOrganizationMembership
         return $next($request);
     }
 
-    /**
-     * Get the organization associated with the request.
-     */
     protected function organization(Request $request): ?Organization
     {
         $organization = $request->route('current_organization') ?? $request->route('organization');

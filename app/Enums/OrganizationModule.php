@@ -10,9 +10,6 @@ enum OrganizationModule: string
 
     case Teams = 'teams';
 
-    /**
-     * Get the frontend key for this module.
-     */
     public function key(): string
     {
         return match ($this) {

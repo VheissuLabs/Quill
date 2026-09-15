@@ -18,9 +18,6 @@ class StoreUserTimezone
         //
     }
 
-    /**
-     * Handle the event.
-     */
     public function handle(Login|Registered $event): void
     {
         $timezone = $this->request->input('timezone');

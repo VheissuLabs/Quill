@@ -14,9 +14,6 @@ enum IssueStatus: string
     case Done = 'done';
     case Cancelled = 'cancelled';
 
-    /**
-     * Get the display label for the status.
-     */
     public function label(): string
     {
         return match ($this) {

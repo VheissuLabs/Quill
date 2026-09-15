@@ -74,17 +74,11 @@ class OrganizationInvitation extends Model
         return $this->accepted_at !== null;
     }
 
-    /**
-     * Determine if the invitation is pending.
-     */
     public function isPending(): bool
     {
         return $this->accepted_at === null && ! $this->isExpired();
     }
 
-    /**
-     * Determine if the invitation has expired.
-     */
     public function isExpired(): bool
     {
         return $this->expires_at !== null && $this->expires_at->isPast();
@@ -103,9 +97,6 @@ class OrganizationInvitation extends Model
         ];
     }
 
-    /**
-     * Get the route key for the model.
-     */
     public function getRouteKeyName(): string
     {
         return 'code';

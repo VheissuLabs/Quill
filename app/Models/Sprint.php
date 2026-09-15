@@ -109,9 +109,6 @@ class Sprint extends Model
         return $this->hasMany(Issue::class);
     }
 
-    /**
-     * Start the sprint.
-     */
     public function start(): void
     {
         $this->update(['status' => SprintStatus::Active]);

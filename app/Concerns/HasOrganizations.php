@@ -28,29 +28,20 @@ trait HasOrganizations
             ->withTimestamps();
     }
 
-    /**
-     * Get all of the organizations the user owns.
-     *
-     * @return BelongsToMany<Organization, $this>
-     */
+    /** @return BelongsToMany<Organization, $this> */
     public function ownedOrganizations(): BelongsToMany
     {
         return $this->organizations()
             ->whereIn('organizations.id', $this->organizationRoles()->where('is_owner', true)->pluck('model_has_roles.organization_id'));
     }
 
-    /**
-     * Get all of the memberships for the user.
-     *
-     * @return HasMany<OrganizationMembership, $this>
-     */
+    /** @return HasMany<OrganizationMembership, $this> */
     public function organizationMemberships(): HasMany
     {
         return $this->hasMany(OrganizationMembership::class, 'user_id');
     }
 
     /**
-     * Get the roles the user holds across every organization, with the organization on the pivot.
      * Unlike the spatie `roles` relation this is not limited to the current permission team.
      *
      * @return MorphToMany<Role, $this>
@@ -71,9 +62,6 @@ trait HasOrganizations
         return $this->belongsTo(Organization::class, 'current_organization_id');
     }
 
-    /**
-     * Switch to the given organization.
-     */
     public function switchOrganization(Organization $organization): bool
     {
         if (! $this->belongsToOrganization($organization)) {
@@ -88,17 +76,11 @@ trait HasOrganizations
         return true;
     }
 
-    /**
-     * Determine if the user belongs to the given organization.
-     */
     public function belongsToOrganization(Organization $organization): bool
     {
         return $this->organizations()->where('organizations.id', $organization->id)->exists();
     }
 
-    /**
-     * Determine if the given organization is the user's current organization.
-     */
     public function isCurrentOrganization(Organization $organization): bool
     {
         return $this->current_organization_id === $organization->id;
@@ -112,9 +94,6 @@ trait HasOrganizations
         return $organization->isOwner($this);
     }
 
-    /**
-     * Get the user's role on the given organization.
-     */
     public function organizationRole(Organization $organization): ?Role
     {
         return $this->relationLoaded('organizationRoles')
@@ -122,9 +101,6 @@ trait HasOrganizations
             : $this->organizationRoles()->wherePivot('organization_id', $organization->id)->first();
     }
 
-    /**
-     * Determine if the user has the given permission on the organization.
-     */
     public function hasOrganizationPermission(Organization $organization, OrganizationPermission $permission): bool
     {
         return $this->organizationRoles()
@@ -161,9 +137,6 @@ trait HasOrganizations
             ->values();
     }
 
-    /**
-     * Get the user's organization as a UserOrganization object.
-     */
     public function toUserOrganization(Organization $organization): UserOrganization
     {
         $role = $this->organizationRole($organization);

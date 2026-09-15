@@ -189,9 +189,6 @@ class Team extends Model
         $this->issues()->update(['team_id' => $teamId]);
     }
 
-    /**
-     * Record team renames.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -201,9 +198,6 @@ class Team extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the route key for the model.
-     */
     public function getRouteKeyName(): string
     {
         return 'slug';

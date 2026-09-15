@@ -18,9 +18,6 @@ use Inertia\Response;
 
 class TeamController extends Controller
 {
-    /**
-     * Display the organization's teams.
-     */
     public function index(Request $request, Organization $currentOrganization): Response
     {
         Gate::authorize('viewAny', [Team::class, $currentOrganization]);
@@ -40,9 +37,6 @@ class TeamController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created team.
-     */
     public function store(SaveTeamRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Team::class, $currentOrganization]);
@@ -54,9 +48,6 @@ class TeamController extends Controller
         return to_route('teams.edit', ['team' => $team->slug]);
     }
 
-    /**
-     * Show the team edit page.
-     */
     public function edit(Request $request, Organization $currentOrganization, Team $team): Response
     {
         Gate::authorize('view', $team);
@@ -95,9 +86,6 @@ class TeamController extends Controller
         ]);
     }
 
-    /**
-     * Switch the user's current team.
-     */
     public function switch(Request $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
         abort_unless($request->user()->switchTeam($team), 403);
@@ -105,9 +93,6 @@ class TeamController extends Controller
         return back();
     }
 
-    /**
-     * Update the specified team.
-     */
     public function update(SaveTeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
         Gate::authorize('update', $team);

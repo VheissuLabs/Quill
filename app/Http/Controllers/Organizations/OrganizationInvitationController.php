@@ -16,9 +16,6 @@ use Inertia\Inertia;
 
 class OrganizationInvitationController extends Controller
 {
-    /**
-     * Store a newly created invitation.
-     */
     public function store(CreateOrganizationInvitationRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [OrganizationInvitation::class, $currentOrganization]);
@@ -38,9 +35,6 @@ class OrganizationInvitationController extends Controller
         return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
     }
 
-    /**
-     * Cancel the specified invitation.
-     */
     public function destroy(Organization $currentOrganization, OrganizationInvitation $invitation): RedirectResponse
     {
         abort_unless($invitation->organization_id === $currentOrganization->id, 404);
@@ -54,9 +48,6 @@ class OrganizationInvitationController extends Controller
         return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
     }
 
-    /**
-     * Accept the invitation.
-     */
     public function accept(RespondToOrganizationInvitationRequest $request, OrganizationInvitation $invitation): RedirectResponse
     {
         $user = $request->user();
@@ -76,9 +67,6 @@ class OrganizationInvitationController extends Controller
         return to_route('dashboard');
     }
 
-    /**
-     * Decline the invitation.
-     */
     public function decline(RespondToOrganizationInvitationRequest $request, OrganizationInvitation $invitation): RedirectResponse
     {
         $invitation->delete();

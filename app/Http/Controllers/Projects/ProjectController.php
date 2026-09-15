@@ -11,6 +11,7 @@ use App\Models\Project;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -48,9 +49,6 @@ class ProjectController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created project.
-     */
     public function store(SaveProjectRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Project::class, $currentOrganization]);
@@ -68,9 +66,6 @@ class ProjectController extends Controller
         return to_route('projects.edit', ['project' => $project->slug]);
     }
 
-    /**
-     * Show the project edit page.
-     */
     public function edit(Organization $currentOrganization, Project $project): Response
     {
         Gate::authorize('update', $project);
@@ -94,9 +89,6 @@ class ProjectController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified project.
-     */
     public function update(SaveProjectRequest $request, Organization $currentOrganization, Project $project): RedirectResponse
     {
         Gate::authorize('update', $project);
@@ -139,9 +131,9 @@ class ProjectController extends Controller
     /**
      * Get the organization's clients as options for a select input.
      *
-     * @return \Illuminate\Support\Collection<int, array{id: int, name: string}>
+     * @return Collection<int, array{id: int, name: string}>
      */
-    private function clientOptions(Organization $organization): \Illuminate\Support\Collection
+    private function clientOptions(Organization $organization): Collection
     {
         return $organization->clients()
             ->orderBy('name')

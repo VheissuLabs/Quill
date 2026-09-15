@@ -10,9 +10,6 @@ enum OrganizationCapability: string
     case Sprints = 'sprints';
     case Workflow = 'workflow';
 
-    /**
-     * Get the module that owns this capability.
-     */
     public function module(): OrganizationModule
     {
         return match ($this) {

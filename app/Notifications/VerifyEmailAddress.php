@@ -31,9 +31,6 @@ class VerifyEmailAddress extends Notification implements ShouldQueue
         return ['mail'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
@@ -48,9 +45,6 @@ class VerifyEmailAddress extends Notification implements ShouldQueue
             ->line(__('If you did not add this address, no further action is required.'));
     }
 
-    /**
-     * Get the signed verification URL for the address.
-     */
     protected function verificationUrl(): string
     {
         return URL::temporarySignedRoute(
