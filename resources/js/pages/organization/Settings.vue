@@ -191,10 +191,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
 
     <div class="flex flex-col gap-10 p-6">
         <!-- Organization Name Section -->
-        <div
-            v-if="permissions.canUpdateOrganization"
-            class="max-w-xl space-y-10"
-        >
+        <div v-if="permissions.canUpdateOrganization" class="space-y-10">
             <Collapsible
                 v-model:open="organizationSettingsOpen"
                 class="space-y-6"
@@ -622,12 +619,12 @@ const updateModule = (field: ModuleField, value: boolean) => {
             </Collapsible>
         </div>
 
-        <div v-else class="max-w-xl space-y-6">
+        <div v-else class="space-y-6">
             <Heading variant="small" :title="organization.name" />
         </div>
 
         <!-- Members Section -->
-        <Collapsible v-model:open="membersOpen" class="max-w-xl space-y-6">
+        <Collapsible v-model:open="membersOpen" class="space-y-6">
             <div class="flex items-start justify-between gap-4">
                 <Heading
                     variant="small"
@@ -758,7 +755,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
         <Collapsible
             v-if="invitations.length > 0"
             v-model:open="invitationsOpen"
-            class="max-w-xl space-y-6"
+            class="space-y-6"
         >
             <div class="flex items-start justify-between gap-4">
                 <Heading
@@ -843,7 +840,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
         <Collapsible
             v-if="permissions.canDeleteOrganization"
             v-model:open="deleteOrganizationOpen"
-            class="max-w-xl space-y-6"
+            class="space-y-6"
         >
             <div class="flex items-start justify-between gap-4">
                 <Heading
