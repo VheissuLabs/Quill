@@ -152,10 +152,13 @@ class RunCommentCommands
             throw ValidationException::withMessages(['body' => __('This request is already tracked as an issue.')]);
         }
 
-        $issue = $this->createIssue->handle($feature->project, $user, [
-            'title' => $feature->title,
-            'description' => $feature->description,
-        ], $feature);
+        $issue = $this->createIssue->handle(
+            project: $feature->project,
+            creator: $user,
+            title: $feature->title,
+            description: $feature->description,
+            feature: $feature,
+        );
 
         return __('Added to the backlog as :reference.', ['reference' => $issue->reference()]);
     }

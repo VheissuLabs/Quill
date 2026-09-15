@@ -20,10 +20,13 @@ class FeatureIssueController extends Controller
 
         abort_if($feature->issue()->exists(), 409, __('This feature has already been converted to an issue.'));
 
-        $issue = $createIssue->handle($project, $request->user(), [
-            'title' => $feature->title,
-            'description' => $feature->description,
-        ], $feature);
+        $issue = $createIssue->handle(
+            project: $project,
+            creator: $request->user(),
+            title: $feature->title,
+            description: $feature->description,
+            feature: $feature,
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Added to the backlog as :reference.', ['reference' => $issue->reference()])]);
 

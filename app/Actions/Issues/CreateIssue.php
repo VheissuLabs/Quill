@@ -9,30 +9,38 @@ use App\Models\Feature;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\Sprint;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class CreateIssue
 {
-    /** @param  array{title: string, description?: string|null, priority?: IssuePriority|null, points?: int|null, team_id?: int|null, sprint_id?: int|null, assignee_id?: int|null}  $attributes */
-    public function handle(Project $project, User $creator, array $attributes, ?Feature $feature = null): Issue
-    {
-        return DB::transaction(function () use ($project, $creator, $attributes, $feature) {
+    public function handle(
+        Project $project,
+        User $creator,
+        string $title,
+        ?string $description = null,
+        IssuePriority $priority = IssuePriority::None,
+        ?int $points = null,
+        ?Team $team = null,
+        ?Sprint $sprint = null,
+        ?User $assignee = null,
+        ?Feature $feature = null,
+    ): Issue {
+        return DB::transaction(function () use ($project, $creator, $title, $description, $priority, $points, $team, $sprint, $assignee, $feature) {
             $project = Project::whereKey($project->id)->lockForUpdate()->firstOrFail();
-
-            $sprint = isset($attributes['sprint_id']) ? Sprint::find($attributes['sprint_id']) : null;
 
             $issue = $project->issues()->create([
                 'number' => ($project->issues()->max('number') ?? 0) + 1,
-                'title' => $attributes['title'],
-                'description' => $attributes['description'] ?? null,
-                'priority' => $attributes['priority'] ?? IssuePriority::None,
-                'points' => $attributes['points'] ?? null,
-                'team_id' => $sprint ? $sprint->teamId() : ($attributes['team_id'] ?? null),
-                'sprint_id' => $sprint?->id,
-                'assignee_id' => $attributes['assignee_id'] ?? null,
-                'feature_id' => $feature?->id,
-                'created_by' => $creator->id,
+                'title' => $title,
+                'description' => $description,
+                'priority' => $priority,
+                'points' => $points,
+                'team_id' => $sprint ? $sprint->teamId() : $team?->getKey(),
+                'sprint_id' => $sprint?->getKey(),
+                'assignee_id' => $assignee?->getKey(),
+                'feature_id' => $feature?->getKey(),
+                'created_by' => $creator->getKey(),
                 'status' => $sprint ? IssueStatus::Todo : IssueStatus::Backlog,
             ]);
 
