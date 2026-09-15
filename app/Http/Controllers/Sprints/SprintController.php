@@ -103,7 +103,7 @@ class SprintController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Sprint updated.')]);
 
-        return to_route('sprints.show', ['sprint' => $sprint]);
+        return back();
     }
 
     /**

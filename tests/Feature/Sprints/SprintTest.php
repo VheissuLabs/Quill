@@ -232,3 +232,49 @@ test('an issue planned into an organization sprint lands on the organization boa
     expect($issue->boardColumn->owner->is($organization))->toBeTrue();
     expect($issue->status)->toBe(IssueStatus::Todo);
 });
+
+test('deleting a sprint returns its issues to the backlog without a column', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, 'Admin');
+    $project = Project::factory()->for($organization)->create();
+
+    $sprint = Sprint::factory()->for($organization, 'owner')->active()->create();
+    $issue = Issue::factory()->for($project)->for($sprint)->create([
+        'board_column_id' => $organization->columns->firstWhere('status', IssueStatus::InProgress)->id,
+        'status' => IssueStatus::InProgress,
+    ]);
+
+    $this
+        ->actingAs($admin)
+        ->delete(route('sprints.destroy', ['current_organization' => $organization, 'sprint' => $sprint]))
+        ->assertRedirect();
+
+    $this->assertModelMissing($sprint);
+
+    $issue->refresh();
+    expect($issue->sprint_id)->toBeNull();
+    expect($issue->board_column_id)->toBeNull();
+    expect($issue->status)->toBe(IssueStatus::Backlog);
+});
+
+test('a sprint can be renamed without touching its dates', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, 'Admin');
+
+    $sprint = Sprint::factory()->for($organization, 'owner')->create(['name' => 'Sprint 2']);
+
+    $this
+        ->actingAs($admin)
+        ->patch(route('sprints.update', ['current_organization' => $organization, 'sprint' => $sprint]), [
+            'name' => 'Hardening',
+            'starts_at' => $sprint->starts_at->toDateString(),
+            'ends_at' => $sprint->ends_at->toDateString(),
+        ])
+        ->assertRedirect();
+
+    expect($sprint->fresh())
+        ->name->toBe('Hardening')
+        ->starts_at->toDateString()->toBe($sprint->starts_at->toDateString());
+});

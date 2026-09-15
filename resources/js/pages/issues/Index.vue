@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ChevronDown, ListTodo, Plus, Timer } from '@lucide/vue';
+import { ChevronDown, ListTodo, Plus, Timer, Trash2 } from '@lucide/vue';
 import { useLocalStorage } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
 import draggable from 'vuedraggable';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import CreateIssueModal from '@/components/CreateIssueModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
@@ -11,6 +12,7 @@ import IssueRow from '@/components/IssueRow.vue';
 import TeamActivityFeed from '@/components/TeamActivityFeed.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -21,7 +23,11 @@ import {
 import { formatDateRange } from '@/lib/dates';
 import { index, update } from '@/routes/issues';
 import { update as updateOrder } from '@/routes/issues/order';
-import { show as showSprint } from '@/routes/sprints';
+import {
+    destroy as destroySprint,
+    show as showSprint,
+    update as updateSprint,
+} from '@/routes/sprints';
 import type {
     IssueActivityEntry,
     IssueFilters,
@@ -101,6 +107,45 @@ const toggleSprint = (sprintId: number) => {
     collapsedSprintIds.value = collapsedSprints.value.has(sprintId)
         ? collapsedSprintIds.value.filter((id) => id !== sprintId)
         : [...collapsedSprintIds.value, sprintId];
+};
+
+const sprintToDelete = ref<IssueSprintOption | null>(null);
+const sprintBeingRenamed = ref<number | null>(null);
+const sprintName = ref('');
+
+const startRenaming = (sprint: IssueSprintOption) => {
+    if (!props.permissions.canManageSprints) {
+        return;
+    }
+
+    sprintName.value = sprint.name;
+    sprintBeingRenamed.value = sprint.id;
+};
+
+const focusRename = (el: unknown) => {
+    const input = (el as { $el?: HTMLInputElement } | null)?.$el;
+
+    input?.focus();
+    input?.select();
+};
+
+/**
+ * The sprint form validates its dates too, so a rename sends them back unchanged.
+ */
+const saveSprintName = (sprint: IssueSprintOption) => {
+    const name = sprintName.value.trim();
+
+    sprintBeingRenamed.value = null;
+
+    if (!name || name === sprint.name) {
+        return;
+    }
+
+    router.patch(
+        updateSprint([props.currentOrganization.slug, sprint.id]),
+        { name, starts_at: sprint.startsAt, ends_at: sprint.endsAt },
+        { preserveScroll: true },
+    );
 };
 
 watch(
@@ -392,7 +437,22 @@ const totalPoints = computed(() =>
                     >
                         <div class="flex items-start justify-between gap-2 p-4">
                             <div class="min-w-0">
+                                <Input
+                                    v-if="sprintBeingRenamed === sprint.id"
+                                    :ref="(el) => focusRename(el)"
+                                    v-model="sprintName"
+                                    class="h-7 text-sm font-medium"
+                                    :data-test="`sprint-rename-${sprint.id}`"
+                                    @keydown.enter.prevent="
+                                        saveSprintName(sprint)
+                                    "
+                                    @keydown.esc.prevent="
+                                        sprintBeingRenamed = null
+                                    "
+                                    @blur="saveSprintName(sprint)"
+                                />
                                 <Link
+                                    v-else
                                     :href="
                                         showSprint([
                                             currentOrganization.slug,
@@ -400,6 +460,12 @@ const totalPoints = computed(() =>
                                         ])
                                     "
                                     class="block truncate text-sm font-medium hover:underline"
+                                    :title="
+                                        permissions.canManageSprints
+                                            ? 'Double click to rename'
+                                            : undefined
+                                    "
+                                    @dblclick.prevent="startRenaming(sprint)"
                                 >
                                     {{ sprint.name }}
                                 </Link>
@@ -442,6 +508,16 @@ const totalPoints = computed(() =>
                                 >
                                     {{ sprint.statusLabel }}
                                 </Badge>
+                                <Button
+                                    v-if="permissions.canManageSprints"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    :data-test="`sprint-delete-${sprint.id}`"
+                                    aria-label="Delete sprint"
+                                    @click="sprintToDelete = sprint"
+                                >
+                                    <Trash2 />
+                                </Button>
                                 <Button
                                     variant="ghost"
                                     size="icon-sm"
@@ -536,4 +612,19 @@ const totalPoints = computed(() =>
             />
         </div>
     </div>
+
+    <ConfirmDeleteModal
+        :open="sprintToDelete !== null"
+        title="Delete sprint"
+        confirm-label="Delete sprint"
+        :href="
+            sprintToDelete
+                ? destroySprint([currentOrganization.slug, sprintToDelete.id])
+                : null
+        "
+        @update:open="sprintToDelete = null"
+    >
+        This will delete <strong>{{ sprintToDelete?.name }}</strong
+        >. Its issues return to the backlog.
+    </ConfirmDeleteModal>
 </template>
