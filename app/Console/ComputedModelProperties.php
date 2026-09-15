@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\IdeHelper;
+namespace App\Console;
 
 use App\Models\BoardColumn;
 use App\Models\Feature;

@@ -1,6 +1,6 @@
 <?php
 
-use App\Support\IdeHelper\ComputedModelProperties;
+use App\Console\ComputedModelProperties;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\PendingRequest;
 
