@@ -102,13 +102,12 @@ const statusLabel = (value: string) =>
                     <template v-if="canManage">
                         <Input
                             v-model="row.draftName"
-                            class="h-8 min-w-32 flex-1"
+                            class="min-w-32 flex-1"
                             data-test="board-column-name"
                             @keydown.enter.prevent="save(row)"
                         />
                         <Select v-model="row.draftStatus">
                             <SelectTrigger
-                                size="sm"
                                 class="w-36"
                                 data-test="board-column-status"
                             >
@@ -126,7 +125,6 @@ const statusLabel = (value: string) =>
                         </Select>
                         <Button
                             v-if="isDirty(row)"
-                            size="sm"
                             data-test="board-column-save"
                             @click="save(row)"
                         >
@@ -134,7 +132,7 @@ const statusLabel = (value: string) =>
                         </Button>
                         <Button
                             variant="ghost"
-                            size="icon-sm"
+                            size="icon"
                             data-test="board-column-delete"
                             aria-label="Remove column"
                             :disabled="rows.length === 1"
@@ -175,7 +173,6 @@ const statusLabel = (value: string) =>
                 <Input
                     id="new-column-name"
                     name="name"
-                    class="h-8"
                     data-test="new-board-column-name"
                     placeholder="In review"
                     required
@@ -185,11 +182,7 @@ const statusLabel = (value: string) =>
             <div class="grid gap-1.5">
                 <Label for="new-column-status" class="text-xs">Counts as</Label>
                 <Select v-model="newStatus" name="status">
-                    <SelectTrigger
-                        id="new-column-status"
-                        size="sm"
-                        class="w-36"
-                    >
+                    <SelectTrigger id="new-column-status" class="w-36">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -205,7 +198,6 @@ const statusLabel = (value: string) =>
             </div>
             <Button
                 type="submit"
-                size="sm"
                 variant="outline"
                 data-test="new-board-column-submit"
                 :disabled="processing"

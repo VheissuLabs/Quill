@@ -312,7 +312,7 @@ const commentCount = computed(() =>
                                 "
                             >
                                 <SelectTrigger
-                                    class="h-8 w-full"
+                                    class="w-full"
                                     data-test="feature-status-select"
                                 >
                                     <SelectValue />
