@@ -440,16 +440,7 @@ const totalPoints = computed(() =>
                                     :icon="ListTodo"
                                     title="No issues here"
                                     description="Nothing matches these filters. Create an issue, or convert a feature request from one of your boards."
-                                >
-                                    <CreateIssueModal
-                                        :organization="currentOrganization.slug"
-                                        :options="options"
-                                    >
-                                        <Button variant="outline"
-                                            ><Plus /> New issue</Button
-                                        >
-                                    </CreateIssueModal>
-                                </EmptyState>
+                                />
                             </template>
                         </draggable>
                     </div>
