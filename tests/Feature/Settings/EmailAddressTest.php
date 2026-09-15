@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\EmailAddress;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
@@ -136,7 +135,7 @@ test('invitations sent to a verified additional address can be accepted', functi
     EmailAddress::factory()->for($user)->verified()->create(['email' => 'karl@example-corp.com']);
 
     $organization = Organization::factory()->create(['name' => 'NotaryDash']);
-    $organization->addMember($owner, OrganizationRole::Owner);
+    $organization->addMember($owner, 'Owner');
 
     $invitation = OrganizationInvitation::factory()->create([
         'organization_id' => $organization->id,
@@ -164,7 +163,7 @@ test('invitations sent to an unverified additional address cannot be accepted', 
     EmailAddress::factory()->for($user)->create(['email' => 'karl@example-corp.com']);
 
     $organization = Organization::factory()->create();
-    $organization->addMember($owner, OrganizationRole::Owner);
+    $organization->addMember($owner, 'Owner');
 
     $invitation = OrganizationInvitation::factory()->create([
         'organization_id' => $organization->id,

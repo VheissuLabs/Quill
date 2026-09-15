@@ -26,7 +26,7 @@ const leaveOrganizationDialogOpen = ref(false);
 const organizationLeaving = ref<Organization | null>(null);
 
 const canLeaveOrganization = (organization: Organization) =>
-    organization.role !== 'owner';
+    !organization.isOwner;
 
 const openLeaveOrganizationDialog = (organization: Organization) => {
     organizationLeaving.value = organization;
@@ -72,14 +72,18 @@ defineOptions({
                 data-test="organization-row"
                 class="flex items-center justify-between gap-4 rounded-lg border p-4"
             >
-                <div class="flex items-center gap-4">
-                    <div>
-                        <div class="font-medium">{{ organization.name }}</div>
-                        <span class="text-muted-foreground text-sm">
-                            {{ organization.roleLabel }}
-                        </span>
+                <Link
+                    :href="edit(organization.slug)"
+                    class="focus-visible:ring-ring/50 min-w-0 flex-1 rounded-md outline-none focus-visible:ring-[3px]"
+                    data-test="organization-link"
+                >
+                    <div class="font-medium hover:underline">
+                        {{ organization.name }}
                     </div>
-                </div>
+                    <span class="text-muted-foreground text-sm">
+                        {{ organization.role }}
+                    </span>
+                </Link>
 
                 <TooltipProvider>
                     <div class="flex items-center gap-2">
@@ -103,7 +107,7 @@ defineOptions({
                             </TooltipContent>
                         </Tooltip>
 
-                        <Tooltip v-if="organization.role === 'member'">
+                        <Tooltip v-if="!organization.canUpdate">
                             <TooltipTrigger as-child>
                                 <Button
                                     data-test="organization-view-button"

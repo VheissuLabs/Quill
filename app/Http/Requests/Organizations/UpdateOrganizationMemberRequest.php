@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Organizations;
 
-use App\Enums\OrganizationRole;
+use App\Models\Organization;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,8 +16,12 @@ class UpdateOrganizationMemberRequest extends FormRequest
      */
     public function rules(): array
     {
+        $organization = $this->route('organization');
+
+        abort_if(! $organization instanceof Organization, 404);
+
         return [
-            'role' => ['required', 'string', Rule::in(array_column(OrganizationRole::assignable(), 'value'))],
+            'role_id' => ['required', 'integer', Rule::exists('roles', 'id')->where('organization_id', $organization->id)],
         ];
     }
 }

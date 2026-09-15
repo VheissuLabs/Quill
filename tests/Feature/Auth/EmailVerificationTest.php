@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
@@ -93,5 +94,23 @@ test('already verified user visiting verification link is redirected without fir
         ->assertRedirect("/{$organization->slug}/dashboard?verified=1");
 
     Event::assertNotDispatched(Verified::class);
+    expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
+});
+
+test('verifying an email returns a portal visitor without an organization to the board they were reading', function () {
+    $user = User::factory()->unverified()->create();
+    $project = Project::factory()->public()->create();
+    $board = route('portal.projects.show', [$project->organization, $project]);
+
+    $this->actingAs($user)->get($board)->assertOk();
+
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        ['id' => $user->id, 'hash' => sha1($user->email)],
+    );
+
+    $this->actingAs($user)->get($verificationUrl)->assertRedirect($board.'?verified=1');
+
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
 });

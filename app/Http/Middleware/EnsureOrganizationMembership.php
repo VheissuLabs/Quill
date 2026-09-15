@@ -2,9 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
-use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,13 +14,11 @@ class EnsureOrganizationMembership
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next, ?string $minimumRole = null): Response
+    public function handle(Request $request, Closure $next): Response
     {
         [$user, $organization] = [$request->user(), $this->organization($request)];
 
         abort_if(! $user || ! $organization || ! $user->belongsToOrganization($organization), 403);
-
-        $this->ensureOrganizationMemberHasRequiredRole($user, $organization, $minimumRole);
 
         setPermissionsTeamId($organization->id);
 
@@ -31,27 +27,6 @@ class EnsureOrganizationMembership
         }
 
         return $next($request);
-    }
-
-    /**
-     * Ensure the given user has at least the given role, if applicable.
-     */
-    protected function ensureOrganizationMemberHasRequiredRole(User $user, Organization $organization, ?string $minimumRole): void
-    {
-        if ($minimumRole === null) {
-            return;
-        }
-
-        $role = $user->organizationRole($organization);
-
-        $requiredRole = OrganizationRole::tryFrom($minimumRole);
-
-        abort_if(
-            $requiredRole === null ||
-            $role === null ||
-            ! $role->isAtLeast($requiredRole),
-            403,
-        );
     }
 
     /**

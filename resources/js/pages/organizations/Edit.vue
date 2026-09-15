@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, router } from '@inertiajs/vue3';
-import { ChevronDown, Mail, UserPlus, X } from '@lucide/vue';
+import { ChevronDown, Mail, Pencil, Trash2, UserPlus, X } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import CancelInvitationModal from '@/components/CancelInvitationModal.vue';
 import DeleteOrganizationModal from '@/components/DeleteOrganizationModal.vue';
@@ -42,6 +42,7 @@ type Props = {
     invitations: OrganizationInvitation[];
     permissions: OrganizationPermissions;
     availableRoles: RoleOption[];
+    memberRoles: RoleOption[];
 };
 
 const props = defineProps<Props>();
@@ -76,9 +77,9 @@ const pageTitle = computed(() =>
         : `View ${props.organization.name}`,
 );
 
-const updateMemberRole = (member: OrganizationMember, newRole: string) => {
+const updateMemberRole = (member: OrganizationMember, roleId: number) => {
     router.visit(updateMember([props.organization.slug, member.id]), {
-        data: { role: newRole },
+        data: { role_id: roleId },
         preserveScroll: true,
     });
 };
@@ -192,19 +193,14 @@ const confirmCancelInvitation = (invitation: OrganizationInvitation) => {
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <DropdownMenu
-                            v-if="
-                                member.role !== 'owner' &&
-                                permissions.canUpdateMember
-                            "
-                        >
+                        <DropdownMenu v-if="member.canUpdate">
                             <DropdownMenuTrigger as-child>
                                 <Button
                                     data-test="member-role-trigger"
                                     variant="outline"
                                     size="sm"
                                 >
-                                    {{ member.role_label }}
+                                    {{ member.role }}
                                     <ChevronDown
                                         class="ml-2 h-4 w-4 opacity-50"
                                     />
@@ -212,7 +208,7 @@ const confirmCancelInvitation = (invitation: OrganizationInvitation) => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                                 <DropdownMenuItem
-                                    v-for="role in availableRoles"
+                                    v-for="role in memberRoles"
                                     :key="role.value"
                                     data-test="member-role-option"
                                     @click="
@@ -224,15 +220,10 @@ const confirmCancelInvitation = (invitation: OrganizationInvitation) => {
                             </DropdownMenuContent>
                         </DropdownMenu>
                         <Badge v-else variant="secondary">
-                            {{ member.role_label }}
+                            {{ member.role }}
                         </Badge>
 
-                        <TooltipProvider
-                            v-if="
-                                member.role !== 'owner' &&
-                                permissions.canRemoveMember
-                            "
-                        >
+                        <TooltipProvider v-if="member.canRemove">
                             <Tooltip>
                                 <TooltipTrigger as-child>
                                     <Button
@@ -280,7 +271,7 @@ const confirmCancelInvitation = (invitation: OrganizationInvitation) => {
                                 {{ invitation.email }}
                             </div>
                             <div class="text-muted-foreground text-sm">
-                                {{ invitation.role_label }}
+                                {{ invitation.role }}
                             </div>
                         </div>
                     </div>

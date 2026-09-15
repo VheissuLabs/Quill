@@ -1,11 +1,11 @@
-export type OrganizationRole = 'owner' | 'admin' | 'member';
-
 export type Organization = {
     id: number;
     name: string;
     slug: string;
-    role?: OrganizationRole;
-    roleLabel?: string;
+    role?: string | null;
+    isOwner?: boolean;
+    canUpdate?: boolean;
+    canManageRoles?: boolean;
     isCurrent?: boolean;
 };
 
@@ -14,15 +14,16 @@ export type OrganizationMember = {
     name: string;
     email: string;
     avatar?: string | null;
-    role: OrganizationRole;
-    role_label: string;
+    role: string | null;
+    isOwner: boolean;
+    canUpdate: boolean;
+    canRemove: boolean;
 };
 
 export type OrganizationInvitation = {
     code: string;
     email: string;
-    role: OrganizationRole;
-    role_label: string;
+    role: string;
     created_at: string;
 };
 
@@ -55,9 +56,32 @@ export type OrganizationPermissions = {
     canManageIssues: boolean;
     canManageSprints: boolean;
     canViewActivity: boolean;
+    canManageRoles: boolean;
 };
 
 export type RoleOption = {
-    value: OrganizationRole;
+    value: number;
     label: string;
+};
+
+export type OrganizationRoleItem = {
+    id: number;
+    name: string;
+    isOwner: boolean;
+    permissions: string[];
+    membersCount: number;
+    members: { id: number; name: string; email: string }[];
+};
+
+export type RoleCandidate = {
+    id: number;
+    name: string;
+    email: string;
+    role: string | null;
+};
+
+export type PermissionOption = {
+    value: string;
+    label: string;
+    group: string;
 };

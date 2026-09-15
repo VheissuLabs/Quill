@@ -15,8 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A feature request submitted to a project's board.
@@ -81,6 +81,15 @@ class Feature extends Model
      *
      * @param  Builder<$this>  $query
      */
+    /**
+     * Only requests that are still in play: completed and declined ones leave the board.
+     */
+    #[Scope]
+    protected function active(Builder $query): void
+    {
+        $query->whereIn('status', FeatureStatus::active());
+    }
+
     #[Scope]
     protected function withVoteSummary(Builder $query, ?User $viewer): void
     {

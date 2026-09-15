@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('code', 64)->unique();
             $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
             $table->string('email');
-            $table->string('role');
+            $table->foreignId('role_id')->constrained('roles')->cascadeOnDelete();
             $table->foreignId('invited_by')->constrained('users')->cascadeOnDelete();
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('accepted_at')->nullable();

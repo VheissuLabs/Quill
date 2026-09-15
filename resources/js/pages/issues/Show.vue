@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ChevronDown, ChevronUp, Lightbulb, Pencil, Trash2 } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import ActivityFeed from '@/components/ActivityFeed.vue';
-import CommentBody from '@/components/CommentBody.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import FeatureStatusBadge from '@/components/FeatureStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/dates';
 import { Input } from '@/components/ui/input';
@@ -22,9 +20,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useInitials } from '@/composables/useInitials';
 import { destroy, index, show, update } from '@/routes/issues';
 import { show as showFeature } from '@/routes/portal/features';
+import { pointOptions } from '@/lib/points';
 import { show as showSprint } from '@/routes/sprints';
 import type {
     ActivityEntry,
@@ -62,8 +60,6 @@ defineOptions({
         ],
     }),
 });
-
-const { getInitials } = useInitials();
 
 const none = 'none';
 const editing = ref(false);
@@ -130,23 +126,6 @@ const changeStage = (value: string) => {
     const [kind, id] = value.split(':');
 
     patch(kind === 'column' ? { board_column_id: Number(id) } : { status: id });
-};
-
-const points = ref(
-    props.issue.points === null ? '' : String(props.issue.points),
-);
-
-watch(
-    () => props.issue.points,
-    (value) => (points.value = value === null ? '' : String(value)),
-);
-
-const savePoints = () => {
-    const value = points.value === '' ? null : Number(points.value);
-
-    if (value !== props.issue.points) {
-        patch({ points: value });
-    }
 };
 
 const sprintsForTeam = computed(() =>
@@ -311,82 +290,6 @@ const currentSprint = computed(() =>
                             />
                         </div>
                     </div>
-
-                    <ol
-                        v-if="feature.comments.length > 0"
-                        class="mt-5 space-y-4 border-t pt-5"
-                    >
-                        <li
-                            v-for="comment in feature.comments"
-                            :key="comment.id"
-                            class="space-y-3"
-                        >
-                            <div class="flex gap-3">
-                                <Avatar class="size-7 shrink-0">
-                                    <AvatarFallback class="text-[10px]">
-                                        {{
-                                            getInitials(
-                                                comment.authorName ?? '?',
-                                            )
-                                        }}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div class="min-w-0 space-y-0.5">
-                                    <p class="text-xs">
-                                        <span class="font-medium">
-                                            {{
-                                                comment.authorName ??
-                                                'Deleted user'
-                                            }}
-                                        </span>
-                                        <span class="text-muted-foreground">
-                                            ·
-                                            {{ formatDate(comment.createdAt) }}
-                                        </span>
-                                        <span
-                                            v-if="comment.isInternal"
-                                            class="text-muted-foreground ml-1"
-                                        >
-                                            · Internal
-                                        </span>
-                                    </p>
-                                    <CommentBody
-                                        :body="comment.body"
-                                        :mentions="comment.mentions"
-                                    />
-                                </div>
-                            </div>
-                            <ol
-                                v-if="comment.replies.length > 0"
-                                class="ml-10 space-y-3 border-l pl-3"
-                            >
-                                <li
-                                    v-for="reply in comment.replies"
-                                    :key="reply.id"
-                                    class="space-y-0.5"
-                                >
-                                    <p class="text-xs">
-                                        <span class="font-medium">
-                                            {{
-                                                reply.authorName ??
-                                                'Deleted user'
-                                            }}
-                                        </span>
-                                        <span class="text-muted-foreground">
-                                            · {{ formatDate(reply.createdAt) }}
-                                        </span>
-                                    </p>
-                                    <CommentBody
-                                        :body="reply.body"
-                                        :mentions="reply.mentions"
-                                    />
-                                </li>
-                            </ol>
-                        </li>
-                    </ol>
-                    <p v-else class="text-muted-foreground mt-4 text-sm">
-                        No discussion on the request yet.
-                    </p>
                 </div>
             </section>
         </div>
@@ -401,10 +304,8 @@ const currentSprint = computed(() =>
                     </dt>
                     <dd>
                         <Select
-                            :model-value="issue.status"
-                            @update:model-value="
-                                patch({ status: String($event) })
-                            "
+                            :model-value="currentStage"
+                            @update:model-value="changeStage(String($event))"
                         >
                             <SelectTrigger
                                 class="h-8 w-full"
@@ -414,11 +315,11 @@ const currentSprint = computed(() =>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem
-                                    v-for="status in statuses"
-                                    :key="status.value"
-                                    :value="status.value"
+                                    v-for="option in stageOptions"
+                                    :key="option.value"
+                                    :value="option.value"
                                 >
-                                    {{ status.label }}
+                                    {{ option.label }}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -461,16 +362,35 @@ const currentSprint = computed(() =>
                         Points
                     </dt>
                     <dd>
-                        <Input
-                            v-model="points"
-                            type="number"
-                            min="0"
-                            class="h-8"
-                            data-test="issue-points-input"
-                            placeholder="Estimate"
-                            @blur="savePoints"
-                            @keydown.enter.prevent="savePoints"
-                        />
+                        <Select
+                            :model-value="
+                                issue.points === null
+                                    ? none
+                                    : String(issue.points)
+                            "
+                            @update:model-value="
+                                patch({ points: toId(String($event)) })
+                            "
+                        >
+                            <SelectTrigger
+                                class="h-8 w-full"
+                                data-test="issue-points-select"
+                            >
+                                <SelectValue placeholder="Estimate" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem :value="none"
+                                    >No estimate</SelectItem
+                                >
+                                <SelectItem
+                                    v-for="option in pointOptions(issue.points)"
+                                    :key="option.value"
+                                    :value="option.value"
+                                >
+                                    {{ option.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
                     </dd>
                 </div>
 
@@ -564,13 +484,15 @@ const currentSprint = computed(() =>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem :value="none">Backlog</SelectItem>
+                                <SelectItem :value="none"
+                                    >Not planned</SelectItem
+                                >
                                 <SelectItem
                                     v-for="sprint in sprintsForTeam"
                                     :key="sprint.id"
                                     :value="String(sprint.id)"
                                 >
-                                    {{ sprint.name }} · {{ sprint.teamName }}
+                                    {{ sprint.name }}
                                 </SelectItem>
                             </SelectContent>
                         </Select>

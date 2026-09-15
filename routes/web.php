@@ -2,16 +2,18 @@
 
 use App\Http\Controllers\Clients\ClientController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Issues\IssueController;
+use App\Http\Controllers\Issues\IssueOrderController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Organizations\OrganizationInvitationController;
+use App\Http\Controllers\Organizations\OrganizationRoleController;
 use App\Http\Controllers\Portal\CommentController;
 use App\Http\Controllers\Portal\FeatureController;
 use App\Http\Controllers\Portal\FeatureIssueController;
 use App\Http\Controllers\Portal\FeatureStatusController;
 use App\Http\Controllers\Portal\FeatureVoteController;
 use App\Http\Controllers\Portal\ProjectController as PortalProjectController;
-use App\Http\Controllers\Issues\IssueController;
-use App\Http\Controllers\Issues\IssueOrderController;
 use App\Http\Controllers\Projects\ProjectController;
 use App\Http\Controllers\Sprints\SprintColumnController;
 use App\Http\Controllers\Sprints\SprintController;
@@ -21,16 +23,19 @@ use App\Http\Controllers\Teams\BoardColumnOrderController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Teams\TeamMemberController;
 use App\Http\Middleware\EnsureOrganizationMembership;
+use App\Http\Middleware\RememberPortalPage;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', HomeController::class)->name('home');
 
 Route::prefix('portal/{organization}/{project}')
     ->scopeBindings()
     ->name('portal.')
     ->group(function () {
-        Route::get('/', [PortalProjectController::class, 'show'])->name('projects.show');
-        Route::get('features/{feature}', [FeatureController::class, 'show'])->name('features.show');
+        Route::middleware(RememberPortalPage::class)->group(function () {
+            Route::get('/', [PortalProjectController::class, 'show'])->name('projects.show');
+            Route::get('features/{feature}', [FeatureController::class, 'show'])->name('features.show');
+        });
 
         Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('features', [FeatureController::class, 'store'])->name('features.store');
@@ -54,6 +59,8 @@ Route::prefix('{current_organization}')
         Route::resource('projects', ProjectController::class)->except(['create', 'show']);
         Route::resource('clients', ClientController::class)->except(['create', 'show']);
         Route::resource('teams', TeamController::class)->except(['create', 'show']);
+        Route::get('roles', [OrganizationRoleController::class, 'index'])->name('roles.index');
+        Route::get('roles/{role}', [OrganizationRoleController::class, 'show'])->name('roles.show');
         Route::put('issues/order', [IssueOrderController::class, 'update'])->name('issues.order.update');
         Route::resource('issues', IssueController::class)->except(['create', 'edit']);
         Route::resource('sprints', SprintController::class)->except(['create', 'edit']);

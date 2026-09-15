@@ -1,11 +1,8 @@
+import type { LinkedIssue } from './issues';
 import type { ProjectVisibility } from './projects';
 
 export type FeatureStatus =
-    | 'open'
-    | 'planned'
-    | 'in_progress'
-    | 'completed'
-    | 'declined';
+    'open' | 'planned' | 'in_progress' | 'completed' | 'declined';
 
 export type PortalOrganization = {
     name: string;
@@ -27,6 +24,7 @@ export type FeatureSummary = {
     description: string | null;
     status: FeatureStatus;
     statusLabel: string;
+    acceptsVotes: boolean;
     votesCount: number;
     downvotesCount: number;
     score: number;
@@ -34,6 +32,7 @@ export type FeatureSummary = {
     vote: VoteDirection | null;
     authorName: string | null;
     createdAt: string;
+    issue: LinkedIssue | null;
 };
 
 export type CommentCommand = {

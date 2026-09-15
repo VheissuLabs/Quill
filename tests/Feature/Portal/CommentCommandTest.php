@@ -1,11 +1,11 @@
 <?php
 
 use App\Enums\FeatureStatus;
-use App\Enums\OrganizationRole;
 use App\Models\Feature;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 test('/for, /against and /withdraw manage the vote and text after the command is the comment', function () {
     $user = User::factory()->create();
@@ -36,9 +36,9 @@ test('/status changes the status for admins and the remaining text is posted as 
     $project = Project::factory()->public()->create();
     $feature = Feature::factory()->for($project)->create(['status' => FeatureStatus::Open]);
     $admin = User::factory()->create();
-    $project->organization->addMember($admin, OrganizationRole::Admin);
+    $project->organization->addMember($admin, 'Admin');
     $member = User::factory()->create();
-    $project->organization->addMember($member, OrganizationRole::Member);
+    $project->organization->addMember($member, 'Member');
     $url = route('portal.features.comments.store', [$project->organization, $project, $feature]);
 
     $this->actingAs($admin)
@@ -61,7 +61,7 @@ test('/convert creates a backlog issue and /internal posts an internal note', fu
     $project = Project::factory()->public()->create();
     $feature = Feature::factory()->for($project)->create();
     $admin = User::factory()->create();
-    $project->organization->addMember($admin, OrganizationRole::Admin);
+    $project->organization->addMember($admin, 'Admin');
     $url = route('portal.features.comments.store', [$project->organization, $project, $feature]);
 
     $this->actingAs($admin)
@@ -80,7 +80,7 @@ test('unknown commands are rejected and the available commands follow the viewer
     $feature = Feature::factory()->for($project)->create();
     $user = User::factory()->create();
     $admin = User::factory()->create();
-    $project->organization->addMember($admin, OrganizationRole::Admin);
+    $project->organization->addMember($admin, 'Admin');
 
     $this->actingAs($user)
         ->post(route('portal.features.comments.store', [$project->organization, $project, $feature]), ['body' => '/explode'])
@@ -88,11 +88,11 @@ test('unknown commands are rejected and the available commands follow the viewer
 
     $this->actingAs($user)
         ->get(route('portal.features.show', [$project->organization, $project, $feature]))
-        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('commands', fn ($commands) => collect($commands)->pluck('name')->all() === ['for', 'against', 'withdraw']));
 
     $this->actingAs($admin)
         ->get(route('portal.features.show', [$project->organization, $project, $feature]))
-        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('commands', fn ($commands) => collect($commands)->pluck('name')->all() === ['for', 'against', 'withdraw', 'internal', 'status', 'convert']));
 });

@@ -5,6 +5,7 @@ import {
     FolderKanban,
     LayoutGrid,
     ListTodo,
+    ShieldCheck,
     Timer,
     Users,
 } from '@lucide/vue';
@@ -29,6 +30,7 @@ import { index as clients } from '@/routes/clients';
 import { index as issues } from '@/routes/issues';
 import { index as organizations } from '@/routes/organizations';
 import { index as projects } from '@/routes/projects';
+import { index as roles } from '@/routes/roles';
 import { index as sprints } from '@/routes/sprints';
 import { index as teams } from '@/routes/teams';
 import type { NavItem } from '@/types';
@@ -82,6 +84,15 @@ const navGroups = computed<NavGroup[]>(() => {
                 items: [
                     { title: 'Clients', href: clients(slug), icon: Briefcase },
                     { title: 'Teams', href: teams(slug), icon: Users },
+                    ...(page.props.currentOrganization?.canManageRoles
+                        ? [
+                              {
+                                  title: 'Roles',
+                                  href: roles(slug),
+                                  icon: ShieldCheck,
+                              },
+                          ]
+                        : []),
                 ],
             },
         );

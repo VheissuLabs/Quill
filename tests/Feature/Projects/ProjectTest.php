@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Enums\ProjectVisibility;
 use App\Models\Client;
 use App\Models\Organization;
@@ -12,7 +11,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 test('the projects index lists the organization projects the user may see', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
 
     $visible = Project::factory()->for($organization)->create(['name' => 'Visible']);
     $restricted = Project::factory()->for($organization)->create(['name' => 'Restricted']);
@@ -35,7 +34,7 @@ test('the projects index lists the organization projects the user may see', func
 test('projects can be created by admins', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $client = Client::factory()->for($organization)->create();
     $team = Team::factory()->for($organization)->create();
 
@@ -63,7 +62,7 @@ test('projects can be created by admins', function () {
 test('public projects are never restricted to teams', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $team = Team::factory()->for($organization)->create();
 
     $this
@@ -80,7 +79,7 @@ test('public projects are never restricted to teams', function () {
 test('projects cannot be created by members', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
 
     $response = $this
         ->actingAs($member)
@@ -95,7 +94,7 @@ test('projects cannot be created by members', function () {
 test('project creation rejects clients and teams from another organization', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $foreignClient = Client::factory()->create();
     $foreignTeam = Team::factory()->create();
 
@@ -114,7 +113,7 @@ test('project creation rejects clients and teams from another organization', fun
 test('projects can be updated by admins', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $project = Project::factory()->for($organization)->create(['name' => 'Old Name']);
 
     $response = $this
@@ -135,7 +134,7 @@ test('projects can be updated by admins', function () {
 test('projects of another organization cannot be reached through the current organization', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $foreignProject = Project::factory()->create();
 
     $response = $this
@@ -148,7 +147,7 @@ test('projects of another organization cannot be reached through the current org
 test('projects can be deleted by admins', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $project = Project::factory()->for($organization)->create();
 
     $response = $this

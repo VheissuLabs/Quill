@@ -25,6 +25,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { store } from '@/routes/issues';
 import type { IssueFormOptions } from '@/types';
+import { pointOptions } from '@/lib/points';
 
 type Props = {
     organization: string;
@@ -48,7 +49,7 @@ const form = useForm({
     title: '',
     description: '',
     priority: 'none',
-    points: '',
+    points: none,
     sprint_id: props.defaultSprintId ? String(props.defaultSprintId) : none,
     assignee_id: none,
 });
@@ -76,7 +77,7 @@ const submit = () => {
     form.transform((data) => ({
         ...data,
         project_id: Number(data.project_id),
-        points: data.points === '' ? null : Number(data.points),
+        points: data.points === none ? null : Number(data.points),
         team_id: currentTeamId.value,
         sprint_id: data.sprint_id === none ? null : Number(data.sprint_id),
         assignee_id:
@@ -173,14 +174,27 @@ const submit = () => {
 
                         <div class="grid gap-2">
                             <Label for="issue-points">Points</Label>
-                            <Input
-                                id="issue-points"
-                                v-model="form.points"
-                                type="number"
-                                min="0"
-                                data-test="create-issue-points"
-                                placeholder="Estimate"
-                            />
+                            <Select v-model="form.points">
+                                <SelectTrigger
+                                    id="issue-points"
+                                    class="w-full"
+                                    data-test="create-issue-points"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem :value="none">
+                                        No estimate
+                                    </SelectItem>
+                                    <SelectItem
+                                        v-for="option in pointOptions(null)"
+                                        :key="option.value"
+                                        :value="option.value"
+                                    >
+                                        {{ option.label }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                             <InputError :message="form.errors.points" />
                         </div>
 

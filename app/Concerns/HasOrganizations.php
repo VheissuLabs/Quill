@@ -5,7 +5,6 @@ namespace App\Concerns;
 use App\Data\OrganizationPermissions;
 use App\Data\UserOrganization;
 use App\Enums\OrganizationPermission;
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,7 +36,7 @@ trait HasOrganizations
     public function ownedOrganizations(): BelongsToMany
     {
         return $this->organizations()
-            ->whereIn('organizations.id', $this->organizationIdsWithRole(OrganizationRole::Owner));
+            ->whereIn('organizations.id', $this->organizationRoles()->where('is_owner', true)->pluck('model_has_roles.organization_id'));
     }
 
     /**
@@ -106,23 +105,21 @@ trait HasOrganizations
     }
 
     /**
-     * Determine if the user is the owner of the given organization.
+     * Determine if the user holds the locked owner role in the given organization.
      */
     public function ownsOrganization(Organization $organization): bool
     {
-        return $this->organizationRole($organization) === OrganizationRole::Owner;
+        return $organization->isOwner($this);
     }
 
     /**
      * Get the user's role on the given organization.
      */
-    public function organizationRole(Organization $organization): ?OrganizationRole
+    public function organizationRole(Organization $organization): ?Role
     {
-        $role = $this->relationLoaded('organizationRoles')
+        return $this->relationLoaded('organizationRoles')
             ? $this->organizationRoles->firstWhere('pivot.organization_id', $organization->id)
             : $this->organizationRoles()->wherePivot('organization_id', $organization->id)->first();
-
-        return $role ? OrganizationRole::from($role->name) : null;
     }
 
     /**
@@ -145,18 +142,6 @@ trait HasOrganizations
     {
         return $this->organizationRoles()
             ->whereHas('permissions', fn ($query) => $query->where('name', $permission->value))
-            ->pluck('model_has_roles.organization_id');
-    }
-
-    /**
-     * Get the IDs of the organizations in which the user holds the given role.
-     *
-     * @return Collection<int, int>
-     */
-    public function organizationIdsWithRole(OrganizationRole $role): Collection
-    {
-        return $this->organizationRoles()
-            ->where('name', $role->value)
             ->pluck('model_has_roles.organization_id');
     }
 
@@ -187,8 +172,10 @@ trait HasOrganizations
             id: $organization->id,
             name: $organization->name,
             slug: $organization->slug,
-            role: $role?->value,
-            roleLabel: $role?->label(),
+            role: $role?->name,
+            isOwner: (bool) $role?->is_owner,
+            canUpdate: $this->hasOrganizationPermission($organization, OrganizationPermission::UpdateOrganization),
+            canManageRoles: $this->hasOrganizationPermission($organization, OrganizationPermission::ManageRoles),
             isCurrent: $this->isCurrentOrganization($organization),
         );
     }
@@ -220,6 +207,7 @@ trait HasOrganizations
             canManageIssues: $granted->contains(OrganizationPermission::ManageIssues),
             canManageSprints: $granted->contains(OrganizationPermission::ManageSprints),
             canViewActivity: $granted->contains(OrganizationPermission::ViewActivity),
+            canManageRoles: $granted->contains(OrganizationPermission::ManageRoles),
         );
     }
 

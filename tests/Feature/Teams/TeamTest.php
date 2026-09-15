@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\Team;
 use App\Models\User;
@@ -9,7 +8,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 test('teams can be created by admins', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
 
     $response = $this
         ->actingAs($admin)
@@ -27,7 +26,7 @@ test('teams can be created by admins', function () {
 test('teams cannot be created by members', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
 
     $response = $this
         ->actingAs($member)
@@ -42,8 +41,8 @@ test('the team edit page lists members and organization members who can be added
     $admin = User::factory()->create();
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($admin, 'Admin');
+    $organization->addMember($member, 'Member');
     $team = Team::factory()->for($organization)->create();
     $team->members()->attach($member);
 
@@ -66,8 +65,8 @@ test('organization members can be added to a team', function () {
     $admin = User::factory()->create();
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($admin, 'Admin');
+    $organization->addMember($member, 'Member');
     $team = Team::factory()->for($organization)->create();
 
     $response = $this
@@ -85,7 +84,7 @@ test('users outside the organization cannot be added to a team', function () {
     $admin = User::factory()->create();
     $outsider = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $team = Team::factory()->for($organization)->create();
 
     $response = $this
@@ -103,8 +102,8 @@ test('team members can be removed', function () {
     $admin = User::factory()->create();
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($admin, 'Admin');
+    $organization->addMember($member, 'Member');
     $team = Team::factory()->for($organization)->create();
     $team->members()->attach($member);
 
@@ -120,7 +119,7 @@ test('team members can be removed', function () {
 test('teams can be deleted by admins', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $team = Team::factory()->for($organization)->create();
 
     $response = $this

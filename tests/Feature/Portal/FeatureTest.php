@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\FeatureStatus;
-use App\Enums\OrganizationRole;
+use App\Enums\VoteDirection;
 use App\Models\Comment;
 use App\Models\Feature;
 use App\Models\Project;
@@ -28,6 +28,8 @@ test('signed in users can request features on public boards', function () {
     expect($feature)
         ->user_id->toBe($user->id)
         ->status->toBe(FeatureStatus::Open);
+
+    expect($feature->votes()->where('user_id', $user->id)->value('direction'))->toBe(1);
 });
 
 test('guests cannot request features', function () {
@@ -136,6 +138,30 @@ test('voting is one vote per user, can switch direction, and can be withdrawn', 
     expect($feature->votes()->count())->toBe(0);
 });
 
+test('completed and declined features no longer accept votes', function (FeatureStatus $status) {
+    $user = User::factory()->create();
+    $project = Project::factory()->public()->create();
+    $feature = Feature::factory()->for($project)->create(['status' => $status]);
+    $feature->castVote($user, VoteDirection::Up);
+
+    $this->actingAs($user)
+        ->post(route('portal.features.vote.store', [$project->organization, $project, $feature]), ['direction' => 'down'])
+        ->assertForbidden();
+
+    $this->actingAs($user)
+        ->delete(route('portal.features.vote.destroy', [$project->organization, $project, $feature]))
+        ->assertForbidden();
+
+    expect($feature->votes()->value('direction'))->toBe(1);
+
+    $this->actingAs($user)
+        ->get(route('portal.features.show', [$project->organization, $project, $feature]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('feature.acceptsVotes', false)
+            ->where('viewer.canVote', false),
+        );
+})->with([FeatureStatus::Completed, FeatureStatus::Declined]);
+
 test('users outside the organization cannot vote on private boards', function () {
     $outsider = User::factory()->create();
     $project = Project::factory()->create();
@@ -153,10 +179,10 @@ test('admins can change a feature status but members cannot', function () {
     $feature = Feature::factory()->for($project)->create();
 
     $admin = User::factory()->create();
-    $project->organization->addMember($admin, OrganizationRole::Admin);
+    $project->organization->addMember($admin, 'Admin');
 
     $member = User::factory()->create();
-    $project->organization->addMember($member, OrganizationRole::Member);
+    $project->organization->addMember($member, 'Member');
 
     $this->actingAs($member)
         ->patch(route('portal.features.status.update', [$project->organization, $project, $feature]), ['status' => FeatureStatus::Planned->value])
@@ -173,7 +199,7 @@ test('admins can delete any feature', function () {
     $project = Project::factory()->public()->create();
     $feature = Feature::factory()->for($project)->create();
     $admin = User::factory()->create();
-    $project->organization->addMember($admin, OrganizationRole::Admin);
+    $project->organization->addMember($admin, 'Admin');
 
     $response = $this
         ->actingAs($admin)
@@ -223,7 +249,7 @@ test('internal comments are only shown to organization members', function () {
     Comment::factory()->for($feature)->create(['body' => 'Public note']);
     Comment::factory()->for($feature)->internal()->create(['body' => 'Internal note']);
     $member = User::factory()->create();
-    $project->organization->addMember($member, OrganizationRole::Member);
+    $project->organization->addMember($member, 'Member');
 
     $this->get(route('portal.features.show', [$project->organization, $project, $feature]))
         ->assertInertia(fn (Assert $page) => $page
@@ -246,7 +272,7 @@ test('only organization members can leave internal comments', function () {
     $feature = Feature::factory()->for($project)->create();
     $outsider = User::factory()->create();
     $member = User::factory()->create();
-    $project->organization->addMember($member, OrganizationRole::Member);
+    $project->organization->addMember($member, 'Member');
 
     $this->actingAs($outsider)
         ->post(route('portal.features.comments.store', [$project->organization, $project, $feature]), ['body' => 'Sneaky', 'internal' => true])
@@ -263,7 +289,7 @@ test('comments can be replied to and replies to internal comments stay internal'
     $project = Project::factory()->public()->create();
     $feature = Feature::factory()->for($project)->create();
     $member = User::factory()->create();
-    $project->organization->addMember($member, OrganizationRole::Member);
+    $project->organization->addMember($member, 'Member');
     $public = Comment::factory()->for($feature)->create(['body' => 'Public thread']);
     $internal = Comment::factory()->for($feature)->internal()->create(['body' => 'Internal thread']);
 
@@ -309,7 +335,7 @@ test('mentioned people are stored and notified, and only involved people can be 
     $requester = User::factory()->create(['name' => 'Ada Lovelace']);
     $feature = Feature::factory()->for($project)->for($requester, 'author')->create();
     $member = User::factory()->create(['name' => 'Grace Hopper']);
-    $project->organization->addMember($member, OrganizationRole::Member);
+    $project->organization->addMember($member, 'Member');
     $stranger = User::factory()->create();
     $commenter = User::factory()->create();
 

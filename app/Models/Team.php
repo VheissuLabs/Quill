@@ -4,8 +4,10 @@ namespace App\Models;
 
 use App\Concerns\GeneratesOrganizationScopedSlugs;
 use App\Enums\IssueStatus;
+use App\Observers\TeamObserver;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,18 +35,11 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read Collection<int, Project> $projects
  */
 #[Fillable(['organization_id', 'name', 'slug'])]
+#[ObservedBy(TeamObserver::class)]
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
     use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity;
-
-    /**
-     * Every team has a board; a new team starts with the default columns.
-     */
-    protected static function booted(): void
-    {
-        static::created(fn (Team $team) => $team->createDefaultColumns());
-    }
 
     /**
      * Get the organization the team belongs to.

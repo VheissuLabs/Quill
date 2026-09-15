@@ -83,3 +83,34 @@ test('correct password must be provided to delete account', function () {
 
     expect($user->fresh())->not->toBeNull();
 });
+
+test('the only owner of an organization cannot delete their account', function () {
+    $user = User::factory()->withOrganization()->create();
+    $organization = $user->currentOrganization;
+
+    $response = $this
+        ->actingAs($user)
+        ->from(route('profile.edit'))
+        ->delete(route('profile.destroy'), [
+            'password' => 'password',
+        ]);
+
+    $response
+        ->assertSessionHasErrors(['password' => "You are the only owner of {$organization->name}. Make someone else an owner, or delete the organization, first."])
+        ->assertRedirect(route('profile.edit'));
+
+    expect($user->fresh())->not->toBeNull();
+});
+
+test('an owner can delete their account once another owner exists', function () {
+    $user = User::factory()->withOrganization()->create();
+    $successor = User::factory()->create();
+    $user->currentOrganization->addMember($successor, 'Owner');
+
+    $this
+        ->actingAs($user)
+        ->delete(route('profile.destroy'), ['password' => 'password'])
+        ->assertSessionHasNoErrors();
+
+    expect($user->fresh())->toBeNull();
+});

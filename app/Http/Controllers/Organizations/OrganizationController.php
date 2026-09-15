@@ -3,18 +3,22 @@
 namespace App\Http\Controllers\Organizations;
 
 use App\Actions\Organizations\CreateOrganization;
-use App\Enums\OrganizationRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\DeleteOrganizationRequest;
 use App\Http\Requests\Organizations\SaveOrganizationRequest;
 use App\Models\Organization;
+use App\Models\OrganizationMembership;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class OrganizationController extends Controller
 {
@@ -55,10 +59,12 @@ class OrganizationController extends Controller
                 'name' => $organization->name,
                 'slug' => $organization->slug,
             ],
-            'members' => $organization->members()
-                ->with(['organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $organization->id)])
+            'members' => $organization->memberships()
+                ->with(['user.organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $organization->id)])
                 ->get()
-                ->map(function (User $member) use ($organization) {
+                ->each(fn (OrganizationMembership $membership) => $membership->setRelation('organization', $organization))
+                ->map(function (OrganizationMembership $membership) use ($organization, $user) {
+                    $member = $membership->user;
                     $role = $member->organizationRole($organization);
 
                     return [
@@ -66,22 +72,36 @@ class OrganizationController extends Controller
                         'name' => $member->name,
                         'email' => $member->email,
                         'avatar' => $member->avatar ?? null,
-                        'role' => $role?->value,
-                        'role_label' => $role?->label(),
+                        'role' => $role?->name,
+                        'isOwner' => (bool) $role?->is_owner,
+                        'canUpdate' => $user->can('update', $membership),
+                        'canRemove' => $user->can('delete', $membership),
                     ];
                 }),
             'invitations' => $organization->invitations()
                 ->whereNull('accepted_at')
+                ->with('role')
                 ->get()
                 ->map(fn ($invitation) => [
                     'code' => $invitation->code,
                     'email' => $invitation->email,
-                    'role' => $invitation->role->value,
-                    'role_label' => $invitation->role->label(),
+                    'role' => $invitation->role->name,
                     'created_at' => $invitation->created_at->toISOString(),
                 ]),
             'permissions' => $user->toOrganizationPermissions($organization),
-            'availableRoles' => OrganizationRole::assignable(),
+            'availableRoles' => $organization->assignableRoles()->map(fn (Role $role) => [
+                'value' => $role->id,
+                'label' => $role->name,
+            ]),
+            'memberRoles' => $organization->roles()
+                ->when(! $organization->isOwner($user), fn ($query) => $query->where('is_owner', false))
+                ->orderByDesc('is_owner')
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Role $role) => [
+                    'value' => $role->id,
+                    'label' => $role->name,
+                ]),
         ]);
     }
 
@@ -114,7 +134,39 @@ class OrganizationController extends Controller
 
         $request->user()->switchOrganization($organization);
 
-        return back();
+        return redirect($this->urlAfterSwitching($organization));
+    }
+
+    /**
+     * Where to land after switching: the same page inside the new organization when the page is
+     * organization-wide (the organization is the only thing in its URL), the dashboard when the
+     * page was about one record that does not exist over there, and right back where the user was
+     * for pages outside any organization.
+     */
+    protected function urlAfterSwitching(Organization $organization): string
+    {
+        $previous = url()->previous();
+        $dashboard = route('dashboard', ['current_organization' => $organization]);
+
+        try {
+            $route = Route::getRoutes()->match(Request::create($previous));
+        } catch (NotFoundHttpException|MethodNotAllowedHttpException) {
+            return $dashboard;
+        }
+
+        $parameters = $route->parameterNames();
+
+        if (! in_array('current_organization', $parameters, true)) {
+            return $previous;
+        }
+
+        if (count($parameters) > 1 || ! $route->getName()) {
+            return $dashboard;
+        }
+
+        $query = parse_url($previous, PHP_URL_QUERY);
+
+        return route($route->getName(), ['current_organization' => $organization]).($query ? "?{$query}" : '');
     }
 
     /**

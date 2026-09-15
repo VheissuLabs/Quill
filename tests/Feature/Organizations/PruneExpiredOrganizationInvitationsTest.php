@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\User;
@@ -11,7 +10,7 @@ test('expired invitations are deleted by the scheduled cleanup', function () {
     $owner = User::factory()->create();
     $organization = Organization::factory()->create();
 
-    $organization->addMember($owner, OrganizationRole::Owner);
+    $organization->addMember($owner, 'Owner');
 
     $expiredInvitation = OrganizationInvitation::factory()->expired()->create([
         'organization_id' => $organization->id,

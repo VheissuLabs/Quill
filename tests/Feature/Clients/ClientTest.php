@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Project;
@@ -9,7 +8,7 @@ use App\Models\User;
 test('clients can be created by admins', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
 
     $response = $this
         ->actingAs($admin)
@@ -29,7 +28,7 @@ test('clients can be created by admins', function () {
 test('clients cannot be created by members', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
 
     $response = $this
         ->actingAs($member)
@@ -43,7 +42,7 @@ test('clients cannot be created by members', function () {
 test('clients can be renamed by admins', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $client = Client::factory()->for($organization)->create();
 
     $response = $this
@@ -60,7 +59,7 @@ test('clients can be renamed by admins', function () {
 test('deleting a client keeps its projects', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $client = Client::factory()->for($organization)->create();
     $project = Project::factory()->for($organization)->for($client)->create();
 

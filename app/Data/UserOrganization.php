@@ -9,7 +9,9 @@ readonly class UserOrganization
         public string $name,
         public string $slug,
         public ?string $role,
-        public ?string $roleLabel,
+        public bool $isOwner = false,
+        public bool $canUpdate = false,
+        public bool $canManageRoles = false,
         public ?bool $isCurrent = null,
     ) {
         //

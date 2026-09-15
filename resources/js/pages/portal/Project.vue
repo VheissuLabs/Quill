@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { Lightbulb, MessageSquare, Plus } from '@lucide/vue';
+import { Lightbulb, ListTodo, MessageSquare, Plus } from '@lucide/vue';
 import { computed } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FeatureStatusBadge from '@/components/FeatureStatusBadge.vue';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
+import { show as showIssue } from '@/routes/issues';
 import { show as showFeature } from '@/routes/portal/features';
 import { show as showBoard } from '@/routes/portal/projects';
 import type {
@@ -27,7 +28,7 @@ type Props = {
     features: FeatureSummary[];
     filters: BoardFilters;
     statuses: BoardStatusOption[];
-    totalCount: number;
+    activeCount: number;
     viewer: BoardViewer;
 };
 
@@ -167,6 +168,7 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
                         class="bg-card hover:border-foreground/20 flex gap-4 rounded-xl border p-4 transition-colors sm:p-5"
                     >
                         <VoteButton
+                            v-if="feature.acceptsVotes"
                             :organization="organization.slug"
                             :project="project.slug"
                             :feature="feature"
@@ -227,6 +229,20 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
                                             : 'comments'
                                     }}
                                 </Link>
+                                <Link
+                                    v-if="feature.issue"
+                                    :href="
+                                        showIssue([
+                                            organization.slug,
+                                            feature.issue.id,
+                                        ])
+                                    "
+                                    class="hover:text-foreground inline-flex items-center gap-1"
+                                    data-test="tracked-issue-link"
+                                >
+                                    <ListTodo class="size-3.5" />
+                                    Tracked as {{ feature.issue.reference }}
+                                </Link>
                             </div>
                         </div>
                     </article>
@@ -286,8 +302,8 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
                         :class="statusRowClass(null)"
                         @click="applyFilters({ status: null })"
                     >
-                        <span>All requests</span>
-                        <span class="tabular-nums">{{ totalCount }}</span>
+                        <span>Active requests</span>
+                        <span class="tabular-nums">{{ activeCount }}</span>
                     </button>
                     <button
                         v-for="status in statuses"

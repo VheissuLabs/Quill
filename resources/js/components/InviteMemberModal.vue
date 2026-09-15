@@ -28,6 +28,7 @@ type Props = {
     organization: Organization;
     availableRoles: RoleOption[];
     open: boolean;
+    defaultRole?: number | null;
 };
 
 const props = defineProps<Props>();
@@ -35,14 +36,16 @@ const emit = defineEmits<{
     'update:open': [value: boolean];
 }>();
 
-const inviteRole = ref('member');
+const defaultRole = () =>
+    String(props.defaultRole ?? props.availableRoles[0]?.value ?? '');
+const inviteRole = ref(defaultRole());
 const formKey = ref(0);
 
 function handleOpenChange(value: boolean) {
     emit('update:open', value);
 
     if (!value) {
-        inviteRole.value = 'member';
+        inviteRole.value = defaultRole();
         formKey.value++;
     }
 }
@@ -83,7 +86,7 @@ function handleOpenChange(value: boolean) {
                         <Label for="role">Role</Label>
                         <Select
                             v-model="inviteRole"
-                            name="role"
+                            name="role_id"
                             data-test="invite-role"
                         >
                             <SelectTrigger class="w-full">
@@ -93,13 +96,21 @@ function handleOpenChange(value: boolean) {
                                 <SelectItem
                                     v-for="role in props.availableRoles"
                                     :key="role.value"
-                                    :value="role.value"
+                                    :value="String(role.value)"
                                 >
                                     {{ role.label }}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <InputError :message="errors.role" />
+                        <InputError :message="errors.role_id" />
+                        <p
+                            v-if="props.availableRoles.length === 0"
+                            class="text-muted-foreground text-sm"
+                            data-test="invite-no-roles"
+                        >
+                            This organization has no roles to grant yet. Create
+                            one before inviting people.
+                        </p>
                     </div>
                 </div>
 
@@ -111,7 +122,9 @@ function handleOpenChange(value: boolean) {
                     <Button
                         type="submit"
                         data-test="invite-submit"
-                        :disabled="processing"
+                        :disabled="
+                            processing || props.availableRoles.length === 0
+                        "
                     >
                         Send invitation
                     </Button>

@@ -8,8 +8,9 @@ use Illuminate\Support\Facades\URL;
 trait RedirectsToCurrentOrganization
 {
     /**
-     * Get the path to redirect to within the user's current organization, or to the
-     * organizations settings page when the user does not belong to any organization yet.
+     * Get the path to redirect to within the user's current organization. Someone who belongs to
+     * no organization yet goes back to the public board they were reading, if any, and otherwise
+     * to the organizations settings page.
      */
     protected function redirectPathForCurrentOrganization(Request $request, string $redirect): string
     {
@@ -20,7 +21,7 @@ trait RedirectsToCurrentOrganization
         $organization = $user->currentOrganization ?? $user->fallbackOrganization();
 
         if (! $organization) {
-            return route('organizations.index', absolute: false);
+            return $request->session()->get('portal.last_url', route('organizations.index', absolute: false));
         }
 
         URL::defaults(['current_organization' => $organization->slug]);

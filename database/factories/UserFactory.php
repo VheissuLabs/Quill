@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -46,7 +45,7 @@ class UserFactory extends Factory
         return $this->afterCreating(function (User $user) {
             $organization = Organization::factory()->create();
 
-            $organization->addMember($user, OrganizationRole::Owner);
+            $organization->addMember($user, $organization->ownerRole());
 
             $user->switchOrganization($organization);
         });

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Organizations;
 
-use App\Enums\OrganizationRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\CreateOrganizationInvitationRequest;
 use App\Http\Requests\Organizations\RespondToOrganizationInvitationRequest;
@@ -22,11 +21,11 @@ class OrganizationInvitationController extends Controller
      */
     public function store(CreateOrganizationInvitationRequest $request, Organization $organization): RedirectResponse
     {
-        Gate::authorize('inviteMember', $organization);
+        Gate::authorize('create', [OrganizationInvitation::class, $organization]);
 
         $invitation = $organization->invitations()->create([
             'email' => $request->validated('email'),
-            'role' => OrganizationRole::from($request->validated('role')),
+            'role_id' => $request->integer('role_id'),
             'invited_by' => $request->user()->id,
             'expires_at' => now()->addDays(3),
         ]);
@@ -46,7 +45,7 @@ class OrganizationInvitationController extends Controller
     {
         abort_unless($invitation->organization_id === $organization->id, 404);
 
-        Gate::authorize('cancelInvitation', $organization);
+        Gate::authorize('delete', $invitation);
 
         $invitation->delete();
 

@@ -37,6 +37,20 @@ enum IssueStatus: string
     }
 
     /**
+     * The status a linked feature request should show while its issue is at this stage.
+     * Cancelling an issue is a team decision, not a verdict on the request, so it leaves the feature alone.
+     */
+    public function featureStatus(): ?FeatureStatus
+    {
+        return match ($this) {
+            self::Backlog, self::Todo => FeatureStatus::Planned,
+            self::InProgress => FeatureStatus::InProgress,
+            self::Done => FeatureStatus::Completed,
+            self::Cancelled => null,
+        };
+    }
+
+    /**
      * The statuses a board column can map to.
      *
      * @return array<int, self>

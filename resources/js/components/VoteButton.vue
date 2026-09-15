@@ -37,7 +37,9 @@ const arrowClass =
     'flex w-full items-center justify-center py-1 transition-colors outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50';
 
 const inactiveArrowClass =
-    'text-muted-foreground hover:bg-accent hover:text-accent-foreground';
+    'text-muted-foreground/60 hover:bg-accent hover:text-foreground';
+
+const activeArrowClass = '[&_svg]:stroke-[2.75]';
 
 const vote = (direction: VoteDirection) => {
     const args: [string, string, number] = [
@@ -97,7 +99,7 @@ const vote = (direction: VoteDirection) => {
                     arrowClass,
                     'rounded-t-[calc(var(--radius-lg)-1px)]',
                     feature.vote === 'up'
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        ? cn(activeArrowClass, 'text-primary hover:bg-accent')
                         : inactiveArrowClass,
                 )
             "
@@ -126,7 +128,10 @@ const vote = (direction: VoteDirection) => {
                     arrowClass,
                     'rounded-b-[calc(var(--radius-lg)-1px)]',
                     feature.vote === 'down'
-                        ? 'bg-destructive hover:bg-destructive/90 text-white'
+                        ? cn(
+                              activeArrowClass,
+                              'text-destructive/80 hover:bg-accent',
+                          )
                         : inactiveArrowClass,
                 )
             "

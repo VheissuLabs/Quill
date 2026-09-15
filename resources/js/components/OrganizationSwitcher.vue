@@ -48,34 +48,12 @@ const checkIconClass = computed(() =>
 );
 const plusIconClass = computed(() => (props.inHeader ? 'size-4' : 'h-4 w-4'));
 
+/**
+ * The server decides where to land: the same page in the new organization when it is
+ * organization-wide, otherwise the dashboard.
+ */
 const switchOrganization = (organization: Organization) => {
-    const previousOrganizationSlug = currentOrganization.value?.slug;
-
-    router.visit(switchMethod(organization.slug), {
-        onFinish: () => {
-            if (!previousOrganizationSlug || typeof window === 'undefined') {
-                router.reload();
-
-                return;
-            }
-
-            const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-            const segment = `/${previousOrganizationSlug}`;
-
-            if (currentUrl.includes(segment)) {
-                router.visit(
-                    currentUrl.replace(segment, `/${organization.slug}`),
-                    {
-                        replace: true,
-                    },
-                );
-
-                return;
-            }
-
-            router.reload();
-        },
-    });
+    router.visit(switchMethod(organization.slug));
 };
 
 onMounted(() => {

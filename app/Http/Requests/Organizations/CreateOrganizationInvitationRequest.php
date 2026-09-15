@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Organizations;
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Rules\UniqueOrganizationInvitation;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -24,7 +23,7 @@ class CreateOrganizationInvitationRequest extends FormRequest
 
         return [
             'email' => ['required', 'string', 'email', 'max:255', new UniqueOrganizationInvitation($organization)],
-            'role' => ['required', 'string', Rule::enum(OrganizationRole::class)],
+            'role_id' => ['required', 'integer', Rule::exists('roles', 'id')->where('organization_id', $organization->id)->where('is_owner', 0)],
         ];
     }
 }

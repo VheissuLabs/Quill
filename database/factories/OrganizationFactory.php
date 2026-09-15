@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\OrganizationPermission;
 use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -24,6 +25,29 @@ class OrganizationFactory extends Factory
             'name' => $name,
             'slug' => Str::slug($name),
         ];
+    }
+
+    /**
+     * Configure the model factory. Organizations only ship with the owner role, so the factory
+     * adds an Admin and a permission-less Member role as fixtures for tests to grant.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Organization $organization) {
+            $organization->roles()->create(['name' => 'Admin', 'guard_name' => 'web'])->syncPermissions([
+                OrganizationPermission::UpdateOrganization->value,
+                OrganizationPermission::CreateInvitation->value,
+                OrganizationPermission::CancelInvitation->value,
+                OrganizationPermission::ManageTeams->value,
+                OrganizationPermission::ManageClients->value,
+                OrganizationPermission::ManageProjects->value,
+                OrganizationPermission::ManageFeatures->value,
+                OrganizationPermission::ManageIssues->value,
+                OrganizationPermission::ManageSprints->value,
+                OrganizationPermission::ViewActivity->value,
+            ]);
+            $organization->roles()->create(['name' => 'Member', 'guard_name' => 'web']);
+        });
     }
 
     /**

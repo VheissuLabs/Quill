@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\IssueStatus;
-use App\Enums\OrganizationRole;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
@@ -19,7 +18,7 @@ test('new teams start with the default board columns', function () {
 test('admins can add, rename and reorder board columns', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $team = Team::factory()->for($organization)->create();
 
     $this->actingAs($admin)
@@ -56,7 +55,7 @@ test('admins can add, rename and reorder board columns', function () {
 test('members cannot change board columns', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $team = Team::factory()->for($organization)->create();
 
     $this->actingAs($member)
@@ -70,7 +69,7 @@ test('members cannot change board columns', function () {
 test('changing a column status moves its issues to that status', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $team = Team::factory()->for($organization)->create();
     $project = Project::factory()->for($organization)->create();
     $sprint = Sprint::factory()->for($team)->active()->create();
@@ -93,7 +92,7 @@ test('changing a column status moves its issues to that status', function () {
 test('deleting a column moves its issues to the previous column and the last column cannot be deleted', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $team = Team::factory()->for($organization)->create();
     $project = Project::factory()->for($organization)->create();
     $sprint = Sprint::factory()->for($team)->active()->create();

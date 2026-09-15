@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\IssueStatus;
-use App\Enums\OrganizationRole;
 use App\Enums\SprintStatus;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -9,11 +8,12 @@ use App\Models\Project;
 use App\Models\Sprint;
 use App\Models\Team;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 test('sprints can be created by admins for one of the organization teams', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $team = Team::factory()->for($organization)->create();
 
     $response = $this
@@ -36,9 +36,9 @@ test('sprints can be created by admins for one of the organization teams', funct
 test('sprints cannot be created by members, and need a team to exist', function () {
     $organization = Organization::factory()->create();
     $member = User::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $admin = User::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
 
     $payload = ['name' => 'Sprint 1', 'starts_at' => '2026-09-14', 'ends_at' => '2026-09-25'];
 
@@ -56,7 +56,7 @@ test('sprints cannot be created by members, and need a team to exist', function 
 test('the sprints index shows the current team only', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $development = Team::factory()->for($organization)->create(['name' => 'Development']);
     $marketing = Team::factory()->for($organization)->create(['name' => 'Marketing']);
     Sprint::factory()->for($development)->create(['name' => 'Dev sprint']);
@@ -66,7 +66,7 @@ test('the sprints index shows the current team only', function () {
 
     $this->actingAs($member)
         ->get(route('sprints.index', ['current_organization' => $organization]))
-        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('sprints', 1)
             ->where('sprints.0.name', 'Marketing sprint'),
         );
@@ -75,7 +75,7 @@ test('the sprints index shows the current team only', function () {
 test('completing a sprint returns unfinished issues to the backlog', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $project = Project::factory()->for($organization)->create();
     $sprint = Sprint::factory()->for(Team::factory()->for($organization))->active()->create();
     $done = Issue::factory()->for($project)->for($sprint)->create(['status' => IssueStatus::Done]);
@@ -97,7 +97,7 @@ test('completing a sprint returns unfinished issues to the backlog', function ()
 test('only planned sprints can be started', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $planned = Sprint::factory()->for(Team::factory()->for($organization))->create();
     $completed = Sprint::factory()->for(Team::factory()->for($organization))->completed()->create();
 
@@ -115,7 +115,7 @@ test('only planned sprints can be started', function () {
 test('a board column update sets status and order and plans backlog issues into the sprint', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $team = Team::factory()->for($organization)->create();
     $sprint = Sprint::factory()->for($team)->active()->create();
@@ -144,7 +144,7 @@ test('a board column update sets status and order and plans backlog issues into 
 test('board columns reject issues from another organization and columns of another team', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $team = Team::factory()->for($organization)->create();
     $sprint = Sprint::factory()->for($team)->active()->create();
     $otherTeamColumn = Team::factory()->for($organization)->create()->columns()->firstOrFail();
@@ -166,7 +166,7 @@ test('board columns reject issues from another organization and columns of anoth
 test('sprint summaries total the points of their issues', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $sprint = Sprint::factory()->for(Team::factory()->for($organization))->active()->create();
     Issue::factory()->for($project)->for($sprint)->create(['points' => 3]);
@@ -175,7 +175,7 @@ test('sprint summaries total the points of their issues', function () {
 
     $this->actingAs($member)
         ->get(route('sprints.index', ['current_organization' => $organization]))
-        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sprints.0.points', 8)
             ->where('sprints.0.issuesCount', 3),
         );

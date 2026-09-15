@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\User;
@@ -19,7 +18,7 @@ test('login screen can be rendered', function () {
 test('login screen includes organization invitation context', function () {
     $owner = User::factory()->create();
     $organization = Organization::factory()->create(['name' => 'Laravel Organization']);
-    $organization->addMember($owner, OrganizationRole::Owner);
+    $organization->addMember($owner, 'Owner');
 
     $invitation = OrganizationInvitation::factory()->create([
         'organization_id' => $organization->id,

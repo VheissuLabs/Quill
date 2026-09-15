@@ -19,6 +19,7 @@ readonly class OrganizationPermissions
         public bool $canManageIssues,
         public bool $canManageSprints,
         public bool $canViewActivity,
+        public bool $canManageRoles,
     ) {
         //
     }

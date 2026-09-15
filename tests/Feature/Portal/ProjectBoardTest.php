@@ -1,7 +1,8 @@
 <?php
 
-use App\Enums\OrganizationRole;
+use App\Enums\FeatureStatus;
 use App\Models\Feature;
+use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Team;
@@ -47,7 +48,7 @@ test('private boards are forbidden for users outside the organization', function
 test('private boards can be viewed by organization members', function () {
     $member = User::factory()->create();
     $project = Project::factory()->create();
-    $project->organization->addMember($member, OrganizationRole::Member);
+    $project->organization->addMember($member, 'Member');
 
     $response = $this
         ->actingAs($member)
@@ -69,14 +70,14 @@ test('team restricted boards are only visible to members of those teams and admi
     $project->teams()->attach($team);
 
     $teamMember = User::factory()->create();
-    $organization->addMember($teamMember, OrganizationRole::Member);
+    $organization->addMember($teamMember, 'Member');
     $team->members()->attach($teamMember);
 
     $otherMember = User::factory()->create();
-    $organization->addMember($otherMember, OrganizationRole::Member);
+    $organization->addMember($otherMember, 'Member');
 
     $admin = User::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
 
     $this->actingAs($teamMember)->get(route('portal.projects.show', [$organization, $project]))->assertOk();
     $this->actingAs($otherMember)->get(route('portal.projects.show', [$organization, $project]))->assertForbidden();
@@ -110,6 +111,45 @@ test('features are ordered by net score and can be filtered by status', function
             ->has('features', 1)
             ->where('features.0.title', 'Quiet')
             ->where('filters.status', 'planned'),
+        );
+});
+
+test('members see the tracked issue on the board but guests do not', function () {
+    $project = Project::factory()->public()->create();
+    $feature = Feature::factory()->for($project)->create();
+    $issue = Issue::factory()->for($project)->for($feature)->create();
+
+    $this->get(route('portal.projects.show', [$project->organization, $project]))
+        ->assertInertia(fn (Assert $page) => $page->where('features.0.issue', null));
+
+    $member = User::factory()->create();
+    $project->organization->addMember($member, 'Member');
+
+    $this->actingAs($member)
+        ->get(route('portal.projects.show', [$project->organization, $project]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('features.0.issue.id', $issue->id)
+            ->where('features.0.issue.reference', $issue->reference()),
+        );
+});
+
+test('completed and declined requests leave the board but stay under their status filter', function () {
+    $project = Project::factory()->public()->create();
+    Feature::factory()->for($project)->create(['title' => 'Still open']);
+    Feature::factory()->for($project)->create(['title' => 'Shipped', 'status' => FeatureStatus::Completed]);
+    Feature::factory()->for($project)->create(['title' => 'Rejected', 'status' => FeatureStatus::Declined]);
+
+    $this->get(route('portal.projects.show', [$project->organization, $project]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('features', 1)
+            ->where('features.0.title', 'Still open')
+            ->where('activeCount', 1),
+        );
+
+    $this->get(route('portal.projects.show', [$project->organization, $project, 'status' => 'completed']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('features', 1)
+            ->where('features.0.title', 'Shipped'),
         );
 });
 

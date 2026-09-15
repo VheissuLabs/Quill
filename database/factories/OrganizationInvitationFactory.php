@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\User;
@@ -23,7 +22,7 @@ class OrganizationInvitationFactory extends Factory
         return [
             'organization_id' => Organization::factory(),
             'email' => fake()->unique()->safeEmail(),
-            'role' => OrganizationRole::Member,
+            'role_id' => fn (array $attributes) => Organization::findOrFail($attributes['organization_id'])->role('Member')->id,
             'invited_by' => User::factory(),
             'expires_at' => null,
             'accepted_at' => null,

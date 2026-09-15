@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueOrganizationSlugs;
-use App\Enums\OrganizationRole;
+use App\Enums\OrganizationPermission;
+use App\Observers\OrganizationObserver;
 use Closure;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +20,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * The tenant. Members hold a role per organization, stored through spatie/laravel-permission
@@ -37,43 +41,103 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read Collection<int, Project> $projects
  * @property-read Collection<int, Issue> $issues
  * @property-read Collection<int, Sprint> $sprints
+ * @property-read Collection<int, Role> $roles
  */
 #[Fillable(['name', 'slug'])]
+#[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
     use GeneratesUniqueOrganizationSlugs, HasFactory, LogsActivity, SoftDeletes;
 
     /**
-     * Bootstrap the model and its traits.
+     * Create the locked owner role. It is the only role an organization starts with; every other
+     * role is defined by the organization itself. The flag, not the name, marks it as the owner
+     * role: it always holds every permission, cannot be renamed, deleted or edited, only owners
+     * can grant it, and the organization always keeps at least one member holding it.
      */
-    protected static function boot(): void
+    public function createOwnerRole(): void
     {
-        parent::boot();
+        $this->roles()->firstOrCreate(['is_owner' => true], ['name' => 'Owner', 'guard_name' => 'web'])
+            ->syncPermissions(array_map(fn (OrganizationPermission $permission) => $permission->value, OrganizationPermission::cases()));
 
-        static::creating(function (Organization $organization) {
-            if (empty($organization->slug)) {
-                $organization->slug = static::generateUniqueOrganizationSlug($organization->name);
-            }
-        });
-
-        static::updating(function (Organization $organization) {
-            if ($organization->isDirty('name')) {
-                $organization->slug = static::generateUniqueOrganizationSlug($organization->name, $organization->id);
-            }
-        });
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     /**
-     * Get the organization owner.
+     * Get the roles this organization defines.
+     *
+     * @return HasMany<Role, $this>
      */
-    public function owner(): ?User
+    public function roles(): HasMany
+    {
+        return $this->hasMany(Role::class, config('permission.column_names.team_foreign_key'));
+    }
+
+    /**
+     * Get one of the organization's roles by name.
+     */
+    public function role(string $name): ?Role
+    {
+        return $this->roles()->where('name', $name)->first();
+    }
+
+    /**
+     * Get the locked owner role.
+     */
+    public function ownerRole(): Role
+    {
+        return $this->roles()->where('is_owner', true)->firstOrFail();
+    }
+
+    /**
+     * Get the roles that can be granted to members: every role except the locked owner role.
+     *
+     * @return Collection<int, Role>
+     */
+    public function assignableRoles(): Collection
+    {
+        return $this->roles()->where('is_owner', false)->orderBy('name')->get();
+    }
+
+    /**
+     * Determine if the user holds the locked owner role in this organization.
+     */
+    public function isOwner(User $user): bool
+    {
+        return (bool) $user->organizationRole($this)?->is_owner;
+    }
+
+    /**
+     * Get the members who hold the owner role.
+     *
+     * @return Collection<int, User>
+     */
+    public function owners(): Collection
     {
         return $this->members()
             ->whereHas('organizationRoles', fn ($query) => $query
-                ->where('name', OrganizationRole::Owner->value)
+                ->where('is_owner', true)
                 ->where('model_has_roles.organization_id', $this->id))
-            ->first();
+            ->get();
+    }
+
+    /**
+     * Determine if the organization would still have an owner without the given user. Every
+     * organization keeps at least one owner, so the last one cannot leave, be removed or be demoted.
+     */
+    public function hasOtherOwner(User $user): bool
+    {
+        return $this->owners()->contains(fn (User $owner) => $owner->isNot($user));
+    }
+
+    /**
+     * Determine if the actor may change or end the owner's membership: an owner's membership is
+     * theirs alone to change, and never when they are the last owner.
+     */
+    public function ownerMayStepDown(User $actor, User $owner): bool
+    {
+        return $actor->is($owner) && $this->hasOtherOwner($owner);
     }
 
     /**
@@ -159,9 +223,10 @@ class Organization extends Model
     }
 
     /**
-     * Add the user to the organization with the given role.
+     * Add the user to the organization with the given role, one of this organization's roles
+     * or its name.
      */
-    public function addMember(User $user, OrganizationRole $role): void
+    public function addMember(User $user, Role|string $role): void
     {
         DB::transaction(function () use ($user, $role) {
             $this->memberships()->firstOrCreate(['user_id' => $user->id]);
@@ -173,11 +238,27 @@ class Organization extends Model
     /**
      * Replace the user's role within the organization.
      */
-    public function changeMemberRole(User $user, OrganizationRole $role): void
+    public function changeMemberRole(User $user, Role|string $role): void
     {
+        $role = $this->resolveRole($role);
+
         $this->asPermissionsTeam(fn () => $user->syncRoles($role));
 
         $user->unsetRelation('organizationRoles');
+    }
+
+    /**
+     * Turn a role name into one of this organization's roles, refusing roles of other organizations.
+     */
+    protected function resolveRole(Role|string $role): Role
+    {
+        if (is_string($role)) {
+            return $this->roles()->where('name', $role)->firstOrFail();
+        }
+
+        abort_unless((int) $role->getAttribute(config('permission.column_names.team_foreign_key')) === $this->id, 404);
+
+        return $role;
     }
 
     /**

@@ -3,7 +3,6 @@
 use App\Enums\FeatureStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
-use App\Enums\OrganizationRole;
 use App\Models\Feature;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -11,12 +10,13 @@ use App\Models\Project;
 use App\Models\Sprint;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('members can create issues, numbered per project', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     Issue::factory()->for($project)->create(['number' => 4]);
 
@@ -43,7 +43,7 @@ test('members can create issues, numbered per project', function () {
 test('an issue created into a sprint starts as todo on the sprint team', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $sprint = Sprint::factory()->for(Team::factory()->for($organization))->create();
 
@@ -63,7 +63,7 @@ test('an issue created into a sprint starts as todo on the sprint team', functio
 test('issues cannot be created on projects of another organization', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $foreignProject = Project::factory()->create();
 
     $response = $this
@@ -80,7 +80,7 @@ test('issues cannot be created on projects of another organization', function ()
 test('the issues index hides closed issues by default and can filter by status', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     Issue::factory()->for($project)->create(['title' => 'Open work']);
     Issue::factory()->for($project)->create(['title' => 'Shipped', 'status' => IssueStatus::Done]);
@@ -104,7 +104,7 @@ test('the issues index hides closed issues by default and can filter by status',
 test('issues of another organization cannot be reached through the current organization', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $foreignIssue = Issue::factory()->create();
 
     $this->actingAs($member)
@@ -115,7 +115,7 @@ test('issues of another organization cannot be reached through the current organ
 test('marking a converted issue done completes its feature', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $feature = Feature::factory()->for($project)->create(['status' => FeatureStatus::Planned]);
     $issue = Issue::factory()->for($project)->for($feature)->create(['status' => IssueStatus::InProgress]);
@@ -132,10 +132,59 @@ test('marking a converted issue done completes its feature', function () {
     expect($feature->fresh()->status)->toBe(FeatureStatus::Completed);
 });
 
+test('a converted issue keeps its feature status in step as it moves across the board', function () {
+    $organization = Organization::factory()->create();
+    $member = User::factory()->create();
+    $organization->addMember($member, 'Member');
+    $project = Project::factory()->for($organization)->create();
+    $team = Team::factory()->for($organization)->create();
+    $feature = Feature::factory()->for($project)->create(['status' => FeatureStatus::Planned]);
+    $issue = Issue::factory()->for($project)->for($feature)->create(['team_id' => $team->id]);
+
+    $moveTo = fn (array $payload) => $this->actingAs($member)
+        ->patch(route('issues.update', ['current_organization' => $organization, 'issue' => $issue]), $payload)
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $moveTo(['board_column_id' => $team->columns()->where('status', IssueStatus::InProgress)->value('id')]);
+    expect($feature->fresh()->status)->toBe(FeatureStatus::InProgress);
+
+    $moveTo(['board_column_id' => $team->columns()->where('status', IssueStatus::Todo)->value('id')]);
+    expect($feature->fresh()->status)->toBe(FeatureStatus::Planned);
+
+    $moveTo(['status' => IssueStatus::Cancelled->value]);
+    expect($feature->fresh()->status)->toBe(FeatureStatus::Planned);
+});
+
+test('the issue page offers only the sprints of the issue team, or of the viewer team for unplanned issues', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $project = Project::factory()->for($organization)->create();
+    $engineering = Team::factory()->for($organization)->create(['name' => 'Engineering']);
+    $design = Team::factory()->for($organization)->create(['name' => 'Design']);
+    Sprint::factory()->for($engineering)->create(['name' => 'Engineering sprint']);
+    Sprint::factory()->for($design)->create(['name' => 'Design sprint']);
+
+    $designIssue = Issue::factory()->for($project)->create(['team_id' => $design->id]);
+    $unplanned = Issue::factory()->for($project)->create();
+
+    $member->switchOrganization($organization);
+    $member->switchTeam($engineering);
+
+    $this->actingAs($member)
+        ->get(route('issues.show', ['current_organization' => $organization, 'issue' => $designIssue]))
+        ->assertInertia(fn (Assert $page) => $page->has('sprints', 1)->where('sprints.0.name', 'Design sprint'));
+
+    $this->actingAs($member)
+        ->get(route('issues.show', ['current_organization' => $organization, 'issue' => $unplanned]))
+        ->assertInertia(fn (Assert $page) => $page->has('sprints', 1)->where('sprints.0.name', 'Engineering sprint'));
+});
+
 test('planning an issue into a sprint moves it to the sprint team and out of the backlog', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $issue = Issue::factory()->for($project)->create();
     $sprint = Sprint::factory()->for(Team::factory()->for($organization))->create();
@@ -168,9 +217,9 @@ test('issues can be deleted by admins but not members', function () {
     $issue = Issue::factory()->for($project)->create();
 
     $member = User::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $admin = User::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
 
     $this->actingAs($member)
         ->delete(route('issues.destroy', ['current_organization' => $organization, 'issue' => $issue]))
@@ -186,7 +235,7 @@ test('issues can be deleted by admins but not members', function () {
 test('issues can be ranked by dragging them into order', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $first = Issue::factory()->for($project)->create();
     $second = Issue::factory()->for($project)->create();
@@ -206,7 +255,7 @@ test('issues can be ranked by dragging them into order', function () {
 test('moving an issue to a board column sets its status and planning into a sprint uses the todo column', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $team = Team::factory()->for($organization)->create();
     $sprint = Sprint::factory()->for($team)->active()->create();
@@ -234,7 +283,7 @@ test('moving an issue to a board column sets its status and planning into a spri
 test('cancelling an issue removes it from its sprint', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $sprint = Sprint::factory()->for(Team::factory()->for($organization))->active()->create();
     $issue = Issue::factory()->for($project)->create();
@@ -253,7 +302,7 @@ test('cancelling an issue removes it from its sprint', function () {
 test('the issues index shows only unplanned issues, planned ones appear inside their sprint', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $sprint = Sprint::factory()->for(Team::factory()->for($organization))->active()->create();
     Issue::factory()->for($project)->create(['title' => 'Unplanned']);
@@ -271,7 +320,7 @@ test('the issues index shows only unplanned issues, planned ones appear inside t
 test('the backlog is scoped to the current team plus issues with no team yet', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $development = Team::factory()->for($organization)->create(['name' => 'Development']);
     $marketing = Team::factory()->for($organization)->create(['name' => 'Marketing']);
@@ -287,7 +336,7 @@ test('the backlog is scoped to the current team plus issues with no team yet', f
         ->get(route('issues.index', ['current_organization' => $organization]))
         ->assertInertia(fn (Assert $page) => $page
             ->has('issues', 2)
-            ->where('issues', fn (\Illuminate\Support\Collection $issues) => $issues->pluck('title')->sort()->values()->all() === ['Dev work', 'Untriaged'])
+            ->where('issues', fn (Collection $issues) => $issues->pluck('title')->sort()->values()->all() === ['Dev work', 'Untriaged'])
             ->has('sprints', 1)
             ->where('sprints.0.name', 'Dev sprint'),
         );
@@ -296,7 +345,7 @@ test('the backlog is scoped to the current team plus issues with no team yet', f
 test('users can switch their current team within the organization', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $team = Team::factory()->for($organization)->create();
     $foreignTeam = Team::factory()->create();
     $member->switchOrganization($organization);

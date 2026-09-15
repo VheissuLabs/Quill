@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Organizations;
 
-use App\Enums\OrganizationRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\UpdateOrganizationMemberRequest;
 use App\Models\Organization;
@@ -10,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 class OrganizationMemberController extends Controller
 {
@@ -18,17 +18,16 @@ class OrganizationMemberController extends Controller
      */
     public function update(UpdateOrganizationMemberRequest $request, Organization $organization, User $user): RedirectResponse
     {
-        Gate::authorize('updateMember', $organization);
+        $membership = $organization->memberships()->where('user_id', $user->id)->firstOrFail();
+        $role = Role::findOrFail($request->integer('role_id'));
 
-        $newRole = OrganizationRole::from($request->validated('role'));
+        Gate::authorize('update', [$membership, $role]);
 
-        abort_unless($user->belongsToOrganization($organization), 404);
-
-        $organization->changeMemberRole($user, $newRole);
+        $organization->changeMemberRole($user, $role);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member role updated.')]);
 
-        return to_route('organizations.edit', ['organization' => $organization->slug]);
+        return back();
     }
 
     /**
@@ -36,9 +35,9 @@ class OrganizationMemberController extends Controller
      */
     public function destroy(Organization $organization, User $user): RedirectResponse
     {
-        Gate::authorize('removeMember', $organization);
+        $membership = $organization->memberships()->where('user_id', $user->id)->firstOrFail();
 
-        abort_if($organization->owner()?->is($user), 403, __('The organization owner cannot be removed.'));
+        Gate::authorize('delete', $membership);
 
         $organization->removeMember($user);
 

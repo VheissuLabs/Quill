@@ -3,6 +3,7 @@
 use App\Http\Controllers\Organizations\OrganizationController;
 use App\Http\Controllers\Organizations\OrganizationInvitationController;
 use App\Http\Controllers\Organizations\OrganizationMemberController;
+use App\Http\Controllers\Organizations\OrganizationRoleController;
 use App\Http\Controllers\Settings\EmailAddressController;
 use App\Http\Controllers\Settings\EmailAddressVerificationNotificationController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -53,6 +54,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::patch('settings/organizations/{organization}/members/{user}', [OrganizationMemberController::class, 'update'])->name('organizations.members.update');
         Route::delete('settings/organizations/{organization}/members/{user}', [OrganizationMemberController::class, 'destroy'])->name('organizations.members.destroy');
+
+        Route::post('settings/organizations/{organization}/roles', [OrganizationRoleController::class, 'store'])->name('organizations.roles.store');
+        Route::patch('settings/organizations/{organization}/roles/{role}', [OrganizationRoleController::class, 'update'])->name('organizations.roles.update');
+        Route::delete('settings/organizations/{organization}/roles/{role}', [OrganizationRoleController::class, 'destroy'])->name('organizations.roles.destroy');
 
         Route::post('settings/organizations/{organization}/invitations', [OrganizationInvitationController::class, 'store'])->name('organizations.invitations.store');
         Route::delete('settings/organizations/{organization}/invitations/{invitation}', [OrganizationInvitationController::class, 'destroy'])->name('organizations.invitations.destroy');

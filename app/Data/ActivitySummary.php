@@ -5,7 +5,6 @@ namespace App\Data;
 use App\Enums\FeatureStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
-use App\Enums\OrganizationRole;
 use App\Enums\ProjectVisibility;
 use App\Enums\SprintStatus;
 use App\Models\BoardColumn;
@@ -20,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
+use Spatie\Permission\Models\Role;
 
 /**
  * One activity log entry, with its changed attributes turned into readable "from → to" pairs.
@@ -89,6 +89,7 @@ readonly class ActivitySummary
             'client_id' => 'Client',
             'organization_id' => 'Organization',
             'user_id' => 'Member',
+            'role_id' => 'Role',
             'feature_id' => 'Feature',
             'parent_id' => 'Reply to',
             'invited_by' => 'Invited by',
@@ -132,7 +133,7 @@ readonly class ActivitySummary
             'invited_by' => self::nameOf(User::class, $value, __('a deleted user')),
             'current_organization_id' => self::nameOf(Organization::class, $value, __('a deleted organization')),
             'current_team_id' => self::nameOf(Team::class, $value, __('a deleted team')),
-            'role' => OrganizationRole::tryFrom((string) $value)?->label() ?? (string) $value,
+            'role_id' => self::nameOf(Role::class, $value, __('a deleted role')),
             'direction' => match ((int) $value) {
                 1 => __('Upvote'),
                 -1 => __('Downvote'),

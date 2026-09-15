@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
@@ -27,7 +26,7 @@ return new class extends Migration
 
         $organization = Organization::firstOrCreate(['slug' => 'notarydash'], ['name' => 'NotaryDash']);
 
-        $organization->addMember($karl, OrganizationRole::Owner);
+        $organization->addMember($karl, $organization->ownerRole());
 
         activity()->enableLogging();
     }

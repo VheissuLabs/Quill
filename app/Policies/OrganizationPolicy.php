@@ -41,52 +41,12 @@ class OrganizationPolicy
     }
 
     /**
-     * Determine whether the user can leave the organization.
+     * Determine whether the user can leave the organization. The last owner cannot.
      */
     public function leave(User $user, Organization $organization): bool
     {
         return $user->belongsToOrganization($organization)
-            && ! $user->ownsOrganization($organization);
-    }
-
-    /**
-     * Determine whether the user can add a member to the organization.
-     */
-    public function addMember(User $user, Organization $organization): bool
-    {
-        return $user->hasOrganizationPermission($organization, OrganizationPermission::AddMember);
-    }
-
-    /**
-     * Determine whether the user can update a member's role in the organization.
-     */
-    public function updateMember(User $user, Organization $organization): bool
-    {
-        return $user->hasOrganizationPermission($organization, OrganizationPermission::UpdateMember);
-    }
-
-    /**
-     * Determine whether the user can remove a member from the organization.
-     */
-    public function removeMember(User $user, Organization $organization): bool
-    {
-        return $user->hasOrganizationPermission($organization, OrganizationPermission::RemoveMember);
-    }
-
-    /**
-     * Determine whether the user can invite members to the organization.
-     */
-    public function inviteMember(User $user, Organization $organization): bool
-    {
-        return $user->hasOrganizationPermission($organization, OrganizationPermission::CreateInvitation);
-    }
-
-    /**
-     * Determine whether the user can cancel invitations.
-     */
-    public function cancelInvitation(User $user, Organization $organization): bool
-    {
-        return $user->hasOrganizationPermission($organization, OrganizationPermission::CancelInvitation);
+            && (! $organization->isOwner($user) || $organization->hasOtherOwner($user));
     }
 
     /**

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\FeatureStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use Database\Factories\IssueFactory;
@@ -11,9 +10,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Support\LogOptions;
-use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A unit of work on a project, numbered per project and optionally born from a feature request.
@@ -181,8 +180,8 @@ class Issue extends Model
                 'completed_at' => $status === IssueStatus::Done ? ($this->completed_at ?? now()) : null,
             ])->save();
 
-            if ($status === IssueStatus::Done && $this->feature) {
-                $this->feature->update(['status' => FeatureStatus::Completed]);
+            if ($this->feature && ($featureStatus = $status->featureStatus())) {
+                $this->feature->update(['status' => $featureStatus]);
             }
         });
     }

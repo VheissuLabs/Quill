@@ -1,12 +1,8 @@
-import type { ActivityEntry, FeatureComment, FeatureStatus } from './portal';
+import type { ActivityEntry, FeatureStatus } from './portal';
 import type { SelectOption } from './projects';
 
 export type IssueStatus =
-    | 'backlog'
-    | 'todo'
-    | 'in_progress'
-    | 'done'
-    | 'cancelled';
+    'backlog' | 'todo' | 'in_progress' | 'done' | 'cancelled';
 
 export type BoardColumn = {
     id: number;
@@ -97,7 +93,6 @@ export type IssueOriginFeature = {
     downvotesCount: number;
     authorName: string | null;
     createdAt: string;
-    comments: FeatureComment[];
 };
 
 export type SprintListItem = {

@@ -30,6 +30,7 @@ class ProjectController extends Controller
 
         Gate::authorize('view', $project);
 
+        $isMember = $user?->belongsToOrganization($organization) ?? false;
         $status = FeatureStatus::tryFrom((string) $request->query('status'));
         $sort = $request->query('sort') === 'new' ? 'new' : 'top';
 
@@ -39,15 +40,15 @@ class ProjectController extends Controller
             ->pluck('aggregate', 'status');
 
         $features = $project->features()
-            ->with('author')
+            ->with($isMember ? ['author', 'issue.project'] : ['author'])
             ->withVoteSummary($user)
             ->withCount(['comments' => fn ($query) => $query->public()])
-            ->when($status, fn ($query) => $query->where('status', $status))
+            ->when($status, fn ($query) => $query->where('status', $status), fn ($query) => $query->active())
             ->when($sort === 'top', fn ($query) => $query->orderByRaw('coalesce(score, 0) desc'))
             ->latest()
             ->orderByDesc('id')
             ->get()
-            ->map(fn (Feature $feature) => FeatureSummary::fromFeature($feature));
+            ->map(fn (Feature $feature) => FeatureSummary::fromFeature($feature, withIssue: $isMember));
 
         return Inertia::render('portal/Project', [
             'organization' => ['name' => $organization->name, 'slug' => $organization->slug],
@@ -64,9 +65,9 @@ class ProjectController extends Controller
                 'label' => $status->label(),
                 'count' => (int) ($countsByStatus[$status->value] ?? 0),
             ]),
-            'totalCount' => (int) $countsByStatus->sum(),
+            'activeCount' => (int) collect(FeatureStatus::active())->sum(fn (FeatureStatus $status) => $countsByStatus[$status->value] ?? 0),
             'viewer' => [
-                'isMember' => $user?->belongsToOrganization($organization) ?? false,
+                'isMember' => $isMember,
                 'canCreateFeature' => $user?->can('create', [Feature::class, $project]) ?? false,
                 'canManageFeatures' => $user?->hasOrganizationPermission($organization, OrganizationPermission::ManageFeatures) ?? false,
             ],

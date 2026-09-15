@@ -62,7 +62,7 @@ class OrganizationInvitation extends Notification implements ShouldQueue
             'invitation_id' => $this->invitation->id,
             'organization_id' => $this->invitation->organization_id,
             'organization_name' => $this->invitation->organization->name,
-            'role' => $this->invitation->role->value,
+            'role' => $this->invitation->role->name,
         ];
     }
 }

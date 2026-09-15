@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Issues;
 
 use App\Actions\Issues\CreateIssue;
 use App\Data\ActivitySummary;
-use App\Data\CommentSummary;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationPermission;
@@ -134,15 +133,11 @@ class IssueController extends Controller
                 'downvotesCount' => $issue->feature->votes()->where('direction', -1)->count(),
                 'authorName' => $issue->feature->author?->name,
                 'createdAt' => $issue->feature->created_at->toISOString(),
-                'comments' => CommentSummary::threads(
-                    $issue->feature->comments()->topLevel()->with(['author', 'mentions', 'replies.author', 'replies.mentions'])->oldest()->get(),
-                    $request->user(),
-                ),
             ] : null,
             'activity' => $request->user()->hasOrganizationPermission($currentOrganization, OrganizationPermission::ViewActivity)
                 ? ActivitySummary::collection($issue->activitiesAsSubject()->with('causer')->latest('id')->limit(30)->get())
                 : [],
-            ...$this->formOptions($currentOrganization, $request->user()),
+            ...$this->formOptions($currentOrganization, $request->user(), $issue->team ?? $request->user()->currentTeamFor($currentOrganization)),
             'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
         ]);
     }

@@ -4,7 +4,6 @@ use App\Data\ActivitySummary;
 use App\Enums\FeatureStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
-use App\Enums\OrganizationRole;
 use App\Models\Comment;
 use App\Models\EmailAddress;
 use App\Models\Feature;
@@ -23,7 +22,7 @@ test('feature status changes are logged with who made them and shown to members'
     $project = Project::factory()->public()->create();
     $feature = Feature::factory()->for($project)->create(['status' => FeatureStatus::Open]);
     $admin = User::factory()->create(['name' => 'Karl Murray']);
-    $project->organization->addMember($admin, OrganizationRole::Admin);
+    $project->organization->addMember($admin, 'Admin');
 
     $this->actingAs($admin)
         ->patch(route('portal.features.status.update', [$project->organization, $project, $feature]), ['status' => FeatureStatus::Planned->value])
@@ -56,7 +55,7 @@ test('feature status changes are logged with who made them and shown to members'
 test('planning an issue logs the sprint and status with related names resolved', function () {
     $member = User::factory()->create(['name' => 'Grace Hopper']);
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Admin);
+    $organization->addMember($member, 'Admin');
     $project = Project::factory()->for($organization)->create();
     $team = Team::factory()->for($organization)->create(['name' => 'Development']);
     $sprint = Sprint::factory()->for($team)->active()->create(['name' => 'Sprint 4']);
@@ -82,7 +81,7 @@ test('activity is only shown to people with the view activity permission', funct
     $project = Project::factory()->public()->create();
     $feature = Feature::factory()->for($project)->create();
     $member = User::factory()->create();
-    $project->organization->addMember($member, OrganizationRole::Member);
+    $project->organization->addMember($member, 'Member');
     $feature->update(['status' => FeatureStatus::Planned]);
 
     $this->actingAs($member)
@@ -96,7 +95,7 @@ test('activity is only shown to people with the view activity permission', funct
 test('the issues index lists recent activity for the current team with the issue referenced', function () {
     $admin = User::factory()->create(['name' => 'Ada Lovelace']);
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
+    $organization->addMember($admin, 'Admin');
     $project = Project::factory()->for($organization)->create(['name' => 'Quill']);
     $development = Team::factory()->for($organization)->create(['name' => 'Development']);
     $marketing = Team::factory()->for($organization)->create(['name' => 'Marketing']);
@@ -128,7 +127,7 @@ test('the issues index lists recent activity for the current team with the issue
 test('the issues index sends no activity to members without the view activity permission', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     Issue::factory()->for($project)->create()->update(['priority' => IssuePriority::High]);
 
@@ -144,8 +143,8 @@ test('adding and removing a team member is logged with the member named', functi
     $admin = User::factory()->create(['name' => 'Ada Lovelace']);
     $member = User::factory()->create(['name' => 'Grace Hopper']);
     $organization = Organization::factory()->create();
-    $organization->addMember($admin, OrganizationRole::Admin);
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($admin, 'Admin');
+    $organization->addMember($member, 'Member');
     $team = Team::factory()->for($organization)->create(['name' => 'Development']);
 
     $this->actingAs($admin)
@@ -174,9 +173,9 @@ test('joining and leaving an organization is logged', function () {
     $owner = User::factory()->create();
     $member = User::factory()->create(['name' => 'Grace Hopper']);
     $organization = Organization::factory()->create(['name' => 'Acme']);
-    $organization->addMember($owner, OrganizationRole::Owner);
+    $organization->addMember($owner, 'Owner');
 
-    $organization->addMember($member, OrganizationRole::Member);
+    $organization->addMember($member, 'Member');
     $membershipId = $organization->memberships()->where('user_id', $member->id)->value('id');
     $organization->removeMember($member);
 

@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\User;
@@ -30,7 +29,7 @@ test('dashboard includes pending invitations for the authenticated user', functi
     $invitedUser = User::factory()->withOrganization()->create(['email' => 'invited@example.com']);
     $organization = Organization::factory()->create(['name' => 'Laravel Organization']);
 
-    $organization->addMember($owner, OrganizationRole::Owner);
+    $organization->addMember($owner, 'Owner');
 
     $invitation = OrganizationInvitation::factory()->create([
         'organization_id' => $organization->id,
@@ -59,7 +58,7 @@ test('dashboard does not include accepted invitations', function () {
     $invitedUser = User::factory()->withOrganization()->create(['email' => 'invited@example.com']);
     $organization = Organization::factory()->create();
 
-    $organization->addMember($owner, OrganizationRole::Owner);
+    $organization->addMember($owner, 'Owner');
 
     OrganizationInvitation::factory()->accepted()->create([
         'organization_id' => $organization->id,
@@ -83,7 +82,7 @@ test('dashboard excludes expired invitations without deleting them', function ()
     $invitedUser = User::factory()->withOrganization()->create(['email' => 'invited@example.com']);
     $organization = Organization::factory()->create();
 
-    $organization->addMember($owner, OrganizationRole::Owner);
+    $organization->addMember($owner, 'Owner');
 
     $invitation = OrganizationInvitation::factory()->expired()->create([
         'organization_id' => $organization->id,
@@ -111,7 +110,7 @@ test('dashboard does not include or delete other users invitations', function ()
     $invitedUser = User::factory()->withOrganization()->create(['email' => 'invited@example.com']);
     $organization = Organization::factory()->create();
 
-    $organization->addMember($owner, OrganizationRole::Owner);
+    $organization->addMember($owner, 'Owner');
 
     $invitation = OrganizationInvitation::factory()->expired()->create([
         'organization_id' => $organization->id,

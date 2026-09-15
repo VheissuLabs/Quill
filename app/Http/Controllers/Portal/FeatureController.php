@@ -8,6 +8,7 @@ use App\Data\CommentSummary;
 use App\Data\FeatureSummary;
 use App\Enums\FeatureStatus;
 use App\Enums\OrganizationPermission;
+use App\Enums\VoteDirection;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Features\SaveFeatureRequest;
 use App\Models\Feature;
@@ -48,13 +49,8 @@ class FeatureController extends Controller
         return Inertia::render('portal/Feature', [
             'organization' => ['name' => $organization->name, 'slug' => $organization->slug],
             'project' => ['name' => $project->name, 'slug' => $project->slug],
-            'feature' => FeatureSummary::fromFeature($feature),
-            'issue' => $isMember && $feature->issue ? [
-                'id' => $feature->issue->id,
-                'reference' => $feature->issue->reference(),
-                'status' => $feature->issue->status->value,
-                'statusLabel' => $feature->issue->status->label(),
-            ] : null,
+            'feature' => $summary = FeatureSummary::fromFeature($feature, withIssue: $isMember),
+            'issue' => $summary->issue,
             'comments' => CommentSummary::threads(
                 $feature->comments()
                     ->topLevel()
@@ -102,6 +98,8 @@ class FeatureController extends Controller
             'user_id' => $request->user()->id,
             'status' => FeatureStatus::Open,
         ]);
+
+        $feature->castVote($request->user(), VoteDirection::Up);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Feature requested.')]);
 

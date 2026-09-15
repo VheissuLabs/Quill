@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\FeatureStatus;
 use App\Enums\OrganizationPermission;
 use App\Models\Feature;
 use App\Models\Project;
@@ -56,16 +55,15 @@ class FeaturePolicy
      */
     public function convert(User $user, Feature $feature): bool
     {
-        return $this->manage($user, $feature)
-            && ! in_array($feature->status, [FeatureStatus::Declined, FeatureStatus::Completed], true);
+        return $this->manage($user, $feature) && ! $feature->status->isSettled();
     }
 
     /**
-     * Determine whether the user can vote for the feature.
+     * Determine whether the user can vote for the feature. Settled requests no longer take votes.
      */
     public function vote(User $user, Feature $feature): bool
     {
-        return $user->can('view', $feature->project);
+        return ! $feature->status->isSettled() && $user->can('view', $feature->project);
     }
 
     /**

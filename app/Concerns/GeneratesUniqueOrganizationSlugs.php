@@ -10,7 +10,7 @@ trait GeneratesUniqueOrganizationSlugs
     /**
      * Generate a unique slug for the organization.
      */
-    protected static function generateUniqueOrganizationSlug(string $name, ?int $excludeId = null): string
+    public static function generateUniqueOrganizationSlug(string $name, ?int $excludeId = null): string
     {
         $defaultSlug = Str::slug($name);
 
