@@ -177,7 +177,13 @@ const saveSprintName = (sprint: IssueSprintOption) => {
     router.patch(
         updateSprint([props.currentOrganization.slug, sprint.id]),
         { name, starts_at: sprint.startsAt, ends_at: sprint.endsAt },
-        { preserveScroll: true },
+        {
+            // Only the sprints change. Reloading the rest tears the lists down and rebuilds them,
+            // which moves the page under the user before the scroll is restored.
+            only: ['sprints'],
+            preserveScroll: true,
+            preserveState: true,
+        },
     );
 };
 
