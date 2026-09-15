@@ -9,6 +9,7 @@ use App\Enums\IssueStatus;
 use App\Enums\SprintStatus;
 use App\Models\Feature;
 use App\Models\Issue;
+use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Sprint;
 use App\Models\Team;
@@ -31,15 +32,18 @@ class IssueSeeder extends Seeder
 
     public function run(): void
     {
-        Project::with(['organization.members', 'organization.teams.columns', 'organization.teams.sprints'])->get()
+        Project::with(['organization.members', 'organization.columns', 'organization.sprints', 'organization.teams.columns', 'organization.teams.sprints'])->get()
             ->each(function (Project $project) {
-                $teams = $project->organization->teams;
-                $members = $project->organization->members;
+                $organization = $project->organization;
+                $members = $organization->members;
+
+                $owners = $organization->teams->isEmpty() ? [$organization] : $organization->teams->all();
+                $sprints = collect($owners)->flatMap(fn (Organization|Team $owner) => $owner->sprints);
 
                 $project->features()
                     ->whereIn('status', [FeatureStatus::Planned, FeatureStatus::InProgress, FeatureStatus::Completed])
                     ->get()
-                    ->each(fn (Feature $feature) => $this->convert($feature, $teams, $members));
+                    ->each(fn (Feature $feature) => $this->convert($feature, $sprints, $members));
 
                 for ($count = fake()->numberBetween(3, 6); $count > 0; $count--) {
                     $issue = $this->createIssue->handle($project, $members->random(), [
@@ -51,9 +55,9 @@ class IssueSeeder extends Seeder
                     ]);
 
                     match (fake()->numberBetween(1, 6)) {
-                        1 => $issue->planInto($this->sprint($teams, SprintStatus::Active)),
-                        2 => $this->work($issue, $this->sprint($teams, SprintStatus::Active)),
-                        3 => $issue->planInto($this->sprint($teams, SprintStatus::Planned) ?? $this->sprint($teams, SprintStatus::Active)),
+                        1 => $issue->planInto($this->sprint($sprints, SprintStatus::Active)),
+                        2 => $this->work($issue, $this->sprint($sprints, SprintStatus::Active)),
+                        3 => $issue->planInto($this->sprint($sprints, SprintStatus::Planned) ?? $this->sprint($sprints, SprintStatus::Active)),
                         4 => $issue->changeStatus(IssueStatus::Cancelled),
                         default => null,
                     };
@@ -64,10 +68,10 @@ class IssueSeeder extends Seeder
     /**
      * Turn a request into an issue and move the issue to where the request's status says it is.
      *
-     * @param  Collection<int, Team>  $teams
+     * @param  Collection<int, Sprint>  $sprints
      * @param  Collection<int, User>  $members
      */
-    protected function convert(Feature $feature, Collection $teams, Collection $members): void
+    protected function convert(Feature $feature, Collection $sprints, Collection $members): void
     {
         $status = $feature->status;
 
@@ -80,9 +84,9 @@ class IssueSeeder extends Seeder
         ], $feature);
 
         match ($status) {
-            FeatureStatus::Planned => fake()->boolean() ? $issue->planInto($this->sprint($teams, SprintStatus::Active)) : null,
-            FeatureStatus::InProgress => $this->work($issue, $this->sprint($teams, SprintStatus::Active)),
-            FeatureStatus::Completed => $this->finish($issue, $this->sprint($teams, SprintStatus::Completed) ?? $this->sprint($teams, SprintStatus::Active)),
+            FeatureStatus::Planned => fake()->boolean() ? $issue->planInto($this->sprint($sprints, SprintStatus::Active)) : null,
+            FeatureStatus::InProgress => $this->work($issue, $this->sprint($sprints, SprintStatus::Active)),
+            FeatureStatus::Completed => $this->finish($issue, $this->sprint($sprints, SprintStatus::Completed) ?? $this->sprint($sprints, SprintStatus::Active)),
             default => null,
         };
     }
@@ -121,12 +125,12 @@ class IssueSeeder extends Seeder
     }
 
     /**
-     * Pick a sprint in the given state from any of the organization's teams.
+     * Pick a sprint in the given state from any of the organization's boards.
      *
-     * @param  Collection<int, Team>  $teams
+     * @param  Collection<int, Sprint>  $sprints
      */
-    protected function sprint(Collection $teams, SprintStatus $status): ?Sprint
+    protected function sprint(Collection $sprints, SprintStatus $status): ?Sprint
     {
-        return $teams->flatMap->sprints->where('status', $status)->shuffle()->first();
+        return $sprints->where('status', $status)->shuffle()->first();
     }
 }

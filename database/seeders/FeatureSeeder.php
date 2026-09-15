@@ -8,7 +8,7 @@ use App\Models\Project;
 use Illuminate\Database\Seeder;
 
 /**
- * Fifty to a hundred requests per board, spread over the last two months and across every status.
+ * A dozen or so requests per board, spread over the last two months and across every status.
  * Planned, in-progress and completed requests are turned into issues by IssueSeeder, which keeps
  * their status in step with the ticket.
  */
@@ -20,7 +20,7 @@ class FeatureSeeder extends Seeder
             $authors = $project->organization->members;
 
             Feature::factory()
-                ->count(fake()->numberBetween(50, 100))
+                ->count(fake()->numberBetween(8, 16))
                 ->for($project)
                 ->sequence(fn () => [
                     'user_id' => $authors->random()->id,
