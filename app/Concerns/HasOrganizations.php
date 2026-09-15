@@ -37,11 +37,7 @@ trait HasOrganizations
         return $this->hasMany(OrganizationMembership::class, 'user_id');
     }
 
-    /**
-     * Unlike the spatie `roles` relation this is not limited to the current permission team.
-     *
-     * @return MorphToMany<Role, $this>
-     */
+    /** @return MorphToMany<Role, $this> */
     public function organizationRoles(): MorphToMany
     {
         return $this->morphToMany(Role::class, 'model', 'model_has_roles', 'model_id', 'role_id')
@@ -78,9 +74,6 @@ trait HasOrganizations
         return $this->current_organization_id === $organization->id;
     }
 
-    /**
-     * Determine if the user holds the locked owner role in the given organization.
-     */
     public function ownsOrganization(Organization $organization): bool
     {
         return $organization->isOwner($this);
@@ -101,11 +94,7 @@ trait HasOrganizations
             ->exists();
     }
 
-    /**
-     * Get the IDs of the organizations in which the user holds the given permission.
-     *
-     * @return Collection<int, int>
-     */
+    /** @return Collection<int, int> */
     public function organizationIdsWithPermission(OrganizationPermission $permission): Collection
     {
         return $this->organizationRoles()
@@ -142,9 +131,6 @@ trait HasOrganizations
         );
     }
 
-    /**
-     * Get the standard permissions for an organization as an OrganizationPermissions object.
-     */
     public function toOrganizationPermissions(Organization $organization): OrganizationPermissions
     {
         $granted = $this->organizationRoles()
@@ -173,9 +159,6 @@ trait HasOrganizations
         );
     }
 
-    /**
-     * Get the organization to fall back to when the current one is no longer available.
-     */
     public function fallbackOrganization(?Organization $excluding = null): ?Organization
     {
         return $this->organizations()
@@ -184,9 +167,6 @@ trait HasOrganizations
             ->first();
     }
 
-    /**
-     * Switch to the fallback organization, or to none when the user has no other organization.
-     */
     public function switchToFallbackOrganization(?Organization $excluding = null): void
     {
         $fallback = $this->fallbackOrganization($excluding);

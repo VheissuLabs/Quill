@@ -66,8 +66,6 @@ class IssueSeeder extends Seeder
     }
 
     /**
-     * Turn a request into an issue and move the issue to where the request's status says it is.
-     *
      * @param  Collection<int, Sprint>  $sprints
      * @param  Collection<int, User>  $members
      */
@@ -91,9 +89,6 @@ class IssueSeeder extends Seeder
         };
     }
 
-    /**
-     * Plan the issue into the sprint and drop it in one of the in-progress columns.
-     */
     protected function work(Issue $issue, ?Sprint $sprint): void
     {
         if (! $sprint) {
@@ -109,9 +104,6 @@ class IssueSeeder extends Seeder
         }
     }
 
-    /**
-     * Plan the issue into the sprint and mark it done there.
-     */
     protected function finish(Issue $issue, ?Sprint $sprint): void
     {
         if (! $sprint) {
@@ -124,11 +116,7 @@ class IssueSeeder extends Seeder
         $issue->moveToColumn($sprint->owner->columns()->where('status', IssueStatus::Done)->firstOrFail());
     }
 
-    /**
-     * Pick a sprint in the given state from any of the organization's boards.
-     *
-     * @param  Collection<int, Sprint>  $sprints
-     */
+    /** @param  Collection<int, Sprint>  $sprints */
     protected function sprint(Collection $sprints, SprintStatus $status): ?Sprint
     {
         return $sprints->where('status', $status)->shuffle()->first();

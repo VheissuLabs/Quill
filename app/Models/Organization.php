@@ -59,12 +59,6 @@ class Organization extends Model
 
     protected $guarded = [];
 
-    /**
-     * Create the locked owner role. It is the only role an organization starts with; every other
-     * role is defined by the organization itself. The flag, not the name, marks it as the owner
-     * role: it always holds every permission, cannot be renamed, deleted or edited, only owners
-     * can grant it, and the organization always keeps at least one member holding it.
-     */
     public function createOwnerRole(): void
     {
         $this->roles()->firstOrCreate(['is_owner' => true], ['name' => 'Owner', 'guard_name' => 'web'])
@@ -73,9 +67,6 @@ class Organization extends Model
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
-    /**
-     * Public URL of the organization's logo, if one was uploaded.
-     */
     public function logoUrl(): ?string
     {
         return $this->logo_path ? Storage::url($this->logo_path) : null;
@@ -86,20 +77,13 @@ class Organization extends Model
         return $this->settingEnabled($module->value, '');
     }
 
-    /**
-     * Determine whether an organization capability is enabled.
-     */
     public function canUse(OrganizationCapability $capability): bool
     {
         return $this->isModuleEnabled($capability->module())
             && $this->settingEnabled($capability->module()->value, $capability->value);
     }
 
-    /**
-     * Get module settings for shared Inertia data and organization settings.
-     *
-     * @return array<string, array{enabled: bool, capabilities: array<string, bool>}>
-     */
+    /** @return array<string, array{enabled: bool, capabilities: array<string, bool>}> */
     public function moduleSettings(): array
     {
         $this->loadMissing('capabilitySettings');
@@ -118,42 +102,19 @@ class Organization extends Model
             ->all();
     }
 
-    /**
-     * Get the module and capability settings belonging to the organization.
-     *
-     * @return HasMany<OrganizationModuleSetting, $this>
-     */
+    /** @return HasMany<OrganizationModuleSetting, $this> */
     public function capabilitySettings(): HasMany
     {
         return $this->hasMany(OrganizationModuleSetting::class);
     }
 
-    /**
-     * Persist the complete module and capability settings submitted by an owner.
-     *
-     * Switching a module back on re-enables every capability inside it, so an owner
-     * never has to turn the same switches on twice.
-     *
-     * @param  array<string, bool>  $settings
-     */
-    /**
-     * Hand every team's board back to the organization and delete the teams.
-     *
-     * Switching the teams module off cannot simply hide them: boards, sprints and issues are
-     * owned by a team, so the work has to come back somewhere it can still be reached.
-     */
+    /** @param  array<string, bool>  $settings */
     public function dissolveTeams(): void
     {
         DB::transaction(fn () => $this->teams()->get()->each(fn (Team $team) => $team->mergeInto($this)));
     }
 
-    /**
-     * Persist the complete module and capability settings submitted by an owner.
-     *
-     * Switching a module back on re-enables every capability inside it.
-     *
-     * @param  array<string, bool>  $settings
-     */
+    /** @param  array<string, bool>  $settings */
     public function updateModuleSettings(array $settings): void
     {
         $now = now();
@@ -193,9 +154,6 @@ class Organization extends Model
         $this->unsetRelation('capabilitySettings');
     }
 
-    /**
-     * Read an override, defaulting to enabled when no override exists.
-     */
     private function settingEnabled(string $module, string $capability): bool
     {
         $setting = $this->relationLoaded('capabilitySettings')
@@ -205,9 +163,6 @@ class Organization extends Model
         return $setting === null || $setting->enabled;
     }
 
-    /**
-     * Store a new logo (or none) and drop the previous file.
-     */
     public function replaceLogo(?UploadedFile $logo): void
     {
         $previous = $this->logo_path;
@@ -227,9 +182,6 @@ class Organization extends Model
         return $this->hasMany(Role::class, config('permission.column_names.team_foreign_key'));
     }
 
-    /**
-     * Get one of the organization's roles by name.
-     */
     public function role(string $name): ?Role
     {
         return $this->roles()->where('name', $name)->first();
@@ -240,29 +192,18 @@ class Organization extends Model
         return $this->roles()->where('is_owner', true)->firstOrFail();
     }
 
-    /**
-     * Get the roles that can be granted to members: every role except the locked owner role.
-     *
-     * @return Collection<int, Role>
-     */
+    /** @return Collection<int, Role> */
     public function assignableRoles(): Collection
     {
         return $this->roles()->where('is_owner', false)->orderBy('name')->get();
     }
 
-    /**
-     * Determine if the user holds the locked owner role in this organization.
-     */
     public function isOwner(User $user): bool
     {
         return (bool) $user->organizationRole($this)?->is_owner;
     }
 
-    /**
-     * Get the members who hold the owner role.
-     *
-     * @return Collection<int, User>
-     */
+    /** @return Collection<int, User> */
     public function owners(): Collection
     {
         return $this->members()
@@ -272,19 +213,11 @@ class Organization extends Model
             ->get();
     }
 
-    /**
-     * Determine if the organization would still have an owner without the given user. Every
-     * organization keeps at least one owner, so the last one cannot leave, be removed or be demoted.
-     */
     public function hasOtherOwner(User $user): bool
     {
         return $this->owners()->contains(fn (User $owner) => $owner->isNot($user));
     }
 
-    /**
-     * Determine if the actor may change or end the owner's membership. Owners are peers: any
-     * owner may demote or remove another (or step down themselves), but never the last owner.
-     */
     public function ownerMayStepDown(User $actor, User $owner): bool
     {
         return $this->isOwner($actor) && $this->hasOtherOwner($owner);
@@ -328,22 +261,13 @@ class Organization extends Model
         return $this->hasMany(Project::class);
     }
 
-    /**
-     * Get the issues across all of the organization's projects.
-     *
-     * @return HasManyThrough<Issue, Project, $this>
-     */
+    /** @return HasManyThrough<Issue, Project, $this> */
     public function issues(): HasManyThrough
     {
         return $this->hasManyThrough(Issue::class, Project::class);
     }
 
     /**
-     * Resolve a scoped route binding.
-     *
-     * A sprint hangs off whoever runs its board, so the plain relation only finds the ones the
-     * organization runs itself. Route binding has to see the teams' sprints as well.
-     *
      * @param  string  $childType
      * @param  mixed  $value
      * @param  string|null  $field
@@ -357,11 +281,7 @@ class Organization extends Model
         return parent::resolveChildRouteBinding($childType, $value, $field);
     }
 
-    /**
-     * Get every sprint in the organization, whether a team runs it or the organization does.
-     *
-     * @return Builder<Sprint>
-     */
+    /** @return Builder<Sprint> */
     public function allSprints(): Builder
     {
         return Sprint::query()->where(fn (Builder $query) => $query
@@ -371,10 +291,6 @@ class Organization extends Model
                 ->whereIn('owner_id', $this->teams()->select('id'))));
     }
 
-    /**
-     * Add the user to the organization with the given role, one of this organization's roles
-     * or its name.
-     */
     public function addMember(User $user, Role|string $role): void
     {
         DB::transaction(function () use ($user, $role) {
@@ -384,9 +300,6 @@ class Organization extends Model
         });
     }
 
-    /**
-     * Replace the user's role within the organization.
-     */
     public function changeMemberRole(User $user, Role|string $role): void
     {
         $role = $this->resolveRole($role);
@@ -396,9 +309,6 @@ class Organization extends Model
         $user->unsetRelation('organizationRoles');
     }
 
-    /**
-     * Turn a role name into one of this organization's roles, refusing roles of other organizations.
-     */
     protected function resolveRole(Role|string $role): Role
     {
         if (is_string($role)) {
@@ -410,9 +320,6 @@ class Organization extends Model
         return $role;
     }
 
-    /**
-     * Remove the user, and the role they held, from the organization.
-     */
     public function removeMember(User $user): void
     {
         DB::transaction(function () use ($user) {
@@ -424,9 +331,6 @@ class Organization extends Model
         $user->unsetRelation('organizationRoles');
     }
 
-    /**
-     * Run the callback with this organization as the permission team context.
-     */
     protected function asPermissionsTeam(Closure $callback): mixed
     {
         $previousTeamId = getPermissionsTeamId();
@@ -445,9 +349,6 @@ class Organization extends Model
         return 'slug';
     }
 
-    /**
-     * Log renames and slug changes.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

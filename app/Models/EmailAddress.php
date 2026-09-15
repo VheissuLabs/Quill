@@ -39,9 +39,6 @@ class EmailAddress extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Determine if the address has been verified.
-     */
     public function isVerified(): bool
     {
         return $this->verified_at !== null;
@@ -57,22 +54,14 @@ class EmailAddress extends Model
         Notification::route('mail', $this->email)->notify(new VerifyEmailAddress($this));
     }
 
-    /**
-     * Scope the query to verified addresses.
-     *
-     * @param  Builder<$this>  $query
-     */
+    /** @param  Builder<$this>  $query */
     #[Scope]
     protected function verified(Builder $query): void
     {
         $query->whereNotNull('verified_at');
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -80,9 +69,6 @@ class EmailAddress extends Model
         ];
     }
 
-    /**
-     * Log added addresses and verifications.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

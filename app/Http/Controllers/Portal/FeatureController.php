@@ -83,9 +83,6 @@ class FeatureController extends Controller
         ]);
     }
 
-    /**
-     * Request a new feature on the project's board.
-     */
     public function store(SaveFeatureRequest $request, Organization $organization, Project $project): RedirectResponse
     {
         Gate::authorize('create', [Feature::class, $project]);

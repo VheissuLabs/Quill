@@ -13,9 +13,6 @@ use Laravel\Fortify\Features;
 
 class SecurityController extends Controller
 {
-    /**
-     * Show the user's security settings page.
-     */
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
         $props = [

@@ -33,11 +33,7 @@ class Vote extends Model
         return $this->belongsTo(Feature::class);
     }
 
-    /**
-     * Get the user who cast the vote.
-     *
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

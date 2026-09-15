@@ -41,9 +41,6 @@ class OrganizationMembership extends Pivot
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Log who joins and leaves the organization.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

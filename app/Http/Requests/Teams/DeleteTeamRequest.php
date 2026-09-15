@@ -9,14 +9,7 @@ use Illuminate\Validation\Rule;
 
 class DeleteTeamRequest extends FormRequest
 {
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * The team's work always goes somewhere: to another team of the same organization when one
-     * is named, and back to the organization itself when none is.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         $team = $this->route('team');
@@ -34,11 +27,7 @@ class DeleteTeamRequest extends FormRequest
         ];
     }
 
-    /**
-     * Get custom messages for validator errors.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

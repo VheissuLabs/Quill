@@ -55,22 +55,14 @@ class Project extends Model
         return $this->belongsTo(Client::class);
     }
 
-    /**
-     * Get the teams a private project is restricted to. An empty set means every organization member.
-     *
-     * @return BelongsToMany<Team, $this>
-     */
+    /** @return BelongsToMany<Team, $this> */
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class, 'project_teams')
             ->withTimestamps();
     }
 
-    /**
-     * Get the feature requests for the project.
-     *
-     * @return HasMany<Feature, $this>
-     */
+    /** @return HasMany<Feature, $this> */
     public function features(): HasMany
     {
         return $this->hasMany(Feature::class);
@@ -82,23 +74,12 @@ class Project extends Model
         return $this->hasMany(Issue::class);
     }
 
-    /**
-     * Determine if the project is visible to anyone.
-     */
     public function isPublic(): bool
     {
         return $this->visibility === ProjectVisibility::Public;
     }
 
-    /**
-     * Scope the query to projects the given user may view.
-     *
-     * Public projects are visible to everyone. Private projects are visible to organization
-     * members who can manage projects, and otherwise only to members of the restricted teams
-     * (or any organization member when no teams are attached).
-     *
-     * @param  Builder<$this>  $query
-     */
+    /** @param  Builder<$this>  $query */
     #[Scope]
     protected function visibleTo(Builder $query, ?User $user): void
     {
@@ -121,9 +102,6 @@ class Project extends Model
         });
     }
 
-    /**
-     * Record project setting changes.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -133,11 +111,7 @@ class Project extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

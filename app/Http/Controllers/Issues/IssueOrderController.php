@@ -12,9 +12,6 @@ use Illuminate\Support\Facades\Gate;
 
 class IssueOrderController extends Controller
 {
-    /**
-     * Rank the given issues in the order they were dragged into on the issues list.
-     */
     public function update(UpdateIssueOrderRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('viewAny', [Issue::class, $currentOrganization]);

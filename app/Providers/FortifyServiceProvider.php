@@ -51,9 +51,6 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::authenticateUsing(fn (Request $request) => $this->authenticate($request));
     }
 
-    /**
-     * Find the user for the given credentials, accepting the primary email or any verified additional address.
-     */
     private function authenticate(Request $request): ?User
     {
         $email = strtolower((string) $request->input(Fortify::username()));
@@ -123,11 +120,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Get the pending organization invitation context for auth pages.
-     *
-     * @return array{code: string, organizationName: string}|null
-     */
+    /** @return array{code: string, organizationName: string}|null */
     private function organizationInvitation(Request $request): ?array
     {
         $invitationCode = $request->query('invitation');

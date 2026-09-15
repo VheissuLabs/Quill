@@ -23,9 +23,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class OrganizationController extends Controller
 {
-    /**
-     * Display a listing of the user's organizations.
-     */
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -120,9 +117,6 @@ class OrganizationController extends Controller
         return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
     }
 
-    /**
-     * Enable or disable the organization's product modules.
-     */
     public function updateModules(UpdateOrganizationModulesRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('manageModules', $currentOrganization);
@@ -147,12 +141,6 @@ class OrganizationController extends Controller
         return redirect($this->urlAfterSwitching($organization));
     }
 
-    /**
-     * Where to land after switching: the same page inside the new organization when the page is
-     * organization-wide (the organization is the only thing in its URL), the dashboard when the
-     * page was about one record that does not exist over there, and right back where the user was
-     * for pages outside any organization.
-     */
     protected function urlAfterSwitching(Organization $organization): string
     {
         $previous = url()->previous();

@@ -25,9 +25,6 @@ class SprintStateController extends Controller
         return back();
     }
 
-    /**
-     * Complete the sprint, returning unfinished issues to the backlog.
-     */
     public function destroy(Organization $currentOrganization, Sprint $sprint): RedirectResponse
     {
         Gate::authorize('update', $sprint);

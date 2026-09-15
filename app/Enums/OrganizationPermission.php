@@ -46,9 +46,6 @@ enum OrganizationPermission: string
         };
     }
 
-    /**
-     * Get the group the permission is shown under.
-     */
     public function group(): string
     {
         return match ($this) {
@@ -59,11 +56,7 @@ enum OrganizationPermission: string
         };
     }
 
-    /**
-     * Get every permission as an option for the roles form.
-     *
-     * @return array<int, array{value: string, label: string, group: string}>
-     */
+    /** @return array<int, array{value: string, label: string, group: string}> */
     public static function options(): array
     {
         return array_map(fn (self $permission) => [

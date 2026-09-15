@@ -59,41 +59,19 @@ class Team extends Model
             ->withTimestamps();
     }
 
-    /**
-     * Get the team's membership records.
-     *
-     * @return HasMany<TeamMembership, $this>
-     */
+    /** @return HasMany<TeamMembership, $this> */
     public function memberships(): HasMany
     {
         return $this->hasMany(TeamMembership::class);
     }
 
-    /**
-     * Get the private projects restricted to this team.
-     *
-     * @return BelongsToMany<Project, $this>
-     */
+    /** @return BelongsToMany<Project, $this> */
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_teams')
             ->withTimestamps();
     }
 
-    /**
-     * Move everything this team owns into another team of the same organization, then delete it.
-     *
-     * Issues follow their status onto the new board, the rule Issue::planInto() already uses when
-     * work is planned into another team's sprint. Work whose status has no column over there
-     * returns to the backlog rather than landing in a column that means something else.
-     *
-     * The target is another team, or the organization taking the work back when the team is the
-     * last one standing or simply not wanted any more. Handing back to the organization drops the
-     * team restriction on its private projects and leaves everyone a plain organization member.
-     *
-     * The move is written in bulk, so the issues, sprints and memberships it touches record no
-     * activity of their own; the target gets one entry describing the merge instead.
-     */
     public function mergeInto(Organization|self $target): void
     {
         $targetOrganization = $target instanceof self ? $target->organization_id : $target->getKey();
@@ -148,9 +126,6 @@ class Team extends Model
         return $this->hasMany(Issue::class);
     }
 
-    /**
-     * Repoint the team's issues at the target's board, column by column.
-     */
     private function moveIssuesTo(Organization|self $target): void
     {
         $teamId = $target instanceof self ? $target->getKey() : null;

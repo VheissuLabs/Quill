@@ -362,11 +362,7 @@ class OrganizationName implements ValidationRule
             ->toArray());
     }
 
-    /**
-     * Get a list of reserved names from the application's route prefixes.
-     *
-     * @return array<int, string>
-     */
+    /** @return array<int, string> */
     protected function routesPrefixes(): array
     {
         return collect(Route::getRoutes()->getRoutes())

@@ -35,27 +35,17 @@ class BoardColumn extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get whoever runs the board the column is on: a team, or the organization itself.
-     *
-     * @return MorphTo<Model, $this>
-     */
+    /** @return MorphTo<Model, $this> */
     public function owner(): MorphTo
     {
         return $this->morphTo();
     }
 
-    /**
-     * Get the organization the board belongs to, whether or not a team runs it.
-     */
     public function organization(): Organization
     {
         return $this->owner instanceof Team ? $this->owner->organization : $this->owner;
     }
 
-    /**
-     * Get the team working off this board, or null when the organization runs it itself.
-     */
     public function teamId(): ?int
     {
         return $this->owner instanceof Team ? $this->owner->getKey() : null;
@@ -67,9 +57,6 @@ class BoardColumn extends Model
         return $this->hasMany(Issue::class);
     }
 
-    /**
-     * Record changes to a board's columns.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -79,11 +66,7 @@ class BoardColumn extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

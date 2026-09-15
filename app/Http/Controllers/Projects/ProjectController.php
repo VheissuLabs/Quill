@@ -19,9 +19,6 @@ use Inertia\Response;
 
 class ProjectController extends Controller
 {
-    /**
-     * Display the organization's projects the user may see.
-     */
     public function index(Request $request, Organization $currentOrganization): Response
     {
         Gate::authorize('viewAny', [Project::class, $currentOrganization]);
@@ -104,9 +101,6 @@ class ProjectController extends Controller
         return to_route('projects.edit', ['project' => $project->slug]);
     }
 
-    /**
-     * Delete the specified project along with its features.
-     */
     public function destroy(Organization $currentOrganization, Project $project): RedirectResponse
     {
         Gate::authorize('delete', $project);
@@ -118,11 +112,7 @@ class ProjectController extends Controller
         return to_route('projects.index');
     }
 
-    /**
-     * Restrict a private project to the given teams. Public projects are never restricted.
-     *
-     * @param  array<int, int>  $teamIds
-     */
+    /** @param  array<int, int>  $teamIds */
     private function syncTeams(Project $project, array $teamIds): void
     {
         $project->teams()->sync($project->isPublic() ? [] : $teamIds);

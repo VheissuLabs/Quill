@@ -20,12 +20,7 @@ class ProfileDeleteRequest extends FormRequest
         ];
     }
 
-    /**
-     * Get the "after" validation callables. An organization always keeps an owner, so the last
-     * owner has to hand it over before the account can go.
-     *
-     * @return array<int, callable(Validator): void>
-     */
+    /** @return array<int, callable(Validator): void> */
     public function after(): array
     {
         return [

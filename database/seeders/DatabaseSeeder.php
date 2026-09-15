@@ -6,10 +6,6 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database. Permissions are needed everywhere; the rest builds a full
-     * fake workspace for local development, one seeder per model in dependency order.
-     */
     public function run(): void
     {
         $this->call(PermissionsSeeder::class);

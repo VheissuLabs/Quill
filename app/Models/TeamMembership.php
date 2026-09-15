@@ -41,9 +41,6 @@ class TeamMembership extends Pivot
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Log who joins and leaves the team.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

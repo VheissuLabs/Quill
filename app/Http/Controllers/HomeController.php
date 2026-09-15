@@ -11,9 +11,6 @@ class HomeController extends Controller
 {
     use RedirectsToCurrentOrganization;
 
-    /**
-     * Send guests to the login screen and members to their current organization's dashboard.
-     */
     public function __invoke(Request $request): RedirectResponse
     {
         if (! $request->user()) {

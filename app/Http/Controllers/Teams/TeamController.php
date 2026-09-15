@@ -104,10 +104,6 @@ class TeamController extends Controller
         return to_route('teams.edit', ['team' => $team->slug]);
     }
 
-    /**
-     * Delete the specified team, handing its board and its work to another team or back to the
-     * organization. Nothing is thrown away.
-     */
     public function destroy(DeleteTeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
         Gate::authorize('delete', $team);
@@ -123,11 +119,7 @@ class TeamController extends Controller
         return to_route('teams.index');
     }
 
-    /**
-     * Get the attributes of a member shown on the team page.
-     *
-     * @return array{id: int, name: string, email: string, avatar: string|null}
-     */
+    /** @return array{id: int, name: string, email: string, avatar: string|null} */
     private function memberSummary(User $member): array
     {
         return [

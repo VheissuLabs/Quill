@@ -15,29 +15,18 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 trait RunsABoard
 {
-    /**
-     * Get the columns of the board, in board order.
-     *
-     * @return MorphMany<BoardColumn, $this>
-     */
+    /** @return MorphMany<BoardColumn, $this> */
     public function columns(): MorphMany
     {
         return $this->morphMany(BoardColumn::class, 'owner')->orderBy('position');
     }
 
-    /**
-     * Get the sprints run off the board.
-     *
-     * @return MorphMany<Sprint, $this>
-     */
+    /** @return MorphMany<Sprint, $this> */
     public function sprints(): MorphMany
     {
         return $this->morphMany(Sprint::class, 'owner');
     }
 
-    /**
-     * Create the columns a board starts with: Todo, In progress, Done.
-     */
     public function createDefaultColumns(): void
     {
         foreach (IssueStatus::columnStatuses() as $position => $status) {

@@ -46,21 +46,13 @@ class Feature extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get the project the feature was requested for.
-     *
-     * @return BelongsTo<Project, $this>
-     */
+    /** @return BelongsTo<Project, $this> */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    /**
-     * Get the user who requested the feature.
-     *
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -72,14 +64,7 @@ class Feature extends Model
         return $this->hasMany(Vote::class);
     }
 
-    /**
-     * Add the vote counts, the net score, and the viewer's own vote direction to the query.
-     *
-     * @param  Builder<$this>  $query
-     */
-    /**
-     * Only requests that are still in play: completed and declined ones leave the board.
-     */
+    /** @param  Builder<$this>  $query */
     #[Scope]
     protected function active(Builder $query): void
     {
@@ -103,9 +88,6 @@ class Feature extends Model
             ]));
     }
 
-    /**
-     * Record, switch or keep the user's vote in the given direction.
-     */
     public function castVote(User $user, VoteDirection $direction): void
     {
         $this->votes()->updateOrCreate(['user_id' => $user->id], ['direction' => $direction->weight()]);
@@ -117,12 +99,7 @@ class Feature extends Model
         return $this->hasMany(Comment::class);
     }
 
-    /**
-     * Get the people who can be @mentioned on this feature: members of the organization, the
-     * requester, and anyone who has commented.
-     *
-     * @return \Illuminate\Support\Collection<int, User>
-     */
+    /** @return \Illuminate\Support\Collection<int, User> */
     public function mentionableUsers(): \Illuminate\Support\Collection
     {
         return $this->project->organization->members()->get()
@@ -133,19 +110,12 @@ class Feature extends Model
             ->values();
     }
 
-    /**
-     * Get the issue the feature was converted into, if any.
-     *
-     * @return HasOne<Issue, $this>
-     */
+    /** @return HasOne<Issue, $this> */
     public function issue(): HasOne
     {
         return $this->hasOne(Issue::class);
     }
 
-    /**
-     * Record who changed the request, and how, so a status change can always be traced.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -155,11 +125,7 @@ class Feature extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

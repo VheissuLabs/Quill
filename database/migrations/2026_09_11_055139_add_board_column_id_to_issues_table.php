@@ -8,10 +8,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations. Existing teams get the default columns and issues already in a sprint
-     * are placed in the column matching their status.
-     */
     public function up(): void
     {
         Schema::table('issues', function (Blueprint $table) {
@@ -52,9 +48,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('issues', function (Blueprint $table) {

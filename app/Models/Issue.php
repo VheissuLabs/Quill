@@ -67,58 +67,35 @@ class Issue extends Model
         return $this->belongsTo(Sprint::class);
     }
 
-    /**
-     * Get the board column the issue sits in while planned.
-     *
-     * @return BelongsTo<BoardColumn, $this>
-     */
+    /** @return BelongsTo<BoardColumn, $this> */
     public function boardColumn(): BelongsTo
     {
         return $this->belongsTo(BoardColumn::class);
     }
 
-    /**
-     * Get the feature request the issue was converted from.
-     *
-     * @return BelongsTo<Feature, $this>
-     */
+    /** @return BelongsTo<Feature, $this> */
     public function feature(): BelongsTo
     {
         return $this->belongsTo(Feature::class);
     }
 
-    /**
-     * Get the user the issue is assigned to.
-     *
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignee_id');
     }
 
-    /**
-     * Get the user who created the issue.
-     *
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Get the identifier shown in the UI, such as "GitDifferent #12".
-     */
     public function reference(): string
     {
         return "{$this->project->name} #{$this->number}";
     }
 
-    /**
-     * Plan the issue into a sprint (or back to the backlog). The issue takes the sprint's team,
-     * leaves the backlog when planned, and returns to it when unplanned unless already closed.
-     */
     public function planInto(?Sprint $sprint): void
     {
         if (! $sprint) {
@@ -144,9 +121,6 @@ class Issue extends Model
         }
     }
 
-    /**
-     * Place the issue in a board column and take on that column's status.
-     */
     public function moveToColumn(BoardColumn $column): void
     {
         $this->update(['board_column_id' => $column->id, 'team_id' => $column->teamId()]);
@@ -154,10 +128,6 @@ class Issue extends Model
         $this->changeStatus($column->status);
     }
 
-    /**
-     * Move the issue to a new status, keeping the completion time and the linked feature in step.
-     * Backlog and cancelled issues sit in no column, and a cancelled issue leaves its sprint.
-     */
     public function changeStatus(IssueStatus $status): void
     {
         DB::transaction(function () use ($status) {
@@ -176,9 +146,6 @@ class Issue extends Model
         });
     }
 
-    /**
-     * Record every meaningful change to the issue with the person who made it.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -188,11 +155,7 @@ class Issue extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

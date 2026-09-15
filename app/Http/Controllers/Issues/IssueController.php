@@ -29,10 +29,6 @@ use Spatie\Activitylog\Models\Activity;
 
 class IssueController extends Controller
 {
-    /**
-     * Display the backlog of the user's current team: issues not planned into any sprint, belonging
-     * to the team or to no team yet. Planned work is shown inside the sprint cards instead.
-     */
     public function index(Request $request, Organization $currentOrganization): Response
     {
         Gate::authorize('viewAny', [Issue::class, $currentOrganization]);
@@ -138,9 +134,6 @@ class IssueController extends Controller
         ]);
     }
 
-    /**
-     * Update the issue. Any subset of fields may be sent.
-     */
     public function update(UpdateIssueRequest $request, Organization $currentOrganization, Issue $issue): RedirectResponse
     {
         Gate::authorize('update', $issue);
@@ -174,10 +167,6 @@ class IssueController extends Controller
     }
 
     /**
-     * Get the latest changes to the team's issues: those belonging to the current team or to no
-     * team yet, across the backlog and every sprint. Entries whose issue has since been deleted
-     * are left out.
-     *
      * @param  Collection<int, int>  $projectIds
      * @return Collection<int, array<string, mixed>>
      */
@@ -211,11 +200,7 @@ class IssueController extends Controller
             });
     }
 
-    /**
-     * Get the attributes of an issue shown in lists.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function issueSummary(Issue $issue): array
     {
         return [
@@ -236,12 +221,7 @@ class IssueController extends Controller
         ];
     }
 
-    /**
-     * Get the options for the issue forms: projects, teams, open sprints, members, statuses,
-     * priorities. Sprints are limited to the given team when one is set.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function formOptions(Organization $organization, User $user, ?Team $team = null): array
     {
         return [

@@ -25,9 +25,6 @@ readonly class CommentSummary
         //
     }
 
-    /**
-     * Build the summary of a comment loaded with its author, mentions and replies.
-     */
     public static function fromComment(Comment $comment, ?User $viewer): self
     {
         return new self(
@@ -45,9 +42,6 @@ readonly class CommentSummary
     }
 
     /**
-     * Build the threads of a feature for the viewer: top-level comments with their replies,
-     * internal comments only for organization members.
-     *
      * @param  Collection<int, Comment>  $topLevel
      * @return Collection<int, self>
      */

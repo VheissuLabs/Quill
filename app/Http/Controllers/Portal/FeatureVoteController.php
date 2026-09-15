@@ -14,9 +14,6 @@ use Illuminate\Validation\Rule;
 
 class FeatureVoteController extends Controller
 {
-    /**
-     * Cast the user's vote for or against the feature, switching direction if they already voted.
-     */
     public function store(Request $request, Organization $organization, Project $project, Feature $feature): RedirectResponse
     {
         Gate::authorize('vote', $feature);
@@ -30,9 +27,6 @@ class FeatureVoteController extends Controller
         return back();
     }
 
-    /**
-     * Withdraw the user's vote for the feature.
-     */
     public function destroy(Request $request, Organization $organization, Project $project, Feature $feature): RedirectResponse
     {
         Gate::authorize('vote', $feature);

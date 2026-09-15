@@ -13,9 +13,6 @@ use Spatie\Permission\Models\Role;
 
 class OrganizationMemberController extends Controller
 {
-    /**
-     * Update the specified organization member's role.
-     */
     public function update(UpdateOrganizationMemberRequest $request, Organization $currentOrganization, User $user): RedirectResponse
     {
         $membership = $currentOrganization->memberships()->where('user_id', $user->id)->firstOrFail();
@@ -30,9 +27,6 @@ class OrganizationMemberController extends Controller
         return back();
     }
 
-    /**
-     * Remove the specified organization member.
-     */
     public function destroy(Organization $currentOrganization, User $user): RedirectResponse
     {
         $membership = $currentOrganization->memberships()->where('user_id', $user->id)->firstOrFail();

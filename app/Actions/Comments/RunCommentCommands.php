@@ -65,11 +65,7 @@ class RunCommentCommands
         ];
     }
 
-    /**
-     * The commands the user may run on this feature, for the comment box picker.
-     *
-     * @return array<int, array{name: string, usage: string, description: string}>
-     */
+    /** @return array<int, array{name: string, usage: string, description: string}> */
     public static function availableTo(?User $user, Feature $feature): array
     {
         if (! $user || ! $user->can('comment', $feature)) {
@@ -126,12 +122,7 @@ class RunCommentCommands
         return __('Vote withdrawn.');
     }
 
-    /**
-     * Split the text after "/status" into the status it names and whatever follows it,
-     * matching the longest name first so "in progress" wins over "in".
-     *
-     * @return array{0: FeatureStatus, 1: string}
-     */
+    /** @return array{0: FeatureStatus, 1: string} */
     private function parseStatus(Feature $feature, string $argument): array
     {
         $this->authorize('updateStatus', $feature, __('You can\'t change the status.'));

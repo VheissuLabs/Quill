@@ -14,9 +14,6 @@ use Inertia\Inertia;
 
 class FeatureIssueController extends Controller
 {
-    /**
-     * Convert the feature request into a backlog issue on its project.
-     */
     public function store(Request $request, Organization $organization, Project $project, Feature $feature, CreateIssue $createIssue): RedirectResponse
     {
         Gate::authorize('convert', $feature);

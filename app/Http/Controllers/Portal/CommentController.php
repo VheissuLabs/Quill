@@ -18,11 +18,6 @@ use Inertia\Inertia;
 
 class CommentController extends Controller
 {
-    /**
-     * Leave a comment on the feature, or reply to an existing thread. Lines starting with "/" are
-     * commands (see RunCommentCommands) and are executed rather than posted. Replies to an internal
-     * comment are internal too, and mentioned people are notified.
-     */
     public function store(StoreCommentRequest $request, Organization $organization, Project $project, Feature $feature, RunCommentCommands $commands): RedirectResponse
     {
         Gate::authorize('comment', $feature);
@@ -65,9 +60,6 @@ class CommentController extends Controller
         return back();
     }
 
-    /**
-     * Delete the comment and, for a top-level comment, its replies.
-     */
     public function destroy(Organization $organization, Project $project, Feature $feature, Comment $comment): RedirectResponse
     {
         Gate::authorize('delete', $comment);

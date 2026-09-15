@@ -13,9 +13,6 @@ use Inertia\Inertia;
 
 class TeamMemberController extends Controller
 {
-    /**
-     * Add an organization member to the team.
-     */
     public function store(AddTeamMemberRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
         Gate::authorize('update', $team);

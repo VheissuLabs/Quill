@@ -44,48 +44,29 @@ class Sprint extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get whoever runs the sprint: a team, or the organization itself when it has no teams.
-     *
-     * @return MorphTo<Model, $this>
-     */
+    /** @return MorphTo<Model, $this> */
     public function owner(): MorphTo
     {
         return $this->morphTo();
     }
 
-    /**
-     * Get the organization the sprint belongs to, whether or not a team runs it.
-     */
     public function organization(): Organization
     {
         return $this->owner instanceof Team ? $this->owner->organization : $this->owner;
     }
 
-    /**
-     * Get the team running this sprint, or null when the organization runs it itself.
-     */
     public function teamId(): ?int
     {
         return $this->owner instanceof Team ? $this->owner->getKey() : null;
     }
 
-    /**
-     * Get the board columns the sprint's work moves through.
-     *
-     * @return Collection<int, BoardColumn>
-     */
+    /** @return Collection<int, BoardColumn> */
     public function columns(): Collection
     {
         return $this->owner->columns;
     }
 
     /**
-     * Resolve a scoped route binding.
-     *
-     * The columns belong to whoever runs the board, not to the sprint, so the default lookup
-     * has no relation to follow.
-     *
      * @param  string  $childType
      * @param  mixed  $value
      * @param  string|null  $field
@@ -110,9 +91,6 @@ class Sprint extends Model
         $this->update(['status' => SprintStatus::Active]);
     }
 
-    /**
-     * Complete the sprint and return unfinished issues to the backlog.
-     */
     public function complete(): void
     {
         DB::transaction(function () {
@@ -127,9 +105,6 @@ class Sprint extends Model
         });
     }
 
-    /**
-     * Record sprint changes, including who started and completed it.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -139,11 +114,7 @@ class Sprint extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -13,9 +13,6 @@ use Illuminate\Support\Facades\Schema;
  */
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('board_columns', function (Blueprint $table) {
@@ -54,12 +51,6 @@ return new class extends Migration
         );
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * Only team-owned boards can be restored; anything the organization had taken over has no
-     * team to go back to and is dropped.
-     */
     public function down(): void
     {
         Schema::table('board_columns', function (Blueprint $table) {

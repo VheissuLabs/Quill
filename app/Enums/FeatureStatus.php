@@ -21,19 +21,12 @@ enum FeatureStatus: string
         };
     }
 
-    /**
-     * Determine whether the status closes the request, so it no longer accepts votes or conversion.
-     */
     public function isSettled(): bool
     {
         return in_array($this, [self::Completed, self::Declined], true);
     }
 
-    /**
-     * Get the statuses that still accept votes and appear on the board by default.
-     *
-     * @return array<int, self>
-     */
+    /** @return array<int, self> */
     public static function active(): array
     {
         return array_values(array_filter(self::cases(), fn (self $status) => ! $status->isSettled()));

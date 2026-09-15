@@ -10,9 +10,6 @@ use Inertia\Inertia;
 
 class VerifyEmailAddressController extends Controller
 {
-    /**
-     * Mark the email address as verified from its signed verification link.
-     */
     public function __invoke(EmailAddress $emailAddress, string $hash): RedirectResponse
     {
         Gate::authorize('manage', $emailAddress);

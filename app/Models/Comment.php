@@ -41,84 +41,52 @@ class Comment extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get the feature the comment was left on.
-     *
-     * @return BelongsTo<Feature, $this>
-     */
+    /** @return BelongsTo<Feature, $this> */
     public function feature(): BelongsTo
     {
         return $this->belongsTo(Feature::class);
     }
 
-    /**
-     * Get the top-level comment this is a reply to.
-     *
-     * @return BelongsTo<Comment, $this>
-     */
+    /** @return BelongsTo<Comment, $this> */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Comment::class, 'parent_id');
     }
 
-    /**
-     * Get the replies to this comment, oldest first.
-     *
-     * @return HasMany<Comment, $this>
-     */
+    /** @return HasMany<Comment, $this> */
     public function replies(): HasMany
     {
         return $this->hasMany(Comment::class, 'parent_id')->oldest();
     }
 
-    /**
-     * Get the user who wrote the comment.
-     *
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    /**
-     * Get the users mentioned in the comment.
-     *
-     * @return BelongsToMany<User, $this>
-     */
+    /** @return BelongsToMany<User, $this> */
     public function mentions(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'comment_mentions')
             ->withTimestamps();
     }
 
-    /**
-     * Scope the query to comments everyone who can see the feature may read.
-     *
-     * @param  Builder<$this>  $query
-     */
+    /** @param  Builder<$this>  $query */
     #[Scope]
     protected function public(Builder $query): void
     {
         $query->where('is_internal', false);
     }
 
-    /**
-     * Scope the query to comments that start a thread.
-     *
-     * @param  Builder<$this>  $query
-     */
+    /** @param  Builder<$this>  $query */
     #[Scope]
     protected function topLevel(Builder $query): void
     {
         $query->whereNull('parent_id');
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -126,9 +94,6 @@ class Comment extends Model
         ];
     }
 
-    /**
-     * Log comments and edits to them.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

@@ -64,8 +64,6 @@ readonly class ActivitySummary
     }
 
     /**
-     * Summarise the latest entries for a subject.
-     *
      * @param  Collection<int, Activity>  $activities
      * @return Collection<int, self>
      */
@@ -105,9 +103,6 @@ readonly class ActivitySummary
         };
     }
 
-    /**
-     * Turn a stored value into something readable: enum labels, related model names, dates.
-     */
     protected static function display(string $attribute, mixed $value): ?string
     {
         if ($value === null || $value === '') {
@@ -147,11 +142,7 @@ readonly class ActivitySummary
         };
     }
 
-    /**
-     * Look up the name of a related model by id, falling back when it no longer exists.
-     *
-     * @param  class-string<Model>  $model
-     */
+    /** @param  class-string<Model>  $model */
     protected static function nameOf(string $model, mixed $id, string $fallback, string $column = 'name'): string
     {
         $name = $model::query()->whereKey($id)->value($column);

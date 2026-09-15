@@ -9,11 +9,6 @@ use Spatie\Permission\Models\Role;
 
 class OrganizationMembershipPolicy
 {
-    /**
-     * Determine whether the user can give the membership the given role. An owner's membership
-     * is theirs alone to change, and only while another owner remains; only an owner can make
-     * someone else an owner.
-     */
     public function update(User $user, OrganizationMembership $membership, ?Role $role = null): bool
     {
         $organization = $membership->organization;
@@ -29,10 +24,6 @@ class OrganizationMembershipPolicy
         return $role === null || ! $role->is_owner || $organization->isOwner($user);
     }
 
-    /**
-     * Determine whether the user can end the membership. An owner can only be removed by
-     * themselves, and only while another owner remains.
-     */
     public function delete(User $user, OrganizationMembership $membership): bool
     {
         $organization = $membership->organization;

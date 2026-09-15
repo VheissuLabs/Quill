@@ -14,13 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 class CreateIssue
 {
-    /**
-     * Create an issue on the project with the next free number. When a feature is given the issue
-     * is linked to it and the feature moves to Planned: the stakeholder wants it, the discussion stays
-     * attached, and the work starts in the backlog.
-     *
-     * @param  array{title: string, description?: string|null, priority?: IssuePriority|null, points?: int|null, team_id?: int|null, sprint_id?: int|null, assignee_id?: int|null}  $attributes
-     */
+    /** @param  array{title: string, description?: string|null, priority?: IssuePriority|null, points?: int|null, team_id?: int|null, sprint_id?: int|null, assignee_id?: int|null}  $attributes */
     public function handle(Project $project, User $creator, array $attributes, ?Feature $feature = null): Issue
     {
         return DB::transaction(function () use ($project, $creator, $attributes, $feature) {

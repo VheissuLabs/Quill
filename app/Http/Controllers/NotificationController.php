@@ -8,9 +8,6 @@ use Illuminate\Notifications\DatabaseNotification;
 
 class NotificationController extends Controller
 {
-    /**
-     * Mark one notification as read and continue to what it points at.
-     */
     public function read(Request $request, DatabaseNotification $notification): RedirectResponse
     {
         abort_unless($notification->notifiable()->is($request->user()), 404);

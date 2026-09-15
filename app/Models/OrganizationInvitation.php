@@ -42,29 +42,18 @@ class OrganizationInvitation extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    /**
-     * Get the role the invitee will receive.
-     *
-     * @return BelongsTo<Role, $this>
-     */
+    /** @return BelongsTo<Role, $this> */
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
     }
 
-    /**
-     * Get the user who sent the invitation.
-     *
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function inviter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by');
     }
 
-    /**
-     * Determine if the invitation has been accepted.
-     */
     public function isAccepted(): bool
     {
         return $this->accepted_at !== null;
@@ -80,11 +69,7 @@ class OrganizationInvitation extends Model
         return $this->expires_at !== null && $this->expires_at->isPast();
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -98,9 +83,6 @@ class OrganizationInvitation extends Model
         return 'code';
     }
 
-    /**
-     * Log who was invited, by whom, and when they accepted.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

@@ -11,8 +11,6 @@ use Inertia\Middleware;
 class HandleInertiaRequests extends Middleware
 {
     /**
-     * The root template that's loaded on the first page visit.
-     *
      * @see https://inertiajs.com/server-side-setup#root-template
      *
      * @var string
@@ -26,8 +24,6 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Define the props that are shared by default.
-     *
      * @see https://inertiajs.com/shared-data
      *
      * @return array<string, mixed>
@@ -54,11 +50,7 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    /**
-     * Get the user's latest notifications for the top bar.
-     *
-     * @return array{unreadCount: int, items: array<int, array{id: string, title: string, body: string, url: string|null, readAt: string|null, createdAt: string}>}
-     */
+    /** @return array{unreadCount: int, items: array<int, array{id: string, title: string, body: string, url: string|null, readAt: string|null, createdAt: string}>} */
     private function notifications(?User $user): array
     {
         if (! $user) {
@@ -83,11 +75,7 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    /**
-     * Get the team the user is working in within their current organization.
-     *
-     * @return array{id: int, name: string, slug: string}|null
-     */
+    /** @return array{id: int, name: string, slug: string}|null */
     private function currentTeam(?User $user): ?array
     {
         if (! $user?->currentOrganization) {

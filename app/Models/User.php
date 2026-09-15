@@ -62,11 +62,7 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(EmailAddress::class);
     }
 
-    /**
-     * Get every address the user is reachable at: the primary email plus verified additional ones.
-     *
-     * @return \Illuminate\Support\Collection<int, lowercase-string>
-     */
+    /** @return \Illuminate\Support\Collection<int, lowercase-string> */
     public function verifiedEmailAddresses(): \Illuminate\Support\Collection
     {
         return $this->emailAddresses()
@@ -78,37 +74,22 @@ class User extends Authenticatable implements PasskeyUser
             ->values();
     }
 
-    /**
-     * Determine if the given address is the primary email or a verified additional address.
-     */
     public function hasEmailAddress(string $email): bool
     {
         return $this->verifiedEmailAddresses()->contains(strtolower($email));
     }
 
-    /**
-     * Get the team the user is currently working in.
-     *
-     * @return BelongsTo<Team, $this>
-     */
+    /** @return BelongsTo<Team, $this> */
     public function currentTeam(): BelongsTo
     {
         return $this->belongsTo(Team::class, 'current_team_id');
     }
 
-    /**
-     * Get whoever runs the board in this organization: the user's current team, or the
-     * organization itself while it has no teams. Teams are opt in.
-     */
     public function boardOwnerFor(Organization $organization): Organization|Team
     {
         return $this->currentTeamFor($organization) ?? $organization;
     }
 
-    /**
-     * Get the team the user is working in within the given organization. Falls back to the first
-     * team they belong to there, then to the organization's first team, and remembers the choice.
-     */
     public function currentTeamFor(Organization $organization): ?Team
     {
         if ($this->currentTeam?->organization_id === $organization->id) {
@@ -124,9 +105,6 @@ class User extends Authenticatable implements PasskeyUser
         return $team;
     }
 
-    /**
-     * Switch to the given team. It must belong to the user's current organization.
-     */
     public function switchTeam(Team $team): bool
     {
         if ($team->organization_id !== $this->current_organization_id) {
@@ -146,11 +124,7 @@ class User extends Authenticatable implements PasskeyUser
             ->withTimestamps();
     }
 
-    /**
-     * Get the features the user has requested.
-     *
-     * @return HasMany<Feature, $this>
-     */
+    /** @return HasMany<Feature, $this> */
     public function features(): HasMany
     {
         return $this->hasMany(Feature::class);
@@ -162,21 +136,13 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(Issue::class, 'assignee_id');
     }
 
-    /**
-     * Get the votes the user has cast.
-     *
-     * @return HasMany<Vote, $this>
-     */
+    /** @return HasMany<Vote, $this> */
     public function votes(): HasMany
     {
         return $this->hasMany(Vote::class);
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -186,9 +152,6 @@ class User extends Authenticatable implements PasskeyUser
         ];
     }
 
-    /**
-     * Log profile, security and context changes. Passwords, secrets and tokens are never logged.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

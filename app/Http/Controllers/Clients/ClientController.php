@@ -79,9 +79,6 @@ class ClientController extends Controller
         return to_route('clients.edit', ['client' => $client->slug]);
     }
 
-    /**
-     * Delete the specified client. Its projects are kept and detached from the client.
-     */
     public function destroy(Organization $currentOrganization, Client $client): RedirectResponse
     {
         Gate::authorize('delete', $client);

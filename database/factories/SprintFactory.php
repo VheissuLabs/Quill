@@ -12,11 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class SprintFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -29,9 +25,6 @@ class SprintFactory extends Factory
         ];
     }
 
-    /**
-     * Indicate that the sprint is running.
-     */
     public function active(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -39,9 +32,6 @@ class SprintFactory extends Factory
         ]);
     }
 
-    /**
-     * Indicate that the sprint has finished.
-     */
     public function completed(): static
     {
         return $this->state(fn (array $attributes) => [

@@ -10,9 +10,6 @@ use Inertia\Inertia;
 
 class EmailAddressVerificationNotificationController extends Controller
 {
-    /**
-     * Send a new verification link to an unverified email address.
-     */
     public function store(EmailAddress $emailAddress): RedirectResponse
     {
         Gate::authorize('manage', $emailAddress);

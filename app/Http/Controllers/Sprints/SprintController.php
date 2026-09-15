@@ -19,9 +19,6 @@ use Inertia\Response;
 
 class SprintController extends Controller
 {
-    /**
-     * Display the organization's sprints grouped by state.
-     */
     public function index(Request $request, Organization $currentOrganization): Response
     {
         Gate::authorize('viewAny', [Sprint::class, $currentOrganization]);
@@ -45,9 +42,6 @@ class SprintController extends Controller
         ]);
     }
 
-    /**
-     * Create a sprint for whoever runs the board: the current team, or the organization itself.
-     */
     public function store(SaveSprintRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Sprint::class, $currentOrganization]);
@@ -101,12 +95,6 @@ class SprintController extends Controller
         return back();
     }
 
-    /**
-     * Delete the sprint. Its issues return to the backlog.
-     *
-     * Deleting from a list leaves the user on it; deleting from the sprint's own page has nowhere
-     * to go back to, so that lands on the sprints index.
-     */
     public function destroy(Organization $currentOrganization, Sprint $sprint): RedirectResponse
     {
         Gate::authorize('delete', $sprint);
@@ -124,11 +112,7 @@ class SprintController extends Controller
         return back(fallback: route('sprints.index'));
     }
 
-    /**
-     * Get the attributes of an issue shown as a board card.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function cardSummary(Issue $issue): array
     {
         return [
@@ -147,11 +131,7 @@ class SprintController extends Controller
         ];
     }
 
-    /**
-     * Get the attributes of a sprint shown in lists.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function sprintSummary(Sprint $sprint): array
     {
         return [

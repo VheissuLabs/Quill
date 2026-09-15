@@ -7,9 +7,6 @@ enum VoteDirection: string
     case Up = 'up';
     case Down = 'down';
 
-    /**
-     * The value stored on the vote, so a sum gives the score.
-     */
     public function weight(): int
     {
         return $this === self::Up ? 1 : -1;

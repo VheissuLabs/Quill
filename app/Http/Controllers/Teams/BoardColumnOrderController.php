@@ -13,9 +13,6 @@ use Illuminate\Support\Facades\Gate;
 
 class BoardColumnOrderController extends Controller
 {
-    /**
-     * Reorder the team's board columns.
-     */
     public function update(UpdateBoardColumnOrderRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
         Gate::authorize('create', [BoardColumn::class, $team]);

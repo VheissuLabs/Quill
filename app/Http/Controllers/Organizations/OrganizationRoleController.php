@@ -18,9 +18,6 @@ use Spatie\Permission\Models\Role;
 
 class OrganizationRoleController extends Controller
 {
-    /**
-     * List the roles the organization defines, with what each grants and who holds it.
-     */
     public function index(Request $request, Organization $currentOrganization): Response
     {
         Gate::authorize('viewAny', [Role::class, $currentOrganization]);
@@ -32,9 +29,6 @@ class OrganizationRoleController extends Controller
         ]);
     }
 
-    /**
-     * One role in detail: what it grants, who holds it, and who could be given it.
-     */
     public function show(Request $request, Organization $currentOrganization, Role $role): Response
     {
         $this->ensureRoleBelongsTo($currentOrganization, $role);
@@ -68,9 +62,6 @@ class OrganizationRoleController extends Controller
         ]);
     }
 
-    /**
-     * Define a new role for the organization.
-     */
     public function store(SaveOrganizationRoleRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Role::class, $currentOrganization]);
@@ -86,9 +77,6 @@ class OrganizationRoleController extends Controller
         return to_route('roles.index', ['current_organization' => $currentOrganization->slug]);
     }
 
-    /**
-     * Rename a role or change the permissions it grants.
-     */
     public function update(SaveOrganizationRoleRequest $request, Organization $currentOrganization, Role $role): RedirectResponse
     {
         $this->ensureRoleBelongsTo($currentOrganization, $role);
@@ -105,9 +93,6 @@ class OrganizationRoleController extends Controller
         return to_route('roles.index', ['current_organization' => $currentOrganization->slug]);
     }
 
-    /**
-     * Delete a role nobody holds any more.
-     */
     public function destroy(Organization $currentOrganization, Role $role): RedirectResponse
     {
         $this->ensureRoleBelongsTo($currentOrganization, $role);
@@ -127,11 +112,7 @@ class OrganizationRoleController extends Controller
         return to_route('roles.index', ['current_organization' => $currentOrganization->slug]);
     }
 
-    /**
-     * Get the organization's roles with what they grant and how many members hold each.
-     *
-     * @return Collection<int, array<string, mixed>>
-     */
+    /** @return Collection<int, array<string, mixed>> */
     protected function roles(Organization $organization): Collection
     {
         $holders = DB::table('model_has_roles')
@@ -157,9 +138,6 @@ class OrganizationRoleController extends Controller
             ]);
     }
 
-    /**
-     * Roles of other organizations do not exist as far as this one is concerned.
-     */
     protected function ensureRoleBelongsTo(Organization $organization, Role $role): void
     {
         abort_unless((int) $role->getAttribute(config('permission.column_names.team_foreign_key')) === $organization->id, 404);

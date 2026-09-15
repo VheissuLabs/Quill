@@ -14,10 +14,6 @@ use Illuminate\Support\Facades\Gate;
 
 class SprintColumnController extends Controller
 {
-    /**
-     * Replace the contents of one board column with the given issues, in order. Issues that were
-     * not in the sprint yet are planned into it.
-     */
     public function update(UpdateSprintColumnRequest $request, Organization $currentOrganization, Sprint $sprint, BoardColumn $column): RedirectResponse
     {
         Gate::authorize('view', $sprint);

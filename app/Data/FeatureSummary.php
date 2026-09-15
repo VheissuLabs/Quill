@@ -27,11 +27,6 @@ readonly class FeatureSummary
         //
     }
 
-    /**
-     * Build the summary from a feature loaded with its author, comment count and vote summary
-     * (see Feature::withVoteSummary). The tracked issue is only shared with organization members,
-     * so callers pass $withIssue after loading the issue and its project.
-     */
     public static function fromFeature(Feature $feature, bool $withIssue = false): self
     {
         return new self(

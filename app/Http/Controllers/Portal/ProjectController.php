@@ -17,9 +17,6 @@ use Inertia\Response;
 
 class ProjectController extends Controller
 {
-    /**
-     * Display the project's feature board.
-     */
     public function show(Request $request, Organization $organization, Project $project): Response|RedirectResponse
     {
         $user = $request->user();

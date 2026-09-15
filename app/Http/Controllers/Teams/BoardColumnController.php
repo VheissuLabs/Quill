@@ -15,9 +15,6 @@ use Inertia\Inertia;
 
 class BoardColumnController extends Controller
 {
-    /**
-     * Add a column to the end of the team's board.
-     */
     public function store(SaveBoardColumnRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
         Gate::authorize('create', [BoardColumn::class, $team]);
@@ -32,9 +29,6 @@ class BoardColumnController extends Controller
         return back();
     }
 
-    /**
-     * Rename the column or change the status it maps to. Issues in it follow the new status.
-     */
     public function update(SaveBoardColumnRequest $request, Organization $currentOrganization, Team $team, BoardColumn $column): RedirectResponse
     {
         Gate::authorize('update', $column);
@@ -52,9 +46,6 @@ class BoardColumnController extends Controller
         return back();
     }
 
-    /**
-     * Remove the column, moving its issues to the column before it (or after, for the first).
-     */
     public function destroy(Organization $currentOrganization, Team $team, BoardColumn $column): RedirectResponse
     {
         Gate::authorize('delete', $column);

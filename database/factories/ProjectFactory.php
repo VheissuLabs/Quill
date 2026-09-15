@@ -14,11 +14,7 @@ use Illuminate\Support\Str;
  */
 class ProjectFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -30,9 +26,6 @@ class ProjectFactory extends Factory
         ];
     }
 
-    /**
-     * Indicate that the project's board is visible to everyone.
-     */
     public function public(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -40,9 +33,6 @@ class ProjectFactory extends Factory
         ]);
     }
 
-    /**
-     * Indicate that the project belongs to a client of the same organization.
-     */
     public function forClient(): static
     {
         return $this->state(fn (array $attributes) => [
