@@ -7,6 +7,7 @@ use App\Enums\FeatureStatus;
 use App\Enums\VoteDirection;
 use App\Models\Feature;
 use App\Models\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -32,20 +33,21 @@ class RunCommentCommands
 
             $command = strtolower($matches[1]);
             $argument = trim($matches[2] ?? '');
+            $status = null;
 
             if ($command === 'status') {
                 [$status, $argument] = $this->parseStatus($feature, $argument);
-                $messages[] = $this->status($feature, $status);
-            } else {
-                match ($command) {
-                    'for', 'like', 'vote', 'upvote' => $messages[] = $this->voteFor($feature, $user),
-                    'against', 'dislike', 'downvote' => $messages[] = $this->voteAgainst($feature, $user),
-                    'withdraw', 'unlike', 'unvote' => $messages[] = $this->withdrawVote($feature, $user),
-                    'convert' => $messages[] = $this->convert($feature, $user),
-                    'internal' => $internal = $this->internal($feature, $user),
-                    default => throw ValidationException::withMessages(['body' => __('Unknown command /:command.', ['command' => $command])]),
-                };
             }
+
+            match ($command) {
+                'status' => $messages[] = $this->status($feature, $status),
+                'for', 'like', 'vote', 'upvote' => $messages[] = $this->voteFor($feature, $user),
+                'against', 'dislike', 'downvote' => $messages[] = $this->voteAgainst($feature, $user),
+                'withdraw', 'unlike', 'unvote' => $messages[] = $this->withdrawVote($feature, $user),
+                'convert' => $messages[] = $this->convert($feature, $user),
+                'internal' => $internal = $this->internal($feature),
+                default => throw ValidationException::withMessages(['body' => __('Unknown command /:command.', ['command' => $command])]),
+            };
 
             if ($argument !== '') {
                 $remaining[] = $argument;
@@ -67,23 +69,15 @@ class RunCommentCommands
         }
 
         return collect([
-            'vote' => [
-                ['name' => 'for', 'usage' => '/for', 'description' => 'Vote for this request'],
-                ['name' => 'against', 'usage' => '/against', 'description' => 'Vote against this request'],
-                ['name' => 'withdraw', 'usage' => '/withdraw', 'description' => 'Withdraw your vote'],
-            ],
-            'commentInternally' => [
-                ['name' => 'internal', 'usage' => '/internal', 'description' => 'Post as an internal note'],
-            ],
-            'updateStatus' => [
-                ['name' => 'status', 'usage' => '/status <status>', 'description' => 'Change the status'],
-            ],
-            'convert' => [
-                ['name' => 'convert', 'usage' => '/convert', 'description' => 'Convert into a backlog issue'],
-            ],
+            ['ability' => 'vote', 'name' => 'for', 'usage' => '/for', 'description' => 'Vote for this request'],
+            ['ability' => 'vote', 'name' => 'against', 'usage' => '/against', 'description' => 'Vote against this request'],
+            ['ability' => 'vote', 'name' => 'withdraw', 'usage' => '/withdraw', 'description' => 'Withdraw your vote'],
+            ['ability' => 'commentInternally', 'name' => 'internal', 'usage' => '/internal', 'description' => 'Post as an internal note'],
+            ['ability' => 'updateStatus', 'name' => 'status', 'usage' => '/status <status>', 'description' => 'Change the status'],
+            ['ability' => 'convert', 'name' => 'convert', 'usage' => '/convert', 'description' => 'Convert into a backlog issue'],
         ])
-            ->filter(fn (array $commands, string $ability) => $user->can($ability, $feature))
-            ->flatten(1)
+            ->filter(fn (array $command) => $user->can($command['ability'], $feature))
+            ->map(fn (array $command) => Arr::except($command, 'ability'))
             ->values()
             ->all();
     }
@@ -126,7 +120,7 @@ class RunCommentCommands
                 strtolower($status->label()) => $status,
                 str_replace('_', ' ', $status->value) => $status,
             ])
-            ->sortByDesc(fn (FeatureStatus $status, string $name) => strlen($name));
+            ->sortKeysUsing(fn (string $a, string $b) => strlen($b) <=> strlen($a));
 
         foreach ($names as $name => $status) {
             if (preg_match('/^'.preg_quote($name, '/').'(?=\s|$)(.*)$/i', $argument, $matches)) {
@@ -163,7 +157,7 @@ class RunCommentCommands
         return __('Added to the backlog as :reference.', ['reference' => $issue->reference()]);
     }
 
-    private function internal(Feature $feature, User $user): bool
+    private function internal(Feature $feature): bool
     {
         $this->authorize('commentInternally', $feature, __('Only organization members can post internal notes.'));
 

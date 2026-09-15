@@ -41,11 +41,13 @@ trait GeneratesOrganizationScopedSlugs
             ->map(function (string $slug) use ($defaultSlug): ?int {
                 if ($slug === $defaultSlug) {
                     return 0;
-                } elseif (preg_match('/^'.preg_quote($defaultSlug, '/').'-(\d+)$/', $slug, $matches)) {
-                    return (int) $matches[1];
                 }
 
-                return null;
+                if (! preg_match('/^'.preg_quote($defaultSlug, '/').'-(\d+)$/', $slug, $matches)) {
+                    return null;
+                }
+
+                return (int) $matches[1];
             })
             ->filter(fn (?int $suffix) => $suffix !== null)
             ->max() ?? 0;
