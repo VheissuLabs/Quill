@@ -101,7 +101,7 @@ class Organization extends Model
     /**
      * Get module settings for shared Inertia data and organization settings.
      *
-     * @return array{featureVoting: array{enabled: bool, capabilities: array{boards: bool, voting: bool}}, development: array{enabled: bool, capabilities: array{issues: bool, sprints: bool, workflow: bool}}}
+     * @return array{featureVoting: array{enabled: bool, capabilities: array{boards: bool, voting: bool}}, development: array{enabled: bool, capabilities: array{issues: bool, sprints: bool, workflow: bool}}, teams: array{enabled: bool, capabilities: array<string, bool>}}
      */
     public function moduleSettings(): array
     {
@@ -139,6 +139,17 @@ class Organization extends Model
      *
      * @param  array<string, bool>  $settings
      */
+    /**
+     * Hand every team's board back to the organization and delete the teams.
+     *
+     * Switching the teams module off cannot simply hide them: boards, sprints and issues are
+     * owned by a team, so the work has to come back somewhere it can still be reached.
+     */
+    public function dissolveTeams(): void
+    {
+        DB::transaction(fn () => $this->teams()->get()->each(fn (Team $team) => $team->mergeInto($this)));
+    }
+
     public function updateModuleSettings(array $settings): void
     {
         $now = now();

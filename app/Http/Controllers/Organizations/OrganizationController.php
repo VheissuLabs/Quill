@@ -138,6 +138,10 @@ class OrganizationController extends Controller
 
         $currentOrganization->updateModuleSettings($request->validated());
 
+        if (! $request->boolean('teams_enabled')) {
+            $currentOrganization->dissolveTeams();
+        }
+
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Product modules updated.')]);
 
         return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);

@@ -14,6 +14,9 @@ export type OrganizationModules = {
             workflow: boolean;
         };
     };
+    teams: {
+        enabled: boolean;
+    };
 };
 
 export type Organization = {

@@ -58,6 +58,7 @@ const modules = computed(
                 enabled: true,
                 capabilities: { issues: true, sprints: true, workflow: true },
             },
+            teams: { enabled: true },
         },
 );
 
@@ -118,7 +119,9 @@ const navGroups = computed<NavGroup[]>(() => {
             label: 'Organization',
             items: [
                 { title: 'Clients', href: clients(slug), icon: Briefcase },
-                { title: 'Teams', href: teams(slug), icon: Users },
+                ...(modules.value.teams.enabled
+                    ? [{ title: 'Teams', href: teams(slug), icon: Users }]
+                    : []),
                 ...(page.props.currentOrganization?.canManageRoles
                     ? [
                           {
@@ -161,7 +164,7 @@ const navGroups = computed<NavGroup[]>(() => {
                 <SidebarMenuItem>
                     <OrganizationSwitcher />
                 </SidebarMenuItem>
-                <SidebarMenuItem>
+                <SidebarMenuItem v-if="modules.teams.enabled">
                     <TeamSwitcher />
                 </SidebarMenuItem>
             </SidebarMenu>

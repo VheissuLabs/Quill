@@ -1,10 +1,14 @@
 <?php
 
+use App\Enums\IssueStatus;
 use App\Enums\OrganizationCapability;
+use App\Enums\OrganizationModule;
 use App\Enums\OrganizationPermission;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
+use App\Models\Sprint;
+use App\Models\Team;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -155,6 +159,7 @@ test('organization owners can update product modules', function () {
             'development_issues_enabled' => true,
             'development_sprints_enabled' => false,
             'development_workflow_enabled' => true,
+            'teams_enabled' => true,
         ]);
 
     $response->assertRedirect(route('organizations.edit', $organization));
@@ -189,6 +194,7 @@ test('enabling a module turns every capability inside it back on', function () {
         'development_issues_enabled' => false,
         'development_sprints_enabled' => false,
         'development_workflow_enabled' => false,
+        'teams_enabled' => true,
     ]);
 
     $response = $this
@@ -201,6 +207,7 @@ test('enabling a module turns every capability inside it back on', function () {
             'development_issues_enabled' => false,
             'development_sprints_enabled' => false,
             'development_workflow_enabled' => false,
+            'teams_enabled' => true,
         ]);
 
     $response->assertRedirect(route('organizations.edit', $organization));
@@ -214,6 +221,7 @@ test('enabling a module turns every capability inside it back on', function () {
             'enabled' => false,
             'capabilities' => ['issues' => false, 'sprints' => false, 'workflow' => false],
         ],
+        'teams' => ['enabled' => true, 'capabilities' => []],
     ]);
 });
 
@@ -232,6 +240,7 @@ test('an enabled module keeps the capabilities an owner turned off', function ()
             'development_issues_enabled' => true,
             'development_sprints_enabled' => true,
             'development_workflow_enabled' => true,
+            'teams_enabled' => true,
         ]);
 
     $response->assertRedirect(route('organizations.edit', $organization));
@@ -257,6 +266,7 @@ test('organization members cannot update product modules', function () {
             'development_issues_enabled' => false,
             'development_sprints_enabled' => false,
             'development_workflow_enabled' => false,
+            'teams_enabled' => true,
         ]);
 
     $response->assertForbidden();
@@ -583,4 +593,61 @@ test('a new organization starts with only the locked owner role holding every pe
     expect($organization->ownerRole()->permissions)->toHaveCount(count(OrganizationPermission::cases()));
     expect($organization->assignableRoles())->toBeEmpty();
     expect($otherOrganization->ownerRole()->isNot($organization->ownerRole()))->toBeTrue();
+});
+
+test('switching the teams module off flattens every team back into the organization', function () {
+    $owner = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($owner, 'Owner');
+
+    $team = Team::factory()->for($organization)->create();
+    $project = Project::factory()->for($organization)->create();
+    $sprint = Sprint::factory()->for($team, 'owner')->create();
+    $issue = Issue::factory()->for($project)->create([
+        'team_id' => $team->id,
+        'board_column_id' => $team->columns->firstWhere('status', IssueStatus::InProgress)->id,
+        'status' => IssueStatus::InProgress,
+    ]);
+
+    $this
+        ->actingAs($owner)
+        ->patch(route('organizations.modules.update', $organization), [
+            'feature_voting_enabled' => true,
+            'feature_voting_boards_enabled' => true,
+            'feature_voting_voting_enabled' => true,
+            'development_enabled' => true,
+            'development_issues_enabled' => true,
+            'development_sprints_enabled' => true,
+            'development_workflow_enabled' => true,
+            'teams_enabled' => false,
+        ])
+        ->assertRedirect(route('organizations.edit', $organization));
+
+    $this->assertModelMissing($team);
+
+    expect($organization->fresh()->isModuleEnabled(OrganizationModule::Teams))->toBeFalse();
+    expect($sprint->fresh()->owner->is($organization))->toBeTrue();
+
+    $issue->refresh();
+    expect($issue->team_id)->toBeNull();
+    expect($issue->boardColumn->owner->is($organization))->toBeTrue();
+    expect($issue->status)->toBe(IssueStatus::InProgress);
+});
+
+test('teams cannot be reached while the teams module is off', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, 'Admin');
+
+    $organization->updateModuleSettings(['teams_enabled' => false]);
+
+    $this
+        ->actingAs($admin)
+        ->get(route('teams.index', ['current_organization' => $organization]))
+        ->assertForbidden();
+
+    $this
+        ->actingAs($admin)
+        ->post(route('teams.store', ['current_organization' => $organization]), ['name' => 'Design'])
+        ->assertForbidden();
 });

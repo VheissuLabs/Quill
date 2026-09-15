@@ -104,6 +104,7 @@ const moduleValues = (modules: Organization['modules']) => ({
     development_issues_enabled: modules.development.capabilities.issues,
     development_sprints_enabled: modules.development.capabilities.sprints,
     development_workflow_enabled: modules.development.capabilities.workflow,
+    teams_enabled: modules.teams.enabled,
 });
 
 const modulesForm = useForm(moduleValues(props.organization.modules));
@@ -170,7 +171,8 @@ type ModuleField =
     | 'development_enabled'
     | 'development_issues_enabled'
     | 'development_sprints_enabled'
-    | 'development_workflow_enabled';
+    | 'development_workflow_enabled'
+    | 'teams_enabled';
 
 const updateModule = (field: ModuleField, value: boolean) => {
     const previousValue = modulesForm[field];
@@ -591,6 +593,39 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                         />
                                     </label>
                                 </div>
+                            </div>
+
+                            <div class="space-y-3 border-t pt-6">
+                                <label
+                                    class="flex cursor-pointer items-start justify-between gap-4"
+                                >
+                                    <span class="min-w-0">
+                                        <span class="block font-medium">
+                                            Teams
+                                        </span>
+                                        <span
+                                            class="text-muted-foreground mt-1 block text-sm"
+                                        >
+                                            Departments that run their own
+                                            boards and sprints. Turning this off
+                                            moves their work back to the
+                                            organization.
+                                        </span>
+                                    </span>
+                                    <Switch
+                                        id="teams-enabled"
+                                        data-test="module-teams"
+                                        class="mt-1 shrink-0"
+                                        :model-value="modulesForm.teams_enabled"
+                                        :disabled="modulesForm.processing"
+                                        @update:model-value="
+                                            updateModule(
+                                                'teams_enabled',
+                                                $event === true,
+                                            )
+                                        "
+                                    />
+                                </label>
                             </div>
                         </div>
                     </div>

@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\OrganizationModule;
 use App\Enums\OrganizationPermission;
 use App\Models\Organization;
 use App\Models\Team;
@@ -14,7 +15,8 @@ class TeamPolicy
      */
     public function viewAny(User $user, Organization $organization): bool
     {
-        return $user->belongsToOrganization($organization);
+        return $organization->isModuleEnabled(OrganizationModule::Teams)
+            && $user->belongsToOrganization($organization);
     }
 
     /**
@@ -30,7 +32,8 @@ class TeamPolicy
      */
     public function create(User $user, Organization $organization): bool
     {
-        return $user->hasOrganizationPermission($organization, OrganizationPermission::ManageTeams);
+        return $organization->isModuleEnabled(OrganizationModule::Teams)
+            && $user->hasOrganizationPermission($organization, OrganizationPermission::ManageTeams);
     }
 
     /**

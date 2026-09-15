@@ -8,6 +8,8 @@ enum OrganizationModule: string
 
     case Development = 'development';
 
+    case Teams = 'teams';
+
     /**
      * Get the frontend key for this module.
      */
@@ -16,6 +18,7 @@ enum OrganizationModule: string
         return match ($this) {
             self::FeatureVoting => 'featureVoting',
             self::Development => 'development',
+            self::Teams => 'teams',
         };
     }
 
@@ -36,6 +39,7 @@ enum OrganizationModule: string
                 OrganizationCapability::Sprints,
                 OrganizationCapability::Workflow,
             ],
+            self::Teams => [],
         };
     }
 }
