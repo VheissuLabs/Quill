@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Enums\FeatureStatus;
 use App\Enums\VoteDirection;
 use Database\Factories\FeatureFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -40,11 +39,12 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read Collection<int, Comment> $comments
  * @property-read Issue|null $issue
  */
-#[Fillable(['project_id', 'user_id', 'title', 'description', 'status'])]
 class Feature extends Model
 {
     /** @use HasFactory<FeatureFactory> */
     use HasFactory, LogsActivity;
+
+    protected $guarded = [];
 
     /**
      * Get the project the feature was requested for.

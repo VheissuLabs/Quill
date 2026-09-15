@@ -10,7 +10,6 @@ use App\Enums\OrganizationPermission;
 use App\Observers\OrganizationObserver;
 use Closure;
 use Database\Factories\OrganizationFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -52,12 +51,13 @@ use Spatie\Permission\PermissionRegistrar;
  * @property-read Collection<int, OrganizationModuleSetting> $capabilitySettings
  * @property-read Collection<int, Role> $roles
  */
-#[Fillable(['name', 'slug', 'logo_path'])]
 #[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
     use GeneratesUniqueOrganizationSlugs, HasFactory, LogsActivity, RunsABoard, SoftDeletes;
+
+    protected $guarded = [];
 
     /**
      * Create the locked owner role. It is the only role an organization starts with; every other

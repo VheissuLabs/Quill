@@ -6,7 +6,6 @@ use App\Concerns\GeneratesOrganizationScopedSlugs;
 use App\Enums\OrganizationPermission;
 use App\Enums\ProjectVisibility;
 use Database\Factories\ProjectFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -16,8 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * @property int $id
@@ -37,11 +36,12 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
  * @property-read int|null $features_count
  * @property-read int|null $open_features_count
  */
-#[Fillable(['organization_id', 'client_id', 'name', 'slug', 'description', 'visibility'])]
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
     use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity;
+
+    protected $guarded = [];
 
     /**
      * Get the organization the project belongs to.

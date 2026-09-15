@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Enums\IssueStatus;
 use Database\Factories\BoardColumnFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,11 +28,12 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read Organization|Team $owner
  * @property-read Collection<int, Issue> $issues
  */
-#[Fillable(['owner_type', 'owner_id', 'name', 'status', 'position'])]
 class BoardColumn extends Model
 {
     /** @use HasFactory<BoardColumnFactory> */
     use HasFactory, LogsActivity;
+
+    protected $guarded = [];
 
     /**
      * Get whoever runs the board the column is on: a team, or the organization itself.

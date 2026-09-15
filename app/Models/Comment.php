@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Database\Factories\CommentFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -35,11 +34,12 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read User|null $author
  * @property-read Collection<int, User> $mentions
  */
-#[Fillable(['feature_id', 'parent_id', 'user_id', 'body', 'is_internal'])]
 class Comment extends Model
 {
     /** @use HasFactory<CommentFactory> */
     use HasFactory, LogsActivity;
+
+    protected $guarded = [];
 
     /**
      * Get the feature the comment was left on.

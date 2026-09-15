@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use Database\Factories\IssueFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,11 +42,12 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read User|null $assignee
  * @property-read User|null $creator
  */
-#[Fillable(['project_id', 'team_id', 'sprint_id', 'board_column_id', 'feature_id', 'assignee_id', 'created_by', 'number', 'title', 'description', 'status', 'priority', 'points', 'position'])]
 class Issue extends Model
 {
     /** @use HasFactory<IssueFactory> */
     use HasFactory, LogsActivity;
+
+    protected $guarded = [];
 
     /**
      * Get the project the issue belongs to.

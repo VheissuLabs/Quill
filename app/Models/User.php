@@ -5,7 +5,6 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Concerns\HasOrganizations;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -49,12 +48,13 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection<int, Issue> $assignedIssues
  * @property-read Collection<int, EmailAddress> $emailAddresses
  */
-#[Fillable(['name', 'email', 'password', 'timezone', 'current_organization_id', 'current_team_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasOrganizations, HasRoles, LogsActivity, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    protected $guarded = [];
 
     /**
      * Get the additional email addresses on the account.

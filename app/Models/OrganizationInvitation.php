@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Observers\OrganizationInvitationObserver;
 use Database\Factories\OrganizationInvitationFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,12 +28,13 @@ use Spatie\Permission\Models\Role;
  * @property-read User $inviter
  * @property-read Role $role
  */
-#[Fillable(['organization_id', 'email', 'role_id', 'invited_by', 'expires_at', 'accepted_at'])]
 #[ObservedBy(OrganizationInvitationObserver::class)]
 class OrganizationInvitation extends Model
 {
     /** @use HasFactory<OrganizationInvitationFactory> */
     use HasFactory, LogsActivity;
+
+    protected $guarded = [];
 
     /**
      * Get the organization that the invitation belongs to.

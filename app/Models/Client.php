@@ -4,15 +4,14 @@ namespace App\Models;
 
 use App\Concerns\GeneratesOrganizationScopedSlugs;
 use Database\Factories\ClientFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A customer of an organization whose projects can be tracked separately.
@@ -26,11 +25,12 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
  * @property-read Organization $organization
  * @property-read Collection<int, Project> $projects
  */
-#[Fillable(['organization_id', 'name', 'slug'])]
 class Client extends Model
 {
     /** @use HasFactory<ClientFactory> */
     use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity;
+
+    protected $guarded = [];
 
     /**
      * Get the organization the client belongs to.

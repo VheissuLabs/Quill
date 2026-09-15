@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
@@ -18,10 +17,11 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read Organization $organization
  * @property-read User $user
  */
-#[Fillable(['organization_id', 'user_id'])]
 class OrganizationMembership extends Pivot
 {
     use LogsActivity;
+
+    protected $guarded = [];
 
     /**
      * The table associated with the model.

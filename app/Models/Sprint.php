@@ -6,7 +6,6 @@ use App\Enums\IssueStatus;
 use App\Enums\SprintStatus;
 use App\Observers\SprintObserver;
 use Database\Factories\SprintFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -37,12 +36,13 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read Organization|Team $owner
  * @property-read Collection<int, Issue> $issues
  */
-#[Fillable(['owner_type', 'owner_id', 'name', 'starts_at', 'ends_at', 'status'])]
 #[ObservedBy(SprintObserver::class)]
 class Sprint extends Model
 {
     /** @use HasFactory<SprintFactory> */
     use HasFactory, LogsActivity;
+
+    protected $guarded = [];
 
     /**
      * Get whoever runs the sprint: a team, or the organization itself when it has no teams.
