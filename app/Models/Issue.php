@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use Database\Factories\IssueFactory;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,9 +43,9 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read User|null $assignee
  * @property-read User|null $creator
  */
+#[UseFactory(IssueFactory::class)]
 class Issue extends Model
 {
-    /** @use HasFactory<IssueFactory> */
     use HasFactory, LogsActivity;
 
     protected $guarded = [];

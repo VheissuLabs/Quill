@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\CommentFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -34,9 +35,9 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read User|null $author
  * @property-read Collection<int, User> $mentions
  */
+#[UseFactory(CommentFactory::class)]
 class Comment extends Model
 {
-    /** @use HasFactory<CommentFactory> */
     use HasFactory, LogsActivity;
 
     protected $guarded = [];

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Notifications\VerifyEmailAddress;
 use Database\Factories\EmailAddressFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,9 +27,9 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property Carbon|null $updated_at
  * @property-read User $user
  */
+#[UseFactory(EmailAddressFactory::class)]
 class EmailAddress extends Model
 {
-    /** @use HasFactory<EmailAddressFactory> */
     use HasFactory, LogsActivity;
 
     protected $guarded = [];

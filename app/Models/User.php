@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Concerns\HasOrganizations;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,10 +51,10 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection<int, Issue> $assignedIssues
  * @property-read Collection<int, EmailAddress> $emailAddresses
  */
+#[UseFactory(UserFactory::class)]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, HasOrganizations, HasRoles, LogsActivity, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     protected $guarded = [];

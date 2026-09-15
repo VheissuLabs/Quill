@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\GeneratesOrganizationScopedSlugs;
 use Database\Factories\ClientFactory;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,9 +26,9 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read Organization $organization
  * @property-read Collection<int, Project> $projects
  */
+#[UseFactory(ClientFactory::class)]
 class Client extends Model
 {
-    /** @use HasFactory<ClientFactory> */
     use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity;
 
     protected $guarded = [];

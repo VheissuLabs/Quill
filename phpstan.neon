@@ -11,3 +11,11 @@ parameters:
         - routes/
 
     level: 7
+
+    ignoreErrors:
+        # The factory is named by #[UseFactory] on the model, so the generic on the
+        # trait would only say it again.
+        -
+            identifier: missingType.generics
+            message: '#uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory#'
+            path: app/Models

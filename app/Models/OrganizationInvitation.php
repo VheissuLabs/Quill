@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Observers\OrganizationInvitationObserver;
 use Database\Factories\OrganizationInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,10 +29,10 @@ use Spatie\Permission\Models\Role;
  * @property-read User $inviter
  * @property-read Role $role
  */
+#[UseFactory(OrganizationInvitationFactory::class)]
 #[ObservedBy(OrganizationInvitationObserver::class)]
 class OrganizationInvitation extends Model
 {
-    /** @use HasFactory<OrganizationInvitationFactory> */
     use HasFactory, LogsActivity;
 
     protected $guarded = [];

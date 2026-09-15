@@ -6,6 +6,7 @@ use App\Enums\FeatureStatus;
 use App\Enums\VoteDirection;
 use Database\Factories\FeatureFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,9 +40,9 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read Collection<int, Comment> $comments
  * @property-read Issue|null $issue
  */
+#[UseFactory(FeatureFactory::class)]
 class Feature extends Model
 {
-    /** @use HasFactory<FeatureFactory> */
     use HasFactory, LogsActivity;
 
     protected $guarded = [];

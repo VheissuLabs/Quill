@@ -7,6 +7,7 @@ use App\Enums\OrganizationPermission;
 use App\Enums\ProjectVisibility;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,9 +37,9 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read int|null $features_count
  * @property-read int|null $open_features_count
  */
+#[UseFactory(ProjectFactory::class)]
 class Project extends Model
 {
-    /** @use HasFactory<ProjectFactory> */
     use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity;
 
     protected $guarded = [];

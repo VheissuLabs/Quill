@@ -8,6 +8,7 @@ use App\Enums\IssueStatus;
 use App\Observers\TeamObserver;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,10 +38,10 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read Collection<int, Project> $projects
  * @property-read Collection<int, Issue> $issues
  */
+#[UseFactory(TeamFactory::class)]
 #[ObservedBy(TeamObserver::class)]
 class Team extends Model
 {
-    /** @use HasFactory<TeamFactory> */
     use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity, RunsABoard;
 
     protected $guarded = [];

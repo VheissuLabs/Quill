@@ -7,6 +7,7 @@ use App\Enums\SprintStatus;
 use App\Observers\SprintObserver;
 use Database\Factories\SprintFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,10 +37,10 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read Organization|Team $owner
  * @property-read Collection<int, Issue> $issues
  */
+#[UseFactory(SprintFactory::class)]
 #[ObservedBy(SprintObserver::class)]
 class Sprint extends Model
 {
-    /** @use HasFactory<SprintFactory> */
     use HasFactory, LogsActivity;
 
     protected $guarded = [];

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\VoteFactory;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,9 +21,9 @@ use Illuminate\Support\Carbon;
  * @property-read Feature $feature
  * @property-read User $user
  */
+#[UseFactory(VoteFactory::class)]
 class Vote extends Model
 {
-    /** @use HasFactory<VoteFactory> */
     use HasFactory;
 
     protected $guarded = [];

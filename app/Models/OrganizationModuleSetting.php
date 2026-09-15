@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\OrganizationModuleSettingFactory;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,9 +23,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Organization $organization
  */
+#[UseFactory(OrganizationModuleSettingFactory::class)]
 class OrganizationModuleSetting extends Model
 {
-    /** @use HasFactory<OrganizationModuleSettingFactory> */
     use HasFactory;
 
     protected $guarded = [];
