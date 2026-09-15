@@ -258,6 +258,36 @@ test('deleting a sprint returns its issues to the backlog without a column', fun
     expect($issue->status)->toBe(IssueStatus::Backlog);
 });
 
+test('deleting a sprint from its own page lands on the sprints index', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, 'Admin');
+
+    $sprint = Sprint::factory()->for($organization, 'owner')->create();
+    $ownPage = route('sprints.show', ['current_organization' => $organization, 'sprint' => $sprint]);
+
+    $this
+        ->actingAs($admin)
+        ->from($ownPage)
+        ->delete(route('sprints.destroy', ['current_organization' => $organization, 'sprint' => $sprint]))
+        ->assertRedirect(route('sprints.index', ['current_organization' => $organization]));
+});
+
+test('deleting a sprint from a list leaves the user on it', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, 'Admin');
+
+    $sprint = Sprint::factory()->for($organization, 'owner')->create();
+    $issues = route('issues.index', ['current_organization' => $organization]);
+
+    $this
+        ->actingAs($admin)
+        ->from($issues)
+        ->delete(route('sprints.destroy', ['current_organization' => $organization, 'sprint' => $sprint]))
+        ->assertRedirect($issues);
+});
+
 test('a sprint can be renamed without touching its dates', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();

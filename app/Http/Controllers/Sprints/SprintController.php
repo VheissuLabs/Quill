@@ -108,16 +108,25 @@ class SprintController extends Controller
 
     /**
      * Delete the sprint. Its issues return to the backlog.
+     *
+     * Deleting from a list leaves the user on it; deleting from the sprint's own page has nowhere
+     * to go back to, so that lands on the sprints index.
      */
     public function destroy(Organization $currentOrganization, Sprint $sprint): RedirectResponse
     {
         Gate::authorize('delete', $sprint);
 
+        $ownPage = route('sprints.show', ['current_organization' => $currentOrganization, 'sprint' => $sprint]);
+
         $sprint->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Sprint deleted.')]);
 
-        return to_route('sprints.index');
+        if (url()->previous() === $ownPage) {
+            return to_route('sprints.index');
+        }
+
+        return back(fallback: route('sprints.index'));
     }
 
     /**

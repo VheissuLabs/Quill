@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ChevronDown, ListTodo, Plus, Timer, Trash2 } from '@lucide/vue';
+import {
+    ChevronDown,
+    ListTodo,
+    MoreHorizontal,
+    Pencil,
+    Plus,
+    Timer,
+    Trash2,
+} from '@lucide/vue';
 import { useLocalStorage } from '@vueuse/core';
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import draggable from 'vuedraggable';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import CreateIssueModal from '@/components/CreateIssueModal.vue';
@@ -12,6 +20,12 @@ import IssueRow from '@/components/IssueRow.vue';
 import TeamActivityFeed from '@/components/TeamActivityFeed.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -122,11 +136,22 @@ const startRenaming = (sprint: IssueSprintOption) => {
     sprintBeingRenamed.value = sprint.id;
 };
 
+/**
+ * The menu hands focus back to its trigger as it closes, so wait for that before taking it.
+ */
 const focusRename = (el: unknown) => {
     const input = (el as { $el?: HTMLInputElement } | null)?.$el;
 
-    input?.focus();
-    input?.select();
+    if (!input) {
+        return;
+    }
+
+    void nextTick(() =>
+        requestAnimationFrame(() => {
+            input.focus();
+            input.select();
+        }),
+    );
 };
 
 /**
@@ -460,12 +485,6 @@ const totalPoints = computed(() =>
                                         ])
                                     "
                                     class="block truncate text-sm font-medium hover:underline"
-                                    :title="
-                                        permissions.canManageSprints
-                                            ? 'Double click to rename'
-                                            : undefined
-                                    "
-                                    @dblclick.prevent="startRenaming(sprint)"
                                 >
                                     {{ sprint.name }}
                                 </Link>
@@ -508,16 +527,35 @@ const totalPoints = computed(() =>
                                 >
                                     {{ sprint.statusLabel }}
                                 </Badge>
-                                <Button
+                                <DropdownMenu
                                     v-if="permissions.canManageSprints"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    :data-test="`sprint-delete-${sprint.id}`"
-                                    aria-label="Delete sprint"
-                                    @click="sprintToDelete = sprint"
                                 >
-                                    <Trash2 />
-                                </Button>
+                                    <DropdownMenuTrigger as-child>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            :data-test="`sprint-menu-${sprint.id}`"
+                                            aria-label="Sprint actions"
+                                        >
+                                            <MoreHorizontal />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                            class="cursor-pointer"
+                                            @click="startRenaming(sprint)"
+                                        >
+                                            <Pencil /> Rename
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            class="cursor-pointer"
+                                            variant="destructive"
+                                            @click="sprintToDelete = sprint"
+                                        >
+                                            <Trash2 /> Delete
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 <Button
                                     variant="ghost"
                                     size="icon-sm"
