@@ -112,9 +112,7 @@ class SprintController extends Controller
         return back(fallback: route('sprints.index'));
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function cardSummary(Issue $issue): array
     {
         return [
@@ -133,9 +131,7 @@ class SprintController extends Controller
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function sprintSummary(Sprint $sprint): array
     {
         return [

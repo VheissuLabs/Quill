@@ -31,17 +31,13 @@ class User extends Authenticatable implements PasskeyUser
 
     protected $guarded = [];
 
-    /**
-     * @return HasMany<EmailAddress, $this>
-     */
+    /** @return HasMany<EmailAddress, $this> */
     public function emailAddresses(): HasMany
     {
         return $this->hasMany(EmailAddress::class);
     }
 
-    /**
-     * @return Collection<int, lowercase-string>
-     */
+    /** @return Collection<int, lowercase-string> */
     public function verifiedEmailAddresses(): Collection
     {
         return $this->emailAddresses()
@@ -58,9 +54,7 @@ class User extends Authenticatable implements PasskeyUser
         return $this->verifiedEmailAddresses()->contains(strtolower($email));
     }
 
-    /**
-     * @return BelongsTo<Team, $this>
-     */
+    /** @return BelongsTo<Team, $this> */
     public function currentTeam(): BelongsTo
     {
         return $this->belongsTo(Team::class, 'current_team_id');
@@ -98,42 +92,32 @@ class User extends Authenticatable implements PasskeyUser
         return true;
     }
 
-    /**
-     * @return BelongsToMany<Team, $this>
-     */
+    /** @return BelongsToMany<Team, $this> */
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class, 'team_members')
             ->withTimestamps();
     }
 
-    /**
-     * @return HasMany<Feature, $this>
-     */
+    /** @return HasMany<Feature, $this> */
     public function features(): HasMany
     {
         return $this->hasMany(Feature::class);
     }
 
-    /**
-     * @return HasMany<Issue, $this>
-     */
+    /** @return HasMany<Issue, $this> */
     public function assignedIssues(): HasMany
     {
         return $this->hasMany(Issue::class, 'assignee_id');
     }
 
-    /**
-     * @return HasMany<Vote, $this>
-     */
+    /** @return HasMany<Vote, $this> */
     public function votes(): HasMany
     {
         return $this->hasMany(Vote::class);
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

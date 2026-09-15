@@ -9,9 +9,7 @@ use Illuminate\Validation\Rule;
 
 class AddTeamMemberRequest extends FormRequest
 {
-    /**
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         $team = $this->route('team');
@@ -28,9 +26,7 @@ class AddTeamMemberRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

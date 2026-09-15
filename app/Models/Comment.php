@@ -22,68 +22,52 @@ class Comment extends Model
 
     protected $guarded = [];
 
-    /**
-     * @return BelongsTo<Feature, $this>
-     */
+    /** @return BelongsTo<Feature, $this> */
     public function feature(): BelongsTo
     {
         return $this->belongsTo(Feature::class);
     }
 
-    /**
-     * @return BelongsTo<Comment, $this>
-     */
+    /** @return BelongsTo<Comment, $this> */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Comment::class, 'parent_id');
     }
 
-    /**
-     * @return HasMany<Comment, $this>
-     */
+    /** @return HasMany<Comment, $this> */
     public function replies(): HasMany
     {
         return $this->hasMany(Comment::class, 'parent_id')->oldest();
     }
 
-    /**
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    /**
-     * @return BelongsToMany<User, $this>
-     */
+    /** @return BelongsToMany<User, $this> */
     public function mentions(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'comment_mentions')
             ->withTimestamps();
     }
 
-    /**
-     * @param  Builder<$this>  $query
-     */
+    /** @param  Builder<$this>  $query */
     #[Scope]
     protected function public(Builder $query): void
     {
         $query->where('is_internal', false);
     }
 
-    /**
-     * @param  Builder<$this>  $query
-     */
+    /** @param  Builder<$this>  $query */
     #[Scope]
     protected function topLevel(Builder $query): void
     {
         $query->whereNull('parent_id');
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

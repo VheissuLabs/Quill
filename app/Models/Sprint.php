@@ -32,9 +32,7 @@ class Sprint extends Model
 
     protected $guarded = [];
 
-    /**
-     * @return MorphTo<Model, $this>
-     */
+    /** @return MorphTo<Model, $this> */
     public function owner(): MorphTo
     {
         return $this->morphTo();
@@ -50,9 +48,7 @@ class Sprint extends Model
         return $this->owner instanceof Team ? $this->owner->getKey() : null;
     }
 
-    /**
-     * @return Collection<int, BoardColumn>
-     */
+    /** @return Collection<int, BoardColumn> */
     public function columns(): Collection
     {
         return $this->owner->columns;
@@ -72,9 +68,7 @@ class Sprint extends Model
         return parent::resolveChildRouteBinding($childType, $value, $field);
     }
 
-    /**
-     * @return HasMany<Issue, $this>
-     */
+    /** @return HasMany<Issue, $this> */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);
@@ -108,9 +102,7 @@ class Sprint extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

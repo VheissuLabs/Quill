@@ -26,17 +26,13 @@ enum FeatureStatus: string
         return in_array($this, [self::Completed, self::Declined], true);
     }
 
-    /**
-     * @return array<int, self>
-     */
+    /** @return array<int, self> */
     public static function active(): array
     {
         return array_values(array_filter(self::cases(), fn (self $status) => ! $status->isSettled()));
     }
 
-    /**
-     * @return array<array{value: string, label: string}>
-     */
+    /** @return array<array{value: string, label: string}> */
     public static function options(): array
     {
         return collect(self::cases())

@@ -9,9 +9,7 @@ use Illuminate\Validation\Rule;
 
 class StoreCommentRequest extends FormRequest
 {
-    /**
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         $feature = $this->route('feature');
@@ -27,9 +25,7 @@ class StoreCommentRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

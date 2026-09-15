@@ -31,33 +31,25 @@ class Feature extends Model
 
     protected $guarded = [];
 
-    /**
-     * @return BelongsTo<Project, $this>
-     */
+    /** @return BelongsTo<Project, $this> */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    /**
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    /**
-     * @return HasMany<Vote, $this>
-     */
+    /** @return HasMany<Vote, $this> */
     public function votes(): HasMany
     {
         return $this->hasMany(Vote::class);
     }
 
-    /**
-     * @param  Builder<$this>  $query
-     */
+    /** @param  Builder<$this>  $query */
     #[Scope]
     protected function active(Builder $query): void
     {
@@ -86,17 +78,13 @@ class Feature extends Model
         $this->votes()->updateOrCreate(['user_id' => $user->id], ['direction' => $direction->weight()]);
     }
 
-    /**
-     * @return HasMany<Comment, $this>
-     */
+    /** @return HasMany<Comment, $this> */
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
     }
 
-    /**
-     * @return Collection<int, User>
-     */
+    /** @return Collection<int, User> */
     public function mentionableUsers(): Collection
     {
         return $this->project->organization->members()->get()
@@ -107,9 +95,7 @@ class Feature extends Model
             ->values();
     }
 
-    /**
-     * @return HasOne<Issue, $this>
-     */
+    /** @return HasOne<Issue, $this> */
     public function issue(): HasOne
     {
         return $this->hasOne(Issue::class);
@@ -124,9 +110,7 @@ class Feature extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

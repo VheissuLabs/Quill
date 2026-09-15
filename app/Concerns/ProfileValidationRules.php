@@ -8,9 +8,7 @@ use Illuminate\Validation\Rule;
 
 trait ProfileValidationRules
 {
-    /**
-     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
-     */
+    /** @return array<string, array<int, ValidationRule|array<mixed>|string>> */
     protected function profileRules(?int $userId = null): array
     {
         return [
@@ -19,17 +17,13 @@ trait ProfileValidationRules
         ];
     }
 
-    /**
-     * @return array<int, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<int, ValidationRule|array<mixed>|string> */
     protected function nameRules(): array
     {
         return ['required', 'string', 'max:255'];
     }
 
-    /**
-     * @return array<int, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<int, ValidationRule|array<mixed>|string> */
     protected function emailRules(?int $userId = null): array
     {
         return [

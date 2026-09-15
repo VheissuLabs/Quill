@@ -19,9 +19,7 @@ enum OrganizationModule: string
         };
     }
 
-    /**
-     * @return array<int, OrganizationCapability>
-     */
+    /** @return array<int, OrganizationCapability> */
     public function capabilities(): array
     {
         return match ($this) {

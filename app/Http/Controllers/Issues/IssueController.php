@@ -200,9 +200,7 @@ class IssueController extends Controller
             });
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function issueSummary(Issue $issue): array
     {
         return [
@@ -223,9 +221,7 @@ class IssueController extends Controller
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function formOptions(Organization $organization, User $user, ?Team $team = null): array
     {
         return [

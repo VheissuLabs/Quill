@@ -116,9 +116,7 @@ class IssueSeeder extends Seeder
         $issue->moveToColumn($sprint->owner->columns()->where('status', IssueStatus::Done)->firstOrFail());
     }
 
-    /**
-     * @param  Collection<int, Sprint>  $sprints
-     */
+    /** @param  Collection<int, Sprint>  $sprints */
     protected function sprint(Collection $sprints, SprintStatus $status): ?Sprint
     {
         return $sprints->where('status', $status)->shuffle()->first();

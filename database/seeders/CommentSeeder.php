@@ -41,9 +41,7 @@ class CommentSeeder extends Seeder
         });
     }
 
-    /**
-     * @param  Collection<int, User>  $members
-     */
+    /** @param  Collection<int, User>  $members */
     protected function reply(Comment $parent, $members): void
     {
         $author = $members->random();

@@ -11,9 +11,7 @@ use Spatie\Permission\Models\Role;
 
 class SaveOrganizationRoleRequest extends FormRequest
 {
-    /**
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         $organization = $this->route('current_organization');
@@ -35,9 +33,7 @@ class SaveOrganizationRoleRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

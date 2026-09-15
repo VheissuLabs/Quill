@@ -120,9 +120,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * @return array{code: string, organizationName: string}|null
-     */
+    /** @return array{code: string, organizationName: string}|null */
     private function organizationInvitation(Request $request): ?array
     {
         $invitationCode = $request->query('invitation');

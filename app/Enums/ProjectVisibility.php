@@ -12,9 +12,7 @@ enum ProjectVisibility: string
         return ucfirst($this->value);
     }
 
-    /**
-     * @return array<array{value: string, label: string}>
-     */
+    /** @return array<array{value: string, label: string}> */
     public static function options(): array
     {
         return collect(self::cases())

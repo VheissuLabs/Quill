@@ -95,9 +95,7 @@ class Organization extends Model
             && $this->settingEnabled($capability->module()->value, $capability->value);
     }
 
-    /**
-     * @return array<string, array{enabled: bool, capabilities: array<string, bool>}>
-     */
+    /** @return array<string, array{enabled: bool, capabilities: array<string, bool>}> */
     public function moduleSettings(): array
     {
         $this->loadMissing('capabilitySettings');
@@ -116,9 +114,7 @@ class Organization extends Model
             ->all();
     }
 
-    /**
-     * @return HasMany<OrganizationModuleSetting, $this>
-     */
+    /** @return HasMany<OrganizationModuleSetting, $this> */
     public function capabilitySettings(): HasMany
     {
         return $this->hasMany(OrganizationModuleSetting::class);
@@ -129,9 +125,7 @@ class Organization extends Model
         DB::transaction(fn () => $this->teams()->get()->each(fn (Team $team) => $team->mergeInto($this)));
     }
 
-    /**
-     * @param  array<string, bool>  $settings
-     */
+    /** @param  array<string, bool>  $settings */
     public function updateModuleSettings(array $settings): void
     {
         $now = now();
@@ -193,9 +187,7 @@ class Organization extends Model
         }
     }
 
-    /**
-     * @return HasMany<Role, $this>
-     */
+    /** @return HasMany<Role, $this> */
     public function roles(): HasMany
     {
         return $this->hasMany(Role::class, config('permission.column_names.team_foreign_key'));
@@ -211,9 +203,7 @@ class Organization extends Model
         return $this->roles()->where('is_owner', true)->firstOrFail();
     }
 
-    /**
-     * @return Collection<int, Role>
-     */
+    /** @return Collection<int, Role> */
     public function assignableRoles(): Collection
     {
         return $this->roles()->where('is_owner', false)->orderBy('name')->get();
@@ -224,9 +214,7 @@ class Organization extends Model
         return (bool) $user->organizationRole($this)?->is_owner;
     }
 
-    /**
-     * @return Collection<int, User>
-     */
+    /** @return Collection<int, User> */
     public function owners(): Collection
     {
         return $this->members()
@@ -246,9 +234,7 @@ class Organization extends Model
         return $this->isOwner($actor) && $this->hasOtherOwner($owner);
     }
 
-    /**
-     * @return BelongsToMany<User, $this, OrganizationMembership, 'pivot'>
-     */
+    /** @return BelongsToMany<User, $this, OrganizationMembership, 'pivot'> */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'organization_members', 'organization_id', 'user_id')
@@ -256,49 +242,37 @@ class Organization extends Model
             ->withTimestamps();
     }
 
-    /**
-     * @return HasMany<OrganizationMembership, $this>
-     */
+    /** @return HasMany<OrganizationMembership, $this> */
     public function memberships(): HasMany
     {
         return $this->hasMany(OrganizationMembership::class);
     }
 
-    /**
-     * @return HasMany<OrganizationInvitation, $this>
-     */
+    /** @return HasMany<OrganizationInvitation, $this> */
     public function invitations(): HasMany
     {
         return $this->hasMany(OrganizationInvitation::class);
     }
 
-    /**
-     * @return HasMany<Team, $this>
-     */
+    /** @return HasMany<Team, $this> */
     public function teams(): HasMany
     {
         return $this->hasMany(Team::class);
     }
 
-    /**
-     * @return HasMany<Client, $this>
-     */
+    /** @return HasMany<Client, $this> */
     public function clients(): HasMany
     {
         return $this->hasMany(Client::class);
     }
 
-    /**
-     * @return HasMany<Project, $this>
-     */
+    /** @return HasMany<Project, $this> */
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);
     }
 
-    /**
-     * @return HasManyThrough<Issue, Project, $this>
-     */
+    /** @return HasManyThrough<Issue, Project, $this> */
     public function issues(): HasManyThrough
     {
         return $this->hasManyThrough(Issue::class, Project::class);
@@ -318,9 +292,7 @@ class Organization extends Model
         return parent::resolveChildRouteBinding($childType, $value, $field);
     }
 
-    /**
-     * @return Builder<Sprint>
-     */
+    /** @return Builder<Sprint> */
     public function allSprints(): Builder
     {
         return Sprint::query()->where(fn (Builder $query) => $query

@@ -17,9 +17,7 @@ class HandleInertiaRequests extends Middleware
      */
     protected $rootView = 'app';
 
-    /**
-     * @see https://inertiajs.com/asset-versioning
-     */
+    /** @see https://inertiajs.com/asset-versioning */
     public function version(Request $request): ?string
     {
         return parent::version($request);
@@ -52,9 +50,7 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    /**
-     * @return array{unreadCount: int, items: array<int, array{id: string, title: string, body: string, url: string|null, readAt: string|null, createdAt: string}>}
-     */
+    /** @return array{unreadCount: int, items: array<int, array{id: string, title: string, body: string, url: string|null, readAt: string|null, createdAt: string}>} */
     private function notifications(?User $user): array
     {
         if (! $user) {
@@ -79,9 +75,7 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    /**
-     * @return array{id: int, name: string, slug: string}|null
-     */
+    /** @return array{id: int, name: string, slug: string}|null */
     private function currentTeam(?User $user): ?array
     {
         if (! $user?->currentOrganization) {

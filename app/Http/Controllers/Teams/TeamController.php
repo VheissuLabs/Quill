@@ -119,9 +119,7 @@ class TeamController extends Controller
         return to_route('teams.index');
     }
 
-    /**
-     * @return array{id: int, name: string, email: string, avatar: string|null}
-     */
+    /** @return array{id: int, name: string, email: string, avatar: string|null} */
     private function memberSummary(User $member): array
     {
         return [

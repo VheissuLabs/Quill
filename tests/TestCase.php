@@ -8,14 +8,10 @@ use Laravel\Fortify\Features;
 
 abstract class TestCase extends BaseTestCase
 {
-    /**
-     * Indicates whether the default seeder should run before each test.
-     */
+    /** Indicates whether the default seeder should run before each test. */
     protected bool $seed = true;
 
-    /**
-     * The seeder that runs before each test.
-     */
+    /** The seeder that runs before each test. */
     protected string $seeder = PermissionsSeeder::class;
 
     protected function skipUnlessFortifyHas(string $feature, ?string $message = null): void

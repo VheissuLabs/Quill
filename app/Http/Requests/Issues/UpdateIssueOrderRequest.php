@@ -9,9 +9,7 @@ use Illuminate\Validation\Rule;
 
 class UpdateIssueOrderRequest extends FormRequest
 {
-    /**
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         $organization = $this->route('current_organization');

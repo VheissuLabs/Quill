@@ -15,9 +15,7 @@ class UniqueOrganizationInvitation implements ValidationRule
         //
     }
 
-    /**
-     * @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail
-     */
+    /** @param  Closure(string, ?string=): PotentiallyTranslatedString  $fail */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         $email = strtolower($value);
