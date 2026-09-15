@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Concerns\GeneratesUniqueOrganizationSlugs;
 use App\Concerns\RunsABoard;
 use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationModule;
@@ -23,6 +22,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Models\Role;
@@ -55,9 +55,43 @@ use Spatie\Permission\PermissionRegistrar;
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
-    use GeneratesUniqueOrganizationSlugs, HasFactory, LogsActivity, RunsABoard, SoftDeletes;
+    use HasFactory, LogsActivity, RunsABoard, SoftDeletes;
 
     protected $guarded = [];
+
+    public static function generateUniqueOrganizationSlug(string $name, ?int $excludeId = null): string
+    {
+        $defaultSlug = Str::slug($name);
+
+        $query = self::withTrashed()
+            ->where(function ($query) use ($defaultSlug) {
+                $query->where('slug', $defaultSlug)
+                    ->orWhere('slug', 'like', $defaultSlug.'-%');
+            });
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        $existingSlugs = $query->pluck('slug');
+
+        $maxSuffix = $existingSlugs
+            ->map(function (string $slug) use ($defaultSlug): ?int {
+                if ($slug === $defaultSlug) {
+                    return 0;
+                } elseif (preg_match('/^'.preg_quote($defaultSlug, '/').'-(\d+)$/', $slug, $matches)) {
+                    return (int) $matches[1];
+                }
+
+                return null;
+            })
+            ->filter(fn (?int $suffix) => $suffix !== null)
+            ->max() ?? 0;
+
+        return $existingSlugs->isEmpty()
+            ? $defaultSlug
+            : $defaultSlug.'-'.($maxSuffix + 1);
+    }
 
     public function createOwnerRole(): void
     {

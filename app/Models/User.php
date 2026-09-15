@@ -20,6 +20,7 @@ use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -41,6 +42,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Team|null $currentTeam
  * @property-read Collection<int, Organization> $ownedOrganizations
  * @property-read Collection<int, OrganizationMembership> $organizationMemberships
+ * @property-read Collection<int, Role> $organizationRoles
  * @property-read Collection<int, Organization> $organizations
  * @property-read Collection<int, Team> $teams
  * @property-read Collection<int, Feature> $features
