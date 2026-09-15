@@ -496,7 +496,6 @@ const totalPoints = computed(() =>
                                                 currentOrganization.slug
                                             "
                                             :issue="issue"
-                                            :show-sprint="false"
                                         />
                                     </li>
                                 </template>

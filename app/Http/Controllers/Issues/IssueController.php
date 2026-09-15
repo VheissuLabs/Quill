@@ -237,7 +237,6 @@ class IssueController extends Controller
             'points' => $issue->points,
             'project' => ['name' => $issue->project->name, 'slug' => $issue->project->slug],
             'teamName' => $issue->team?->name,
-            'sprintName' => $issue->sprint?->name,
             'assigneeName' => $issue->assignee?->name,
             'hasFeature' => $issue->feature_id !== null,
             'createdAt' => $issue->created_at->toISOString(),

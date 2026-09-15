@@ -2,7 +2,11 @@ import type { ActivityEntry, FeatureStatus } from './portal';
 import type { SelectOption } from './projects';
 
 export type IssueStatus =
-    'backlog' | 'todo' | 'in_progress' | 'done' | 'cancelled';
+    | 'backlog'
+    | 'todo'
+    | 'in_progress'
+    | 'done'
+    | 'cancelled';
 
 export type BoardColumn = {
     id: number;
@@ -30,7 +34,6 @@ export type IssueListItem = {
     points: number | null;
     project: { name: string; slug: string };
     teamName: string | null;
-    sprintName: string | null;
     assigneeName: string | null;
     hasFeature: boolean;
     createdAt: string;

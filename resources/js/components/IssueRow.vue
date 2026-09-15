@@ -6,20 +6,14 @@ import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
 import { show } from '@/routes/issues';
 import type { IssueListItem } from '@/types';
 
-withDefaults(
-    defineProps<{
-        organization: string;
-        issue: IssueListItem;
-        showSprint?: boolean;
-    }>(),
-    {
-        showSprint: true,
-    },
-);
+defineProps<{
+    organization: string;
+    issue: IssueListItem;
+}>();
 </script>
 
 <template>
-    <div class="flex min-w-3xl flex-1 items-center gap-4">
+    <div class="flex min-w-2xl flex-1 items-center gap-4">
         <IssuePriorityBadge
             :priority="issue.priority"
             :label="issue.priorityLabel"
@@ -49,12 +43,6 @@ withDefaults(
             >
                 {{ issue.points }}
             </span>
-        </span>
-        <span
-            v-if="showSprint"
-            class="text-muted-foreground w-28 shrink-0 truncate text-xs"
-        >
-            {{ issue.sprintName }}
         </span>
         <IssueStatusBadge :status="issue.status" :label="issue.statusLabel" />
         <span
