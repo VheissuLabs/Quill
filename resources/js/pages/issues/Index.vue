@@ -126,6 +126,7 @@ const toggleSprint = (sprintId: number) => {
 const sprintToDelete = ref<IssueSprintOption | null>(null);
 const sprintBeingRenamed = ref<number | null>(null);
 const sprintName = ref('');
+const renameFocused = ref(false);
 
 const startRenaming = (sprint: IssueSprintOption) => {
     if (!props.permissions.canManageSprints) {
@@ -133,34 +134,41 @@ const startRenaming = (sprint: IssueSprintOption) => {
     }
 
     sprintName.value = sprint.name;
+    renameFocused.value = false;
     sprintBeingRenamed.value = sprint.id;
 };
 
 /**
- * The menu hands focus back to its trigger as it closes, so wait for that before taking it.
+ * Focus the field once it exists. Until it has focus a blur is something else letting go, not
+ * the user leaving the field, so it must not close the rename.
  */
 const focusRename = (el: unknown) => {
     const input = (el as { $el?: HTMLInputElement } | null)?.$el;
 
-    if (!input) {
+    // Vue re-runs an inline ref on every patch; focus and select belong to the first one only.
+    if (!input || renameFocused.value) {
         return;
     }
 
-    void nextTick(() =>
-        requestAnimationFrame(() => {
-            input.focus();
-            input.select();
-        }),
-    );
+    void nextTick(() => {
+        input.focus();
+        input.select();
+        renameFocused.value = true;
+    });
 };
 
 /**
  * The sprint form validates its dates too, so a rename sends them back unchanged.
  */
 const saveSprintName = (sprint: IssueSprintOption) => {
+    if (!renameFocused.value) {
+        return;
+    }
+
     const name = sprintName.value.trim();
 
     sprintBeingRenamed.value = null;
+    renameFocused.value = false;
 
     if (!name || name === sprint.name) {
         return;
@@ -540,7 +548,12 @@ const totalPoints = computed(() =>
                                             <MoreHorizontal />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
+                                    <DropdownMenuContent
+                                        align="end"
+                                        @close-auto-focus="
+                                            (event) => event.preventDefault()
+                                        "
+                                    >
                                         <DropdownMenuItem
                                             class="cursor-pointer"
                                             @click="startRenaming(sprint)"
