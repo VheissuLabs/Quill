@@ -73,7 +73,7 @@ const confirmRemoveMember = (member: TeamMember) => {
     <Head :title="team.name" />
 
     <div class="flex flex-col gap-10 p-6">
-        <div class="max-w-xl space-y-6">
+        <div class="space-y-6">
             <Heading variant="small" title="Team settings" />
 
             <Form
@@ -105,7 +105,7 @@ const confirmRemoveMember = (member: TeamMember) => {
             <p v-else class="font-medium">{{ team.name }}</p>
         </div>
 
-        <div class="max-w-xl space-y-6">
+        <div class="space-y-6">
             <div class="flex items-center justify-between">
                 <Heading
                     variant="small"
@@ -181,7 +181,7 @@ const confirmRemoveMember = (member: TeamMember) => {
                 currentOrganization.modules.development.enabled &&
                 currentOrganization.modules.development.capabilities.workflow
             "
-            class="max-w-2xl space-y-6"
+            class="space-y-6"
         >
             <Heading
                 variant="small"
@@ -197,7 +197,7 @@ const confirmRemoveMember = (member: TeamMember) => {
             />
         </div>
 
-        <div v-if="permissions.canManageTeams" class="max-w-xl space-y-6">
+        <div v-if="permissions.canManageTeams" class="space-y-6">
             <Heading
                 variant="small"
                 title="Delete team"
