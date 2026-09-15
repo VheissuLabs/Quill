@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Teams;
 
-use App\Http\Controllers\Controller;
 use App\Enums\IssueStatus;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Teams\DeleteTeamRequest;
 use App\Http\Requests\Teams\SaveTeamRequest;
 use App\Models\BoardColumn;
 use App\Models\Organization;
@@ -85,6 +86,11 @@ class TeamController extends Controller
             ]),
             'columnStatuses' => collect(IssueStatus::columnStatuses())
                 ->map(fn (IssueStatus $status) => ['value' => $status->value, 'label' => $status->label()]),
+            'otherTeams' => $currentOrganization->teams()
+                ->whereKeyNot($team->id)
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Team $other) => ['id' => $other->id, 'name' => $other->name]),
             'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
         ]);
     }
@@ -116,13 +122,25 @@ class TeamController extends Controller
     /**
      * Delete the specified team.
      */
-    public function destroy(Organization $currentOrganization, Team $team): RedirectResponse
+    public function destroy(DeleteTeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
         Gate::authorize('delete', $team);
 
-        $team->delete();
+        $target = $request->filled('target_team_id')
+            ? $currentOrganization->teams()->whereKey($request->integer('target_team_id'))->firstOrFail()
+            : null;
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted.')]);
+        if (! $target) {
+            $team->delete();
+
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted.')]);
+
+            return to_route('teams.index');
+        }
+
+        $team->mergeInto($target);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team merged into ":name".', ['name' => $target->name])]);
 
         return to_route('teams.index');
     }

@@ -101,6 +101,11 @@ readonly class ActivitySummary
             'current_team_id' => 'Current team',
             'starts_at' => 'Start date',
             'ends_at' => 'End date',
+            'merged_from' => 'Merged from',
+            'members_added' => 'Members added',
+            'projects_moved' => 'Projects moved',
+            'sprints_moved' => 'Sprints moved',
+            'issues_moved' => 'Issues moved',
             default => Str::headline($attribute),
         };
     }

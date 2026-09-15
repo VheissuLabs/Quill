@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { Eye, Pencil, Plus, Trash2, Users } from '@lucide/vue';
 import { ref } from 'vue';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import DeleteTeamModal from '@/components/DeleteTeamModal.vue';
 import CreateTeamModal from '@/components/CreateTeamModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
@@ -13,7 +13,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { destroy, edit, index } from '@/routes/teams';
+import { edit, index } from '@/routes/teams';
 import type {
     Organization,
     OrganizationPermissions,
@@ -160,17 +160,10 @@ defineOptions({
         </div>
     </div>
 
-    <ConfirmDeleteModal
+    <DeleteTeamModal
         v-model:open="deleteDialogOpen"
-        title="Delete team"
-        confirm-label="Delete team"
-        :href="
-            teamToDelete
-                ? destroy([props.currentOrganization.slug, teamToDelete.slug])
-                : null
-        "
-    >
-        This will delete <strong>{{ teamToDelete?.name }}</strong
-        >. Its members stay in the organization.
-    </ConfirmDeleteModal>
+        :organization="props.currentOrganization.slug"
+        :team="teamToDelete"
+        :other-teams="teams.filter((team) => team.id !== teamToDelete?.id)"
+    />
 </template>

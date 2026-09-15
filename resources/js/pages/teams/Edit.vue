@@ -5,6 +5,7 @@ import { ref } from 'vue';
 import AddTeamMemberModal from '@/components/AddTeamMemberModal.vue';
 import BoardColumnsEditor from '@/components/BoardColumnsEditor.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import DeleteTeamModal from '@/components/DeleteTeamModal.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,7 +19,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useInitials } from '@/composables/useInitials';
-import { destroy, edit, index, update } from '@/routes/teams';
+import { edit, index, update } from '@/routes/teams';
 import { destroy as removeMember } from '@/routes/teams/members';
 import type {
     Organization,
@@ -27,6 +28,7 @@ import type {
     Team,
     TeamBoardColumn,
     TeamMember,
+    TeamMergeTarget,
 } from '@/types';
 
 type Props = {
@@ -36,6 +38,7 @@ type Props = {
     availableMembers: TeamMember[];
     columns: TeamBoardColumn[];
     columnStatuses: SelectOption[];
+    otherTeams: TeamMergeTarget[];
     permissions: OrganizationPermissions;
 };
 
@@ -243,13 +246,10 @@ const confirmRemoveMember = (member: TeamMember) => {
         They stay a member of the organization.
     </ConfirmDeleteModal>
 
-    <ConfirmDeleteModal
+    <DeleteTeamModal
         v-model:open="deleteDialogOpen"
-        title="Delete team"
-        confirm-label="Delete team"
-        :href="destroy([currentOrganization.slug, team.slug])"
-    >
-        This will delete <strong>{{ team.name }}</strong
-        >. Its members stay in the organization.
-    </ConfirmDeleteModal>
+        :organization="currentOrganization.slug"
+        :team="team"
+        :other-teams="otherTeams"
+    />
 </template>
