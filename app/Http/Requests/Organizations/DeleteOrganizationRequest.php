@@ -16,7 +16,7 @@ class DeleteOrganizationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return Gate::allows('delete', $this->route('organization'));
+        return Gate::allows('delete', $this->route('current_organization'));
     }
 
     /**
@@ -52,7 +52,7 @@ class DeleteOrganizationRequest extends FormRequest
      */
     private function organization(): Organization
     {
-        $organization = $this->route('organization');
+        $organization = $this->route('current_organization');
 
         abort_if(! $organization instanceof Organization, 404);
 

@@ -176,6 +176,7 @@ trait HasOrganizations
             isOwner: (bool) $role?->is_owner,
             canUpdate: $this->hasOrganizationPermission($organization, OrganizationPermission::UpdateOrganization),
             canManageRoles: $this->hasOrganizationPermission($organization, OrganizationPermission::ManageRoles),
+            modules: $organization->moduleSettings(),
             isCurrent: $this->isCurrentOrganization($organization),
         );
     }

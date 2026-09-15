@@ -19,11 +19,11 @@ class OrganizationInvitationController extends Controller
     /**
      * Store a newly created invitation.
      */
-    public function store(CreateOrganizationInvitationRequest $request, Organization $organization): RedirectResponse
+    public function store(CreateOrganizationInvitationRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        Gate::authorize('create', [OrganizationInvitation::class, $organization]);
+        Gate::authorize('create', [OrganizationInvitation::class, $currentOrganization]);
 
-        $invitation = $organization->invitations()->create([
+        $invitation = $currentOrganization->invitations()->create([
             'email' => $request->validated('email'),
             'role_id' => $request->integer('role_id'),
             'invited_by' => $request->user()->id,
@@ -35,15 +35,15 @@ class OrganizationInvitationController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Invitation sent.')]);
 
-        return to_route('organizations.edit', ['organization' => $organization->slug]);
+        return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
     }
 
     /**
      * Cancel the specified invitation.
      */
-    public function destroy(Organization $organization, OrganizationInvitation $invitation): RedirectResponse
+    public function destroy(Organization $currentOrganization, OrganizationInvitation $invitation): RedirectResponse
     {
-        abort_unless($invitation->organization_id === $organization->id, 404);
+        abort_unless($invitation->organization_id === $currentOrganization->id, 404);
 
         Gate::authorize('delete', $invitation);
 
@@ -51,7 +51,7 @@ class OrganizationInvitationController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Invitation cancelled.')]);
 
-        return to_route('organizations.edit', ['organization' => $organization->slug]);
+        return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
     }
 
     /**

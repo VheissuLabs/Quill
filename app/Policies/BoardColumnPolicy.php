@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationPermission;
 use App\Models\BoardColumn;
 use App\Models\Team;
@@ -14,7 +15,8 @@ class BoardColumnPolicy
      */
     public function create(User $user, Team $team): bool
     {
-        return $user->hasOrganizationPermission($team->organization, OrganizationPermission::ManageTeams);
+        return $team->organization->canUse(OrganizationCapability::Workflow)
+            && $user->hasOrganizationPermission($team->organization, OrganizationPermission::ManageTeams);
     }
 
     /**
@@ -22,7 +24,8 @@ class BoardColumnPolicy
      */
     public function update(User $user, BoardColumn $column): bool
     {
-        return $user->hasOrganizationPermission($column->team->organization, OrganizationPermission::ManageTeams);
+        return $column->team->organization->canUse(OrganizationCapability::Workflow)
+            && $user->hasOrganizationPermission($column->team->organization, OrganizationPermission::ManageTeams);
     }
 
     /**
@@ -30,6 +33,7 @@ class BoardColumnPolicy
      */
     public function delete(User $user, BoardColumn $column): bool
     {
-        return $user->hasOrganizationPermission($column->team->organization, OrganizationPermission::ManageTeams);
+        return $column->team->organization->canUse(OrganizationCapability::Workflow)
+            && $user->hasOrganizationPermission($column->team->organization, OrganizationPermission::ManageTeams);
     }
 }

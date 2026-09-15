@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationPermission;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -14,7 +15,8 @@ class IssuePolicy
      */
     public function viewAny(User $user, Organization $organization): bool
     {
-        return $user->belongsToOrganization($organization);
+        return $organization->canUse(OrganizationCapability::Issues)
+            && $user->belongsToOrganization($organization);
     }
 
     /**
@@ -22,7 +24,8 @@ class IssuePolicy
      */
     public function view(User $user, Issue $issue): bool
     {
-        return $user->can('view', $issue->project);
+        return $issue->project->organization->canUse(OrganizationCapability::Issues)
+            && $user->can('view', $issue->project);
     }
 
     /**
@@ -30,7 +33,8 @@ class IssuePolicy
      */
     public function create(User $user, Organization $organization): bool
     {
-        return $user->belongsToOrganization($organization);
+        return $organization->canUse(OrganizationCapability::Issues)
+            && $user->belongsToOrganization($organization);
     }
 
     /**
@@ -38,7 +42,8 @@ class IssuePolicy
      */
     public function update(User $user, Issue $issue): bool
     {
-        return $user->belongsToOrganization($issue->project->organization);
+        return $issue->project->organization->canUse(OrganizationCapability::Issues)
+            && $user->belongsToOrganization($issue->project->organization);
     }
 
     /**
@@ -46,6 +51,7 @@ class IssuePolicy
      */
     public function delete(User $user, Issue $issue): bool
     {
-        return $user->hasOrganizationPermission($issue->project->organization, OrganizationPermission::ManageIssues);
+        return $issue->project->organization->canUse(OrganizationCapability::Issues)
+            && $user->hasOrganizationPermission($issue->project->organization, OrganizationPermission::ManageIssues);
     }
 }

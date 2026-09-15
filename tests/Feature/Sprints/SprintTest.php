@@ -72,6 +72,20 @@ test('the sprints index shows the current team only', function () {
         );
 });
 
+test('sprints cannot be viewed when the sprints module is disabled', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->updateModuleSettings([
+        'development_enabled' => false,
+        'development_sprints_enabled' => true,
+    ]);
+    $organization->addMember($member, 'Member');
+
+    $this->actingAs($member)
+        ->get(route('sprints.index', ['current_organization' => $organization]))
+        ->assertForbidden();
+});
+
 test('completing a sprint returns unfinished issues to the backlog', function () {
     $admin = User::factory()->create();
     $organization = Organization::factory()->create();

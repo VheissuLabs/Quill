@@ -41,6 +41,14 @@ class OrganizationPolicy
     }
 
     /**
+     * Determine whether the user can enable or disable organization modules.
+     */
+    public function manageModules(User $user, Organization $organization): bool
+    {
+        return $organization->isOwner($user);
+    }
+
+    /**
      * Determine whether the user can leave the organization. The last owner cannot.
      */
     public function leave(User $user, Organization $organization): bool

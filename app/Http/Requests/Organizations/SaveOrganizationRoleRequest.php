@@ -18,7 +18,7 @@ class SaveOrganizationRoleRequest extends FormRequest
      */
     public function rules(): array
     {
-        $organization = $this->route('organization');
+        $organization = $this->route('current_organization');
         $role = $this->route('role');
 
         abort_if(! $organization instanceof Organization, 404);

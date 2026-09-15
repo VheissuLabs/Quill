@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueOrganizationSlugs;
+use App\Enums\OrganizationCapability;
+use App\Enums\OrganizationModule;
 use App\Enums\OrganizationPermission;
 use App\Observers\OrganizationObserver;
 use Closure;
@@ -44,6 +46,7 @@ use Spatie\Permission\PermissionRegistrar;
  * @property-read Collection<int, Project> $projects
  * @property-read Collection<int, Issue> $issues
  * @property-read Collection<int, Sprint> $sprints
+ * @property-read Collection<int, OrganizationModuleSetting> $capabilitySettings
  * @property-read Collection<int, Role> $roles
  */
 #[Fillable(['name', 'slug', 'logo_path'])]
@@ -73,6 +76,109 @@ class Organization extends Model
     public function logoUrl(): ?string
     {
         return $this->logo_path ? Storage::url($this->logo_path) : null;
+    }
+
+    /**
+     * Determine whether an organization module is enabled.
+     */
+    public function isModuleEnabled(OrganizationModule $module): bool
+    {
+        return $this->settingEnabled($module->value, '');
+    }
+
+    /**
+     * Determine whether an organization capability is enabled.
+     */
+    public function canUse(OrganizationCapability $capability): bool
+    {
+        return $this->isModuleEnabled($capability->module())
+            && $this->settingEnabled($capability->module()->value, $capability->value);
+    }
+
+    /**
+     * Get module settings for shared Inertia data and organization settings.
+     *
+     * @return array{featureVoting: array{enabled: bool, capabilities: array{boards: bool, voting: bool}}, development: array{enabled: bool, capabilities: array{issues: bool, sprints: bool, workflow: bool}}}
+     */
+    public function moduleSettings(): array
+    {
+        $this->loadMissing('capabilitySettings');
+
+        return collect(OrganizationModule::cases())
+            ->mapWithKeys(fn (OrganizationModule $module) => [
+                $module->key() => [
+                    'enabled' => $this->isModuleEnabled($module),
+                    'capabilities' => collect($module->capabilities())
+                        ->mapWithKeys(fn (OrganizationCapability $capability) => [
+                            $capability->value => $this->canUse($capability),
+                        ])
+                        ->all(),
+                ],
+            ])
+            ->all();
+    }
+
+    /**
+     * Get the module and capability settings belonging to the organization.
+     *
+     * @return HasMany<OrganizationModuleSetting, $this>
+     */
+    public function capabilitySettings(): HasMany
+    {
+        return $this->hasMany(OrganizationModuleSetting::class);
+    }
+
+    /**
+     * Persist the complete module and capability settings submitted by an owner.
+     *
+     * @param  array<string, bool>  $settings
+     */
+    public function updateModuleSettings(array $settings): void
+    {
+        $now = now();
+        $rows = [];
+
+        foreach (OrganizationModule::cases() as $module) {
+            $rows[] = [
+                'organization_id' => $this->id,
+                'module' => $module->value,
+                'capability' => '',
+                'enabled' => (bool) ($settings[$module->value.'_enabled'] ?? true),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            foreach ($module->capabilities() as $capability) {
+                $rows[] = [
+                    'organization_id' => $this->id,
+                    'module' => $module->value,
+                    'capability' => $capability->value,
+                    'enabled' => (bool) ($settings[$module->value.'_'.$capability->value.'_enabled'] ?? true),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        $this->capabilitySettings()->upsert(
+            $rows,
+            ['organization_id', 'module', 'capability'],
+            ['enabled', 'updated_at'],
+        );
+
+        $this->unsetRelation('capabilitySettings');
+    }
+
+    /**
+     * Read an override, defaulting to enabled when no override exists.
+     */
+    private function settingEnabled(string $module, string $capability): bool
+    {
+        $setting = $this->relationLoaded('capabilitySettings')
+            ? $this->capabilitySettings->first(fn (OrganizationModuleSetting $setting) => $setting->module === $module && $setting->capability === $capability)
+            : $this->capabilitySettings()->where('module', $module)->where('capability', $capability)->first();
+
+        return $setting?->enabled ?? true;
     }
 
     /**

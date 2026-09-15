@@ -1,3 +1,21 @@
+export type OrganizationModules = {
+    featureVoting: {
+        enabled: boolean;
+        capabilities: {
+            boards: boolean;
+            voting: boolean;
+        };
+    };
+    development: {
+        enabled: boolean;
+        capabilities: {
+            issues: boolean;
+            sprints: boolean;
+            workflow: boolean;
+        };
+    };
+};
+
 export type Organization = {
     id: number;
     name: string;
@@ -7,6 +25,7 @@ export type Organization = {
     isOwner?: boolean;
     canUpdate?: boolean;
     canManageRoles?: boolean;
+    modules: OrganizationModules;
     isCurrent?: boolean;
 };
 

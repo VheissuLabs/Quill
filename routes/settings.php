@@ -1,10 +1,6 @@
 <?php
 
 use App\Http\Controllers\Organizations\OrganizationController;
-use App\Http\Controllers\Organizations\OrganizationInvitationController;
-use App\Http\Controllers\Organizations\OrganizationLogoController;
-use App\Http\Controllers\Organizations\OrganizationMemberController;
-use App\Http\Controllers\Organizations\OrganizationRoleController;
 use App\Http\Controllers\Settings\EmailAddressController;
 use App\Http\Controllers\Settings\EmailAddressVerificationNotificationController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -47,23 +43,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('settings/organizations', [OrganizationController::class, 'store'])->name('organizations.store');
 
     Route::middleware(EnsureOrganizationMembership::class)->group(function () {
-        Route::get('settings/organizations/{organization}', [OrganizationController::class, 'edit'])->name('organizations.edit');
-        Route::patch('settings/organizations/{organization}', [OrganizationController::class, 'update'])->name('organizations.update');
-        Route::delete('settings/organizations/{organization}', [OrganizationController::class, 'destroy'])->name('organizations.destroy');
         Route::post('settings/organizations/{organization}/switch', [OrganizationController::class, 'switch'])->name('organizations.switch');
         Route::delete('settings/organizations/{organization}/leave', [OrganizationController::class, 'leave'])->name('organizations.leave');
-        Route::post('settings/organizations/{organization}/logo', [OrganizationLogoController::class, 'store'])->name('organizations.logo.store');
-        Route::delete('settings/organizations/{organization}/logo', [OrganizationLogoController::class, 'destroy'])->name('organizations.logo.destroy');
-
-        Route::patch('settings/organizations/{organization}/members/{user}', [OrganizationMemberController::class, 'update'])->name('organizations.members.update');
-        Route::delete('settings/organizations/{organization}/members/{user}', [OrganizationMemberController::class, 'destroy'])->name('organizations.members.destroy');
-
-        Route::post('settings/organizations/{organization}/roles', [OrganizationRoleController::class, 'store'])->name('organizations.roles.store');
-        Route::patch('settings/organizations/{organization}/roles/{role}', [OrganizationRoleController::class, 'update'])->name('organizations.roles.update');
-        Route::delete('settings/organizations/{organization}/roles/{role}', [OrganizationRoleController::class, 'destroy'])->name('organizations.roles.destroy');
-
-        Route::post('settings/organizations/{organization}/invitations', [OrganizationInvitationController::class, 'store'])->name('organizations.invitations.store');
-        Route::delete('settings/organizations/{organization}/invitations/{invitation}', [OrganizationInvitationController::class, 'destroy'])->name('organizations.invitations.destroy');
     });
 });
 

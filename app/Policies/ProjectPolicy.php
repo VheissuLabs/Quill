@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationPermission;
 use App\Models\Organization;
 use App\Models\Project;
@@ -14,7 +15,8 @@ class ProjectPolicy
      */
     public function viewAny(User $user, Organization $organization): bool
     {
-        return $user->belongsToOrganization($organization);
+        return $organization->canUse(OrganizationCapability::Boards)
+            && $user->belongsToOrganization($organization);
     }
 
     /**
@@ -29,11 +31,21 @@ class ProjectPolicy
     }
 
     /**
+     * Determine whether the user or guest can view the project's feature board.
+     */
+    public function viewFeatureBoard(?User $user, Project $project): bool
+    {
+        return $project->organization->canUse(OrganizationCapability::Boards)
+            && $this->view($user, $project);
+    }
+
+    /**
      * Determine whether the user can create projects in the organization.
      */
     public function create(User $user, Organization $organization): bool
     {
-        return $user->hasOrganizationPermission($organization, OrganizationPermission::ManageProjects);
+        return $organization->canUse(OrganizationCapability::Boards)
+            && $user->hasOrganizationPermission($organization, OrganizationPermission::ManageProjects);
     }
 
     /**
@@ -41,7 +53,8 @@ class ProjectPolicy
      */
     public function update(User $user, Project $project): bool
     {
-        return $user->hasOrganizationPermission($project->organization, OrganizationPermission::ManageProjects);
+        return $project->organization->canUse(OrganizationCapability::Boards)
+            && $user->hasOrganizationPermission($project->organization, OrganizationPermission::ManageProjects);
     }
 
     /**
@@ -49,6 +62,7 @@ class ProjectPolicy
      */
     public function delete(User $user, Project $project): bool
     {
-        return $user->hasOrganizationPermission($project->organization, OrganizationPermission::ManageProjects);
+        return $project->organization->canUse(OrganizationCapability::Boards)
+            && $user->hasOrganizationPermission($project->organization, OrganizationPermission::ManageProjects);
     }
 }

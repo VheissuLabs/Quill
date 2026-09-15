@@ -5,6 +5,7 @@ import {
     FolderKanban,
     LayoutGrid,
     ListTodo,
+    Settings,
     ShieldCheck,
     Timer,
     Users,
@@ -28,7 +29,10 @@ import {
 import { dashboard } from '@/routes';
 import { index as clients } from '@/routes/clients';
 import { index as issues } from '@/routes/issues';
-import { index as organizations } from '@/routes/organizations';
+import {
+    edit as organizationSettings,
+    index as organizations,
+} from '@/routes/organizations';
 import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import { index as sprints } from '@/routes/sprints';
@@ -43,6 +47,19 @@ type NavGroup = {
 const page = usePage();
 
 const organizationSlug = computed(() => page.props.currentOrganization?.slug);
+const modules = computed(
+    () =>
+        page.props.currentOrganization?.modules ?? {
+            featureVoting: {
+                enabled: true,
+                capabilities: { boards: true, voting: true },
+            },
+            development: {
+                enabled: true,
+                capabilities: { issues: true, sprints: true, workflow: true },
+            },
+        },
+);
 
 const dashboardUrl = computed(() =>
     organizationSlug.value
@@ -66,36 +83,62 @@ const navGroups = computed<NavGroup[]>(() => {
     const slug = organizationSlug.value;
 
     if (slug) {
-        groups.push(
-            {
-                label: 'Work',
+        if (
+            modules.value.featureVoting.enabled &&
+            modules.value.featureVoting.capabilities.boards
+        ) {
+            groups.push({
+                label: 'Feature voting',
                 items: [
                     {
                         title: 'Projects',
                         href: projects(slug),
                         icon: FolderKanban,
                     },
-                    { title: 'Issues', href: issues(slug), icon: ListTodo },
-                    { title: 'Sprints', href: sprints(slug), icon: Timer },
                 ],
-            },
-            {
-                label: 'Organization',
-                items: [
-                    { title: 'Clients', href: clients(slug), icon: Briefcase },
-                    { title: 'Teams', href: teams(slug), icon: Users },
-                    ...(page.props.currentOrganization?.canManageRoles
-                        ? [
-                              {
-                                  title: 'Roles',
-                                  href: roles(slug),
-                                  icon: ShieldCheck,
-                              },
-                          ]
-                        : []),
-                ],
-            },
-        );
+            });
+        }
+
+        const developmentItems = [
+            ...(modules.value.development.enabled &&
+            modules.value.development.capabilities.issues
+                ? [{ title: 'Issues', href: issues(slug), icon: ListTodo }]
+                : []),
+            ...(modules.value.development.enabled &&
+            modules.value.development.capabilities.sprints
+                ? [{ title: 'Sprints', href: sprints(slug), icon: Timer }]
+                : []),
+        ];
+
+        if (developmentItems.length > 0) {
+            groups.push({ label: 'Development', items: developmentItems });
+        }
+
+        groups.push({
+            label: 'Organization',
+            items: [
+                { title: 'Clients', href: clients(slug), icon: Briefcase },
+                { title: 'Teams', href: teams(slug), icon: Users },
+                ...(page.props.currentOrganization?.canManageRoles
+                    ? [
+                          {
+                              title: 'Roles',
+                              href: roles(slug),
+                              icon: ShieldCheck,
+                          },
+                      ]
+                    : []),
+                ...(page.props.currentOrganization?.canUpdate
+                    ? [
+                          {
+                              title: 'Settings',
+                              href: organizationSettings(slug),
+                              icon: Settings,
+                          },
+                      ]
+                    : []),
+            ],
+        });
     }
 
     return groups;

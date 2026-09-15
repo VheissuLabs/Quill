@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationPermission;
 use App\Models\Organization;
 use App\Models\Sprint;
@@ -14,7 +15,8 @@ class SprintPolicy
      */
     public function viewAny(User $user, Organization $organization): bool
     {
-        return $user->belongsToOrganization($organization);
+        return $organization->canUse(OrganizationCapability::Sprints)
+            && $user->belongsToOrganization($organization);
     }
 
     /**
@@ -22,7 +24,8 @@ class SprintPolicy
      */
     public function view(User $user, Sprint $sprint): bool
     {
-        return $user->belongsToOrganization($sprint->team->organization);
+        return $sprint->team->organization->canUse(OrganizationCapability::Sprints)
+            && $user->belongsToOrganization($sprint->team->organization);
     }
 
     /**
@@ -30,7 +33,8 @@ class SprintPolicy
      */
     public function create(User $user, Organization $organization): bool
     {
-        return $user->hasOrganizationPermission($organization, OrganizationPermission::ManageSprints);
+        return $organization->canUse(OrganizationCapability::Sprints)
+            && $user->hasOrganizationPermission($organization, OrganizationPermission::ManageSprints);
     }
 
     /**
@@ -38,7 +42,8 @@ class SprintPolicy
      */
     public function update(User $user, Sprint $sprint): bool
     {
-        return $user->hasOrganizationPermission($sprint->team->organization, OrganizationPermission::ManageSprints);
+        return $sprint->team->organization->canUse(OrganizationCapability::Sprints)
+            && $user->hasOrganizationPermission($sprint->team->organization, OrganizationPermission::ManageSprints);
     }
 
     /**
@@ -46,6 +51,7 @@ class SprintPolicy
      */
     public function delete(User $user, Sprint $sprint): bool
     {
-        return $user->hasOrganizationPermission($sprint->team->organization, OrganizationPermission::ManageSprints);
+        return $sprint->team->organization->canUse(OrganizationCapability::Sprints)
+            && $user->hasOrganizationPermission($sprint->team->organization, OrganizationPermission::ManageSprints);
     }
 }

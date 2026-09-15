@@ -176,7 +176,13 @@ const confirmRemoveMember = (member: TeamMember) => {
             </div>
         </div>
 
-        <div class="max-w-2xl space-y-6">
+        <div
+            v-if="
+                currentOrganization.modules.development.enabled &&
+                currentOrganization.modules.development.capabilities.workflow
+            "
+            class="max-w-2xl space-y-6"
+        >
             <Heading
                 variant="small"
                 title="Board columns"

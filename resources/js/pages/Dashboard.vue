@@ -40,6 +40,11 @@ type Props = {
 };
 
 const props = defineProps<Props>();
+const featureVotingEnabled = computed(
+    () =>
+        props.currentOrganization.modules.featureVoting.enabled &&
+        props.currentOrganization.modules.featureVoting.capabilities.boards,
+);
 
 defineOptions({
     layout: (props: { currentOrganization?: Organization | null }) => ({
@@ -88,11 +93,16 @@ const statCards = computed(() => [
                     {{ currentOrganization.name }}
                 </h1>
                 <p class="text-muted-foreground mt-1 text-sm">
-                    What people are asking for across your boards.
+                    <template v-if="featureVotingEnabled">
+                        What people are asking for across your boards.
+                    </template>
+                    <template v-else>
+                        Your organization can enable the tools it needs.
+                    </template>
                 </p>
             </div>
             <Button
-                v-if="permissions.canManageProjects"
+                v-if="featureVotingEnabled && permissions.canManageProjects"
                 variant="outline"
                 as-child
             >
@@ -102,7 +112,7 @@ const statCards = computed(() => [
             </Button>
         </div>
 
-        <template v-if="projects.length > 0">
+        <template v-if="featureVotingEnabled && projects.length > 0">
             <div
                 class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_440px]"
             >
@@ -274,6 +284,13 @@ const statCards = computed(() => [
                 </section>
             </div>
         </template>
+
+        <EmptyState
+            v-else-if="!featureVotingEnabled"
+            :icon="FolderKanban"
+            title="Feature voting is turned off"
+            description="An organization owner can enable feature voting from organization settings."
+        />
 
         <EmptyState
             v-else

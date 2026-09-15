@@ -65,11 +65,41 @@ test('the organization edit page can be rendered', function () {
     $response
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('organizations/Edit')
+            ->component('organization/Settings')
             ->where('members.0.role', 'Owner')
             ->where('members.0.isOwner', true)
             ->where('availableRoles', fn ($roles) => collect($roles)->pluck('label')->all() === ['Admin', 'Member']),
         );
+});
+
+test('opening organization settings switches the user to that organization', function () {
+    $user = User::factory()->withOrganization()->create();
+    $previousOrganization = $user->currentOrganization;
+    $organization = Organization::factory()->create();
+
+    $organization->addMember($user, 'Owner');
+
+    $this
+        ->actingAs($user)
+        ->get(route('organizations.edit', $organization))
+        ->assertOk();
+
+    expect($user->fresh()->current_organization_id)
+        ->toEqual($organization->id)
+        ->not->toEqual($previousOrganization->id);
+});
+
+test('users cannot open settings for an organization they dont belong to', function () {
+    $user = User::factory()->withOrganization()->create();
+    $organization = Organization::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->get(route('organizations.edit', $organization));
+
+    $response->assertForbidden();
+
+    expect($user->fresh()->current_organization_id)->not->toEqual($organization->id);
 });
 
 test('organizations can be updated by owners', function () {
@@ -107,6 +137,66 @@ test('organizations cannot be updated by members', function () {
         ]);
 
     $response->assertForbidden();
+});
+
+test('organization owners can update product modules', function () {
+    $owner = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($owner, 'Owner');
+
+    $response = $this
+        ->actingAs($owner)
+        ->patch(route('organizations.modules.update', $organization), [
+            'feature_voting_enabled' => false,
+            'feature_voting_boards_enabled' => false,
+            'feature_voting_voting_enabled' => false,
+            'development_enabled' => true,
+            'development_issues_enabled' => true,
+            'development_sprints_enabled' => false,
+            'development_workflow_enabled' => true,
+        ]);
+
+    $response->assertRedirect(route('organizations.edit', $organization));
+
+    $this->assertDatabaseHas('organizations', [
+        'id' => $organization->id,
+    ]);
+    $this->assertDatabaseHas('organization_module_settings', [
+        'organization_id' => $organization->id,
+        'module' => 'feature_voting',
+        'capability' => '',
+        'enabled' => false,
+    ]);
+    $this->assertDatabaseHas('organization_module_settings', [
+        'organization_id' => $organization->id,
+        'module' => 'development',
+        'capability' => 'sprints',
+        'enabled' => false,
+    ]);
+});
+
+test('organization members cannot update product modules', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($owner, 'Owner');
+    $organization->addMember($member, 'Member');
+
+    $response = $this
+        ->actingAs($member)
+        ->patch(route('organizations.modules.update', $organization), [
+            'feature_voting_enabled' => false,
+            'feature_voting_boards_enabled' => false,
+            'feature_voting_voting_enabled' => false,
+            'development_enabled' => false,
+            'development_issues_enabled' => false,
+            'development_sprints_enabled' => false,
+            'development_workflow_enabled' => false,
+        ]);
+
+    $response->assertForbidden();
+
+    expect($organization->fresh()->moduleSettings()['featureVoting']['enabled'])->toBeTrue();
 });
 
 test('organizations can be deleted by owners', function () {

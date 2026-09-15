@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationPermission;
 use App\Models\Comment;
 use App\Models\User;
@@ -13,7 +14,8 @@ class CommentPolicy
      */
     public function delete(User $user, Comment $comment): bool
     {
-        return $user->is($comment->author)
-            || $user->hasOrganizationPermission($comment->feature->project->organization, OrganizationPermission::ManageFeatures);
+        return $comment->feature->project->organization->canUse(OrganizationCapability::Boards)
+            && ($user->is($comment->author)
+                || $user->hasOrganizationPermission($comment->feature->project->organization, OrganizationPermission::ManageFeatures));
     }
 }

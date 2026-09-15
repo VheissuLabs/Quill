@@ -71,27 +71,27 @@ class OrganizationRoleController extends Controller
     /**
      * Define a new role for the organization.
      */
-    public function store(SaveOrganizationRoleRequest $request, Organization $organization): RedirectResponse
+    public function store(SaveOrganizationRoleRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        Gate::authorize('create', [Role::class, $organization]);
+        Gate::authorize('create', [Role::class, $currentOrganization]);
 
-        DB::transaction(function () use ($request, $organization) {
-            $organization->roles()
+        DB::transaction(function () use ($request, $currentOrganization) {
+            $currentOrganization->roles()
                 ->create(['name' => $request->validated('name'), 'guard_name' => 'web'])
                 ->syncPermissions($request->validated('permissions'));
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role created.')]);
 
-        return to_route('roles.index', ['current_organization' => $organization->slug]);
+        return to_route('roles.index', ['current_organization' => $currentOrganization->slug]);
     }
 
     /**
      * Rename a role or change the permissions it grants.
      */
-    public function update(SaveOrganizationRoleRequest $request, Organization $organization, Role $role): RedirectResponse
+    public function update(SaveOrganizationRoleRequest $request, Organization $currentOrganization, Role $role): RedirectResponse
     {
-        $this->ensureRoleBelongsTo($organization, $role);
+        $this->ensureRoleBelongsTo($currentOrganization, $role);
 
         Gate::authorize('update', $role);
 
@@ -102,15 +102,15 @@ class OrganizationRoleController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role updated.')]);
 
-        return to_route('roles.index', ['current_organization' => $organization->slug]);
+        return to_route('roles.index', ['current_organization' => $currentOrganization->slug]);
     }
 
     /**
      * Delete a role nobody holds any more.
      */
-    public function destroy(Organization $organization, Role $role): RedirectResponse
+    public function destroy(Organization $currentOrganization, Role $role): RedirectResponse
     {
-        $this->ensureRoleBelongsTo($organization, $role);
+        $this->ensureRoleBelongsTo($currentOrganization, $role);
 
         Gate::authorize('delete', $role);
 
@@ -124,7 +124,7 @@ class OrganizationRoleController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role deleted.')]);
 
-        return to_route('roles.index', ['current_organization' => $organization->slug]);
+        return to_route('roles.index', ['current_organization' => $currentOrganization->slug]);
     }
 
     /**

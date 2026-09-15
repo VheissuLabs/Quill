@@ -16,14 +16,14 @@ class OrganizationMemberController extends Controller
     /**
      * Update the specified organization member's role.
      */
-    public function update(UpdateOrganizationMemberRequest $request, Organization $organization, User $user): RedirectResponse
+    public function update(UpdateOrganizationMemberRequest $request, Organization $currentOrganization, User $user): RedirectResponse
     {
-        $membership = $organization->memberships()->where('user_id', $user->id)->firstOrFail();
+        $membership = $currentOrganization->memberships()->where('user_id', $user->id)->firstOrFail();
         $role = Role::findOrFail($request->integer('role_id'));
 
         Gate::authorize('update', [$membership, $role]);
 
-        $organization->changeMemberRole($user, $role);
+        $currentOrganization->changeMemberRole($user, $role);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member role updated.')]);
 
@@ -33,20 +33,20 @@ class OrganizationMemberController extends Controller
     /**
      * Remove the specified organization member.
      */
-    public function destroy(Organization $organization, User $user): RedirectResponse
+    public function destroy(Organization $currentOrganization, User $user): RedirectResponse
     {
-        $membership = $organization->memberships()->where('user_id', $user->id)->firstOrFail();
+        $membership = $currentOrganization->memberships()->where('user_id', $user->id)->firstOrFail();
 
         Gate::authorize('delete', $membership);
 
-        $organization->removeMember($user);
+        $currentOrganization->removeMember($user);
 
-        if ($user->isCurrentOrganization($organization)) {
-            $user->switchToFallbackOrganization($organization);
+        if ($user->isCurrentOrganization($currentOrganization)) {
+            $user->switchToFallbackOrganization($currentOrganization);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member removed.')]);
 
-        return to_route('organizations.edit', ['organization' => $organization->slug]);
+        return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
     }
 }

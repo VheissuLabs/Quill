@@ -28,7 +28,7 @@ class ProjectController extends Controller
             return redirect()->guest(route('login'));
         }
 
-        Gate::authorize('view', $project);
+        Gate::authorize('viewFeatureBoard', $project);
 
         $isMember = $user?->belongsToOrganization($organization) ?? false;
         $status = FeatureStatus::tryFrom((string) $request->query('status'));

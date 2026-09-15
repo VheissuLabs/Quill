@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationPermission;
 use App\Models\Feature;
 use App\Models\Project;
@@ -14,7 +15,8 @@ class FeaturePolicy
      */
     public function view(?User $user, Feature $feature): bool
     {
-        return $user?->can('view', $feature->project) ?? $feature->project->isPublic();
+        return $feature->project->organization->canUse(OrganizationCapability::Boards)
+            && ($user?->can('view', $feature->project) ?? $feature->project->isPublic());
     }
 
     /**
@@ -22,7 +24,8 @@ class FeaturePolicy
      */
     public function create(User $user, Project $project): bool
     {
-        return $user->can('view', $project);
+        return $project->organization->canUse(OrganizationCapability::Boards)
+            && $user->can('view', $project);
     }
 
     /**
@@ -30,7 +33,8 @@ class FeaturePolicy
      */
     public function update(User $user, Feature $feature): bool
     {
-        return $user->is($feature->author) || $this->manage($user, $feature);
+        return $feature->project->organization->canUse(OrganizationCapability::Boards)
+            && ($user->is($feature->author) || $this->manage($user, $feature));
     }
 
     /**
@@ -46,7 +50,8 @@ class FeaturePolicy
      */
     public function delete(User $user, Feature $feature): bool
     {
-        return $user->is($feature->author) || $this->manage($user, $feature);
+        return $feature->project->organization->canUse(OrganizationCapability::Boards)
+            && ($user->is($feature->author) || $this->manage($user, $feature));
     }
 
     /**
@@ -55,7 +60,9 @@ class FeaturePolicy
      */
     public function convert(User $user, Feature $feature): bool
     {
-        return $this->manage($user, $feature) && ! $feature->status->isSettled();
+        return $this->manage($user, $feature)
+            && $feature->project->organization->canUse(OrganizationCapability::Issues)
+            && ! $feature->status->isSettled();
     }
 
     /**
@@ -63,7 +70,9 @@ class FeaturePolicy
      */
     public function vote(User $user, Feature $feature): bool
     {
-        return ! $feature->status->isSettled() && $user->can('view', $feature->project);
+        return $feature->project->organization->canUse(OrganizationCapability::Voting)
+            && ! $feature->status->isSettled()
+            && $user->can('view', $feature->project);
     }
 
     /**
@@ -71,7 +80,8 @@ class FeaturePolicy
      */
     public function comment(User $user, Feature $feature): bool
     {
-        return $user->can('view', $feature->project);
+        return $feature->project->organization->canUse(OrganizationCapability::Boards)
+            && $user->can('view', $feature->project);
     }
 
     /**
@@ -79,7 +89,8 @@ class FeaturePolicy
      */
     public function commentInternally(User $user, Feature $feature): bool
     {
-        return $user->belongsToOrganization($feature->project->organization);
+        return $feature->project->organization->canUse(OrganizationCapability::Boards)
+            && $user->belongsToOrganization($feature->project->organization);
     }
 
     /**
@@ -87,6 +98,7 @@ class FeaturePolicy
      */
     protected function manage(User $user, Feature $feature): bool
     {
-        return $user->hasOrganizationPermission($feature->project->organization, OrganizationPermission::ManageFeatures);
+        return $feature->project->organization->canUse(OrganizationCapability::Boards)
+            && $user->hasOrganizationPermission($feature->project->organization, OrganizationPermission::ManageFeatures);
     }
 }

@@ -6,6 +6,7 @@ use App\Actions\Organizations\CreateOrganization;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\DeleteOrganizationRequest;
 use App\Http\Requests\Organizations\SaveOrganizationRequest;
+use App\Http\Requests\Organizations\UpdateOrganizationModulesRequest;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\User;
@@ -43,30 +44,32 @@ class OrganizationController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Organization created.')]);
 
-        return to_route('organizations.edit', ['organization' => $organization->slug]);
+        return to_route('organizations.edit', ['current_organization' => $organization->slug]);
     }
 
     /**
      * Show the organization edit page.
      */
-    public function edit(Request $request, Organization $organization): Response
+    public function edit(Request $request, Organization $currentOrganization): Response
     {
         $user = $request->user();
 
-        return Inertia::render('organizations/Edit', [
+        return Inertia::render('organization/Settings', [
             'organization' => [
-                'id' => $organization->id,
-                'name' => $organization->name,
-                'slug' => $organization->slug,
-                'logoUrl' => $organization->logoUrl(),
+                'id' => $currentOrganization->id,
+                'name' => $currentOrganization->name,
+                'slug' => $currentOrganization->slug,
+                'logoUrl' => $currentOrganization->logoUrl(),
+                'isOwner' => $currentOrganization->isOwner($user),
+                'modules' => $currentOrganization->moduleSettings(),
             ],
-            'members' => $organization->memberships()
-                ->with(['user.organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $organization->id)])
+            'members' => $currentOrganization->memberships()
+                ->with(['user.organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $currentOrganization->id)])
                 ->get()
-                ->each(fn (OrganizationMembership $membership) => $membership->setRelation('organization', $organization))
-                ->map(function (OrganizationMembership $membership) use ($organization, $user) {
+                ->each(fn (OrganizationMembership $membership) => $membership->setRelation('organization', $currentOrganization))
+                ->map(function (OrganizationMembership $membership) use ($currentOrganization, $user) {
                     $member = $membership->user;
-                    $role = $member->organizationRole($organization);
+                    $role = $member->organizationRole($currentOrganization);
 
                     return [
                         'id' => $member->id,
@@ -79,7 +82,7 @@ class OrganizationController extends Controller
                         'canRemove' => $user->can('delete', $membership),
                     ];
                 }),
-            'invitations' => $organization->invitations()
+            'invitations' => $currentOrganization->invitations()
                 ->whereNull('accepted_at')
                 ->with('role')
                 ->get()
@@ -89,13 +92,13 @@ class OrganizationController extends Controller
                     'role' => $invitation->role->name,
                     'created_at' => $invitation->created_at->toISOString(),
                 ]),
-            'permissions' => $user->toOrganizationPermissions($organization),
-            'availableRoles' => $organization->assignableRoles()->map(fn (Role $role) => [
+            'permissions' => $user->toOrganizationPermissions($currentOrganization),
+            'availableRoles' => $currentOrganization->assignableRoles()->map(fn (Role $role) => [
                 'value' => $role->id,
                 'label' => $role->name,
             ]),
-            'memberRoles' => $organization->roles()
-                ->when(! $organization->isOwner($user), fn ($query) => $query->where('is_owner', false))
+            'memberRoles' => $currentOrganization->roles()
+                ->when(! $currentOrganization->isOwner($user), fn ($query) => $query->where('is_owner', false))
                 ->orderByDesc('is_owner')
                 ->orderBy('name')
                 ->get()
@@ -109,21 +112,35 @@ class OrganizationController extends Controller
     /**
      * Update the specified organization.
      */
-    public function update(SaveOrganizationRequest $request, Organization $organization): RedirectResponse
+    public function update(SaveOrganizationRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        Gate::authorize('update', $organization);
+        Gate::authorize('update', $currentOrganization);
 
-        $organization = DB::transaction(function () use ($request, $organization) {
-            $organization = Organization::whereKey($organization->id)->lockForUpdate()->firstOrFail();
+        $currentOrganization = DB::transaction(function () use ($request, $currentOrganization) {
+            $currentOrganization = Organization::whereKey($currentOrganization->id)->lockForUpdate()->firstOrFail();
 
-            $organization->update(['name' => $request->validated('name')]);
+            $currentOrganization->update(['name' => $request->validated('name')]);
 
-            return $organization;
+            return $currentOrganization;
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Organization updated.')]);
 
-        return to_route('organizations.edit', ['organization' => $organization->slug]);
+        return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
+    }
+
+    /**
+     * Enable or disable the organization's product modules.
+     */
+    public function updateModules(UpdateOrganizationModulesRequest $request, Organization $currentOrganization): RedirectResponse
+    {
+        Gate::authorize('manageModules', $currentOrganization);
+
+        $currentOrganization->updateModuleSettings($request->validated());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Product modules updated.')]);
+
+        return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
     }
 
     /**
@@ -193,22 +210,22 @@ class OrganizationController extends Controller
     /**
      * Delete the specified organization.
      */
-    public function destroy(DeleteOrganizationRequest $request, Organization $organization): RedirectResponse
+    public function destroy(DeleteOrganizationRequest $request, Organization $currentOrganization): RedirectResponse
     {
         $user = $request->user();
 
-        DB::transaction(function () use ($user, $organization) {
-            User::where('current_organization_id', $organization->id)
+        DB::transaction(function () use ($user, $currentOrganization) {
+            User::where('current_organization_id', $currentOrganization->id)
                 ->where('id', '!=', $user->id)
-                ->each(fn (User $affectedUser) => $affectedUser->switchToFallbackOrganization($organization));
+                ->each(fn (User $affectedUser) => $affectedUser->switchToFallbackOrganization($currentOrganization));
 
-            $organization->invitations()->delete();
-            $organization->members->each(fn (User $member) => $organization->removeMember($member));
-            $organization->delete();
+            $currentOrganization->invitations()->delete();
+            $currentOrganization->members->each(fn (User $member) => $currentOrganization->removeMember($member));
+            $currentOrganization->delete();
         });
 
-        if ($user->isCurrentOrganization($organization)) {
-            $user->switchToFallbackOrganization($organization);
+        if ($user->isCurrentOrganization($currentOrganization)) {
+            $user->switchToFallbackOrganization($currentOrganization);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Organization deleted.')]);

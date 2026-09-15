@@ -101,6 +101,20 @@ test('the issues index hides closed issues by default and can filter by status',
         );
 });
 
+test('issues cannot be viewed when the issues module is disabled', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->updateModuleSettings([
+        'development_enabled' => false,
+        'development_issues_enabled' => true,
+    ]);
+    $organization->addMember($member, 'Member');
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization]))
+        ->assertForbidden();
+});
+
 test('issues of another organization cannot be reached through the current organization', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();

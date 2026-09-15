@@ -6,7 +6,10 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Issues\IssueController;
 use App\Http\Controllers\Issues\IssueOrderController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Organizations\OrganizationController;
 use App\Http\Controllers\Organizations\OrganizationInvitationController;
+use App\Http\Controllers\Organizations\OrganizationLogoController;
+use App\Http\Controllers\Organizations\OrganizationMemberController;
 use App\Http\Controllers\Organizations\OrganizationRoleController;
 use App\Http\Controllers\Portal\CommentController;
 use App\Http\Controllers\Portal\FeatureController;
@@ -75,6 +78,29 @@ Route::prefix('{current_organization}')
         Route::post('teams/{team}/columns', [BoardColumnController::class, 'store'])->name('teams.columns.store');
         Route::patch('teams/{team}/columns/{column}', [BoardColumnController::class, 'update'])->name('teams.columns.update');
         Route::delete('teams/{team}/columns/{column}', [BoardColumnController::class, 'destroy'])->name('teams.columns.destroy');
+    });
+
+Route::prefix('{current_organization}/settings')
+    ->middleware(['auth', 'verified', EnsureOrganizationMembership::class])
+    ->name('organizations.')
+    ->group(function () {
+        Route::get('/', [OrganizationController::class, 'edit'])->name('edit');
+        Route::patch('/', [OrganizationController::class, 'update'])->name('update');
+        Route::delete('/', [OrganizationController::class, 'destroy'])->name('destroy');
+        Route::patch('modules', [OrganizationController::class, 'updateModules'])->name('modules.update');
+
+        Route::post('logo', [OrganizationLogoController::class, 'store'])->name('logo.store');
+        Route::delete('logo', [OrganizationLogoController::class, 'destroy'])->name('logo.destroy');
+
+        Route::patch('members/{user}', [OrganizationMemberController::class, 'update'])->name('members.update');
+        Route::delete('members/{user}', [OrganizationMemberController::class, 'destroy'])->name('members.destroy');
+
+        Route::post('roles', [OrganizationRoleController::class, 'store'])->name('roles.store');
+        Route::patch('roles/{role}', [OrganizationRoleController::class, 'update'])->name('roles.update');
+        Route::delete('roles/{role}', [OrganizationRoleController::class, 'destroy'])->name('roles.destroy');
+
+        Route::post('invitations', [OrganizationInvitationController::class, 'store'])->name('invitations.store');
+        Route::delete('invitations/{invitation}', [OrganizationInvitationController::class, 'destroy'])->name('invitations.destroy');
     });
 
 Route::middleware(['auth'])->group(function () {
