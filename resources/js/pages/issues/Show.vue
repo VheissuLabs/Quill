@@ -339,7 +339,7 @@ const currentSprint = computed(() =>
                                 patch({ priority: String($event) })
                             "
                         >
-                            <SelectTrigger class="h-8 w-full">
+                            <SelectTrigger size="sm" class="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -411,7 +411,7 @@ const currentSprint = computed(() =>
                                 patch({ assignee_id: toId(String($event)) })
                             "
                         >
-                            <SelectTrigger class="h-8 w-full">
+                            <SelectTrigger size="sm" class="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -445,7 +445,7 @@ const currentSprint = computed(() =>
                                 patch({ team_id: toId(String($event)) })
                             "
                         >
-                            <SelectTrigger class="h-8 w-full">
+                            <SelectTrigger size="sm" class="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

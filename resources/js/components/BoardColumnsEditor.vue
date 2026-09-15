@@ -108,7 +108,8 @@ const statusLabel = (value: string) =>
                         />
                         <Select v-model="row.draftStatus">
                             <SelectTrigger
-                                class="h-8 w-36"
+                                size="sm"
+                                class="w-36"
                                 data-test="board-column-status"
                             >
                                 <SelectValue />
@@ -184,7 +185,11 @@ const statusLabel = (value: string) =>
             <div class="grid gap-1.5">
                 <Label for="new-column-status" class="text-xs">Counts as</Label>
                 <Select v-model="newStatus" name="status">
-                    <SelectTrigger id="new-column-status" class="h-8 w-36">
+                    <SelectTrigger
+                        id="new-column-status"
+                        size="sm"
+                        class="w-36"
+                    >
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
