@@ -142,7 +142,6 @@ class Organization extends Model
         return $this->hasMany(OrganizationModuleSetting::class);
     }
 
-    /** @param  array<string, bool>  $settings */
     public function dissolveTeams(): void
     {
         DB::transaction(fn () => $this->teams()->get()->each(fn (Team $team) => $team->mergeInto($this)));
