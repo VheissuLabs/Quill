@@ -7,6 +7,12 @@ import {
     TriangleAlert,
 } from '@lucide/vue';
 import type { LucideIcon } from '@lucide/vue';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { IssuePriority } from '@/types';
 
@@ -34,12 +40,23 @@ const classes: Record<IssuePriority, string> = {
 </script>
 
 <template>
-    <span
-        :class="cn('inline-flex items-center gap-1 text-xs', classes[priority])"
-        :title="label"
-    >
-        <component :is="icons[priority]" class="size-3.5" />
-        <span v-if="showLabel">{{ label }}</span>
-        <span v-else class="sr-only">{{ label }}</span>
-    </span>
+    <TooltipProvider>
+        <Tooltip>
+            <TooltipTrigger as-child>
+                <span
+                    :class="
+                        cn(
+                            'inline-flex items-center gap-1 text-xs',
+                            classes[priority],
+                        )
+                    "
+                >
+                    <component :is="icons[priority]" class="size-3.5" />
+                    <span v-if="showLabel">{{ label }}</span>
+                    <span v-else class="sr-only">Priority: {{ label }}</span>
+                </span>
+            </TooltipTrigger>
+            <TooltipContent>Priority: {{ label }}</TooltipContent>
+        </Tooltip>
+    </TooltipProvider>
 </template>
