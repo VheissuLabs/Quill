@@ -151,7 +151,7 @@ const statusLabel = (value: string) =>
                     </template>
 
                     <span
-                        class="text-muted-foreground w-full text-xs tabular-nums sm:w-auto sm:text-right"
+                        class="text-muted-foreground w-full text-xs tabular-nums sm:w-20 sm:text-right"
                     >
                         {{ row.issuesCount }}
                         {{ row.issuesCount === 1 ? 'issue' : 'issues' }}
