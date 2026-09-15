@@ -17,7 +17,13 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/** @mixin IdeHelperSprint */
+/**
+ * @property-read int|null $done_issues_count
+ * @property-read int|float|string|null $issues_sum_points
+ * @property-read Organization|Team $owner
+ *
+ * @mixin IdeHelperSprint
+ */
 #[UseFactory(SprintFactory::class)]
 #[ObservedBy(SprintObserver::class)]
 class Sprint extends Model

@@ -25,7 +25,7 @@ namespace App\Models{
  * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $issues
  * @property-read int|null $issues_count
- * @property-read \App\Models\Organization|\App\Models\Team $owner
+ * @property-read \Illuminate\Database\Eloquent\Model|null $owner
  * @method static \Database\Factories\BoardColumnFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BoardColumn newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BoardColumn newQuery()
@@ -159,9 +159,6 @@ namespace App\Models{
  * @property-read \App\Models\Project $project
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Vote> $votes
  * @property-read int|null $votes_count
- * @property-read int|null $downvotes_count
- * @property-read int|null $score
- * @property-read int|null $user_vote
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature active()
  * @method static \Database\Factories\FeatureFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature newModelQuery()
@@ -400,10 +397,9 @@ namespace App\Models{
  * @property-read int|null $features_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $issues
  * @property-read int|null $issues_count
- * @property-read \App\Models\Organization $organization
+ * @property-read \App\Models\Organization|null $organization
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Team> $teams
  * @property-read int|null $teams_count
- * @property-read int|null $open_features_count
  * @method static \Database\Factories\ProjectFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project newQuery()
@@ -440,9 +436,7 @@ namespace App\Models{
  * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $issues
  * @property-read int|null $issues_count
- * @property-read \App\Models\Organization|\App\Models\Team $owner
- * @property-read int|null $done_issues_count
- * @property-read int|float|string|null $issues_sum_points
+ * @property-read \Illuminate\Database\Eloquent\Model|null $owner
  * @method static \Database\Factories\SprintFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sprint newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sprint newQuery()

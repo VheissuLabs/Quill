@@ -12,7 +12,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/** @mixin IdeHelperBoardColumn */
+/**
+ * @property-read Organization|Team $owner
+ *
+ * @mixin IdeHelperBoardColumn
+ */
 #[UseFactory(BoardColumnFactory::class)]
 class BoardColumn extends Model
 {

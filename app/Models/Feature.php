@@ -17,7 +17,13 @@ use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/** @mixin IdeHelperFeature */
+/**
+ * @property-read int|null $downvotes_count
+ * @property-read int|null $score
+ * @property-read int|null $user_vote
+ *
+ * @mixin IdeHelperFeature
+ */
 #[UseFactory(FeatureFactory::class)]
 class Feature extends Model
 {

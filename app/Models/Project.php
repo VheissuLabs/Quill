@@ -17,7 +17,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/** @mixin IdeHelperProject */
+/**
+ * @property-read int|null $open_features_count
+ * @property-read Organization $organization
+ *
+ * @mixin IdeHelperProject
+ */
 #[UseFactory(ProjectFactory::class)]
 class Project extends Model
 {

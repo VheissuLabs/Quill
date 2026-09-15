@@ -1,6 +1,5 @@
 <?php
 
-use App\Console\ComputedModelProperties;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\PendingRequest;
 
@@ -171,7 +170,7 @@ return [
     */
 
     'model_hooks' => [
-        ComputedModelProperties::class,
+        //
     ],
 
     /*
