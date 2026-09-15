@@ -7,12 +7,12 @@ use App\Models\BoardColumn;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<BoardColumn>
- */
+/** @extends Factory<BoardColumn> */
 class BoardColumnFactory extends Factory
 {
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         return [

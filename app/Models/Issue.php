@@ -21,43 +21,57 @@ class Issue extends Model
 
     protected $guarded = [];
 
-    /** @return BelongsTo<Project, $this> */
+    /**
+     * @return BelongsTo<Project, $this>
+     */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    /** @return BelongsTo<Team, $this> */
+    /**
+     * @return BelongsTo<Team, $this>
+     */
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
     }
 
-    /** @return BelongsTo<Sprint, $this> */
+    /**
+     * @return BelongsTo<Sprint, $this>
+     */
     public function sprint(): BelongsTo
     {
         return $this->belongsTo(Sprint::class);
     }
 
-    /** @return BelongsTo<BoardColumn, $this> */
+    /**
+     * @return BelongsTo<BoardColumn, $this>
+     */
     public function boardColumn(): BelongsTo
     {
         return $this->belongsTo(BoardColumn::class);
     }
 
-    /** @return BelongsTo<Feature, $this> */
+    /**
+     * @return BelongsTo<Feature, $this>
+     */
     public function feature(): BelongsTo
     {
         return $this->belongsTo(Feature::class);
     }
 
-    /** @return BelongsTo<User, $this> */
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignee_id');
     }
 
-    /** @return BelongsTo<User, $this> */
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -127,7 +141,9 @@ class Issue extends Model
             ->dontLogEmptyChanges();
     }
 
-    /** @return array<string, string> */
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

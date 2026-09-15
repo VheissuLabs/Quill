@@ -24,7 +24,9 @@ class BoardColumn extends Model
 
     protected $guarded = [];
 
-    /** @return MorphTo<Model, $this> */
+    /**
+     * @return MorphTo<Model, $this>
+     */
     public function owner(): MorphTo
     {
         return $this->morphTo();
@@ -40,7 +42,9 @@ class BoardColumn extends Model
         return $this->owner instanceof Team ? $this->owner->getKey() : null;
     }
 
-    /** @return HasMany<Issue, $this> */
+    /**
+     * @return HasMany<Issue, $this>
+     */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);
@@ -55,7 +59,9 @@ class BoardColumn extends Model
             ->dontLogEmptyChanges();
     }
 
-    /** @return array<string, string> */
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

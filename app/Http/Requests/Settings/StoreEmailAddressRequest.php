@@ -15,7 +15,9 @@ class StoreEmailAddressRequest extends FormRequest
         ]);
     }
 
-    /** @return array<string, ValidationRule|array<mixed>|string> */
+    /**
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         return [
@@ -30,7 +32,9 @@ class StoreEmailAddressRequest extends FormRequest
         ];
     }
 
-    /** @return array<string, string> */
+    /**
+     * @return array<string, string>
+     */
     public function messages(): array
     {
         return [

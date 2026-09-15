@@ -77,7 +77,6 @@
         ],
         "ide-helper": [
             "@php artisan ide-helper:models -M -R --no-interaction",
-            "perl -0pi -e 's{/\\*\\*\\n \\* (\\@mixin IdeHelper\\w+)\\n \\*/}{/** $1 */}g' app/Models/*.php",
             "pint app/Models --quiet"
         ],
         "test": [

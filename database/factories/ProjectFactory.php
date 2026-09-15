@@ -9,12 +9,12 @@ use App\Models\Project;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-/**
- * @extends Factory<Project>
- */
+/** @extends Factory<Project> */
 class ProjectFactory extends Factory
 {
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         return [

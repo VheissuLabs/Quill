@@ -112,7 +112,9 @@ class OrganizationRoleController extends Controller
         return to_route('roles.index', ['current_organization' => $currentOrganization->slug]);
     }
 
-    /** @return Collection<int, array<string, mixed>> */
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
     protected function roles(Organization $organization): Collection
     {
         $holders = DB::table('model_has_roles')

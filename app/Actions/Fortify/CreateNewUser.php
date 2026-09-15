@@ -12,7 +12,9 @@ class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
 
-    /** @param  array<string, string>  $input */
+    /**
+     * @param  array<string, string>  $input
+     */
     public function create(array $input): User
     {
         Validator::make($input, [

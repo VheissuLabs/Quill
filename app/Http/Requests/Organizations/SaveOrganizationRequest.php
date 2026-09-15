@@ -8,7 +8,9 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class SaveOrganizationRequest extends FormRequest
 {
-    /** @return array<string, ValidationRule|array<mixed>|string> */
+    /**
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         return [

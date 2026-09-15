@@ -7,12 +7,12 @@ use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-/**
- * @extends Factory<Organization>
- */
+/** @extends Factory<Organization> */
 class OrganizationFactory extends Factory
 {
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         $name = fake()->unique()->company();

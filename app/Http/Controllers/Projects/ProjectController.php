@@ -112,13 +112,17 @@ class ProjectController extends Controller
         return to_route('projects.index');
     }
 
-    /** @param  array<int, int>  $teamIds */
+    /**
+     * @param  array<int, int>  $teamIds
+     */
     private function syncTeams(Project $project, array $teamIds): void
     {
         $project->teams()->sync($project->isPublic() ? [] : $teamIds);
     }
 
-    /** @return Collection<int, array{id: int, name: string}> */
+    /**
+     * @return Collection<int, array{id: int, name: string}>
+     */
     private function clientOptions(Organization $organization): Collection
     {
         return $organization->clients()

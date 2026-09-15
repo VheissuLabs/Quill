@@ -10,11 +10,6 @@ use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Executes slash commands written at the start of comment lines, such as "/for" or
- * "/status planned", and returns the comment text with the commands removed. Text
- * after a command on the same line is kept as part of the comment.
- */
 class RunCommentCommands
 {
     public function __construct(private CreateIssue $createIssue)
@@ -22,7 +17,9 @@ class RunCommentCommands
         //
     }
 
-    /** @return array{body: string, internal: bool, messages: array<int, string>} */
+    /**
+     * @return array{body: string, internal: bool, messages: array<int, string>}
+     */
     public function handle(Feature $feature, User $user, string $body): array
     {
         $remaining = [];
@@ -65,34 +62,15 @@ class RunCommentCommands
         ];
     }
 
-    /** @return array<int, array{name: string, usage: string, description: string}> */
+    /**
+     * @return array<int, array{name: string, usage: string, description: string}>
+     */
     public static function availableTo(?User $user, Feature $feature): array
     {
         if (! $user || ! $user->can('comment', $feature)) {
             return [];
         }
 
-        $commands = [];
-
-        if ($user->can('vote', $feature)) {
-            $commands[] = ['name' => 'for', 'usage' => '/for', 'description' => 'Vote for this request'];
-            $commands[] = ['name' => 'against', 'usage' => '/against', 'description' => 'Vote against this request'];
-            $commands[] = ['name' => 'withdraw', 'usage' => '/withdraw', 'description' => 'Withdraw your vote'];
-        }
-
-        if ($user->can('commentInternally', $feature)) {
-            $commands[] = ['name' => 'internal', 'usage' => '/internal', 'description' => 'Post as an internal note'];
-        }
-
-        if ($user->can('updateStatus', $feature)) {
-            $commands[] = ['name' => 'status', 'usage' => '/status <status>', 'description' => 'Change the status'];
-        }
-
-        if ($user->can('convert', $feature)) {
-            $commands[] = ['name' => 'convert', 'usage' => '/convert', 'description' => 'Convert into a backlog issue'];
-        }
-
-        return $commands;
     }
 
     private function voteFor(Feature $feature, User $user): string
@@ -122,7 +100,9 @@ class RunCommentCommands
         return __('Vote withdrawn.');
     }
 
-    /** @return array{0: FeatureStatus, 1: string} */
+    /**
+     * @return array{0: FeatureStatus, 1: string}
+     */
     private function parseStatus(Feature $feature, string $argument): array
     {
         $this->authorize('updateStatus', $feature, __('You can\'t change the status.'));

@@ -9,7 +9,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureOrganizationMembership
 {
-    /** @param  Closure(Request): (Response)  $next */
+    /**
+     * @param  Closure(Request): (Response)  $next
+     */
     public function handle(Request $request, Closure $next): Response
     {
         [$user, $organization] = [$request->user(), $this->organization($request)];

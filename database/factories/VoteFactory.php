@@ -7,12 +7,12 @@ use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<Vote>
- */
+/** @extends Factory<Vote> */
 class VoteFactory extends Factory
 {
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         return [

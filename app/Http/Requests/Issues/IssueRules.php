@@ -7,12 +7,12 @@ use App\Models\Organization;
 use App\Models\Team;
 use Illuminate\Validation\Rule;
 
-/**
- * The validation rules shared by every request that writes an issue's editable fields.
- */
+/** The validation rules shared by every request that writes an issue's editable fields. */
 class IssueRules
 {
-    /** @return array<string, array<int, mixed>> */
+    /**
+     * @return array<string, array<int, mixed>>
+     */
     public static function for(Organization $organization): array
     {
         return [

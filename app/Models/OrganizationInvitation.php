@@ -22,19 +22,25 @@ class OrganizationInvitation extends Model
 
     protected $guarded = [];
 
-    /** @return BelongsTo<Organization, $this> */
+    /**
+     * @return BelongsTo<Organization, $this>
+     */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    /** @return BelongsTo<Role, $this> */
+    /**
+     * @return BelongsTo<Role, $this>
+     */
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
     }
 
-    /** @return BelongsTo<User, $this> */
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function inviter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by');
@@ -55,7 +61,9 @@ class OrganizationInvitation extends Model
         return $this->expires_at !== null && $this->expires_at->isPast();
     }
 
-    /** @return array<string, string> */
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

@@ -21,7 +21,9 @@ readonly class FeatureSummary
         public ?string $vote,
         public ?string $authorName,
         public string $createdAt,
-        /** @var array{id: int, reference: string, status: string, statusLabel: string}|null */
+        /**
+         * @var array{id: int, reference: string, status: string, statusLabel: string}|null
+         */
         public ?array $issue,
     ) {
         //

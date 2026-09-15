@@ -7,12 +7,12 @@ use App\Models\OrganizationInvitation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<OrganizationInvitation>
- */
+/** @extends Factory<OrganizationInvitation> */
 class OrganizationInvitationFactory extends Factory
 {
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         return [

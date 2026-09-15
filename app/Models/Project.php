@@ -30,32 +30,42 @@ class Project extends Model
 
     protected $guarded = [];
 
-    /** @return BelongsTo<Organization, $this> */
+    /**
+     * @return BelongsTo<Organization, $this>
+     */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    /** @return BelongsTo<Client, $this> */
+    /**
+     * @return BelongsTo<Client, $this>
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
     }
 
-    /** @return BelongsToMany<Team, $this> */
+    /**
+     * @return BelongsToMany<Team, $this>
+     */
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class, 'project_teams')
             ->withTimestamps();
     }
 
-    /** @return HasMany<Feature, $this> */
+    /**
+     * @return HasMany<Feature, $this>
+     */
     public function features(): HasMany
     {
         return $this->hasMany(Feature::class);
     }
 
-    /** @return HasMany<Issue, $this> */
+    /**
+     * @return HasMany<Issue, $this>
+     */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);
@@ -66,7 +76,9 @@ class Project extends Model
         return $this->visibility === ProjectVisibility::Public;
     }
 
-    /** @param  Builder<$this>  $query */
+    /**
+     * @param  Builder<$this>  $query
+     */
     #[Scope]
     protected function visibleTo(Builder $query, ?User $user): void
     {
@@ -98,7 +110,9 @@ class Project extends Model
             ->dontLogEmptyChanges();
     }
 
-    /** @return array<string, string> */
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

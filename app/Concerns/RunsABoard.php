@@ -15,13 +15,17 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 trait RunsABoard
 {
-    /** @return MorphMany<BoardColumn, $this> */
+    /**
+     * @return MorphMany<BoardColumn, $this>
+     */
     public function columns(): MorphMany
     {
         return $this->morphMany(BoardColumn::class, 'owner')->orderBy('position');
     }
 
-    /** @return MorphMany<Sprint, $this> */
+    /**
+     * @return MorphMany<Sprint, $this>
+     */
     public function sprints(): MorphMany
     {
         return $this->morphMany(Sprint::class, 'owner');

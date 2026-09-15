@@ -56,7 +56,9 @@ enum OrganizationPermission: string
         };
     }
 
-    /** @return array<int, array{value: string, label: string, group: string}> */
+    /**
+     * @return array<int, array{value: string, label: string, group: string}>
+     */
     public static function options(): array
     {
         return array_map(fn (self $permission) => [

@@ -12,7 +12,9 @@ class ProfileDeleteRequest extends FormRequest
 {
     use PasswordValidationRules;
 
-    /** @return array<string, ValidationRule|array<mixed>|string> */
+    /**
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         return [
@@ -20,7 +22,9 @@ class ProfileDeleteRequest extends FormRequest
         ];
     }
 
-    /** @return array<int, callable(Validator): void> */
+    /**
+     * @return array<int, callable(Validator): void>
+     */
     public function after(): array
     {
         return [

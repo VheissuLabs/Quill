@@ -8,9 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 
-/**
- * Stored for the top bar and pushed over Reverb so it appears immediately.
- */
+/** Stored for the top bar and pushed over Reverb so it appears immediately. */
 class MentionedInComment extends Notification implements ShouldQueue
 {
     use Queueable;
@@ -20,13 +18,17 @@ class MentionedInComment extends Notification implements ShouldQueue
         //
     }
 
-    /** @return array<int, string> */
+    /**
+     * @return array<int, string>
+     */
     public function via(object $notifiable): array
     {
         return ['database', 'broadcast'];
     }
 
-    /** @return array{title: string, body: string, url: string} */
+    /**
+     * @return array{title: string, body: string, url: string}
+     */
     public function toArray(object $notifiable): array
     {
         $feature = $this->comment->feature;

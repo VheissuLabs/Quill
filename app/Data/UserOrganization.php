@@ -12,7 +12,9 @@ readonly class UserOrganization
         public bool $isOwner = false,
         public bool $canUpdate = false,
         public bool $canManageRoles = false,
-        /** @var array<string, array{enabled: bool, capabilities: array<string, bool>}> */
+        /**
+         * @var array<string, array{enabled: bool, capabilities: array<string, bool>}>
+         */
         public array $modules = [],
         public ?bool $isCurrent = null,
     ) {

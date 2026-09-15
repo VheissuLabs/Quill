@@ -7,12 +7,12 @@ use App\Models\Feature;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<Comment>
- */
+/** @extends Factory<Comment> */
 class CommentFactory extends Factory
 {
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         return [

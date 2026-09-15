@@ -6,9 +6,7 @@ use App\Models\Client;
 use App\Models\Organization;
 use Illuminate\Database\Seeder;
 
-/**
- * One or two customers per organization whose boards stay separate from the organization's own.
- */
+/** One or two customers per organization whose boards stay separate from the organization's own. */
 class ClientSeeder extends Seeder
 {
     public function run(): void

@@ -21,12 +21,12 @@ use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 
-/**
- * One activity log entry, with its changed attributes turned into readable "from → to" pairs.
- */
+/** One activity log entry, with its changed attributes turned into readable "from → to" pairs. */
 readonly class ActivitySummary
 {
-    /** @param  array<int, array{field: string, from: string|null, to: string|null}>  $changes */
+    /**
+     * @param  array<int, array{field: string, from: string|null, to: string|null}>  $changes
+     */
     public function __construct(
         public int $id,
         public string $event,
@@ -142,7 +142,9 @@ readonly class ActivitySummary
         };
     }
 
-    /** @param  class-string<Model>  $model */
+    /**
+     * @param  class-string<Model>  $model
+     */
     protected static function nameOf(string $model, mixed $id, string $fallback, string $column = 'name'): string
     {
         $name = $model::query()->whereKey($id)->value($column);

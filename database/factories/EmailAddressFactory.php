@@ -6,12 +6,12 @@ use App\Models\EmailAddress;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<EmailAddress>
- */
+/** @extends Factory<EmailAddress> */
 class EmailAddressFactory extends Factory
 {
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         return [

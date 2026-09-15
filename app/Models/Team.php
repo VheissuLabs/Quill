@@ -28,13 +28,17 @@ class Team extends Model
 
     protected $guarded = [];
 
-    /** @return BelongsTo<Organization, $this> */
+    /**
+     * @return BelongsTo<Organization, $this>
+     */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    /** @return BelongsToMany<User, $this, TeamMembership, 'pivot'> */
+    /**
+     * @return BelongsToMany<User, $this, TeamMembership, 'pivot'>
+     */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'team_members')
@@ -42,13 +46,17 @@ class Team extends Model
             ->withTimestamps();
     }
 
-    /** @return HasMany<TeamMembership, $this> */
+    /**
+     * @return HasMany<TeamMembership, $this>
+     */
     public function memberships(): HasMany
     {
         return $this->hasMany(TeamMembership::class);
     }
 
-    /** @return BelongsToMany<Project, $this> */
+    /**
+     * @return BelongsToMany<Project, $this>
+     */
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_teams')
@@ -103,7 +111,9 @@ class Team extends Model
         });
     }
 
-    /** @return HasMany<Issue, $this> */
+    /**
+     * @return HasMany<Issue, $this>
+     */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);

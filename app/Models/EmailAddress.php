@@ -22,7 +22,9 @@ class EmailAddress extends Model
 
     protected $guarded = [];
 
-    /** @return BelongsTo<User, $this> */
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -43,14 +45,18 @@ class EmailAddress extends Model
         Notification::route('mail', $this->email)->notify(new VerifyEmailAddress($this));
     }
 
-    /** @param  Builder<$this>  $query */
+    /**
+     * @param  Builder<$this>  $query
+     */
     #[Scope]
     protected function verified(Builder $query): void
     {
         $query->whereNotNull('verified_at');
     }
 
-    /** @return array<string, string> */
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

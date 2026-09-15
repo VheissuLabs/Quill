@@ -7,12 +7,12 @@ use App\Models\Sprint;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<Sprint>
- */
+/** @extends Factory<Sprint> */
 class SprintFactory extends Factory
 {
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         return [

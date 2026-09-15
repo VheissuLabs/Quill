@@ -8,7 +8,9 @@ use Illuminate\Validation\Rules\File;
 
 class UpdateOrganizationLogoRequest extends FormRequest
 {
-    /** @return array<string, ValidationRule|array<mixed>|string> */
+    /**
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         return [

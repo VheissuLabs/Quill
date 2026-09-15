@@ -17,34 +17,44 @@ use Spatie\Permission\Models\Role;
 
 trait HasOrganizations
 {
-    /** @return BelongsToMany<Organization, $this> */
+    /**
+     * @return BelongsToMany<Organization, $this>
+     */
     public function organizations(): BelongsToMany
     {
         return $this->belongsToMany(Organization::class, 'organization_members', 'user_id', 'organization_id')
             ->withTimestamps();
     }
 
-    /** @return BelongsToMany<Organization, $this> */
+    /**
+     * @return BelongsToMany<Organization, $this>
+     */
     public function ownedOrganizations(): BelongsToMany
     {
         return $this->organizations()
             ->whereIn('organizations.id', $this->organizationRoles()->where('is_owner', true)->pluck('model_has_roles.organization_id'));
     }
 
-    /** @return HasMany<OrganizationMembership, $this> */
+    /**
+     * @return HasMany<OrganizationMembership, $this>
+     */
     public function organizationMemberships(): HasMany
     {
         return $this->hasMany(OrganizationMembership::class, 'user_id');
     }
 
-    /** @return MorphToMany<Role, $this> */
+    /**
+     * @return MorphToMany<Role, $this>
+     */
     public function organizationRoles(): MorphToMany
     {
         return $this->morphToMany(Role::class, 'model', 'model_has_roles', 'model_id', 'role_id')
             ->withPivot('organization_id');
     }
 
-    /** @return BelongsTo<Organization, $this> */
+    /**
+     * @return BelongsTo<Organization, $this>
+     */
     public function currentOrganization(): BelongsTo
     {
         return $this->belongsTo(Organization::class, 'current_organization_id');
@@ -94,7 +104,9 @@ trait HasOrganizations
             ->exists();
     }
 
-    /** @return Collection<int, int> */
+    /**
+     * @return Collection<int, int>
+     */
     public function organizationIdsWithPermission(OrganizationPermission $permission): Collection
     {
         return $this->organizationRoles()
@@ -102,7 +114,9 @@ trait HasOrganizations
             ->pluck('model_has_roles.organization_id');
     }
 
-    /** @return Collection<int, UserOrganization> */
+    /**
+     * @return Collection<int, UserOrganization>
+     */
     public function toUserOrganizations(bool $includeCurrent = false): Collection
     {
         $this->loadMissing('organizationRoles');
