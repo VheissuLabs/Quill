@@ -99,7 +99,7 @@ const confirm = () => {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem :value="ORGANIZATION">
-                            {{ organization.name }} (no team)
+                            {{ organization.name }}
                         </SelectItem>
                         <SelectItem
                             v-for="option in otherTeams"
