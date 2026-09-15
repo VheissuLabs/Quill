@@ -318,55 +318,57 @@ const totalPoints = computed(() =>
                         </span>
                     </div>
 
-                    <draggable
-                        :list="list"
-                        group="issues"
-                        item-key="id"
-                        :force-fallback="true"
-                        draggable="[data-issue-id]"
-                        data-backlog-list
-                        :class="[
-                            'divide-y rounded-xl border transition-colors',
-                            isHovered({ kind: 'backlog' }) &&
-                                'border-foreground ring-foreground/20 ring-2',
-                        ]"
-                        ghost-class="opacity-40"
-                        :animation="150"
-                        @start="onDragStart"
-                        @end="onDragEnd($event, null)"
-                        @change="onListChange"
-                    >
-                        <template #item="{ element: issue }">
-                            <div
-                                data-test="issue-row"
-                                :data-issue-id="issue.id"
-                                class="bg-card flex cursor-grab items-center px-4 py-3 first:rounded-t-xl last:rounded-b-xl active:cursor-grabbing"
-                            >
-                                <IssueRow
-                                    :organization="currentOrganization.slug"
-                                    :issue="issue"
-                                />
-                            </div>
-                        </template>
-                        <template #footer>
-                            <EmptyState
-                                v-if="list.length === 0"
-                                class="border-0"
-                                :icon="ListTodo"
-                                title="No issues here"
-                                description="Nothing matches these filters. Create an issue, or convert a feature request from one of your boards."
-                            >
-                                <CreateIssueModal
-                                    :organization="currentOrganization.slug"
-                                    :options="options"
+                    <div class="overflow-x-auto">
+                        <draggable
+                            :list="list"
+                            group="issues"
+                            item-key="id"
+                            :force-fallback="true"
+                            draggable="[data-issue-id]"
+                            data-backlog-list
+                            :class="[
+                                'min-w-max divide-y rounded-xl border transition-colors',
+                                isHovered({ kind: 'backlog' }) &&
+                                    'border-foreground ring-foreground/20 ring-2',
+                            ]"
+                            ghost-class="opacity-40"
+                            :animation="150"
+                            @start="onDragStart"
+                            @end="onDragEnd($event, null)"
+                            @change="onListChange"
+                        >
+                            <template #item="{ element: issue }">
+                                <div
+                                    data-test="issue-row"
+                                    :data-issue-id="issue.id"
+                                    class="bg-card flex cursor-grab items-center px-4 py-3 first:rounded-t-xl last:rounded-b-xl active:cursor-grabbing"
                                 >
-                                    <Button variant="outline"
-                                        ><Plus /> New issue</Button
+                                    <IssueRow
+                                        :organization="currentOrganization.slug"
+                                        :issue="issue"
+                                    />
+                                </div>
+                            </template>
+                            <template #footer>
+                                <EmptyState
+                                    v-if="list.length === 0"
+                                    class="border-0"
+                                    :icon="ListTodo"
+                                    title="No issues here"
+                                    description="Nothing matches these filters. Create an issue, or convert a feature request from one of your boards."
+                                >
+                                    <CreateIssueModal
+                                        :organization="currentOrganization.slug"
+                                        :options="options"
                                     >
-                                </CreateIssueModal>
-                            </EmptyState>
-                        </template>
-                    </draggable>
+                                        <Button variant="outline"
+                                            ><Plus /> New issue</Button
+                                        >
+                                    </CreateIssueModal>
+                                </EmptyState>
+                            </template>
+                        </draggable>
+                    </div>
                 </section>
 
                 <aside class="space-y-3">
@@ -465,35 +467,41 @@ const totalPoints = computed(() =>
                             </span>
                         </div>
 
-                        <draggable
+                        <div
                             v-if="
                                 !collapsedSprints.has(sprint.id) &&
                                 sprint.issues.length > 0
                             "
-                            :list="sprintLists[sprint.id]"
-                            :group="`sprint-${sprint.id}`"
-                            :sort="false"
-                            item-key="id"
-                            :force-fallback="true"
-                            tag="ul"
-                            class="divide-y border-t"
-                            ghost-class="opacity-40"
-                            @start="onDragStart"
-                            @end="onDragEnd($event, sprint.id)"
+                            class="overflow-x-auto"
                         >
-                            <template #item="{ element: issue }">
-                                <li
-                                    :data-issue-id="issue.id"
-                                    class="flex cursor-grab items-center px-4 py-2.5 active:cursor-grabbing"
-                                >
-                                    <IssueRow
-                                        :organization="currentOrganization.slug"
-                                        :issue="issue"
-                                        :show-sprint="false"
-                                    />
-                                </li>
-                            </template>
-                        </draggable>
+                            <draggable
+                                :list="sprintLists[sprint.id]"
+                                :group="`sprint-${sprint.id}`"
+                                :sort="false"
+                                item-key="id"
+                                :force-fallback="true"
+                                tag="ul"
+                                class="min-w-max divide-y border-t"
+                                ghost-class="opacity-40"
+                                @start="onDragStart"
+                                @end="onDragEnd($event, sprint.id)"
+                            >
+                                <template #item="{ element: issue }">
+                                    <li
+                                        :data-issue-id="issue.id"
+                                        class="flex cursor-grab items-center px-4 py-2.5 active:cursor-grabbing"
+                                    >
+                                        <IssueRow
+                                            :organization="
+                                                currentOrganization.slug
+                                            "
+                                            :issue="issue"
+                                            :show-sprint="false"
+                                        />
+                                    </li>
+                                </template>
+                            </draggable>
+                        </div>
                         <p
                             v-else-if="!collapsedSprints.has(sprint.id)"
                             class="text-muted-foreground border-t px-4 py-3 text-xs"

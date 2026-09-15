@@ -19,7 +19,7 @@ withDefaults(
 </script>
 
 <template>
-    <div class="flex min-w-0 flex-1 items-center gap-4">
+    <div class="flex min-w-3xl flex-1 items-center gap-4">
         <IssuePriorityBadge
             :priority="issue.priority"
             :label="issue.priorityLabel"
@@ -35,26 +35,30 @@ withDefaults(
         >
             {{ issue.title }}
         </Link>
-        <Lightbulb
-            v-if="issue.hasFeature"
-            class="text-muted-foreground size-3.5 shrink-0"
-            aria-label="Converted from a feature request"
-        />
-        <span
-            v-if="issue.points !== null"
-            class="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums"
-        >
-            {{ issue.points }}
+        <span class="flex w-4 shrink-0 justify-center">
+            <Lightbulb
+                v-if="issue.hasFeature"
+                class="text-muted-foreground size-3.5"
+                aria-label="Converted from a feature request"
+            />
+        </span>
+        <span class="flex w-8 shrink-0 justify-end">
+            <span
+                v-if="issue.points !== null"
+                class="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums"
+            >
+                {{ issue.points }}
+            </span>
         </span>
         <span
-            v-if="showSprint && issue.sprintName"
-            class="text-muted-foreground hidden truncate text-xs md:inline"
+            v-if="showSprint"
+            class="text-muted-foreground w-28 shrink-0 truncate text-xs"
         >
             {{ issue.sprintName }}
         </span>
         <IssueStatusBadge :status="issue.status" :label="issue.statusLabel" />
         <span
-            class="text-muted-foreground hidden w-28 shrink-0 truncate text-right text-xs lg:inline"
+            class="text-muted-foreground w-28 shrink-0 truncate text-right text-xs"
         >
             {{ issue.assigneeName ?? 'Unassigned' }}
         </span>
