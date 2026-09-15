@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, router, useForm } from '@inertiajs/vue3';
 import { ChevronDown, Mail, Pencil, Trash2, UserPlus, X } from '@lucide/vue';
+import { useLocalStorage } from '@vueuse/core';
 import { computed, ref } from 'vue';
 import CancelInvitationModal from '@/components/CancelInvitationModal.vue';
 import DeleteOrganizationModal from '@/components/DeleteOrganizationModal.vue';
@@ -78,11 +79,23 @@ const removeMemberDialogOpen = ref(false);
 const memberToRemove = ref<OrganizationMember | null>(null);
 const cancelInvitationDialogOpen = ref(false);
 const invitationToCancel = ref<OrganizationInvitation | null>(null);
-const organizationSettingsOpen = ref(true);
-const modulesOpen = ref(true);
-const membersOpen = ref(true);
-const invitationsOpen = ref(true);
-const deleteOrganizationOpen = ref(false);
+/**
+ * Each section remembers whether it is open in this browser.
+ */
+const organizationSettingsOpen = useLocalStorage(
+    'quill.organization-settings.open',
+    true,
+);
+const modulesOpen = useLocalStorage('quill.organization-modules.open', true);
+const membersOpen = useLocalStorage('quill.organization-members.open', true);
+const invitationsOpen = useLocalStorage(
+    'quill.organization-invitations.open',
+    true,
+);
+const deleteOrganizationOpen = useLocalStorage(
+    'quill.organization-delete.open',
+    false,
+);
 const modulesForm = useForm({
     feature_voting_enabled: props.organization.modules.featureVoting.enabled,
     feature_voting_boards_enabled:
