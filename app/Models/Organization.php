@@ -129,35 +129,28 @@ class Organization extends Model
     public function updateModuleSettings(array $settings): void
     {
         $now = now();
-        $rows = [];
-
-        foreach (OrganizationModule::cases() as $module) {
-            $enabled = (bool) ($settings[$module->value.'_enabled'] ?? true);
-            $justEnabled = $enabled && ! $this->isModuleEnabled($module);
-
-            $rows[] = [
-                'organization_id' => $this->id,
-                'module' => $module->value,
-                'capability' => '',
-                'enabled' => $enabled,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-
-            foreach ($module->capabilities() as $capability) {
-                $rows[] = [
-                    'organization_id' => $this->id,
-                    'module' => $module->value,
-                    'capability' => $capability->value,
-                    'enabled' => $justEnabled || (bool) ($settings[$module->value.'_'.$capability->value.'_enabled'] ?? true),
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            }
-        }
 
         $this->capabilitySettings()->upsert(
-            $rows,
+            collect(OrganizationModule::cases())
+                ->flatMap(function (OrganizationModule $module) use ($settings, $now) {
+                    $enabled = (bool) ($settings[$module->value.'_enabled'] ?? true);
+                    $justEnabled = $enabled && ! $this->isModuleEnabled($module);
+
+                    return collect($module->capabilities())
+                        ->map(fn (OrganizationCapability $capability) => [
+                            'capability' => $capability->value,
+                            'enabled' => $justEnabled || (bool) ($settings[$module->value.'_'.$capability->value.'_enabled'] ?? true),
+                        ])
+                        ->prepend(['capability' => '', 'enabled' => $enabled])
+                        ->map(fn (array $row) => [
+                            ...$row,
+                            'organization_id' => $this->id,
+                            'module' => $module->value,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                })
+                ->all(),
             ['organization_id', 'module', 'capability'],
             ['enabled', 'updated_at'],
         );

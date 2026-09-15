@@ -12,10 +12,9 @@ use Illuminate\Validation\ValidationException;
 
 class RunCommentCommands
 {
-    public function __construct(private CreateIssue $createIssue)
-    {
-        //
-    }
+    public function __construct(
+        private CreateIssue $createIssue
+    ) {}
 
     /** @return array{body: string, internal: bool, messages: array<int, string>} */
     public function handle(Feature $feature, User $user, string $body): array
@@ -67,27 +66,26 @@ class RunCommentCommands
             return [];
         }
 
-        $commands = [];
-
-        if ($user->can('vote', $feature)) {
-            $commands[] = ['name' => 'for', 'usage' => '/for', 'description' => 'Vote for this request'];
-            $commands[] = ['name' => 'against', 'usage' => '/against', 'description' => 'Vote against this request'];
-            $commands[] = ['name' => 'withdraw', 'usage' => '/withdraw', 'description' => 'Withdraw your vote'];
-        }
-
-        if ($user->can('commentInternally', $feature)) {
-            $commands[] = ['name' => 'internal', 'usage' => '/internal', 'description' => 'Post as an internal note'];
-        }
-
-        if ($user->can('updateStatus', $feature)) {
-            $commands[] = ['name' => 'status', 'usage' => '/status <status>', 'description' => 'Change the status'];
-        }
-
-        if ($user->can('convert', $feature)) {
-            $commands[] = ['name' => 'convert', 'usage' => '/convert', 'description' => 'Convert into a backlog issue'];
-        }
-
-        return $commands;
+        return collect([
+            'vote' => [
+                ['name' => 'for', 'usage' => '/for', 'description' => 'Vote for this request'],
+                ['name' => 'against', 'usage' => '/against', 'description' => 'Vote against this request'],
+                ['name' => 'withdraw', 'usage' => '/withdraw', 'description' => 'Withdraw your vote'],
+            ],
+            'commentInternally' => [
+                ['name' => 'internal', 'usage' => '/internal', 'description' => 'Post as an internal note'],
+            ],
+            'updateStatus' => [
+                ['name' => 'status', 'usage' => '/status <status>', 'description' => 'Change the status'],
+            ],
+            'convert' => [
+                ['name' => 'convert', 'usage' => '/convert', 'description' => 'Convert into a backlog issue'],
+            ],
+        ])
+            ->filter(fn (array $commands, string $ability) => $user->can($ability, $feature))
+            ->flatten(1)
+            ->values()
+            ->all();
     }
 
     private function voteFor(Feature $feature, User $user): string
