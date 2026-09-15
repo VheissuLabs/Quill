@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueOrganizationSlugs;
+use App\Concerns\RunsABoard;
 use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationModule;
 use App\Enums\OrganizationPermission;
@@ -11,6 +12,7 @@ use Closure;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -46,6 +48,7 @@ use Spatie\Permission\PermissionRegistrar;
  * @property-read Collection<int, Project> $projects
  * @property-read Collection<int, Issue> $issues
  * @property-read Collection<int, Sprint> $sprints
+ * @property-read Collection<int, BoardColumn> $columns
  * @property-read Collection<int, OrganizationModuleSetting> $capabilitySettings
  * @property-read Collection<int, Role> $roles
  */
@@ -54,7 +57,7 @@ use Spatie\Permission\PermissionRegistrar;
 class Organization extends Model
 {
     /** @use HasFactory<OrganizationFactory> */
-    use GeneratesUniqueOrganizationSlugs, HasFactory, LogsActivity, SoftDeletes;
+    use GeneratesUniqueOrganizationSlugs, HasFactory, LogsActivity, RunsABoard, SoftDeletes;
 
     /**
      * Create the locked owner role. It is the only role an organization starts with; every other
@@ -352,13 +355,36 @@ class Organization extends Model
     }
 
     /**
-     * Get the sprints across all of the organization's teams.
+     * Resolve a scoped route binding.
      *
-     * @return HasManyThrough<Sprint, Team, $this>
+     * A sprint hangs off whoever runs its board, so the plain relation only finds the ones the
+     * organization runs itself. Route binding has to see the teams' sprints as well.
+     *
+     * @param  string  $childType
+     * @param  mixed  $value
+     * @param  string|null  $field
      */
-    public function sprints(): HasManyThrough
+    public function resolveChildRouteBinding($childType, $value, $field): ?Model
     {
-        return $this->hasManyThrough(Sprint::class, Team::class);
+        if ($childType === 'sprint') {
+            return $this->allSprints()->where($field ?? (new Sprint)->getRouteKeyName(), $value)->first();
+        }
+
+        return parent::resolveChildRouteBinding($childType, $value, $field);
+    }
+
+    /**
+     * Get every sprint in the organization, whether a team runs it or the organization does.
+     *
+     * @return Builder<Sprint>
+     */
+    public function allSprints(): Builder
+    {
+        return Sprint::query()->where(fn (Builder $query) => $query
+            ->whereMorphedTo('owner', $this)
+            ->orWhere(fn (Builder $query) => $query
+                ->where('owner_type', (new Team)->getMorphClass())
+                ->whereIn('owner_id', $this->teams()->select('id'))));
     }
 
     /**

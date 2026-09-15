@@ -20,10 +20,11 @@ class BoardColumnFactory extends Factory
     public function definition(): array
     {
         return [
-            'team_id' => Team::factory(),
+            'owner_type' => (new Team)->getMorphClass(),
+            'owner_id' => Team::factory(),
             'name' => fake()->unique()->word(),
             'status' => IssueStatus::InProgress,
-            'position' => fn (array $attributes) => (BoardColumn::where('team_id', $attributes['team_id'])->max('position') ?? -1) + 1,
+            'position' => fn (array $attributes) => (BoardColumn::where('owner_type', $attributes['owner_type'])->where('owner_id', $attributes['owner_id'])->max('position') ?? -1) + 1,
         ];
     }
 }

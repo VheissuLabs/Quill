@@ -9,19 +9,19 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Support\LogOptions;
-use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A time box in which a team commits to a set of issues.
  *
  * @property int $id
- * @property int $team_id
+ * @property string $owner_type
+ * @property int $owner_id
  * @property string $name
  * @property Carbon $starts_at
  * @property Carbon $ends_at
@@ -32,34 +32,68 @@ use Illuminate\Support\Facades\DB;
  * @property-read int|null $issues_count
  * @property-read int|null $done_issues_count
  * @property-read int|float|string|null $issues_sum_points
- * @property-read Team $team
+ * @property-read Organization|Team $owner
  * @property-read Collection<int, Issue> $issues
- * @property-read Collection<int, BoardColumn> $columns
  */
-#[Fillable(['team_id', 'name', 'starts_at', 'ends_at', 'status'])]
+#[Fillable(['owner_type', 'owner_id', 'name', 'starts_at', 'ends_at', 'status'])]
 class Sprint extends Model
 {
     /** @use HasFactory<SprintFactory> */
     use HasFactory, LogsActivity;
 
     /**
-     * Get the team running the sprint.
+     * Get whoever runs the sprint: a team, or the organization itself when it has no teams.
      *
-     * @return BelongsTo<Team, $this>
+     * @return MorphTo<Model, $this>
      */
-    public function team(): BelongsTo
+    public function owner(): MorphTo
     {
-        return $this->belongsTo(Team::class);
+        return $this->morphTo();
     }
 
     /**
-     * Get the board columns of the sprint's team.
-     *
-     * @return HasManyThrough<BoardColumn, Team, $this>
+     * Get the organization the sprint belongs to, whether or not a team runs it.
      */
-    public function columns(): HasManyThrough
+    public function organization(): Organization
     {
-        return $this->hasManyThrough(BoardColumn::class, Team::class, 'id', 'team_id', 'team_id', 'id');
+        return $this->owner instanceof Team ? $this->owner->organization : $this->owner;
+    }
+
+    /**
+     * Get the team running this sprint, or null when the organization runs it itself.
+     */
+    public function teamId(): ?int
+    {
+        return $this->owner instanceof Team ? $this->owner->getKey() : null;
+    }
+
+    /**
+     * Get the board columns the sprint's work moves through.
+     *
+     * @return Collection<int, BoardColumn>
+     */
+    public function columns(): Collection
+    {
+        return $this->owner->columns;
+    }
+
+    /**
+     * Resolve a scoped route binding.
+     *
+     * The columns belong to whoever runs the board, not to the sprint, so the default lookup
+     * has no relation to follow.
+     *
+     * @param  string  $childType
+     * @param  mixed  $value
+     * @param  string|null  $field
+     */
+    public function resolveChildRouteBinding($childType, $value, $field): ?Model
+    {
+        if ($childType === 'column') {
+            return $this->owner->columns()->where($field ?? (new BoardColumn)->getRouteKeyName(), $value)->first();
+        }
+
+        return parent::resolveChildRouteBinding($childType, $value, $field);
     }
 
     /**

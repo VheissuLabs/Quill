@@ -58,7 +58,7 @@ test('planning an issue logs the sprint and status with related names resolved',
     $organization->addMember($member, 'Admin');
     $project = Project::factory()->for($organization)->create();
     $team = Team::factory()->for($organization)->create(['name' => 'Development']);
-    $sprint = Sprint::factory()->for($team)->active()->create(['name' => 'Sprint 4']);
+    $sprint = Sprint::factory()->for($team, 'owner')->active()->create(['name' => 'Sprint 4']);
     $issue = Issue::factory()->for($project)->create();
 
     $this->actingAs($member)

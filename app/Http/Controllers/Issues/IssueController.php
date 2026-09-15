@@ -106,7 +106,7 @@ class IssueController extends Controller
     {
         Gate::authorize('view', $issue);
 
-        $issue->load(['project', 'team.columns', 'sprint', 'boardColumn', 'assignee', 'creator', 'feature.author']);
+        $issue->load(['project', 'team.columns', 'sprint', 'boardColumn.owner', 'assignee', 'creator', 'feature.author']);
 
         return Inertia::render('issues/Show', [
             'issue' => [
@@ -115,11 +115,13 @@ class IssueController extends Controller
                 'teamId' => $issue->team_id,
                 'sprintId' => $issue->sprint_id,
                 'boardColumnId' => $issue->board_column_id,
-                'columns' => $issue->team?->columns->map(fn (BoardColumn $column) => [
-                    'id' => $column->id,
-                    'name' => $column->name,
-                    'status' => $column->status->value,
-                ]) ?? [],
+                'columns' => ($issue->team ?? $request->user()->boardOwnerFor($currentOrganization))
+                    ->columns
+                    ->map(fn (BoardColumn $column) => [
+                        'id' => $column->id,
+                        'name' => $column->name,
+                        'status' => $column->status->value,
+                    ]),
                 'assigneeId' => $issue->assignee_id,
                 'creatorName' => $issue->creator?->name,
                 'completedAt' => $issue->completed_at?->toISOString(),
@@ -262,9 +264,17 @@ class IssueController extends Controller
                 ->get()
                 ->map(fn (Team $team) => ['id' => $team->id, 'name' => $team->name, 'slug' => $team->slug]),
             'sprints' => Sprint::query()
-                ->whereIn('team_id', $team ? [$team->id] : $organization->teams()->select('id'))
+                ->when(
+                    $team,
+                    fn (Builder $query, Team $team) => $query->whereMorphedTo('owner', $team),
+                    fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                        ->whereMorphedTo('owner', $organization)
+                        ->orWhere(fn (Builder $query) => $query
+                            ->where('owner_type', (new Team)->getMorphClass())
+                            ->whereIn('owner_id', $organization->teams()->select('id')))),
+                )
                 ->where('status', '!=', SprintStatus::Completed)
-                ->with(['team', 'issues' => fn ($query) => $query->with(['project', 'assignee', 'sprint', 'team', 'boardColumn'])->orderBy('position')->orderBy('number')])
+                ->with(['owner', 'issues' => fn ($query) => $query->with(['project', 'assignee', 'sprint', 'team', 'boardColumn'])->orderBy('position')->orderBy('number')])
                 ->withCount('issues')
                 ->withSum('issues', 'points')
                 ->orderBy('starts_at')
@@ -272,8 +282,8 @@ class IssueController extends Controller
                 ->map(fn (Sprint $sprint) => [
                     'id' => $sprint->id,
                     'name' => $sprint->name,
-                    'teamId' => $sprint->team_id,
-                    'teamName' => $sprint->team->name,
+                    'teamId' => $sprint->teamId(),
+                    'teamName' => $sprint->owner->name,
                     'status' => $sprint->status->value,
                     'statusLabel' => $sprint->status->label(),
                     'startsAt' => $sprint->starts_at->toDateString(),

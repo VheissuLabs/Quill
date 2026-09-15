@@ -121,7 +121,7 @@ const formatRange = (start: string, end: string) => {
                                     {{ sprint.name }}
                                 </p>
                                 <p class="text-muted-foreground text-sm">
-                                    {{ sprint.team.name }} ·
+                                    {{ sprint.owner.name }} ·
                                     {{
                                         formatRange(
                                             sprint.startsAt,

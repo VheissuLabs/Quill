@@ -20,7 +20,8 @@ class SprintFactory extends Factory
     public function definition(): array
     {
         return [
-            'team_id' => Team::factory(),
+            'owner_type' => (new Team)->getMorphClass(),
+            'owner_id' => Team::factory(),
             'name' => 'Sprint '.fake()->unique()->numberBetween(1, 999),
             'starts_at' => now()->startOfWeek(),
             'ends_at' => now()->startOfWeek()->addWeeks(2)->subDay(),

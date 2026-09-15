@@ -101,6 +101,15 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * Get whoever runs the board in this organization: the user's current team, or the
+     * organization itself while it has no teams. Teams are opt in.
+     */
+    public function boardOwnerFor(Organization $organization): Organization|Team
+    {
+        return $this->currentTeamFor($organization) ?? $organization;
+    }
+
+    /**
      * Get the team the user is working in within the given organization. Falls back to the first
      * team they belong to there, then to the organization's first team, and remembers the choice.
      */

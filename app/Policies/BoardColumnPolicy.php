@@ -24,8 +24,8 @@ class BoardColumnPolicy
      */
     public function update(User $user, BoardColumn $column): bool
     {
-        return $column->team->organization->canUse(OrganizationCapability::Workflow)
-            && $user->hasOrganizationPermission($column->team->organization, OrganizationPermission::ManageTeams);
+        return $column->organization()->canUse(OrganizationCapability::Workflow)
+            && $user->hasOrganizationPermission($column->organization(), OrganizationPermission::ManageTeams);
     }
 
     /**
@@ -33,7 +33,7 @@ class BoardColumnPolicy
      */
     public function delete(User $user, BoardColumn $column): bool
     {
-        return $column->team->organization->canUse(OrganizationCapability::Workflow)
-            && $user->hasOrganizationPermission($column->team->organization, OrganizationPermission::ManageTeams);
+        return $column->organization()->canUse(OrganizationCapability::Workflow)
+            && $user->hasOrganizationPermission($column->organization(), OrganizationPermission::ManageTeams);
     }
 }

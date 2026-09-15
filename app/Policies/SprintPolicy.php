@@ -24,8 +24,8 @@ class SprintPolicy
      */
     public function view(User $user, Sprint $sprint): bool
     {
-        return $sprint->team->organization->canUse(OrganizationCapability::Sprints)
-            && $user->belongsToOrganization($sprint->team->organization);
+        return $sprint->organization()->canUse(OrganizationCapability::Sprints)
+            && $user->belongsToOrganization($sprint->organization());
     }
 
     /**
@@ -42,8 +42,8 @@ class SprintPolicy
      */
     public function update(User $user, Sprint $sprint): bool
     {
-        return $sprint->team->organization->canUse(OrganizationCapability::Sprints)
-            && $user->hasOrganizationPermission($sprint->team->organization, OrganizationPermission::ManageSprints);
+        return $sprint->organization()->canUse(OrganizationCapability::Sprints)
+            && $user->hasOrganizationPermission($sprint->organization(), OrganizationPermission::ManageSprints);
     }
 
     /**
@@ -51,7 +51,7 @@ class SprintPolicy
      */
     public function delete(User $user, Sprint $sprint): bool
     {
-        return $sprint->team->organization->canUse(OrganizationCapability::Sprints)
-            && $user->hasOrganizationPermission($sprint->team->organization, OrganizationPermission::ManageSprints);
+        return $sprint->organization()->canUse(OrganizationCapability::Sprints)
+            && $user->hasOrganizationPermission($sprint->organization(), OrganizationPermission::ManageSprints);
     }
 }

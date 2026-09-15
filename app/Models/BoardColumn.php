@@ -8,40 +8,57 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A column on a team's board. Its status is what an issue becomes when it is placed there.
+ * A column on a board. Its status is what an issue becomes when it is placed there.
  *
  * @property int $id
- * @property int $team_id
+ * @property string $owner_type
+ * @property int $owner_id
  * @property string $name
  * @property IssueStatus $status
  * @property int $position
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read int|null $issues_count
- * @property-read Team $team
+ * @property-read Organization|Team $owner
  * @property-read Collection<int, Issue> $issues
  */
-#[Fillable(['team_id', 'name', 'status', 'position'])]
+#[Fillable(['owner_type', 'owner_id', 'name', 'status', 'position'])]
 class BoardColumn extends Model
 {
     /** @use HasFactory<BoardColumnFactory> */
     use HasFactory, LogsActivity;
 
     /**
-     * Get the team whose board the column is on.
+     * Get whoever runs the board the column is on: a team, or the organization itself.
      *
-     * @return BelongsTo<Team, $this>
+     * @return MorphTo<Model, $this>
      */
-    public function team(): BelongsTo
+    public function owner(): MorphTo
     {
-        return $this->belongsTo(Team::class);
+        return $this->morphTo();
+    }
+
+    /**
+     * Get the organization the board belongs to, whether or not a team runs it.
+     */
+    public function organization(): Organization
+    {
+        return $this->owner instanceof Team ? $this->owner->organization : $this->owner;
+    }
+
+    /**
+     * Get the team working off this board, or null when the organization runs it itself.
+     */
+    public function teamId(): ?int
+    {
+        return $this->owner instanceof Team ? $this->owner->getKey() : null;
     }
 
     /**
@@ -55,7 +72,7 @@ class BoardColumn extends Model
     }
 
     /**
-     * Record changes to a team's board columns.
+     * Record changes to a board's columns.
      */
     public function getActivitylogOptions(): LogOptions
     {

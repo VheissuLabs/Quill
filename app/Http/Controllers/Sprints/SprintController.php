@@ -25,11 +25,10 @@ class SprintController extends Controller
     {
         Gate::authorize('viewAny', [Sprint::class, $currentOrganization]);
 
-        $team = $request->user()->currentTeamFor($currentOrganization);
+        $owner = $request->user()->boardOwnerFor($currentOrganization);
 
-        $sprints = Sprint::query()
-            ->whereIn('team_id', $team ? [$team->id] : [])
-            ->with('team')
+        $sprints = $owner->sprints()
+            ->with('owner')
             ->withCount([
                 'issues',
                 'issues as done_issues_count' => fn ($query) => $query->where('status', IssueStatus::Done),
@@ -46,17 +45,13 @@ class SprintController extends Controller
     }
 
     /**
-     * Create a sprint for the user's current team.
+     * Create a sprint for whoever runs the board: the current team, or the organization itself.
      */
     public function store(SaveSprintRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Sprint::class, $currentOrganization]);
 
-        $team = $request->user()->currentTeamFor($currentOrganization);
-
-        abort_unless($team !== null, 409, __('Create a team before planning a sprint.'));
-
-        $sprint = $team->sprints()->create([
+        $sprint = $request->user()->boardOwnerFor($currentOrganization)->sprints()->create([
             ...$request->validated(),
             'status' => SprintStatus::Planned,
         ]);
@@ -73,7 +68,7 @@ class SprintController extends Controller
     {
         Gate::authorize('view', $sprint);
 
-        $sprint->load('team.columns')->loadCount([
+        $sprint->load('owner.columns')->loadCount([
             'issues',
             'issues as done_issues_count' => fn ($query) => $query->where('status', IssueStatus::Done),
         ])->loadSum('issues', 'points');
@@ -88,7 +83,7 @@ class SprintController extends Controller
         return Inertia::render('sprints/Show', [
             'sprint' => $this->sprintSummary($sprint),
             'issues' => $issues,
-            'columns' => $sprint->team->columns->map(fn (BoardColumn $column) => [
+            'columns' => $sprint->columns()->map(fn (BoardColumn $column) => [
                 'id' => $column->id,
                 'name' => $column->name,
                 'status' => $column->status->value,
@@ -162,7 +157,11 @@ class SprintController extends Controller
             'statusLabel' => $sprint->status->label(),
             'startsAt' => $sprint->starts_at->toDateString(),
             'endsAt' => $sprint->ends_at->toDateString(),
-            'team' => ['id' => $sprint->team->id, 'name' => $sprint->team->name, 'slug' => $sprint->team->slug],
+            'owner' => [
+                'name' => $sprint->owner->name,
+                'slug' => $sprint->owner->slug,
+                'isTeam' => $sprint->owner instanceof Team,
+            ],
             'issuesCount' => $sprint->issues_count,
             'doneIssuesCount' => $sprint->done_issues_count,
             'points' => (int) $sprint->issues_sum_points,

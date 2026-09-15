@@ -45,7 +45,7 @@ test('an issue created into a sprint starts as todo on the sprint team', functio
     $organization = Organization::factory()->create();
     $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
-    $sprint = Sprint::factory()->for(Team::factory()->for($organization))->create();
+    $sprint = Sprint::factory()->for(Team::factory()->for($organization), 'owner')->create();
 
     $this->actingAs($member)
         ->post(route('issues.store', ['current_organization' => $organization]), [
@@ -57,7 +57,7 @@ test('an issue created into a sprint starts as todo on the sprint team', functio
 
     expect(Issue::firstWhere('title', 'Planned work'))
         ->status->toBe(IssueStatus::Todo)
-        ->team_id->toBe($sprint->team_id);
+        ->team_id->toBe($sprint->teamId());
 });
 
 test('issues cannot be created on projects of another organization', function () {
@@ -177,8 +177,8 @@ test('the issue page offers only the sprints of the issue team, or of the viewer
     $project = Project::factory()->for($organization)->create();
     $engineering = Team::factory()->for($organization)->create(['name' => 'Engineering']);
     $design = Team::factory()->for($organization)->create(['name' => 'Design']);
-    Sprint::factory()->for($engineering)->create(['name' => 'Engineering sprint']);
-    Sprint::factory()->for($design)->create(['name' => 'Design sprint']);
+    Sprint::factory()->for($engineering, 'owner')->create(['name' => 'Engineering sprint']);
+    Sprint::factory()->for($design, 'owner')->create(['name' => 'Design sprint']);
 
     $designIssue = Issue::factory()->for($project)->create(['team_id' => $design->id]);
     $unplanned = Issue::factory()->for($project)->create();
@@ -201,7 +201,7 @@ test('planning an issue into a sprint moves it to the sprint team and out of the
     $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $issue = Issue::factory()->for($project)->create();
-    $sprint = Sprint::factory()->for(Team::factory()->for($organization))->create();
+    $sprint = Sprint::factory()->for(Team::factory()->for($organization), 'owner')->create();
 
     $this->actingAs($member)
         ->patch(route('issues.update', ['current_organization' => $organization, 'issue' => $issue]), [
@@ -211,7 +211,7 @@ test('planning an issue into a sprint moves it to the sprint team and out of the
 
     expect($issue->fresh())
         ->sprint_id->toBe($sprint->id)
-        ->team_id->toBe($sprint->team_id)
+        ->team_id->toBe($sprint->teamId())
         ->status->toBe(IssueStatus::Todo);
 
     $this->actingAs($member)
@@ -272,7 +272,7 @@ test('moving an issue to a board column sets its status and planning into a spri
     $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $team = Team::factory()->for($organization)->create();
-    $sprint = Sprint::factory()->for($team)->active()->create();
+    $sprint = Sprint::factory()->for($team, 'owner')->active()->create();
     $issue = Issue::factory()->for($project)->create(['points' => 3]);
 
     $this->actingAs($member)
@@ -299,7 +299,7 @@ test('cancelling an issue removes it from its sprint', function () {
     $organization = Organization::factory()->create();
     $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
-    $sprint = Sprint::factory()->for(Team::factory()->for($organization))->active()->create();
+    $sprint = Sprint::factory()->for(Team::factory()->for($organization), 'owner')->active()->create();
     $issue = Issue::factory()->for($project)->create();
     $issue->planInto($sprint);
 
@@ -318,7 +318,7 @@ test('the issues index shows only unplanned issues, planned ones appear inside t
     $organization = Organization::factory()->create();
     $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
-    $sprint = Sprint::factory()->for(Team::factory()->for($organization))->active()->create();
+    $sprint = Sprint::factory()->for(Team::factory()->for($organization), 'owner')->active()->create();
     Issue::factory()->for($project)->create(['title' => 'Unplanned']);
     Issue::factory()->for($project)->for($sprint)->create(['title' => 'Planned', 'status' => IssueStatus::Todo]);
 
@@ -341,8 +341,8 @@ test('the backlog is scoped to the current team plus issues with no team yet', f
     Issue::factory()->for($project)->for($development)->create(['title' => 'Dev work']);
     Issue::factory()->for($project)->for($marketing)->create(['title' => 'Campaign']);
     Issue::factory()->for($project)->create(['title' => 'Untriaged']);
-    Sprint::factory()->for($development)->create(['name' => 'Dev sprint']);
-    Sprint::factory()->for($marketing)->create(['name' => 'Marketing sprint']);
+    Sprint::factory()->for($development, 'owner')->create(['name' => 'Dev sprint']);
+    Sprint::factory()->for($marketing, 'owner')->create(['name' => 'Marketing sprint']);
     $member->switchOrganization($organization);
     $member->switchTeam($development);
 

@@ -34,7 +34,7 @@ class CreateIssue
                 'description' => $attributes['description'] ?? null,
                 'priority' => $attributes['priority'] ?? IssuePriority::None,
                 'points' => $attributes['points'] ?? null,
-                'team_id' => $sprint ? $sprint->team_id : ($attributes['team_id'] ?? null),
+                'team_id' => $sprint ? $sprint->teamId() : ($attributes['team_id'] ?? null),
                 'sprint_id' => $sprint?->id,
                 'assignee_id' => $attributes['assignee_id'] ?? null,
                 'feature_id' => $feature?->id,

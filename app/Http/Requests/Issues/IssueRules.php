@@ -4,6 +4,7 @@ namespace App\Http\Requests\Issues;
 
 use App\Enums\IssuePriority;
 use App\Models\Organization;
+use App\Models\Team;
 use Illuminate\Validation\Rule;
 
 /**
@@ -25,7 +26,13 @@ class IssueRules
             'sprint_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('sprints', 'id')->whereIn('team_id', $organization->teams()->pluck('id')),
+                Rule::exists('sprints', 'id')->where(fn ($query) => $query
+                    ->where(fn ($query) => $query
+                        ->where('owner_type', (new Organization)->getMorphClass())
+                        ->where('owner_id', $organization->getKey()))
+                    ->orWhere(fn ($query) => $query
+                        ->where('owner_type', (new Team)->getMorphClass())
+                        ->whereIn('owner_id', $organization->teams()->pluck('id')))),
             ],
             'assignee_id' => [
                 'nullable',

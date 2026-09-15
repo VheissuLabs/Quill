@@ -105,7 +105,7 @@ export type SprintListItem = {
     statusLabel: string;
     startsAt: string;
     endsAt: string;
-    team: { id: number; name: string; slug: string };
+    owner: { name: string; slug: string; isTeam: boolean };
     issuesCount: number;
     doneIssuesCount: number;
     points: number;

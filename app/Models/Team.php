@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesOrganizationScopedSlugs;
+use App\Concerns\RunsABoard;
 use App\Enums\IssueStatus;
 use App\Observers\TeamObserver;
 use Database\Factories\TeamFactory;
@@ -42,7 +43,7 @@ use Spatie\Activitylog\Support\LogOptions;
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
-    use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity;
+    use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity, RunsABoard;
 
     /**
      * Get the organization the team belongs to.
@@ -88,40 +89,6 @@ class Team extends Model
     }
 
     /**
-     * Get the board columns of the team, in board order.
-     *
-     * @return HasMany<BoardColumn, $this>
-     */
-    public function columns(): HasMany
-    {
-        return $this->hasMany(BoardColumn::class)->orderBy('position');
-    }
-
-    /**
-     * Create the columns a team starts with: Todo, In progress, Done.
-     */
-    public function createDefaultColumns(): void
-    {
-        foreach (IssueStatus::columnStatuses() as $position => $status) {
-            $this->columns()->create([
-                'name' => $status->label(),
-                'status' => $status,
-                'position' => $position,
-            ]);
-        }
-    }
-
-    /**
-     * Get the sprints run by the team.
-     *
-     * @return HasMany<Sprint, $this>
-     */
-    public function sprints(): HasMany
-    {
-        return $this->hasMany(Sprint::class);
-    }
-
-    /**
      * Move everything this team owns into another team of the same organization, then delete it.
      *
      * Issues follow their status onto the new board, the rule Issue::planInto() already uses when
@@ -145,7 +112,10 @@ class Team extends Model
             $target->projects()->syncWithoutDetaching($projectIds);
             $this->projects()->detach();
 
-            $sprintsMoved = $this->sprints()->update(['team_id' => $target->id]);
+            $sprintsMoved = $this->sprints()->update([
+                'owner_type' => $target->getMorphClass(),
+                'owner_id' => $target->getKey(),
+            ]);
 
             $this->moveIssuesTo($target);
 

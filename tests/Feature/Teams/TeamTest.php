@@ -176,7 +176,7 @@ test('merging a team moves its members, projects, sprints and issues to the targ
     $project = Project::factory()->for($organization)->create(['visibility' => ProjectVisibility::Private]);
     $project->teams()->attach($source);
 
-    $sprint = Sprint::factory()->for($source)->create();
+    $sprint = Sprint::factory()->for($source, 'owner')->create();
     $inProgress = $source->columns->firstWhere('status', IssueStatus::InProgress);
     $issue = Issue::factory()->for($project)->create([
         'team_id' => $source->id,
@@ -198,7 +198,7 @@ test('merging a team moves its members, projects, sprints and issues to the targ
     expect($target->members()->whereKey($mover->id)->exists())->toBeTrue();
     expect($mover->fresh()->current_team_id)->toBe($target->id);
     expect($project->teams()->pluck('teams.id')->all())->toBe([$target->id]);
-    expect($sprint->fresh()->team_id)->toBe($target->id);
+    expect($sprint->fresh()->owner->is($target))->toBeTrue();
 
     $issue->refresh();
     expect($issue->team_id)->toBe($target->id);

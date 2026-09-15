@@ -143,11 +143,13 @@ class Issue extends Model
             return;
         }
 
-        $column = $sprint->team->columns->firstWhere('status', $this->status)
-            ?? $sprint->team->columns->firstWhere('status', IssueStatus::Todo)
-            ?? $sprint->team->columns->first();
+        $columns = $sprint->columns();
 
-        $this->update(['sprint_id' => $sprint->id, 'team_id' => $sprint->team_id]);
+        $column = $columns->firstWhere('status', $this->status)
+            ?? $columns->firstWhere('status', IssueStatus::Todo)
+            ?? $columns->first();
+
+        $this->update(['sprint_id' => $sprint->id, 'team_id' => $sprint->teamId()]);
 
         if ($column) {
             $this->moveToColumn($column);
@@ -159,7 +161,7 @@ class Issue extends Model
      */
     public function moveToColumn(BoardColumn $column): void
     {
-        $this->update(['board_column_id' => $column->id, 'team_id' => $column->team_id]);
+        $this->update(['board_column_id' => $column->id, 'team_id' => $column->teamId()]);
 
         $this->changeStatus($column->status);
     }
