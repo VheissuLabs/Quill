@@ -2,7 +2,7 @@
 import { Form, Head, router, useForm } from '@inertiajs/vue3';
 import { ChevronDown, Mail, Pencil, Trash2, UserPlus, X } from '@lucide/vue';
 import { useLocalStorage } from '@vueuse/core';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import CancelInvitationModal from '@/components/CancelInvitationModal.vue';
 import DeleteOrganizationModal from '@/components/DeleteOrganizationModal.vue';
 import Heading from '@/components/Heading.vue';
@@ -96,20 +96,26 @@ const deleteOrganizationOpen = useLocalStorage(
     'quill.organization-delete.open',
     false,
 );
-const modulesForm = useForm({
-    feature_voting_enabled: props.organization.modules.featureVoting.enabled,
-    feature_voting_boards_enabled:
-        props.organization.modules.featureVoting.capabilities.boards,
-    feature_voting_voting_enabled:
-        props.organization.modules.featureVoting.capabilities.voting,
-    development_enabled: props.organization.modules.development.enabled,
-    development_issues_enabled:
-        props.organization.modules.development.capabilities.issues,
-    development_sprints_enabled:
-        props.organization.modules.development.capabilities.sprints,
-    development_workflow_enabled:
-        props.organization.modules.development.capabilities.workflow,
+const moduleValues = (modules: Organization['modules']) => ({
+    feature_voting_enabled: modules.featureVoting.enabled,
+    feature_voting_boards_enabled: modules.featureVoting.capabilities.boards,
+    feature_voting_voting_enabled: modules.featureVoting.capabilities.voting,
+    development_enabled: modules.development.enabled,
+    development_issues_enabled: modules.development.capabilities.issues,
+    development_sprints_enabled: modules.development.capabilities.sprints,
+    development_workflow_enabled: modules.development.capabilities.workflow,
 });
+
+const modulesForm = useForm(moduleValues(props.organization.modules));
+
+/**
+ * Enabling a module re-enables its capabilities on the server, so take the
+ * saved settings back from the props rather than trusting the local form.
+ */
+watch(
+    () => props.organization.modules,
+    (modules) => Object.assign(modulesForm, moduleValues(modules)),
+);
 
 const logoForm = useForm<{ logo: File | null }>({
     logo: null,
@@ -356,20 +362,6 @@ const updateModule = (field: ModuleField, value: boolean) => {
                     >
                         <div class="space-y-6 rounded-lg border p-4">
                             <div class="space-y-3">
-                                <div>
-                                    <p
-                                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
-                                    >
-                                        Feature voting
-                                    </p>
-                                    <p
-                                        class="text-muted-foreground mt-1 text-sm"
-                                    >
-                                        Public and private customer feedback
-                                        boards, including team-restricted
-                                        boards.
-                                    </p>
-                                </div>
                                 <label
                                     class="flex cursor-pointer items-start justify-between gap-4"
                                 >
@@ -470,19 +462,6 @@ const updateModule = (field: ModuleField, value: boolean) => {
                             </div>
 
                             <div class="space-y-3 border-t pt-6">
-                                <div>
-                                    <p
-                                        class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
-                                    >
-                                        Development
-                                    </p>
-                                    <p
-                                        class="text-muted-foreground mt-1 text-sm"
-                                    >
-                                        Internal tools for planning and
-                                        delivering work.
-                                    </p>
-                                </div>
                                 <label
                                     class="flex cursor-pointer items-start justify-between gap-4"
                                 >

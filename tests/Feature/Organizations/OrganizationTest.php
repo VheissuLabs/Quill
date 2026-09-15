@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationPermission;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -173,6 +174,70 @@ test('organization owners can update product modules', function () {
         'capability' => 'sprints',
         'enabled' => false,
     ]);
+});
+
+test('enabling a module turns every capability inside it back on', function () {
+    $owner = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($owner, 'Owner');
+
+    $organization->updateModuleSettings([
+        'feature_voting_enabled' => false,
+        'feature_voting_boards_enabled' => false,
+        'feature_voting_voting_enabled' => false,
+        'development_enabled' => false,
+        'development_issues_enabled' => false,
+        'development_sprints_enabled' => false,
+        'development_workflow_enabled' => false,
+    ]);
+
+    $response = $this
+        ->actingAs($owner)
+        ->patch(route('organizations.modules.update', $organization), [
+            'feature_voting_enabled' => true,
+            'feature_voting_boards_enabled' => false,
+            'feature_voting_voting_enabled' => false,
+            'development_enabled' => false,
+            'development_issues_enabled' => false,
+            'development_sprints_enabled' => false,
+            'development_workflow_enabled' => false,
+        ]);
+
+    $response->assertRedirect(route('organizations.edit', $organization));
+
+    expect($organization->fresh()->moduleSettings())->toEqual([
+        'featureVoting' => [
+            'enabled' => true,
+            'capabilities' => ['boards' => true, 'voting' => true],
+        ],
+        'development' => [
+            'enabled' => false,
+            'capabilities' => ['issues' => false, 'sprints' => false, 'workflow' => false],
+        ],
+    ]);
+});
+
+test('an enabled module keeps the capabilities an owner turned off', function () {
+    $owner = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($owner, 'Owner');
+
+    $response = $this
+        ->actingAs($owner)
+        ->patch(route('organizations.modules.update', $organization), [
+            'feature_voting_enabled' => true,
+            'feature_voting_boards_enabled' => true,
+            'feature_voting_voting_enabled' => false,
+            'development_enabled' => true,
+            'development_issues_enabled' => true,
+            'development_sprints_enabled' => true,
+            'development_workflow_enabled' => true,
+        ]);
+
+    $response->assertRedirect(route('organizations.edit', $organization));
+
+    expect($organization->fresh()->canUse(OrganizationCapability::Voting))->toBeFalse();
+    expect($organization->fresh()->canUse(OrganizationCapability::Boards))->toBeTrue();
 });
 
 test('organization members cannot update product modules', function () {

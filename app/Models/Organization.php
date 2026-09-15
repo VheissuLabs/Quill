@@ -131,6 +131,9 @@ class Organization extends Model
     /**
      * Persist the complete module and capability settings submitted by an owner.
      *
+     * Switching a module back on re-enables every capability inside it, so an owner
+     * never has to turn the same switches on twice.
+     *
      * @param  array<string, bool>  $settings
      */
     public function updateModuleSettings(array $settings): void
@@ -139,11 +142,14 @@ class Organization extends Model
         $rows = [];
 
         foreach (OrganizationModule::cases() as $module) {
+            $enabled = (bool) ($settings[$module->value.'_enabled'] ?? true);
+            $justEnabled = $enabled && ! $this->isModuleEnabled($module);
+
             $rows[] = [
                 'organization_id' => $this->id,
                 'module' => $module->value,
                 'capability' => '',
-                'enabled' => (bool) ($settings[$module->value.'_enabled'] ?? true),
+                'enabled' => $enabled,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
@@ -153,7 +159,7 @@ class Organization extends Model
                     'organization_id' => $this->id,
                     'module' => $module->value,
                     'capability' => $capability->value,
-                    'enabled' => (bool) ($settings[$module->value.'_'.$capability->value.'_enabled'] ?? true),
+                    'enabled' => $justEnabled || (bool) ($settings[$module->value.'_'.$capability->value.'_enabled'] ?? true),
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
