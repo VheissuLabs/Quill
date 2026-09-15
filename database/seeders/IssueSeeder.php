@@ -45,24 +45,33 @@ class IssueSeeder extends Seeder
                     ->get()
                     ->each(fn (Feature $feature) => $this->convert($feature, $sprints, $members));
 
-                for ($count = fake()->numberBetween(3, 6); $count > 0; $count--) {
-                    $issue = $this->createIssue->handle($project, $members->random(), [
-                        'title' => rtrim(fake()->sentence(fake()->numberBetween(3, 6)), '.'),
-                        'description' => fake()->boolean(70) ? fake()->paragraph() : null,
-                        'priority' => fake()->randomElement(IssuePriority::cases()),
-                        'points' => fake()->boolean(60) ? fake()->randomElement([1, 2, 3, 5, 8]) : null,
-                        'assignee_id' => fake()->boolean(50) ? $members->random()->id : null,
-                    ]);
-
-                    match (fake()->numberBetween(1, 6)) {
-                        1 => $issue->planInto($this->sprint($sprints, SprintStatus::Active)),
-                        2 => $this->work($issue, $this->sprint($sprints, SprintStatus::Active)),
-                        3 => $issue->planInto($this->sprint($sprints, SprintStatus::Planned) ?? $this->sprint($sprints, SprintStatus::Active)),
-                        4 => $issue->changeStatus(IssueStatus::Cancelled),
-                        default => null,
-                    };
-                }
+                $this->seedLooseIssues($project, $sprints, $members);
             });
+    }
+
+    /**
+     * @param  Collection<int, Sprint>  $sprints
+     * @param  Collection<int, User>  $members
+     */
+    protected function seedLooseIssues(Project $project, Collection $sprints, Collection $members): void
+    {
+        Collection::times(fake()->numberBetween(3, 6), function () use ($project, $sprints, $members) {
+            $issue = $this->createIssue->handle($project, $members->random(), [
+                'title' => rtrim(fake()->sentence(fake()->numberBetween(3, 6)), '.'),
+                'description' => fake()->boolean(70) ? fake()->paragraph() : null,
+                'priority' => fake()->randomElement(IssuePriority::cases()),
+                'points' => fake()->boolean(60) ? fake()->randomElement([1, 2, 3, 5, 8]) : null,
+                'assignee_id' => fake()->boolean(50) ? $members->random()->id : null,
+            ]);
+
+            match (fake()->numberBetween(1, 6)) {
+                1 => $issue->planInto($this->sprint($sprints, SprintStatus::Active)),
+                2 => $this->work($issue, $this->sprint($sprints, SprintStatus::Active)),
+                3 => $issue->planInto($this->sprint($sprints, SprintStatus::Planned) ?? $this->sprint($sprints, SprintStatus::Active)),
+                4 => $issue->changeStatus(IssueStatus::Cancelled),
+                default => null,
+            };
+        });
     }
 
     /**
