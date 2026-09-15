@@ -7,6 +7,7 @@ export type FeatureStatus =
 export type PortalOrganization = {
     name: string;
     slug: string;
+    logoUrl: string | null;
 };
 
 export type PortalProject = {

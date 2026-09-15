@@ -27,6 +27,10 @@ import {
 } from '@/components/ui/tooltip';
 import { useInitials } from '@/composables/useInitials';
 import { edit, index, update } from '@/routes/organizations';
+import {
+    destroy as destroyLogo,
+    store as storeLogo,
+} from '@/routes/organizations/logo';
 import { update as updateMember } from '@/routes/organizations/members';
 import type {
     RoleOption,
@@ -136,6 +140,71 @@ const confirmCancelInvitation = (invitation: OrganizationInvitation) => {
                     </Button>
                 </div>
             </Form>
+
+            <div class="grid gap-2">
+                <Label>Portal logo</Label>
+                <p class="text-muted-foreground text-sm">
+                    Shown in the header of your public boards instead of the
+                    {{ $page.props.name }} logo. PNG, JPG or WebP up to 2 MB.
+                </p>
+                <div class="flex flex-wrap items-center gap-4">
+                    <img
+                        v-if="organization.logoUrl"
+                        :src="organization.logoUrl"
+                        :alt="`${organization.name} logo`"
+                        class="size-14 rounded-md border object-contain"
+                        data-test="organization-logo-preview"
+                    />
+                    <div
+                        v-else
+                        class="bg-muted text-muted-foreground flex size-14 items-center justify-center rounded-md border text-xs"
+                    >
+                        None
+                    </div>
+                    <Form
+                        v-bind="storeLogo.form(organization.slug)"
+                        v-slot="{ errors, processing, submit }"
+                        class="flex flex-wrap items-center gap-2"
+                    >
+                        <input
+                            id="logo"
+                            type="file"
+                            name="logo"
+                            accept="image/png,image/jpeg,image/webp"
+                            class="sr-only"
+                            data-test="organization-logo-input"
+                            @change="submit()"
+                        />
+                        <Button
+                            variant="outline"
+                            as-child
+                            :disabled="processing"
+                        >
+                            <label for="logo" class="cursor-pointer">
+                                {{
+                                    organization.logoUrl
+                                        ? 'Replace'
+                                        : 'Upload logo'
+                                }}
+                            </label>
+                        </Button>
+                        <Button
+                            v-if="organization.logoUrl"
+                            variant="ghost"
+                            type="button"
+                            data-test="organization-logo-remove"
+                            @click="
+                                router.delete(destroyLogo(organization.slug), {
+                                    preserveScroll: true,
+                                })
+                            "
+                        >
+                            Remove
+                        </Button>
+                        <InputError :message="errors.logo" />
+                    </Form>
+                </div>
+            </div>
         </div>
 
         <div v-else class="space-y-6">

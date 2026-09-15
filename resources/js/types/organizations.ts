@@ -2,6 +2,7 @@ export type Organization = {
     id: number;
     name: string;
     slug: string;
+    logoUrl?: string | null;
     role?: string | null;
     isOwner?: boolean;
     canUpdate?: boolean;

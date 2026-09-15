@@ -58,6 +58,7 @@ class OrganizationController extends Controller
                 'id' => $organization->id,
                 'name' => $organization->name,
                 'slug' => $organization->slug,
+                'logoUrl' => $organization->logoUrl(),
             ],
             'members' => $organization->memberships()
                 ->with(['user.organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $organization->id)])

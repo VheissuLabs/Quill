@@ -47,7 +47,7 @@ class FeatureController extends Controller
             ->firstOrFail();
 
         return Inertia::render('portal/Feature', [
-            'organization' => ['name' => $organization->name, 'slug' => $organization->slug],
+            'organization' => ['name' => $organization->name, 'slug' => $organization->slug, 'logoUrl' => $organization->logoUrl()],
             'project' => ['name' => $project->name, 'slug' => $project->slug],
             'feature' => $summary = FeatureSummary::fromFeature($feature, withIssue: $isMember),
             'issue' => $summary->issue,

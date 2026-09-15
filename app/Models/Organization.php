@@ -16,8 +16,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Models\Role;
@@ -32,6 +34,7 @@ use Spatie\Permission\PermissionRegistrar;
  * @property string $slug
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property string|null $logo_path
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, OrganizationInvitation> $invitations
  * @property-read Collection<int, OrganizationMembership> $memberships
@@ -43,7 +46,7 @@ use Spatie\Permission\PermissionRegistrar;
  * @property-read Collection<int, Sprint> $sprints
  * @property-read Collection<int, Role> $roles
  */
-#[Fillable(['name', 'slug'])]
+#[Fillable(['name', 'slug', 'logo_path'])]
 #[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model
 {
@@ -62,6 +65,30 @@ class Organization extends Model
             ->syncPermissions(array_map(fn (OrganizationPermission $permission) => $permission->value, OrganizationPermission::cases()));
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    /**
+     * Public URL of the organization's logo, if one was uploaded.
+     */
+    public function logoUrl(): ?string
+    {
+        return $this->logo_path ? Storage::url($this->logo_path) : null;
+    }
+
+    /**
+     * Store a new logo (or none) and drop the previous file.
+     */
+    public function replaceLogo(?UploadedFile $logo): void
+    {
+        $previous = $this->logo_path;
+
+        $this->update([
+            'logo_path' => $logo?->storePublicly('organization-logos'),
+        ]);
+
+        if ($previous && $previous !== $this->logo_path) {
+            Storage::delete($previous);
+        }
     }
 
     /**
@@ -132,12 +159,12 @@ class Organization extends Model
     }
 
     /**
-     * Determine if the actor may change or end the owner's membership: an owner's membership is
-     * theirs alone to change, and never when they are the last owner.
+     * Determine if the actor may change or end the owner's membership. Owners are peers: any
+     * owner may demote or remove another (or step down themselves), but never the last owner.
      */
     public function ownerMayStepDown(User $actor, User $owner): bool
     {
-        return $actor->is($owner) && $this->hasOtherOwner($owner);
+        return $this->isOwner($actor) && $this->hasOtherOwner($owner);
     }
 
     /**

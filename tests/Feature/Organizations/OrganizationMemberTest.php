@@ -93,26 +93,40 @@ test('the last owner cannot be removed', function () {
     expect($owner->fresh()->belongsToOrganization($organization))->toBeTrue();
 });
 
-test('an owner cannot be removed by anyone else, even another owner', function () {
+test('an owner can demote or remove another owner, but admins with member permissions cannot', function () {
     $owner = User::factory()->create();
     $secondOwner = User::factory()->create();
+    $thirdOwner = User::factory()->create();
+    $admin = User::factory()->create();
     $organization = Organization::factory()->create();
     $organization->addMember($owner, 'Owner');
     $organization->addMember($secondOwner, 'Owner');
+    $organization->addMember($thirdOwner, 'Owner');
+    $organization->role('Admin')->givePermissionTo([OrganizationPermission::UpdateMember->value, OrganizationPermission::RemoveMember->value]);
+    $organization->addMember($admin, 'Admin');
 
     $this
-        ->actingAs($owner)
+        ->actingAs($admin)
         ->delete(route('organizations.members.destroy', [$organization, $secondOwner]))
         ->assertForbidden();
     $this
-        ->actingAs($owner)
-        ->from(route('organizations.edit', $organization))
-        ->patch(route('organizations.members.update', [$organization, $secondOwner]), [
-            'role_id' => $organization->role('Member')->id,
-        ])
+        ->actingAs($admin)
+        ->patch(route('organizations.members.update', [$organization, $secondOwner]), ['role_id' => $organization->role('Member')->id])
         ->assertForbidden();
 
-    expect($organization->owners()->pluck('id')->sort()->values()->all())->toBe([$owner->id, $secondOwner->id]);
+    $this
+        ->actingAs($owner)
+        ->from(route('organizations.edit', $organization))
+        ->patch(route('organizations.members.update', [$organization, $secondOwner]), ['role_id' => $organization->role('Member')->id])
+        ->assertRedirect(route('organizations.edit', $organization));
+
+    $this
+        ->actingAs($owner)
+        ->delete(route('organizations.members.destroy', [$organization, $thirdOwner]))
+        ->assertRedirect();
+
+    expect($secondOwner->fresh()->organizationRole($organization)->name)->toBe('Member');
+    expect($organization->owners()->pluck('id')->all())->toBe([$owner->id]);
 });
 
 test('an owner can step down themselves while another owner remains', function () {

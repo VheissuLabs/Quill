@@ -51,7 +51,7 @@ class ProjectController extends Controller
             ->map(fn (Feature $feature) => FeatureSummary::fromFeature($feature, withIssue: $isMember));
 
         return Inertia::render('portal/Project', [
-            'organization' => ['name' => $organization->name, 'slug' => $organization->slug],
+            'organization' => ['name' => $organization->name, 'slug' => $organization->slug, 'logoUrl' => $organization->logoUrl()],
             'project' => [
                 'name' => $project->name,
                 'slug' => $project->slug,
