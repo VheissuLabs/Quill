@@ -17,6 +17,7 @@
         "laravel/reverb": "^1.11",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
+        "league/flysystem-aws-s3-v3": "^3.35",
         "spatie/laravel-activitylog": "^5.1",
         "spatie/laravel-permission": "^8.3"
     },
@@ -75,7 +76,9 @@
             "phpstan analyse"
         ],
         "ide-helper": [
-            "@php artisan ide-helper:models -M -R --no-interaction"
+            "@php artisan ide-helper:models -M -R --no-interaction",
+            "perl -0pi -e 's{/\\*\\*\\n \\* (\\@mixin IdeHelper\\w+)\\n \\*/}{/** $1 */}g' app/Models/*.php",
+            "pint app/Models --quiet"
         ],
         "test": [
             "@php artisan config:clear --ansi",
