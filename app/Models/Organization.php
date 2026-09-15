@@ -101,7 +101,7 @@ class Organization extends Model
     /**
      * Get module settings for shared Inertia data and organization settings.
      *
-     * @return array{featureVoting: array{enabled: bool, capabilities: array{boards: bool, voting: bool}}, development: array{enabled: bool, capabilities: array{issues: bool, sprints: bool, workflow: bool}}, teams: array{enabled: bool, capabilities: array<string, bool>}}
+     * @return array<string, array{enabled: bool, capabilities: array<string, bool>}>
      */
     public function moduleSettings(): array
     {
@@ -150,6 +150,13 @@ class Organization extends Model
         DB::transaction(fn () => $this->teams()->get()->each(fn (Team $team) => $team->mergeInto($this)));
     }
 
+    /**
+     * Persist the complete module and capability settings submitted by an owner.
+     *
+     * Switching a module back on re-enables every capability inside it.
+     *
+     * @param  array<string, bool>  $settings
+     */
     public function updateModuleSettings(array $settings): void
     {
         $now = now();
@@ -198,7 +205,7 @@ class Organization extends Model
             ? $this->capabilitySettings->first(fn (OrganizationModuleSetting $setting) => $setting->module === $module && $setting->capability === $capability)
             : $this->capabilitySettings()->where('module', $module)->where('capability', $capability)->first();
 
-        return $setting?->enabled ?? true;
+        return $setting === null || $setting->enabled;
     }
 
     /**

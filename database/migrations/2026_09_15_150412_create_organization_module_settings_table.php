@@ -121,10 +121,16 @@ return new class extends Migration
                 ->get()
                 ->keyBy(fn (object $setting): string => $setting->module.':'.$setting->capability);
 
+            $enabled = function (string $key) use ($settings): bool {
+                $setting = $settings->get($key);
+
+                return $setting === null || (bool) $setting->enabled;
+            };
+
             DB::table('organizations')->where('id', $organization->id)->update([
-                'feature_voting_enabled' => (bool) ($settings->get('feature_voting:')?->enabled ?? true),
-                'issues_enabled' => (bool) ($settings->get('development:issues')?->enabled ?? true),
-                'sprints_enabled' => (bool) ($settings->get('development:sprints')?->enabled ?? true),
+                'feature_voting_enabled' => $enabled('feature_voting:'),
+                'issues_enabled' => $enabled('development:issues'),
+                'sprints_enabled' => $enabled('development:sprints'),
             ]);
         });
 

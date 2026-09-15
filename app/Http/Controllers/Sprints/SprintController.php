@@ -10,6 +10,7 @@ use App\Models\BoardColumn;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Sprint;
+use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;

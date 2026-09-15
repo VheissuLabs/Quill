@@ -98,7 +98,7 @@ class IssueSeeder extends Seeder
 
         $issue->planInto($sprint);
 
-        $column = $sprint->team->columns()->where('status', IssueStatus::InProgress)->inRandomOrder()->first();
+        $column = $sprint->owner->columns()->where('status', IssueStatus::InProgress)->inRandomOrder()->first();
 
         if ($column) {
             $issue->moveToColumn($column);
@@ -117,7 +117,7 @@ class IssueSeeder extends Seeder
         }
 
         $issue->planInto($sprint);
-        $issue->moveToColumn($sprint->team->columns()->where('status', IssueStatus::Done)->firstOrFail());
+        $issue->moveToColumn($sprint->owner->columns()->where('status', IssueStatus::Done)->firstOrFail());
     }
 
     /**
