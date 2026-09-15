@@ -49,31 +49,19 @@ class Issue extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get the project the issue belongs to.
-     *
-     * @return BelongsTo<Project, $this>
-     */
+    /** @return BelongsTo<Project, $this> */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    /**
-     * Get the team responsible for the issue.
-     *
-     * @return BelongsTo<Team, $this>
-     */
+    /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
     }
 
-    /**
-     * Get the sprint the issue is planned into.
-     *
-     * @return BelongsTo<Sprint, $this>
-     */
+    /** @return BelongsTo<Sprint, $this> */
     public function sprint(): BelongsTo
     {
         return $this->belongsTo(Sprint::class);

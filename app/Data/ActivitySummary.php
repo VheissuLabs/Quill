@@ -26,9 +26,7 @@ use Spatie\Permission\Models\Role;
  */
 readonly class ActivitySummary
 {
-    /**
-     * @param  array<int, array{field: string, from: string|null, to: string|null}>  $changes
-     */
+    /** @param  array<int, array{field: string, from: string|null, to: string|null}>  $changes */
     public function __construct(
         public int $id,
         public string $event,

@@ -17,11 +17,7 @@ use Spatie\Permission\Models\Role;
 
 trait HasOrganizations
 {
-    /**
-     * Get all of the organizations the user belongs to.
-     *
-     * @return BelongsToMany<Organization, $this>
-     */
+    /** @return BelongsToMany<Organization, $this> */
     public function organizations(): BelongsToMany
     {
         return $this->belongsToMany(Organization::class, 'organization_members', 'user_id', 'organization_id')
@@ -52,11 +48,7 @@ trait HasOrganizations
             ->withPivot('organization_id');
     }
 
-    /**
-     * Get the user's current organization.
-     *
-     * @return BelongsTo<Organization, $this>
-     */
+    /** @return BelongsTo<Organization, $this> */
     public function currentOrganization(): BelongsTo
     {
         return $this->belongsTo(Organization::class, 'current_organization_id');
@@ -121,11 +113,7 @@ trait HasOrganizations
             ->pluck('model_has_roles.organization_id');
     }
 
-    /**
-     * Get the user's organizations as a collection of UserOrganization objects.
-     *
-     * @return Collection<int, UserOrganization>
-     */
+    /** @return Collection<int, UserOrganization> */
     public function toUserOrganizations(bool $includeCurrent = false): Collection
     {
         $this->loadMissing('organizationRoles');

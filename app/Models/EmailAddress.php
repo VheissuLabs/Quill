@@ -33,11 +33,7 @@ class EmailAddress extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get the user the address belongs to.
-     *
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

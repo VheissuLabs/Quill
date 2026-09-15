@@ -56,11 +56,7 @@ class User extends Authenticatable implements PasskeyUser
 
     protected $guarded = [];
 
-    /**
-     * Get the additional email addresses on the account.
-     *
-     * @return HasMany<EmailAddress, $this>
-     */
+    /** @return HasMany<EmailAddress, $this> */
     public function emailAddresses(): HasMany
     {
         return $this->hasMany(EmailAddress::class);
@@ -143,11 +139,7 @@ class User extends Authenticatable implements PasskeyUser
         return true;
     }
 
-    /**
-     * Get the teams (departments) the user belongs to.
-     *
-     * @return BelongsToMany<Team, $this>
-     */
+    /** @return BelongsToMany<Team, $this> */
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class, 'team_members')
@@ -164,11 +156,7 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(Feature::class);
     }
 
-    /**
-     * Get the issues assigned to the user.
-     *
-     * @return HasMany<Issue, $this>
-     */
+    /** @return HasMany<Issue, $this> */
     public function assignedIssues(): HasMany
     {
         return $this->hasMany(Issue::class, 'assignee_id');

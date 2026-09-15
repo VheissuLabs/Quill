@@ -61,11 +61,7 @@ class BoardColumn extends Model
         return $this->owner instanceof Team ? $this->owner->getKey() : null;
     }
 
-    /**
-     * Get the issues currently in the column.
-     *
-     * @return HasMany<Issue, $this>
-     */
+    /** @return HasMany<Issue, $this> */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);

@@ -12,9 +12,7 @@ use Illuminate\Validation\Rule;
  */
 class IssueRules
 {
-    /**
-     * @return array<string, array<int, mixed>>
-     */
+    /** @return array<string, array<int, mixed>> */
     public static function for(Organization $organization): array
     {
         return [

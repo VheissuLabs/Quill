@@ -43,21 +43,13 @@ class Project extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get the organization the project belongs to.
-     *
-     * @return BelongsTo<Organization, $this>
-     */
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    /**
-     * Get the client the project is for, if any.
-     *
-     * @return BelongsTo<Client, $this>
-     */
+    /** @return BelongsTo<Client, $this> */
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
@@ -84,11 +76,7 @@ class Project extends Model
         return $this->hasMany(Feature::class);
     }
 
-    /**
-     * Get the issues tracked on the project.
-     *
-     * @return HasMany<Issue, $this>
-     */
+    /** @return HasMany<Issue, $this> */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);

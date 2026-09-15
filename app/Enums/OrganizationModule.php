@@ -19,11 +19,7 @@ enum OrganizationModule: string
         };
     }
 
-    /**
-     * Get the capabilities that belong to this module.
-     *
-     * @return array<int, OrganizationCapability>
-     */
+    /** @return array<int, OrganizationCapability> */
     public function capabilities(): array
     {
         return match ($this) {

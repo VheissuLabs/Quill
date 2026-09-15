@@ -32,21 +32,13 @@ class Client extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get the organization the client belongs to.
-     *
-     * @return BelongsTo<Organization, $this>
-     */
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    /**
-     * Get the projects for the client.
-     *
-     * @return HasMany<Project, $this>
-     */
+    /** @return HasMany<Project, $this> */
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);

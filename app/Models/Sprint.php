@@ -99,11 +99,7 @@ class Sprint extends Model
         return parent::resolveChildRouteBinding($childType, $value, $field);
     }
 
-    /**
-     * Get the issues planned into the sprint.
-     *
-     * @return HasMany<Issue, $this>
-     */
+    /** @return HasMany<Issue, $this> */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);

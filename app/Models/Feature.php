@@ -66,11 +66,7 @@ class Feature extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    /**
-     * Get the votes for the feature.
-     *
-     * @return HasMany<Vote, $this>
-     */
+    /** @return HasMany<Vote, $this> */
     public function votes(): HasMany
     {
         return $this->hasMany(Vote::class);
@@ -115,11 +111,7 @@ class Feature extends Model
         $this->votes()->updateOrCreate(['user_id' => $user->id], ['direction' => $direction->weight()]);
     }
 
-    /**
-     * Get the comments on the feature.
-     *
-     * @return HasMany<Comment, $this>
-     */
+    /** @return HasMany<Comment, $this> */
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);

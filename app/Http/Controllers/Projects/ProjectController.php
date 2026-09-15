@@ -128,11 +128,7 @@ class ProjectController extends Controller
         $project->teams()->sync($project->isPublic() ? [] : $teamIds);
     }
 
-    /**
-     * Get the organization's clients as options for a select input.
-     *
-     * @return Collection<int, array{id: int, name: string}>
-     */
+    /** @return Collection<int, array{id: int, name: string}> */
     private function clientOptions(Organization $organization): Collection
     {
         return $organization->clients()

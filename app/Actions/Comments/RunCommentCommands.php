@@ -22,9 +22,7 @@ class RunCommentCommands
         //
     }
 
-    /**
-     * @return array{body: string, internal: bool, messages: array<int, string>}
-     */
+    /** @return array{body: string, internal: bool, messages: array<int, string>} */
     public function handle(Feature $feature, User $user, string $body): array
     {
         $remaining = [];

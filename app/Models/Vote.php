@@ -27,11 +27,7 @@ class Vote extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get the feature that was voted for.
-     *
-     * @return BelongsTo<Feature, $this>
-     */
+    /** @return BelongsTo<Feature, $this> */
     public function feature(): BelongsTo
     {
         return $this->belongsTo(Feature::class);

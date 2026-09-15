@@ -221,11 +221,7 @@ class Organization extends Model
         }
     }
 
-    /**
-     * Get the roles this organization defines.
-     *
-     * @return HasMany<Role, $this>
-     */
+    /** @return HasMany<Role, $this> */
     public function roles(): HasMany
     {
         return $this->hasMany(Role::class, config('permission.column_names.team_foreign_key'));
@@ -294,11 +290,7 @@ class Organization extends Model
         return $this->isOwner($actor) && $this->hasOtherOwner($owner);
     }
 
-    /**
-     * Get all members of this organization.
-     *
-     * @return BelongsToMany<User, $this, OrganizationMembership, 'pivot'>
-     */
+    /** @return BelongsToMany<User, $this, OrganizationMembership, 'pivot'> */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'organization_members', 'organization_id', 'user_id')
@@ -306,51 +298,31 @@ class Organization extends Model
             ->withTimestamps();
     }
 
-    /**
-     * Get all memberships for this organization.
-     *
-     * @return HasMany<OrganizationMembership, $this>
-     */
+    /** @return HasMany<OrganizationMembership, $this> */
     public function memberships(): HasMany
     {
         return $this->hasMany(OrganizationMembership::class);
     }
 
-    /**
-     * Get all invitations for this organization.
-     *
-     * @return HasMany<OrganizationInvitation, $this>
-     */
+    /** @return HasMany<OrganizationInvitation, $this> */
     public function invitations(): HasMany
     {
         return $this->hasMany(OrganizationInvitation::class);
     }
 
-    /**
-     * Get the teams (departments) of the organization.
-     *
-     * @return HasMany<Team, $this>
-     */
+    /** @return HasMany<Team, $this> */
     public function teams(): HasMany
     {
         return $this->hasMany(Team::class);
     }
 
-    /**
-     * Get the clients of the organization.
-     *
-     * @return HasMany<Client, $this>
-     */
+    /** @return HasMany<Client, $this> */
     public function clients(): HasMany
     {
         return $this->hasMany(Client::class);
     }
 
-    /**
-     * Get the projects of the organization.
-     *
-     * @return HasMany<Project, $this>
-     */
+    /** @return HasMany<Project, $this> */
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);

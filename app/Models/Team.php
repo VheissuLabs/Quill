@@ -45,21 +45,13 @@ class Team extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get the organization the team belongs to.
-     *
-     * @return BelongsTo<Organization, $this>
-     */
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    /**
-     * Get the members of the team.
-     *
-     * @return BelongsToMany<User, $this, TeamMembership, 'pivot'>
-     */
+    /** @return BelongsToMany<User, $this, TeamMembership, 'pivot'> */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'team_members')
@@ -150,11 +142,7 @@ class Team extends Model
         });
     }
 
-    /**
-     * Get the issues the team is working on.
-     *
-     * @return HasMany<Issue, $this>
-     */
+    /** @return HasMany<Issue, $this> */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);

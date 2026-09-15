@@ -19,11 +19,7 @@ class DeleteOrganizationRequest extends FormRequest
         return Gate::allows('delete', $this->route('current_organization'));
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         return [
@@ -31,11 +27,7 @@ class DeleteOrganizationRequest extends FormRequest
         ];
     }
 
-    /**
-     * Configure the validator instance.
-     *
-     * @return array<int, Closure(Validator): void>
-     */
+    /** @return array<int, Closure(Validator): void> */
     public function after(): array
     {
         return [

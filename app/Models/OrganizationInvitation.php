@@ -36,11 +36,7 @@ class OrganizationInvitation extends Model
 
     protected $guarded = [];
 
-    /**
-     * Get the organization that the invitation belongs to.
-     *
-     * @return BelongsTo<Organization, $this>
-     */
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);

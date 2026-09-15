@@ -47,21 +47,13 @@ enum IssueStatus: string
         };
     }
 
-    /**
-     * The statuses a board column can map to.
-     *
-     * @return array<int, self>
-     */
+    /** @return array<int, self> */
     public static function columnStatuses(): array
     {
         return [self::Todo, self::InProgress, self::Done];
     }
 
-    /**
-     * Get the statuses as options for a select input.
-     *
-     * @return array<array{value: string, label: string}>
-     */
+    /** @return array<array{value: string, label: string}> */
     public static function options(): array
     {
         return collect(self::cases())
