@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use App\Concerns\GeneratesOrganizationScopedSlugs;
+use App\Observers\OrganizationScopedSlugObserver;
 use Database\Factories\ClientFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,9 +15,10 @@ use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperClient */
 #[UseFactory(ClientFactory::class)]
+#[ObservedBy(OrganizationScopedSlugObserver::class)]
 class Client extends Model
 {
-    use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $guarded = [];
 

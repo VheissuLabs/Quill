@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
-use App\Concerns\GeneratesOrganizationScopedSlugs;
 use App\Enums\OrganizationPermission;
 use App\Enums\ProjectVisibility;
+use App\Observers\OrganizationScopedSlugObserver;
 use Database\Factories\ProjectFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,9 +25,10 @@ use Spatie\Activitylog\Support\LogOptions;
  * @mixin IdeHelperProject
  */
 #[UseFactory(ProjectFactory::class)]
+#[ObservedBy(OrganizationScopedSlugObserver::class)]
 class Project extends Model
 {
-    use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $guarded = [];
 

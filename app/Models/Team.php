@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\Concerns\GeneratesOrganizationScopedSlugs;
 use App\Concerns\RunsABoard;
 use App\Enums\IssueStatus;
+use App\Observers\OrganizationScopedSlugObserver;
 use App\Observers\TeamObserver;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -21,10 +21,10 @@ use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperTeam */
 #[UseFactory(TeamFactory::class)]
-#[ObservedBy(TeamObserver::class)]
+#[ObservedBy([TeamObserver::class, OrganizationScopedSlugObserver::class])]
 class Team extends Model
 {
-    use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity, RunsABoard;
+    use HasFactory, LogsActivity, RunsABoard;
 
     protected $guarded = [];
 
