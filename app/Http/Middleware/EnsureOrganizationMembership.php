@@ -9,11 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureOrganizationMembership
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  Closure(Request): (Response)  $next
-     */
+    /** @param  Closure(Request): (Response)  $next */
     public function handle(Request $request, Closure $next): Response
     {
         [$user, $organization] = [$request->user(), $this->organization($request)];
@@ -29,9 +25,6 @@ class EnsureOrganizationMembership
         return $next($request);
     }
 
-    /**
-     * Get the organization associated with the request.
-     */
     protected function organization(Request $request): ?Organization
     {
         $organization = $request->route('current_organization') ?? $request->route('organization');

@@ -12,11 +12,7 @@ class ProfileDeleteRequest extends FormRequest
 {
     use PasswordValidationRules;
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         return [
@@ -24,12 +20,7 @@ class ProfileDeleteRequest extends FormRequest
         ];
     }
 
-    /**
-     * Get the "after" validation callables. An organization always keeps an owner, so the last
-     * owner has to hand it over before the account can go.
-     *
-     * @return array<int, callable(Validator): void>
-     */
+    /** @return array<int, callable(Validator): void> */
     public function after(): array
     {
         return [

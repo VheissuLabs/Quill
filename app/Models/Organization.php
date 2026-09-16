@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
-use App\Concerns\GeneratesUniqueOrganizationSlugs;
+use App\Concerns\RunsABoard;
+use App\Enums\OrganizationCapability;
+use App\Enums\OrganizationModule;
 use App\Enums\OrganizationPermission;
 use App\Observers\OrganizationObserver;
 use Closure;
 use Database\Factories\OrganizationFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,68 +19,185 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-/**
- * The tenant. Members hold a role per organization, stored through spatie/laravel-permission
- * with the organization acting as the permission "team".
- *
- * @property int $id
- * @property string $name
- * @property string $slug
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property string|null $logo_path
- * @property Carbon|null $deleted_at
- * @property-read Collection<int, OrganizationInvitation> $invitations
- * @property-read Collection<int, OrganizationMembership> $memberships
- * @property-read Collection<int, User> $members
- * @property-read Collection<int, Team> $teams
- * @property-read Collection<int, Client> $clients
- * @property-read Collection<int, Project> $projects
- * @property-read Collection<int, Issue> $issues
- * @property-read Collection<int, Sprint> $sprints
- * @property-read Collection<int, Role> $roles
- */
-#[Fillable(['name', 'slug', 'logo_path'])]
+/** @mixin IdeHelperOrganization */
+#[UseFactory(OrganizationFactory::class)]
 #[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model
 {
-    /** @use HasFactory<OrganizationFactory> */
-    use GeneratesUniqueOrganizationSlugs, HasFactory, LogsActivity, SoftDeletes;
+    use HasFactory, LogsActivity, RunsABoard, SoftDeletes;
 
-    /**
-     * Create the locked owner role. It is the only role an organization starts with; every other
-     * role is defined by the organization itself. The flag, not the name, marks it as the owner
-     * role: it always holds every permission, cannot be renamed, deleted or edited, only owners
-     * can grant it, and the organization always keeps at least one member holding it.
-     */
+    protected $guarded = [];
+
+    public static function generateUniqueOrganizationSlug(string $name, ?int $excludeId = null): string
+    {
+        $defaultSlug = Str::slug($name);
+
+        $query = self::withTrashed()
+            ->where(function ($query) use ($defaultSlug) {
+                $query->where('slug', $defaultSlug)
+                    ->orWhere('slug', 'like', $defaultSlug.'-%');
+            });
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        $existingSlugs = $query->pluck('slug');
+
+        $maxSuffix = $existingSlugs
+            ->map(function (string $slug) use ($defaultSlug): ?int {
+                if ($slug === $defaultSlug) {
+                    return 0;
+                }
+
+                if (! preg_match('/^'.preg_quote($defaultSlug, '/').'-(\d+)$/', $slug, $matches)) {
+                    return null;
+                }
+
+                return (int) $matches[1];
+            })
+            ->filter(fn (?int $suffix) => $suffix !== null)
+            ->max() ?? 0;
+
+        return $existingSlugs->isEmpty()
+            ? $defaultSlug
+            : $defaultSlug.'-'.($maxSuffix + 1);
+    }
+
     public function createOwnerRole(): void
     {
-        $this->roles()->firstOrCreate(['is_owner' => true], ['name' => 'Owner', 'guard_name' => 'web'])
+        $this->roles()->firstOrCreate(['name' => 'Owner'], ['guard_name' => 'web'])
             ->syncPermissions(array_map(fn (OrganizationPermission $permission) => $permission->value, OrganizationPermission::cases()));
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
-    /**
-     * Public URL of the organization's logo, if one was uploaded.
-     */
     public function logoUrl(): ?string
     {
         return $this->logo_path ? Storage::url($this->logo_path) : null;
     }
 
-    /**
-     * Store a new logo (or none) and drop the previous file.
-     */
+    public function urlAfterSwitching(string $previous): string
+    {
+        $dashboard = route('dashboard', ['current_organization' => $this]);
+
+        try {
+            $route = Route::getRoutes()->match(Request::create($previous));
+        } catch (NotFoundHttpException|MethodNotAllowedHttpException) {
+            return $dashboard;
+        }
+
+        $parameters = $route->parameterNames();
+
+        if (! in_array('current_organization', $parameters, true)) {
+            return $previous;
+        }
+
+        if (count($parameters) > 1 || ! $route->getName()) {
+            return $dashboard;
+        }
+
+        $query = parse_url($previous, PHP_URL_QUERY);
+
+        return route($route->getName(), ['current_organization' => $this]).($query ? "?{$query}" : '');
+    }
+
+    public function isModuleEnabled(OrganizationModule $module): bool
+    {
+        return $this->settingEnabled($module->value, '');
+    }
+
+    public function canUse(OrganizationCapability $capability): bool
+    {
+        return $this->isModuleEnabled($capability->module())
+            && $this->settingEnabled($capability->module()->value, $capability->value);
+    }
+
+    /** @return array<string, array{enabled: bool, capabilities: array<string, bool>}> */
+    public function moduleSettings(): array
+    {
+        $this->loadMissing('capabilitySettings');
+
+        return collect(OrganizationModule::cases())
+            ->mapWithKeys(fn (OrganizationModule $module) => [
+                $module->key() => [
+                    'enabled' => $this->isModuleEnabled($module),
+                    'capabilities' => collect($module->capabilities())
+                        ->mapWithKeys(fn (OrganizationCapability $capability) => [
+                            $capability->value => $this->canUse($capability),
+                        ])
+                        ->all(),
+                ],
+            ])
+            ->all();
+    }
+
+    /** @return HasMany<OrganizationModuleSetting, $this> */
+    public function capabilitySettings(): HasMany
+    {
+        return $this->hasMany(OrganizationModuleSetting::class);
+    }
+
+    public function dissolveTeams(): void
+    {
+        DB::transaction(fn () => $this->teams()->get()->each(fn (Team $team) => $team->mergeInto($this)));
+    }
+
+    /** @param  array<string, bool>  $settings */
+    public function updateModuleSettings(array $settings): void
+    {
+        $now = now();
+
+        $this->capabilitySettings()->upsert(
+            collect(OrganizationModule::cases())
+                ->flatMap(function (OrganizationModule $module) use ($settings, $now) {
+                    $enabled = (bool) ($settings[$module->value.'_enabled'] ?? true);
+                    $justEnabled = $enabled && ! $this->isModuleEnabled($module);
+
+                    return collect($module->capabilities())
+                        ->map(fn (OrganizationCapability $capability) => [
+                            'capability' => $capability->value,
+                            'enabled' => $justEnabled || (bool) ($settings[$module->value.'_'.$capability->value.'_enabled'] ?? true),
+                        ])
+                        ->prepend(['capability' => '', 'enabled' => $enabled])
+                        ->map(fn (array $row) => [
+                            ...$row,
+                            'organization_id' => $this->id,
+                            'module' => $module->value,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                })
+                ->all(),
+            ['organization_id', 'module', 'capability'],
+            ['enabled', 'updated_at'],
+        );
+
+        $this->unsetRelation('capabilitySettings');
+    }
+
+    private function settingEnabled(string $module, string $capability): bool
+    {
+        $setting = $this->relationLoaded('capabilitySettings')
+            ? $this->capabilitySettings->first(fn (OrganizationModuleSetting $setting) => $setting->module === $module && $setting->capability === $capability)
+            : $this->capabilitySettings()->where('module', $module)->where('capability', $capability)->first();
+
+        return $setting === null || $setting->enabled;
+    }
+
     public function replaceLogo(?UploadedFile $logo): void
     {
         $previous = $this->logo_path;
@@ -91,87 +211,105 @@ class Organization extends Model
         }
     }
 
-    /**
-     * Get the roles this organization defines.
-     *
-     * @return HasMany<Role, $this>
-     */
+    /** @return HasMany<Role, $this> */
     public function roles(): HasMany
     {
         return $this->hasMany(Role::class, config('permission.column_names.team_foreign_key'));
     }
 
-    /**
-     * Get one of the organization's roles by name.
-     */
+    /** @return HasMany<Role, $this> */
+    public function rolesWithMembers(): HasMany
+    {
+        return $this->roles()
+            ->with(['permissions', 'users' => fn ($query) => $query->orderBy('name')])
+            ->withCount('users')
+            ->orderByRaw("CASE WHEN name = 'Owner' THEN 0 ELSE 1 END")
+            ->orderBy('name');
+    }
+
     public function role(string $name): ?Role
     {
         return $this->roles()->where('name', $name)->first();
     }
 
-    /**
-     * Get the locked owner role.
-     */
     public function ownerRole(): Role
     {
-        return $this->roles()->where('is_owner', true)->firstOrFail();
+        return $this->roles()->where('name', 'Owner')->firstOrFail();
     }
 
-    /**
-     * Get the roles that can be granted to members: every role except the locked owner role.
-     *
-     * @return Collection<int, Role>
-     */
+    public function isOwnerRole(Role $role): bool
+    {
+        return $role->name === 'Owner';
+    }
+
+    /** @return Collection<int, Role> */
     public function assignableRoles(): Collection
     {
-        return $this->roles()->where('is_owner', false)->orderBy('name')->get();
+        return $this->roles()->where('name', '!=', 'Owner')->orderBy('name')->get();
     }
 
-    /**
-     * Determine if the user holds the locked owner role in this organization.
-     */
+    /** @return Collection<int, Role> */
+    public function rolesVisibleTo(User $user): Collection
+    {
+        return $this->roles()
+            ->when(! $this->isOwner($user), fn ($query) => $query->where('name', '!=', 'Owner'))
+            ->orderByRaw("CASE WHEN name = 'Owner' THEN 0 ELSE 1 END")
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function renameTo(string $name): self
+    {
+        return DB::transaction(function () use ($name) {
+            $organization = self::whereKey($this->id)->lockForUpdate()->firstOrFail();
+
+            $organization->update(['name' => $name]);
+
+            return $organization;
+        });
+    }
+
+    public function deleteWith(User $actor): void
+    {
+        DB::transaction(function () use ($actor) {
+            User::where('current_organization_id', $this->id)
+                ->where('id', '!=', $actor->id)
+                ->each(fn (User $affected) => $affected->switchToFallbackOrganization($this));
+
+            $this->invitations()->delete();
+            $this->members->each(fn (User $member) => $this->removeMember($member));
+            $this->delete();
+        });
+    }
+
     public function isOwner(User $user): bool
     {
-        return (bool) $user->organizationRole($this)?->is_owner;
+        $role = $user->organizationRole($this);
+
+        return $role !== null && $this->isOwnerRole($role);
     }
 
-    /**
-     * Get the members who hold the owner role.
-     *
-     * @return Collection<int, User>
-     */
+    /** @return Collection<int, User> */
     public function owners(): Collection
     {
         return $this->members()
             ->whereHas('organizationRoles', fn ($query) => $query
-                ->where('is_owner', true)
+                ->where('name', 'Owner')
                 ->where('model_has_roles.organization_id', $this->id))
             ->get();
     }
 
-    /**
-     * Determine if the organization would still have an owner without the given user. Every
-     * organization keeps at least one owner, so the last one cannot leave, be removed or be demoted.
-     */
     public function hasOtherOwner(User $user): bool
     {
         return $this->owners()->contains(fn (User $owner) => $owner->isNot($user));
     }
 
-    /**
-     * Determine if the actor may change or end the owner's membership. Owners are peers: any
-     * owner may demote or remove another (or step down themselves), but never the last owner.
-     */
     public function ownerMayStepDown(User $actor, User $owner): bool
     {
         return $this->isOwner($actor) && $this->hasOtherOwner($owner);
     }
 
-    /**
-     * Get all members of this organization.
-     *
-     * @return BelongsToMany<User, $this, OrganizationMembership, 'pivot'>
-     */
+    /** @return BelongsToMany<User, $this, OrganizationMembership, 'pivot'> */
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'organization_members', 'organization_id', 'user_id')
@@ -179,80 +317,66 @@ class Organization extends Model
             ->withTimestamps();
     }
 
-    /**
-     * Get all memberships for this organization.
-     *
-     * @return HasMany<OrganizationMembership, $this>
-     */
+    /** @return HasMany<OrganizationMembership, $this> */
     public function memberships(): HasMany
     {
         return $this->hasMany(OrganizationMembership::class);
     }
 
-    /**
-     * Get all invitations for this organization.
-     *
-     * @return HasMany<OrganizationInvitation, $this>
-     */
+    /** @return HasMany<OrganizationInvitation, $this> */
     public function invitations(): HasMany
     {
         return $this->hasMany(OrganizationInvitation::class);
     }
 
-    /**
-     * Get the teams (departments) of the organization.
-     *
-     * @return HasMany<Team, $this>
-     */
+    /** @return HasMany<Team, $this> */
     public function teams(): HasMany
     {
         return $this->hasMany(Team::class);
     }
 
-    /**
-     * Get the clients of the organization.
-     *
-     * @return HasMany<Client, $this>
-     */
+    /** @return HasMany<Client, $this> */
     public function clients(): HasMany
     {
         return $this->hasMany(Client::class);
     }
 
-    /**
-     * Get the projects of the organization.
-     *
-     * @return HasMany<Project, $this>
-     */
+    /** @return HasMany<Project, $this> */
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);
     }
 
-    /**
-     * Get the issues across all of the organization's projects.
-     *
-     * @return HasManyThrough<Issue, Project, $this>
-     */
+    /** @return HasManyThrough<Issue, Project, $this> */
     public function issues(): HasManyThrough
     {
         return $this->hasManyThrough(Issue::class, Project::class);
     }
 
     /**
-     * Get the sprints across all of the organization's teams.
-     *
-     * @return HasManyThrough<Sprint, Team, $this>
+     * @param  string  $childType
+     * @param  mixed  $value
+     * @param  string|null  $field
      */
-    public function sprints(): HasManyThrough
+    public function resolveChildRouteBinding($childType, $value, $field): ?Model
     {
-        return $this->hasManyThrough(Sprint::class, Team::class);
+        if ($childType === 'sprint') {
+            return $this->allSprints()->where($field ?? (new Sprint)->getRouteKeyName(), $value)->first();
+        }
+
+        return parent::resolveChildRouteBinding($childType, $value, $field);
     }
 
-    /**
-     * Add the user to the organization with the given role, one of this organization's roles
-     * or its name.
-     */
+    /** @return Builder<Sprint> */
+    public function allSprints(): Builder
+    {
+        return Sprint::query()->where(fn (Builder $query) => $query
+            ->whereMorphedTo('owner', $this)
+            ->orWhere(fn (Builder $query) => $query
+                ->where('owner_type', (new Team)->getMorphClass())
+                ->whereIn('owner_id', $this->teams()->select('id'))));
+    }
+
     public function addMember(User $user, Role|string $role): void
     {
         DB::transaction(function () use ($user, $role) {
@@ -262,9 +386,6 @@ class Organization extends Model
         });
     }
 
-    /**
-     * Replace the user's role within the organization.
-     */
     public function changeMemberRole(User $user, Role|string $role): void
     {
         $role = $this->resolveRole($role);
@@ -274,9 +395,6 @@ class Organization extends Model
         $user->unsetRelation('organizationRoles');
     }
 
-    /**
-     * Turn a role name into one of this organization's roles, refusing roles of other organizations.
-     */
     protected function resolveRole(Role|string $role): Role
     {
         if (is_string($role)) {
@@ -288,9 +406,6 @@ class Organization extends Model
         return $role;
     }
 
-    /**
-     * Remove the user, and the role they held, from the organization.
-     */
     public function removeMember(User $user): void
     {
         DB::transaction(function () use ($user) {
@@ -302,9 +417,6 @@ class Organization extends Model
         $user->unsetRelation('organizationRoles');
     }
 
-    /**
-     * Run the callback with this organization as the permission team context.
-     */
     protected function asPermissionsTeam(Closure $callback): mixed
     {
         $previousTeamId = getPermissionsTeamId();
@@ -318,17 +430,11 @@ class Organization extends Model
         }
     }
 
-    /**
-     * Get the route key for the model.
-     */
     public function getRouteKeyName(): string
     {
         return 'slug';
     }
 
-    /**
-     * Log renames and slug changes.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

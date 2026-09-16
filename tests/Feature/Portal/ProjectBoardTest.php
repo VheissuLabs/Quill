@@ -26,6 +26,17 @@ test('public boards can be viewed by guests', function () {
         );
 });
 
+test('public boards cannot be viewed when feature voting is disabled', function () {
+    $project = Project::factory()->public()->create();
+    $project->organization->updateModuleSettings([
+        'feature_voting_enabled' => false,
+        'feature_voting_boards_enabled' => true,
+    ]);
+
+    $this->get(route('portal.projects.show', [$project->organization, $project]))
+        ->assertForbidden();
+});
+
 test('private boards redirect guests to login', function () {
     $project = Project::factory()->create();
 

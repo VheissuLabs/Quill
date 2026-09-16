@@ -10,9 +10,6 @@ use Illuminate\Database\Migrations\Migration;
  */
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         activity()->disableLogging();
@@ -31,9 +28,6 @@ return new class extends Migration
         activity()->enableLogging();
     }
 
-    /**
-     * Reverse the migrations. The organization and address are kept on purpose.
-     */
     public function down(): void
     {
         //

@@ -6,16 +6,10 @@ use App\Models\EmailAddress;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<EmailAddress>
- */
+/** @extends Factory<EmailAddress> */
 class EmailAddressFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -25,9 +19,6 @@ class EmailAddressFactory extends Factory
         ];
     }
 
-    /**
-     * Indicate that the address has been verified.
-     */
     public function verified(): static
     {
         return $this->state(fn (array $attributes) => [

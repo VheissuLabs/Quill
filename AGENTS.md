@@ -10,7 +10,6 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application running on PHP 8.5. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
 
 Before relying on a package's API, confirm its installed version:
-
 - PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
 - JS packages: check `package.json` for the installed versions.
 
@@ -86,7 +85,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 - Execute PHP in app context for debugging and testing code. Do not create models without user approval, prefer tests with factories instead. Prefer existing Artisan commands over custom tinker code.
 - Always use single quotes to prevent shell expansion: `php artisan tinker --execute 'Your::code();'`
-    - Double quotes for PHP strings inside: `php artisan tinker --execute 'User::where("active", true)->count();'`
+  - Double quotes for PHP strings inside: `php artisan tinker --execute 'User::where("active", true)->count();'`
 
 === php rules ===
 
@@ -203,7 +202,26 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 # Inertia + Vue
 
 Vue components must have a single root element.
-
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
 </laravel-boost-guidelines>
+
+# Project overrides
+
+These take precedence over the Boost guidelines above.
+
+## Comments
+
+Do not write comments. This specifically overrides "Prefer PHPDoc blocks over inline
+comments" — the answer is neither a docblock nor an inline comment, it is no comment.
+
+Allowed annotations are only the ones a tool consumes: PHPStan generics and array
+shapes, `@mixin`, `@var` where inference fails, `@deprecated`. Flat, one line.
+Everything else — prose docblocks, section banners, commented-out code — is removed
+on sight. This codebase is actively deleting comments; do not add to the pile.
+
+## Controllers
+
+Controllers contain public actions only. No private or protected methods. Array
+shaping belongs in `app/Http/Resources`, queries belong in model scopes, state
+changes belong on the model.

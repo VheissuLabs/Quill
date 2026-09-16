@@ -9,11 +9,7 @@ use Illuminate\Validation\Rule;
 
 class UpdateBoardColumnOrderRequest extends FormRequest
 {
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         $team = $this->route('team');
@@ -22,7 +18,7 @@ class UpdateBoardColumnOrderRequest extends FormRequest
 
         return [
             'column_ids' => ['required', 'array', 'size:'.$team->columns()->count()],
-            'column_ids.*' => ['integer', 'distinct', Rule::exists('board_columns', 'id')->where('team_id', $team->id)],
+            'column_ids.*' => ['integer', 'distinct', Rule::exists('board_columns', 'id')->where('owner_type', $team->getMorphClass())->where('owner_id', $team->getKey())],
         ];
     }
 }

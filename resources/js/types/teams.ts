@@ -11,6 +11,11 @@ export type Team = {
     slug: string;
 };
 
+export type TeamMergeTarget = {
+    id: number;
+    name: string;
+};
+
 export type TeamMember = {
     id: number;
     name: string;

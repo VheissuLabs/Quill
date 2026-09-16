@@ -3,50 +3,40 @@
 namespace App\Http\Controllers\Organizations;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Organizations\DeleteOrganizationMemberRequest;
 use App\Http\Requests\Organizations\UpdateOrganizationMemberRequest;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 
 class OrganizationMemberController extends Controller
 {
-    /**
-     * Update the specified organization member's role.
-     */
-    public function update(UpdateOrganizationMemberRequest $request, Organization $organization, User $user): RedirectResponse
+    public function update(UpdateOrganizationMemberRequest $request, Organization $currentOrganization, User $user): RedirectResponse
     {
-        $membership = $organization->memberships()->where('user_id', $user->id)->firstOrFail();
+        $membership = $currentOrganization->memberships()->where('user_id', $user->id)->firstOrFail();
         $role = Role::findOrFail($request->integer('role_id'));
 
-        Gate::authorize('update', [$membership, $role]);
-
-        $organization->changeMemberRole($user, $role);
+        $currentOrganization->changeMemberRole($user, $role);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member role updated.')]);
 
         return back();
     }
 
-    /**
-     * Remove the specified organization member.
-     */
-    public function destroy(Organization $organization, User $user): RedirectResponse
+    public function destroy(DeleteOrganizationMemberRequest $request, Organization $currentOrganization, User $user): RedirectResponse
     {
-        $membership = $organization->memberships()->where('user_id', $user->id)->firstOrFail();
+        $membership = $currentOrganization->memberships()->where('user_id', $user->id)->firstOrFail();
 
-        Gate::authorize('delete', $membership);
+        $currentOrganization->removeMember($user);
 
-        $organization->removeMember($user);
-
-        if ($user->isCurrentOrganization($organization)) {
-            $user->switchToFallbackOrganization($organization);
+        if ($user->isCurrentOrganization($currentOrganization)) {
+            $user->switchToFallbackOrganization($currentOrganization);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member removed.')]);
 
-        return to_route('organizations.edit', ['organization' => $organization->slug]);
+        return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
     }
 }

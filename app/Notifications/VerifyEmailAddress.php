@@ -13,27 +13,17 @@ class VerifyEmailAddress extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new notification instance.
-     */
     public function __construct(public EmailAddress $emailAddress)
     {
         //
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
+    /** @return array<int, string> */
     public function via(object $notifiable): array
     {
         return ['mail'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
@@ -48,18 +38,12 @@ class VerifyEmailAddress extends Notification implements ShouldQueue
             ->line(__('If you did not add this address, no further action is required.'));
     }
 
-    /**
-     * Get the signed verification URL for the address.
-     */
     protected function verificationUrl(): string
     {
         return URL::temporarySignedRoute(
             'email-addresses.verify',
             now()->addMinutes(60),
-            [
-                'emailAddress' => $this->emailAddress->id,
-                'hash' => sha1($this->emailAddress->email),
-            ],
+            ['emailAddress' => $this->emailAddress->id],
         );
     }
 }

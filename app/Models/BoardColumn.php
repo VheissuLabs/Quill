@@ -3,60 +3,52 @@
 namespace App\Models;
 
 use App\Enums\IssueStatus;
+use App\Observers\BoardColumnObserver;
 use Database\Factories\BoardColumnFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Support\LogOptions;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A column on a team's board. Its status is what an issue becomes when it is placed there.
+ * @property-read Organization|Team $owner
  *
- * @property int $id
- * @property int $team_id
- * @property string $name
- * @property IssueStatus $status
- * @property int $position
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read int|null $issues_count
- * @property-read Team $team
- * @property-read Collection<int, Issue> $issues
+ * @mixin IdeHelperBoardColumn
  */
-#[Fillable(['team_id', 'name', 'status', 'position'])]
+#[ObservedBy(BoardColumnObserver::class)]
+#[UseFactory(BoardColumnFactory::class)]
 class BoardColumn extends Model
 {
-    /** @use HasFactory<BoardColumnFactory> */
     use HasFactory, LogsActivity;
 
-    /**
-     * Get the team whose board the column is on.
-     *
-     * @return BelongsTo<Team, $this>
-     */
-    public function team(): BelongsTo
+    protected $guarded = [];
+
+    /** @return MorphTo<Model, $this> */
+    public function owner(): MorphTo
     {
-        return $this->belongsTo(Team::class);
+        return $this->morphTo();
     }
 
-    /**
-     * Get the issues currently in the column.
-     *
-     * @return HasMany<Issue, $this>
-     */
+    public function organization(): Organization
+    {
+        return $this->owner instanceof Team ? $this->owner->organization : $this->owner;
+    }
+
+    public function teamId(): ?int
+    {
+        return $this->owner instanceof Team ? $this->owner->getKey() : null;
+    }
+
+    /** @return HasMany<Issue, $this> */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);
     }
 
-    /**
-     * Record changes to a team's board columns.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -66,11 +58,7 @@ class BoardColumn extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

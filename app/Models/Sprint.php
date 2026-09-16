@@ -4,85 +4,98 @@ namespace App\Models;
 
 use App\Enums\IssueStatus;
 use App\Enums\SprintStatus;
+use App\Observers\SprintObserver;
 use Database\Factories\SprintFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Support\LogOptions;
-use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A time box in which a team commits to a set of issues.
- *
- * @property int $id
- * @property int $team_id
- * @property string $name
- * @property Carbon $starts_at
- * @property Carbon $ends_at
- * @property SprintStatus $status
- * @property Carbon|null $completed_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read int|null $issues_count
  * @property-read int|null $done_issues_count
  * @property-read int|float|string|null $issues_sum_points
- * @property-read Team $team
- * @property-read Collection<int, Issue> $issues
- * @property-read Collection<int, BoardColumn> $columns
+ * @property-read Organization|Team $owner
+ *
+ * @mixin IdeHelperSprint
  */
-#[Fillable(['team_id', 'name', 'starts_at', 'ends_at', 'status'])]
+#[UseFactory(SprintFactory::class)]
+#[ObservedBy(SprintObserver::class)]
 class Sprint extends Model
 {
-    /** @use HasFactory<SprintFactory> */
     use HasFactory, LogsActivity;
 
-    /**
-     * Get the team running the sprint.
-     *
-     * @return BelongsTo<Team, $this>
-     */
-    public function team(): BelongsTo
+    protected $guarded = [];
+
+    /** @return MorphTo<Model, $this> */
+    public function owner(): MorphTo
     {
-        return $this->belongsTo(Team::class);
+        return $this->morphTo();
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function onBoardFor(Builder $query, Organization $organization, ?Team $team): void
+    {
+        $query->when(
+            $team,
+            fn (Builder $query, Team $team) => $query->whereMorphedTo('owner', $team),
+            fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                ->whereMorphedTo('owner', $organization)
+                ->orWhere(fn (Builder $query) => $query
+                    ->where('owner_type', (new Team)->getMorphClass())
+                    ->whereIn('owner_id', $organization->teams()->select('id')))),
+        );
+    }
+
+    public function organization(): Organization
+    {
+        return $this->owner instanceof Team ? $this->owner->organization : $this->owner;
+    }
+
+    public function teamId(): ?int
+    {
+        return $this->owner instanceof Team ? $this->owner->getKey() : null;
+    }
+
+    /** @return Collection<int, BoardColumn> */
+    public function columns(): Collection
+    {
+        return $this->owner->columns;
     }
 
     /**
-     * Get the board columns of the sprint's team.
-     *
-     * @return HasManyThrough<BoardColumn, Team, $this>
+     * @param  string  $childType
+     * @param  mixed  $value
+     * @param  string|null  $field
      */
-    public function columns(): HasManyThrough
+    public function resolveChildRouteBinding($childType, $value, $field): ?Model
     {
-        return $this->hasManyThrough(BoardColumn::class, Team::class, 'id', 'team_id', 'team_id', 'id');
+        if ($childType === 'column') {
+            return $this->owner->columns()->where($field ?? (new BoardColumn)->getRouteKeyName(), $value)->first();
+        }
+
+        return parent::resolveChildRouteBinding($childType, $value, $field);
     }
 
-    /**
-     * Get the issues planned into the sprint.
-     *
-     * @return HasMany<Issue, $this>
-     */
+    /** @return HasMany<Issue, $this> */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);
     }
 
-    /**
-     * Start the sprint.
-     */
     public function start(): void
     {
         $this->update(['status' => SprintStatus::Active]);
     }
 
-    /**
-     * Complete the sprint and return unfinished issues to the backlog.
-     */
     public function complete(): void
     {
         DB::transaction(function () {
@@ -97,9 +110,6 @@ class Sprint extends Model
         });
     }
 
-    /**
-     * Record sprint changes, including who started and completed it.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -109,11 +119,7 @@ class Sprint extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

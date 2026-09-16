@@ -9,11 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SetOrganizationUrlDefaults
 {
-    /**
-     * Set the default URL parameters for organization-based routes.
-     *
-     * @param  Closure(Request): (Response)  $next
-     */
+    /** @param  Closure(Request): (Response)  $next */
     public function handle(Request $request, Closure $next): Response
     {
         if ($currentOrganization = $request->user()?->currentOrganization) {

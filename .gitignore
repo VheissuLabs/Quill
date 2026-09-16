@@ -27,3 +27,8 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# ide-helper output we do not use; _ide_helper_models.php is committed because
+# phpstan.neon scans it for the model properties.
+/_ide_helper.php
+/.phpstorm.meta.php

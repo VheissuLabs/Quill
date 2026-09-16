@@ -1,8 +1,6 @@
 <?php
 
 use App\Enums\IssueStatus;
-use App\Models\Issue;
-use App\Models\Team;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -10,10 +8,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations. Existing teams get the default columns and issues already in a sprint
-     * are placed in the column matching their status.
-     */
     public function up(): void
     {
         Schema::table('issues', function (Blueprint $table) {
@@ -23,19 +17,37 @@ return new class extends Migration
 
         DB::table('issues')->where('status', 'in_review')->update(['status' => IssueStatus::InProgress->value]);
 
-        Team::query()->doesntHave('columns')->each(fn (Team $team) => $team->createDefaultColumns());
+        // Written against the schema of the day: board columns hung off a team_id, and a later
+        // migration moves them to a polymorphic owner. Going through the models would read the
+        // shape they have now, not the shape the table has here.
+        $columnStatuses = array_map(fn (IssueStatus $status) => $status->value, IssueStatus::columnStatuses());
 
-        Issue::query()->whereNotNull('sprint_id')->with('sprint.team.columns')->each(function (Issue $issue) {
-            $column = $issue->sprint->team->columns->firstWhere('status', $issue->status)
-                ?? $issue->sprint->team->columns->first();
+        DB::table('teams')
+            ->whereNotIn('id', fn ($query) => $query->select('team_id')->from('board_columns'))
+            ->pluck('id')
+            ->each(function (int $teamId) use ($columnStatuses) {
+                foreach ($columnStatuses as $position => $status) {
+                    DB::table('board_columns')->insert([
+                        'team_id' => $teamId,
+                        'name' => IssueStatus::from($status)->label(),
+                        'status' => $status,
+                        'position' => $position,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            });
 
-            $issue->update(['board_column_id' => $column?->id]);
+        DB::table('issues')->whereNotNull('sprint_id')->orderBy('id')->each(function (object $issue) {
+            $teamId = DB::table('sprints')->where('id', $issue->sprint_id)->value('team_id');
+
+            $column = DB::table('board_columns')->where('team_id', $teamId)->where('status', $issue->status)->first()
+                ?? DB::table('board_columns')->where('team_id', $teamId)->orderBy('position')->first();
+
+            DB::table('issues')->where('id', $issue->id)->update(['board_column_id' => $column?->id]);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('issues', function (Blueprint $table) {

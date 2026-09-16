@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Enums;
+
+enum OrganizationCapability: string
+{
+    case Boards = 'boards';
+    case Voting = 'voting';
+    case Issues = 'issues';
+    case Sprints = 'sprints';
+    case Workflow = 'workflow';
+
+    public function module(): OrganizationModule
+    {
+        return match ($this) {
+            self::Boards, self::Voting => OrganizationModule::FeatureVoting,
+            self::Issues, self::Sprints, self::Workflow => OrganizationModule::Development,
+        };
+    }
+}

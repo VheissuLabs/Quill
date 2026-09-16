@@ -2,50 +2,31 @@
 
 namespace App\Http\Controllers\Teams;
 
-use App\Http\Controllers\Controller;
 use App\Enums\IssueStatus;
-use App\Http\Requests\Teams\SaveTeamRequest;
-use App\Models\BoardColumn;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Teams\DeleteTeamRequest;
+use App\Http\Requests\Teams\TeamRequest;
+use App\Http\Resources\BoardColumnResource;
+use App\Http\Resources\TeamListResource;
+use App\Http\Resources\TeamResource;
+use App\Http\Resources\UserContactResource;
 use App\Models\Organization;
 use App\Models\Team;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class TeamController extends Controller
 {
-    /**
-     * Display the organization's teams.
-     */
-    public function index(Request $request, Organization $currentOrganization): Response
+    public function index(Organization $currentOrganization): Response
     {
-        Gate::authorize('viewAny', [Team::class, $currentOrganization]);
-
         return Inertia::render('teams/Index', [
-            'teams' => $currentOrganization->teams()
-                ->withCount('members')
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Team $team) => [
-                    'id' => $team->id,
-                    'name' => $team->name,
-                    'slug' => $team->slug,
-                    'membersCount' => $team->members_count,
-                ]),
-            'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
+            'teams' => TeamListResource::collection($currentOrganization->teams()->withCount('members')->orderBy('name')->get()),
         ]);
     }
 
-    /**
-     * Store a newly created team.
-     */
-    public function store(SaveTeamRequest $request, Organization $currentOrganization): RedirectResponse
+    public function store(TeamRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        Gate::authorize('create', [Team::class, $currentOrganization]);
-
         $team = $currentOrganization->teams()->create($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Team created.')]);
@@ -53,59 +34,23 @@ class TeamController extends Controller
         return to_route('teams.edit', ['team' => $team->slug]);
     }
 
-    /**
-     * Show the team edit page.
-     */
-    public function edit(Request $request, Organization $currentOrganization, Team $team): Response
+    public function edit(Organization $currentOrganization, Team $team): Response
     {
-        Gate::authorize('view', $team);
-
-        $memberIds = $team->members()->pluck('users.id');
-
         return Inertia::render('teams/Edit', [
-            'team' => [
-                'id' => $team->id,
-                'name' => $team->name,
-                'slug' => $team->slug,
-            ],
-            'members' => $team->members()
-                ->orderBy('name')
-                ->get()
-                ->map(fn (User $member) => $this->memberSummary($member)),
-            'availableMembers' => $currentOrganization->members()
-                ->whereKeyNot($memberIds)
-                ->orderBy('name')
-                ->get()
-                ->map(fn (User $member) => $this->memberSummary($member)),
-            'columns' => $team->columns()->withCount('issues')->get()->map(fn (BoardColumn $column) => [
-                'id' => $column->id,
-                'name' => $column->name,
-                'status' => $column->status->value,
-                'issuesCount' => $column->issues_count,
-            ]),
+            'team' => TeamResource::make($team),
+            'members' => UserContactResource::collection($team->members()->orderBy('name')->get()),
+            'availableMembers' => UserContactResource::collection(
+                $currentOrganization->members()->whereKeyNot($team->members()->pluck('users.id'))->orderBy('name')->get()
+            ),
+            'columns' => BoardColumnResource::collection($team->columns()->withCount('issues')->get()),
             'columnStatuses' => collect(IssueStatus::columnStatuses())
                 ->map(fn (IssueStatus $status) => ['value' => $status->value, 'label' => $status->label()]),
-            'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
+            'otherTeams' => TeamResource::collection($currentOrganization->teams()->whereKeyNot($team->id)->orderBy('name')->get()),
         ]);
     }
 
-    /**
-     * Switch the user's current team.
-     */
-    public function switch(Request $request, Organization $currentOrganization, Team $team): RedirectResponse
+    public function update(TeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
-        abort_unless($request->user()->switchTeam($team), 403);
-
-        return back();
-    }
-
-    /**
-     * Update the specified team.
-     */
-    public function update(SaveTeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
-    {
-        Gate::authorize('update', $team);
-
         $team->update($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Team updated.')]);
@@ -113,32 +58,16 @@ class TeamController extends Controller
         return to_route('teams.edit', ['team' => $team->slug]);
     }
 
-    /**
-     * Delete the specified team.
-     */
-    public function destroy(Organization $currentOrganization, Team $team): RedirectResponse
+    public function destroy(DeleteTeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
-        Gate::authorize('delete', $team);
+        $target = $request->filled('target_team_id')
+            ? $currentOrganization->teams()->whereKey($request->integer('target_team_id'))->firstOrFail()
+            : $currentOrganization;
 
-        $team->delete();
+        $team->mergeInto($target);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted, its work moved to ":name".', ['name' => $target->name])]);
 
         return to_route('teams.index');
-    }
-
-    /**
-     * Get the attributes of a member shown on the team page.
-     *
-     * @return array{id: int, name: string, email: string, avatar: string|null}
-     */
-    private function memberSummary(User $member): array
-    {
-        return [
-            'id' => $member->id,
-            'name' => $member->name,
-            'email' => $member->email,
-            'avatar' => $member->avatar ?? null,
-        ];
     }
 }

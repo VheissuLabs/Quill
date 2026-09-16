@@ -3,47 +3,26 @@
 namespace App\Http\Controllers\Clients;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Clients\SaveClientRequest;
+use App\Http\Requests\Clients\ClientRequest;
+use App\Http\Resources\ClientResource;
+use App\Http\Resources\ProjectResource;
 use App\Models\Client;
 use App\Models\Organization;
-use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ClientController extends Controller
 {
-    /**
-     * Display the organization's clients.
-     */
-    public function index(Request $request, Organization $currentOrganization): Response
+    public function index(Organization $currentOrganization): Response
     {
-        Gate::authorize('viewAny', [Client::class, $currentOrganization]);
-
         return Inertia::render('clients/Index', [
-            'clients' => $currentOrganization->clients()
-                ->withCount('projects')
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Client $client) => [
-                    'id' => $client->id,
-                    'name' => $client->name,
-                    'slug' => $client->slug,
-                    'projectsCount' => $client->projects_count,
-                ]),
-            'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
+            'clients' => ClientResource::collection($currentOrganization->clients()->withCount('projects')->orderBy('name')->get()),
         ]);
     }
 
-    /**
-     * Store a newly created client.
-     */
-    public function store(SaveClientRequest $request, Organization $currentOrganization): RedirectResponse
+    public function store(ClientRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        Gate::authorize('create', [Client::class, $currentOrganization]);
-
         $currentOrganization->clients()->create($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client created.')]);
@@ -51,39 +30,16 @@ class ClientController extends Controller
         return to_route('clients.index');
     }
 
-    /**
-     * Show the client edit page.
-     */
-    public function edit(Request $request, Organization $currentOrganization, Client $client): Response
+    public function edit(Organization $currentOrganization, Client $client): Response
     {
-        Gate::authorize('view', $client);
-
         return Inertia::render('clients/Edit', [
-            'client' => [
-                'id' => $client->id,
-                'name' => $client->name,
-                'slug' => $client->slug,
-            ],
-            'projects' => $client->projects()
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Project $project) => [
-                    'id' => $project->id,
-                    'name' => $project->name,
-                    'slug' => $project->slug,
-                    'visibility' => $project->visibility->value,
-                ]),
-            'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
+            'client' => ClientResource::make($client),
+            'projects' => ProjectResource::collection($client->projects()->orderBy('name')->get()),
         ]);
     }
 
-    /**
-     * Update the specified client.
-     */
-    public function update(SaveClientRequest $request, Organization $currentOrganization, Client $client): RedirectResponse
+    public function update(ClientRequest $request, Organization $currentOrganization, Client $client): RedirectResponse
     {
-        Gate::authorize('update', $client);
-
         $client->update($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client updated.')]);
@@ -91,13 +47,8 @@ class ClientController extends Controller
         return to_route('clients.edit', ['client' => $client->slug]);
     }
 
-    /**
-     * Delete the specified client. Its projects are kept and detached from the client.
-     */
     public function destroy(Organization $currentOrganization, Client $client): RedirectResponse
     {
-        Gate::authorize('delete', $client);
-
         $client->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client deleted.')]);

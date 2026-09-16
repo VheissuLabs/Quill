@@ -9,7 +9,7 @@ use App\Models\Team;
 use Illuminate\Database\Seeder;
 
 /**
- * Teams start with Todo, In progress and Done. The first team in each organization adds an extra
+ * Boards start with Todo, In progress and Done. The first board in each organization adds an extra
  * in-progress column before Done, so custom boards and the status mapping are exercised.
  */
 class BoardColumnSeeder extends Seeder
@@ -17,22 +17,22 @@ class BoardColumnSeeder extends Seeder
     public function run(): void
     {
         Organization::all()->each(function (Organization $organization) {
-            $team = $organization->teams()->orderBy('id')->firstOrFail();
+            $owner = $organization->teams()->orderBy('id')->first() ?? $organization;
 
-            $this->insertBeforeDone($team, fake()->randomElement(['In review', 'QA', 'Blocked', 'Ready to ship']));
+            $this->insertBeforeDone($owner, fake()->randomElement(['In review', 'QA', 'Blocked', 'Ready to ship']));
         });
     }
 
-    protected function insertBeforeDone(Team $team, string $name): void
+    protected function insertBeforeDone(Organization|Team $owner, string $name): void
     {
-        $done = $team->columns()->where('status', IssueStatus::Done)->orderBy('position')->first();
+        $done = $owner->columns()->where('status', IssueStatus::Done)->orderBy('position')->first();
 
-        BoardColumn::factory()->for($team)->create([
+        BoardColumn::factory()->for($owner, 'owner')->create([
             'name' => $name,
-            'position' => $done ? $done->position : $team->columns()->count(),
+            'position' => $done ? $done->position : $owner->columns()->count(),
         ]);
 
-        $team->columns()->orderBy('position')->orderByDesc('id')->get()
+        $owner->columns()->orderBy('position')->orderByDesc('id')->get()
             ->each(fn (BoardColumn $column, int $position) => $column->update(['position' => $position]));
     }
 }

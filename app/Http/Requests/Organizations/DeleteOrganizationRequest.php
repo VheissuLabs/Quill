@@ -11,19 +11,12 @@ use Illuminate\Validation\Validator;
 
 class DeleteOrganizationRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return Gate::allows('delete', $this->route('organization'));
+        return Gate::allows('delete', $this->route('current_organization'));
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         return [
@@ -31,11 +24,7 @@ class DeleteOrganizationRequest extends FormRequest
         ];
     }
 
-    /**
-     * Configure the validator instance.
-     *
-     * @return array<int, Closure(Validator): void>
-     */
+    /** @return array<int, Closure(Validator): void> */
     public function after(): array
     {
         return [
@@ -47,12 +36,9 @@ class DeleteOrganizationRequest extends FormRequest
         ];
     }
 
-    /**
-     * Get the organization associated with the request.
-     */
     private function organization(): Organization
     {
-        $organization = $this->route('organization');
+        $organization = $this->route('current_organization');
 
         abort_if(! $organization instanceof Organization, 404);
 

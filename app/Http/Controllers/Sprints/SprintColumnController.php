@@ -10,19 +10,12 @@ use App\Models\Organization;
 use App\Models\Sprint;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 
 class SprintColumnController extends Controller
 {
-    /**
-     * Replace the contents of one board column with the given issues, in order. Issues that were
-     * not in the sprint yet are planned into it.
-     */
     public function update(UpdateSprintColumnRequest $request, Organization $currentOrganization, Sprint $sprint, BoardColumn $column): RedirectResponse
     {
-        Gate::authorize('view', $sprint);
-
-        abort_unless($column->team_id === $sprint->team_id, 404);
+        abort_unless($column->owner_type === $sprint->owner_type && $column->owner_id === $sprint->owner_id, 404);
 
         /** @var array<int, int> $issueIds */
         $issueIds = $request->validated('issue_ids');
@@ -32,8 +25,6 @@ class SprintColumnController extends Controller
 
             foreach (array_values($issueIds) as $position => $issueId) {
                 $issue = $issues[$issueId];
-
-                Gate::authorize('update', $issue);
 
                 if ($issue->sprint_id !== $sprint->id) {
                     $issue->planInto($sprint);

@@ -1,9 +1,18 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ChevronDown, ListTodo, Plus, Timer } from '@lucide/vue';
+import {
+    ChevronDown,
+    ListTodo,
+    MoreHorizontal,
+    Pencil,
+    Plus,
+    Timer,
+    Trash2,
+} from '@lucide/vue';
 import { useLocalStorage } from '@vueuse/core';
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import draggable from 'vuedraggable';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import CreateIssueModal from '@/components/CreateIssueModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
@@ -11,6 +20,13 @@ import IssueRow from '@/components/IssueRow.vue';
 import TeamActivityFeed from '@/components/TeamActivityFeed.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -21,7 +37,11 @@ import {
 import { formatDateRange } from '@/lib/dates';
 import { index, update } from '@/routes/issues';
 import { update as updateOrder } from '@/routes/issues/order';
-import { show as showSprint } from '@/routes/sprints';
+import {
+    destroy as destroySprint,
+    show as showSprint,
+    update as updateSprint,
+} from '@/routes/sprints';
 import type {
     IssueActivityEntry,
     IssueFilters,
@@ -101,6 +121,70 @@ const toggleSprint = (sprintId: number) => {
     collapsedSprintIds.value = collapsedSprints.value.has(sprintId)
         ? collapsedSprintIds.value.filter((id) => id !== sprintId)
         : [...collapsedSprintIds.value, sprintId];
+};
+
+const sprintToDelete = ref<IssueSprintOption | null>(null);
+const sprintBeingRenamed = ref<number | null>(null);
+const sprintName = ref('');
+const renameFocused = ref(false);
+
+const startRenaming = (sprint: IssueSprintOption) => {
+    if (!props.permissions.canManageSprints) {
+        return;
+    }
+
+    sprintName.value = sprint.name;
+    renameFocused.value = false;
+    sprintBeingRenamed.value = sprint.id;
+};
+
+/**
+ * Focus the field once it exists. Until it has focus a blur is something else letting go, not
+ * the user leaving the field, so it must not close the rename.
+ */
+const focusRename = (el: unknown) => {
+    const input = (el as { $el?: HTMLInputElement } | null)?.$el;
+
+    // Vue re-runs an inline ref on every patch; focus and select belong to the first one only.
+    if (!input || renameFocused.value) {
+        return;
+    }
+
+    void nextTick(() => {
+        input.focus();
+        input.select();
+        renameFocused.value = true;
+    });
+};
+
+/**
+ * The sprint form validates its dates too, so a rename sends them back unchanged.
+ */
+const saveSprintName = (sprint: IssueSprintOption) => {
+    if (!renameFocused.value) {
+        return;
+    }
+
+    const name = sprintName.value.trim();
+
+    sprintBeingRenamed.value = null;
+    renameFocused.value = false;
+
+    if (!name || name === sprint.name) {
+        return;
+    }
+
+    router.patch(
+        updateSprint([props.currentOrganization.slug, sprint.id]),
+        { name, starts_at: sprint.startsAt, ends_at: sprint.endsAt },
+        {
+            // Only the sprints change. Reloading the rest tears the lists down and rebuilds them,
+            // which moves the page under the user before the scroll is restored.
+            only: ['sprints'],
+            preserveScroll: true,
+            preserveState: true,
+        },
+    );
 };
 
 watch(
@@ -252,8 +336,8 @@ const totalPoints = computed(() =>
                     '2xl:grid-cols-[minmax(0,1fr)_400px]',
             ]"
         >
-            <div class="grid gap-8">
-                <section class="space-y-4">
+            <div class="grid min-w-0 gap-8">
+                <section class="min-w-0 space-y-4">
                     <div class="flex flex-wrap items-center gap-2">
                         <Select v-model="statusFilter">
                             <SelectTrigger
@@ -318,58 +402,51 @@ const totalPoints = computed(() =>
                         </span>
                     </div>
 
-                    <draggable
-                        :list="list"
-                        group="issues"
-                        item-key="id"
-                        :force-fallback="true"
-                        draggable="[data-issue-id]"
-                        data-backlog-list
-                        :class="[
-                            'divide-y rounded-xl border transition-colors',
-                            isHovered({ kind: 'backlog' }) &&
-                                'border-foreground ring-foreground/20 ring-2',
-                        ]"
-                        ghost-class="opacity-40"
-                        :animation="150"
-                        @start="onDragStart"
-                        @end="onDragEnd($event, null)"
-                        @change="onListChange"
-                    >
-                        <template #item="{ element: issue }">
-                            <div
-                                data-test="issue-row"
-                                :data-issue-id="issue.id"
-                                class="bg-card flex cursor-grab items-center px-4 py-3 first:rounded-t-xl last:rounded-b-xl active:cursor-grabbing"
-                            >
-                                <IssueRow
-                                    :organization="currentOrganization.slug"
-                                    :issue="issue"
-                                />
-                            </div>
-                        </template>
-                        <template #footer>
-                            <EmptyState
-                                v-if="list.length === 0"
-                                class="border-0"
-                                :icon="ListTodo"
-                                title="No issues here"
-                                description="Nothing matches these filters. Create an issue, or convert a feature request from one of your boards."
-                            >
-                                <CreateIssueModal
-                                    :organization="currentOrganization.slug"
-                                    :options="options"
+                    <div class="overflow-x-auto">
+                        <draggable
+                            :list="list"
+                            group="issues"
+                            item-key="id"
+                            :force-fallback="true"
+                            draggable="[data-issue-id]"
+                            data-backlog-list
+                            :class="[
+                                'min-w-max divide-y rounded-xl border transition-colors',
+                                isHovered({ kind: 'backlog' }) &&
+                                    'border-foreground ring-foreground/20 ring-2',
+                            ]"
+                            ghost-class="opacity-40"
+                            :animation="150"
+                            @start="onDragStart"
+                            @end="onDragEnd($event, null)"
+                            @change="onListChange"
+                        >
+                            <template #item="{ element: issue }">
+                                <div
+                                    data-test="issue-row"
+                                    :data-issue-id="issue.id"
+                                    class="bg-card flex cursor-grab items-center px-4 py-3 first:rounded-t-xl last:rounded-b-xl active:cursor-grabbing"
                                 >
-                                    <Button variant="outline"
-                                        ><Plus /> New issue</Button
-                                    >
-                                </CreateIssueModal>
-                            </EmptyState>
-                        </template>
-                    </draggable>
+                                    <IssueRow
+                                        :organization="currentOrganization.slug"
+                                        :issue="issue"
+                                    />
+                                </div>
+                            </template>
+                            <template #footer>
+                                <EmptyState
+                                    v-if="list.length === 0"
+                                    class="border-0"
+                                    :icon="ListTodo"
+                                    title="No issues here"
+                                    description="Nothing matches these filters. Create an issue, or convert a feature request from one of your boards."
+                                />
+                            </template>
+                        </draggable>
+                    </div>
                 </section>
 
-                <aside class="space-y-3">
+                <aside class="min-w-0 space-y-3">
                     <h2
                         class="text-muted-foreground px-1 text-xs font-medium tracking-wide uppercase"
                     >
@@ -390,7 +467,22 @@ const totalPoints = computed(() =>
                     >
                         <div class="flex items-start justify-between gap-2 p-4">
                             <div class="min-w-0">
+                                <Input
+                                    v-if="sprintBeingRenamed === sprint.id"
+                                    :ref="(el) => focusRename(el)"
+                                    v-model="sprintName"
+                                    class="h-7 text-sm font-medium"
+                                    :data-test="`sprint-rename-${sprint.id}`"
+                                    @keydown.enter.prevent="
+                                        saveSprintName(sprint)
+                                    "
+                                    @keydown.esc.prevent="
+                                        sprintBeingRenamed = null
+                                    "
+                                    @blur="saveSprintName(sprint)"
+                                />
                                 <Link
+                                    v-else
                                     :href="
                                         showSprint([
                                             currentOrganization.slug,
@@ -440,6 +532,40 @@ const totalPoints = computed(() =>
                                 >
                                     {{ sprint.statusLabel }}
                                 </Badge>
+                                <DropdownMenu
+                                    v-if="permissions.canManageSprints"
+                                >
+                                    <DropdownMenuTrigger as-child>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            :data-test="`sprint-menu-${sprint.id}`"
+                                            aria-label="Sprint actions"
+                                        >
+                                            <MoreHorizontal />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        @close-auto-focus="
+                                            (event) => event.preventDefault()
+                                        "
+                                    >
+                                        <DropdownMenuItem
+                                            class="cursor-pointer"
+                                            @click="startRenaming(sprint)"
+                                        >
+                                            <Pencil /> Rename
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            class="cursor-pointer"
+                                            variant="destructive"
+                                            @click="sprintToDelete = sprint"
+                                        >
+                                            <Trash2 /> Delete
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 <Button
                                     variant="ghost"
                                     size="icon-sm"
@@ -465,35 +591,40 @@ const totalPoints = computed(() =>
                             </span>
                         </div>
 
-                        <draggable
+                        <div
                             v-if="
                                 !collapsedSprints.has(sprint.id) &&
                                 sprint.issues.length > 0
                             "
-                            :list="sprintLists[sprint.id]"
-                            :group="`sprint-${sprint.id}`"
-                            :sort="false"
-                            item-key="id"
-                            :force-fallback="true"
-                            tag="ul"
-                            class="divide-y border-t"
-                            ghost-class="opacity-40"
-                            @start="onDragStart"
-                            @end="onDragEnd($event, sprint.id)"
+                            class="overflow-x-auto"
                         >
-                            <template #item="{ element: issue }">
-                                <li
-                                    :data-issue-id="issue.id"
-                                    class="flex cursor-grab items-center px-4 py-2.5 active:cursor-grabbing"
-                                >
-                                    <IssueRow
-                                        :organization="currentOrganization.slug"
-                                        :issue="issue"
-                                        :show-sprint="false"
-                                    />
-                                </li>
-                            </template>
-                        </draggable>
+                            <draggable
+                                :list="sprintLists[sprint.id]"
+                                :group="`sprint-${sprint.id}`"
+                                :sort="false"
+                                item-key="id"
+                                :force-fallback="true"
+                                tag="ul"
+                                class="min-w-max divide-y border-t"
+                                ghost-class="opacity-40"
+                                @start="onDragStart"
+                                @end="onDragEnd($event, sprint.id)"
+                            >
+                                <template #item="{ element: issue }">
+                                    <li
+                                        :data-issue-id="issue.id"
+                                        class="flex cursor-grab items-center px-4 py-2.5 active:cursor-grabbing"
+                                    >
+                                        <IssueRow
+                                            :organization="
+                                                currentOrganization.slug
+                                            "
+                                            :issue="issue"
+                                        />
+                                    </li>
+                                </template>
+                            </draggable>
+                        </div>
                         <p
                             v-else-if="!collapsedSprints.has(sprint.id)"
                             class="text-muted-foreground border-t px-4 py-3 text-xs"
@@ -529,4 +660,19 @@ const totalPoints = computed(() =>
             />
         </div>
     </div>
+
+    <ConfirmDeleteModal
+        :open="sprintToDelete !== null"
+        title="Delete sprint"
+        confirm-label="Delete sprint"
+        :href="
+            sprintToDelete
+                ? destroySprint([currentOrganization.slug, sprintToDelete.id])
+                : null
+        "
+        @update:open="sprintToDelete = null"
+    >
+        This will delete <strong>{{ sprintToDelete?.name }}</strong
+        >. Its issues return to the backlog.
+    </ConfirmDeleteModal>
 </template>

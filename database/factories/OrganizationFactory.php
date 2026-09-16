@@ -7,16 +7,10 @@ use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-/**
- * @extends Factory<Organization>
- */
+/** @extends Factory<Organization> */
 class OrganizationFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         $name = fake()->unique()->company();
@@ -27,10 +21,6 @@ class OrganizationFactory extends Factory
         ];
     }
 
-    /**
-     * Configure the model factory. Organizations only ship with the owner role, so the factory
-     * adds an Admin and a permission-less Member role as fixtures for tests to grant.
-     */
     public function configure(): static
     {
         return $this->afterCreating(function (Organization $organization) {
@@ -50,9 +40,6 @@ class OrganizationFactory extends Factory
         });
     }
 
-    /**
-     * Indicate that the organization has been deleted.
-     */
     public function trashed(): static
     {
         return $this->state(fn (array $attributes) => [

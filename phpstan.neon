@@ -2,6 +2,11 @@ includes:
     - vendor/larastan/larastan/extension.neon
     - vendor/nesbot/carbon/extension.neon
 
+rules:
+    - Tests\Rules\NoAuthorizationInControllersRule
+    - Tests\Rules\NoNewModelsRule
+    - Tests\Rules\UnsafeResourceCollectionRule
+
 parameters:
     paths:
         - app/
@@ -11,3 +16,15 @@ parameters:
         - routes/
 
     level: 7
+
+    # Model properties live in the generated mixins rather than in each model.
+    scanFiles:
+        - _ide_helper_models.php
+
+    ignoreErrors:
+        # The factory is named by #[UseFactory] on the model, so the generic on the
+        # trait would only say it again.
+        -
+            identifier: missingType.generics
+            message: '#uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory#'
+            path: app/Models

@@ -308,7 +308,7 @@ const currentSprint = computed(() =>
                             @update:model-value="changeStage(String($event))"
                         >
                             <SelectTrigger
-                                class="h-8 w-full"
+                                class="w-full"
                                 data-test="issue-status-select"
                             >
                                 <SelectValue />
@@ -339,7 +339,7 @@ const currentSprint = computed(() =>
                                 patch({ priority: String($event) })
                             "
                         >
-                            <SelectTrigger class="h-8 w-full">
+                            <SelectTrigger class="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -373,7 +373,7 @@ const currentSprint = computed(() =>
                             "
                         >
                             <SelectTrigger
-                                class="h-8 w-full"
+                                class="w-full"
                                 data-test="issue-points-select"
                             >
                                 <SelectValue placeholder="Estimate" />
@@ -411,7 +411,7 @@ const currentSprint = computed(() =>
                                 patch({ assignee_id: toId(String($event)) })
                             "
                         >
-                            <SelectTrigger class="h-8 w-full">
+                            <SelectTrigger class="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -445,7 +445,7 @@ const currentSprint = computed(() =>
                                 patch({ team_id: toId(String($event)) })
                             "
                         >
-                            <SelectTrigger class="h-8 w-full">
+                            <SelectTrigger class="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -478,7 +478,7 @@ const currentSprint = computed(() =>
                             "
                         >
                             <SelectTrigger
-                                class="h-8 w-full"
+                                class="w-full"
                                 data-test="issue-sprint-select"
                             >
                                 <SelectValue />

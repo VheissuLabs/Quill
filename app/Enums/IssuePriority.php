@@ -10,9 +10,6 @@ enum IssuePriority: string
     case High = 'high';
     case Urgent = 'urgent';
 
-    /**
-     * Get the display label for the priority.
-     */
     public function label(): string
     {
         return match ($this) {
@@ -24,11 +21,7 @@ enum IssuePriority: string
         };
     }
 
-    /**
-     * Get the priorities as options for a select input.
-     *
-     * @return array<array{value: string, label: string}>
-     */
+    /** @return array<array{value: string, label: string}> */
     public static function options(): array
     {
         return collect(self::cases())

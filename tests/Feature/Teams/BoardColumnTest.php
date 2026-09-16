@@ -72,7 +72,7 @@ test('changing a column status moves its issues to that status', function () {
     $organization->addMember($admin, 'Admin');
     $team = Team::factory()->for($organization)->create();
     $project = Project::factory()->for($organization)->create();
-    $sprint = Sprint::factory()->for($team)->active()->create();
+    $sprint = Sprint::factory()->for($team, 'owner')->active()->create();
     $column = $team->columns()->where('status', IssueStatus::InProgress)->firstOrFail();
     $issue = Issue::factory()->for($project)->for($sprint)->create();
     $issue->moveToColumn($column);
@@ -95,7 +95,7 @@ test('deleting a column moves its issues to the previous column and the last col
     $organization->addMember($admin, 'Admin');
     $team = Team::factory()->for($organization)->create();
     $project = Project::factory()->for($organization)->create();
-    $sprint = Sprint::factory()->for($team)->active()->create();
+    $sprint = Sprint::factory()->for($team, 'owner')->active()->create();
     [$todo, $inProgress, $done] = $team->columns()->get();
     $issue = Issue::factory()->for($project)->for($sprint)->create();
     $issue->moveToColumn($inProgress);

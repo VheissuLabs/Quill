@@ -13,20 +13,12 @@ use App\Models\User;
 use App\Notifications\MentionedInComment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class CommentController extends Controller
 {
-    /**
-     * Leave a comment on the feature, or reply to an existing thread. Lines starting with "/" are
-     * commands (see RunCommentCommands) and are executed rather than posted. Replies to an internal
-     * comment are internal too, and mentioned people are notified.
-     */
     public function store(StoreCommentRequest $request, Organization $organization, Project $project, Feature $feature, RunCommentCommands $commands): RedirectResponse
     {
-        Gate::authorize('comment', $feature);
-
         $parent = $request->filled('parent_id')
             ? $feature->comments()->whereKey($request->integer('parent_id'))->firstOrFail()
             : null;
@@ -34,10 +26,6 @@ class CommentController extends Controller
         $result = $commands->handle($feature, $request->user(), $request->validated('body'));
 
         $internal = $request->boolean('internal') || $result['internal'] || ($parent->is_internal ?? false);
-
-        if ($internal) {
-            Gate::authorize('commentInternally', $feature);
-        }
 
         if ($result['body'] !== '') {
             $comment = DB::transaction(function () use ($request, $feature, $parent, $internal, $result) {
@@ -65,13 +53,8 @@ class CommentController extends Controller
         return back();
     }
 
-    /**
-     * Delete the comment and, for a top-level comment, its replies.
-     */
     public function destroy(Organization $organization, Project $project, Feature $feature, Comment $comment): RedirectResponse
     {
-        Gate::authorize('delete', $comment);
-
         $comment->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Comment deleted.')]);

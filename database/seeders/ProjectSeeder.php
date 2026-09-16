@@ -18,8 +18,11 @@ class ProjectSeeder extends Seeder
         Organization::with(['teams', 'clients'])->get()->each(function (Organization $organization) {
             Project::factory()->for($organization)->public()->create();
 
-            Project::factory()->for($organization)->create()
-                ->teams()->sync([$organization->teams->first()->id]);
+            $restricted = Project::factory()->for($organization)->create();
+
+            if ($team = $organization->teams->first()) {
+                $restricted->teams()->sync([$team->id]);
+            }
 
             $organization->clients->each(
                 fn (Client $client) => Project::factory()->for($organization)->for($client)->create(),

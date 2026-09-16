@@ -7,11 +7,6 @@ use Illuminate\Support\Facades\URL;
 
 trait RedirectsToCurrentOrganization
 {
-    /**
-     * Get the path to redirect to within the user's current organization. Someone who belongs to
-     * no organization yet goes back to the public board they were reading, if any, and otherwise
-     * to the organizations settings page.
-     */
     protected function redirectPathForCurrentOrganization(Request $request, string $redirect): string
     {
         $user = $request->user();

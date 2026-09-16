@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { Eye, Pencil, Plus, Users } from '@lucide/vue';
+import { Eye, Pencil, Plus, Trash2, Users } from '@lucide/vue';
+import { ref } from 'vue';
+import DeleteTeamModal from '@/components/DeleteTeamModal.vue';
 import CreateTeamModal from '@/components/CreateTeamModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
@@ -24,7 +26,15 @@ type Props = {
     permissions: OrganizationPermissions;
 };
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+const deleteDialogOpen = ref(false);
+const teamToDelete = ref<TeamListItem | null>(null);
+
+const confirmDeleteTeam = (team: TeamListItem) => {
+    teamToDelete.value = team;
+    deleteDialogOpen.value = true;
+};
 
 defineOptions({
     layout: (props: { currentOrganization: Organization }) => ({
@@ -75,40 +85,58 @@ defineOptions({
                 </div>
 
                 <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger as-child>
-                            <Button
-                                data-test="team-edit-button"
-                                variant="ghost"
-                                size="sm"
-                                as-child
-                            >
-                                <Link
-                                    :href="
-                                        edit([
-                                            currentOrganization.slug,
-                                            team.slug,
-                                        ])
-                                    "
+                    <div class="flex items-center gap-2">
+                        <Tooltip>
+                            <TooltipTrigger as-child>
+                                <Button
+                                    data-test="team-edit-button"
+                                    variant="ghost"
+                                    size="sm"
+                                    as-child
                                 >
-                                    <Pencil
-                                        v-if="permissions.canManageTeams"
-                                        class="h-4 w-4"
-                                    />
-                                    <Eye v-else class="h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>
-                                {{
-                                    permissions.canManageTeams
-                                        ? 'Edit team'
-                                        : 'View team'
-                                }}
-                            </p>
-                        </TooltipContent>
-                    </Tooltip>
+                                    <Link
+                                        :href="
+                                            edit([
+                                                currentOrganization.slug,
+                                                team.slug,
+                                            ])
+                                        "
+                                    >
+                                        <Pencil
+                                            v-if="permissions.canManageTeams"
+                                            class="h-4 w-4"
+                                        />
+                                        <Eye v-else class="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>
+                                    {{
+                                        permissions.canManageTeams
+                                            ? 'Edit team'
+                                            : 'View team'
+                                    }}
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip v-if="permissions.canManageTeams">
+                            <TooltipTrigger as-child>
+                                <Button
+                                    data-test="team-delete-button"
+                                    variant="ghost"
+                                    size="sm"
+                                    @click="confirmDeleteTeam(team)"
+                                >
+                                    <Trash2 class="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Delete team</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
                 </TooltipProvider>
             </div>
 
@@ -131,4 +159,11 @@ defineOptions({
             </EmptyState>
         </div>
     </div>
+
+    <DeleteTeamModal
+        v-model:open="deleteDialogOpen"
+        :organization="props.currentOrganization"
+        :team="teamToDelete"
+        :other-teams="teams.filter((team) => team.id !== teamToDelete?.id)"
+    />
 </template>

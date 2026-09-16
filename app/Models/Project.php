@@ -2,115 +2,94 @@
 
 namespace App\Models;
 
-use App\Concerns\GeneratesOrganizationScopedSlugs;
 use App\Enums\OrganizationPermission;
 use App\Enums\ProjectVisibility;
+use App\Observers\OrganizationScopedSlugObserver;
 use Database\Factories\ProjectFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
-use Spatie\Activitylog\Support\LogOptions;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * @property int $id
- * @property int $organization_id
- * @property int|null $client_id
- * @property string $name
- * @property string $slug
- * @property string|null $description
- * @property ProjectVisibility $visibility
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read Organization $organization
- * @property-read Client|null $client
- * @property-read Collection<int, Team> $teams
- * @property-read Collection<int, Feature> $features
- * @property-read Collection<int, Issue> $issues
- * @property-read int|null $features_count
  * @property-read int|null $open_features_count
+ * @property-read Organization $organization
+ *
+ * @mixin IdeHelperProject
  */
-#[Fillable(['organization_id', 'client_id', 'name', 'slug', 'description', 'visibility'])]
+#[UseFactory(ProjectFactory::class)]
+#[ObservedBy(OrganizationScopedSlugObserver::class)]
 class Project extends Model
 {
-    /** @use HasFactory<ProjectFactory> */
-    use GeneratesOrganizationScopedSlugs, HasFactory, LogsActivity;
+    use HasFactory, LogsActivity;
 
-    /**
-     * Get the organization the project belongs to.
-     *
-     * @return BelongsTo<Organization, $this>
-     */
+    protected $guarded = [];
+
+    /** @return BelongsTo<Organization, $this> */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
-    /**
-     * Get the client the project is for, if any.
-     *
-     * @return BelongsTo<Client, $this>
-     */
+    /** @return BelongsTo<Client, $this> */
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
     }
 
-    /**
-     * Get the teams a private project is restricted to. An empty set means every organization member.
-     *
-     * @return BelongsToMany<Team, $this>
-     */
+    /** @return BelongsToMany<Team, $this> */
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class, 'project_teams')
             ->withTimestamps();
     }
 
-    /**
-     * Get the feature requests for the project.
-     *
-     * @return HasMany<Feature, $this>
-     */
+    /** @return HasMany<Feature, $this> */
     public function features(): HasMany
     {
         return $this->hasMany(Feature::class);
     }
 
-    /**
-     * Get the issues tracked on the project.
-     *
-     * @return HasMany<Issue, $this>
-     */
+    /** @return HasMany<Issue, $this> */
     public function issues(): HasMany
     {
         return $this->hasMany(Issue::class);
     }
 
-    /**
-     * Determine if the project is visible to anyone.
-     */
     public function isPublic(): bool
     {
         return $this->visibility === ProjectVisibility::Public;
     }
 
+    /** @param  array<int, int>  $teamIds */
     /**
-     * Scope the query to projects the given user may view.
-     *
-     * Public projects are visible to everyone. Private projects are visible to organization
-     * members who can manage projects, and otherwise only to members of the restricted teams
-     * (or any organization member when no teams are attached).
-     *
-     * @param  Builder<$this>  $query
+     * @param  array<string, mixed>  $attributes
+     * @param  array<int, int>  $teamIds
      */
+    public function saveWithTeams(array $attributes, array $teamIds): void
+    {
+        DB::transaction(function () use ($attributes, $teamIds) {
+            $this->fill($attributes)->save();
+
+            $this->syncTeams($teamIds);
+        });
+    }
+
+    /** @param  array<int, int>  $teamIds */
+    public function syncTeams(array $teamIds): void
+    {
+        $this->teams()->sync($this->isPublic() ? [] : $teamIds);
+    }
+
+    /** @param  Builder<$this>  $query */
     #[Scope]
     protected function visibleTo(Builder $query, ?User $user): void
     {
@@ -133,9 +112,6 @@ class Project extends Model
         });
     }
 
-    /**
-     * Record project setting changes.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -145,11 +121,7 @@ class Project extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
@@ -157,9 +129,6 @@ class Project extends Model
         ];
     }
 
-    /**
-     * Get the route key for the model.
-     */
     public function getRouteKeyName(): string
     {
         return 'slug';

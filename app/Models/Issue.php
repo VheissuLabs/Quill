@@ -4,133 +4,141 @@ namespace App\Models;
 
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
+use App\Observers\IssueObserver;
 use Database\Factories\IssueFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-/**
- * A unit of work on a project, numbered per project and optionally born from a feature request.
- *
- * @property int $id
- * @property int $project_id
- * @property int|null $team_id
- * @property int|null $sprint_id
- * @property int|null $board_column_id
- * @property int|null $feature_id
- * @property int|null $assignee_id
- * @property int|null $created_by
- * @property int $number
- * @property string $title
- * @property string|null $description
- * @property IssueStatus $status
- * @property IssuePriority $priority
- * @property int|null $points
- * @property int $position
- * @property Carbon|null $completed_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read Project $project
- * @property-read Team|null $team
- * @property-read Sprint|null $sprint
- * @property-read BoardColumn|null $boardColumn
- * @property-read Feature|null $feature
- * @property-read User|null $assignee
- * @property-read User|null $creator
- */
-#[Fillable(['project_id', 'team_id', 'sprint_id', 'board_column_id', 'feature_id', 'assignee_id', 'created_by', 'number', 'title', 'description', 'status', 'priority', 'points', 'position'])]
+/** @mixin IdeHelperIssue */
+#[ObservedBy(IssueObserver::class)]
+#[UseFactory(IssueFactory::class)]
 class Issue extends Model
 {
-    /** @use HasFactory<IssueFactory> */
     use HasFactory, LogsActivity;
 
-    /**
-     * Get the project the issue belongs to.
-     *
-     * @return BelongsTo<Project, $this>
-     */
+    protected $guarded = [];
+
+    protected $attributes = ['priority' => IssuePriority::None->value];
+
+    /** @return BelongsTo<Project, $this> */
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    /**
-     * Get the team responsible for the issue.
-     *
-     * @return BelongsTo<Team, $this>
-     */
+    /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
     }
 
-    /**
-     * Get the sprint the issue is planned into.
-     *
-     * @return BelongsTo<Sprint, $this>
-     */
+    /** @return BelongsTo<Sprint, $this> */
     public function sprint(): BelongsTo
     {
         return $this->belongsTo(Sprint::class);
     }
 
-    /**
-     * Get the board column the issue sits in while planned.
-     *
-     * @return BelongsTo<BoardColumn, $this>
-     */
+    /** @return BelongsTo<BoardColumn, $this> */
     public function boardColumn(): BelongsTo
     {
         return $this->belongsTo(BoardColumn::class);
     }
 
-    /**
-     * Get the feature request the issue was converted from.
-     *
-     * @return BelongsTo<Feature, $this>
-     */
+    /** @return BelongsTo<Feature, $this> */
     public function feature(): BelongsTo
     {
         return $this->belongsTo(Feature::class);
     }
 
-    /**
-     * Get the user the issue is assigned to.
-     *
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignee_id');
     }
 
-    /**
-     * Get the user who created the issue.
-     *
-     * @return BelongsTo<User, $this>
-     */
+    /** @return BelongsTo<User, $this> */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function ownedBy(Builder $query, ?Team $team): void
+    {
+        $query->when($team, fn (Builder $query, Team $team) => $query
+            ->where(fn (Builder $query) => $query->where('team_id', $team->id)->orWhereNull('team_id')));
+    }
+
     /**
-     * Get the identifier shown in the UI, such as "GitDifferent #12".
+     * @param  Builder<$this>  $query
+     * @param  Collection<int, int>  $projectIds
+     * @param  array{status: string|null, project: string|null, assignee: string|null}  $filters
      */
+    #[Scope]
+    protected function onOrganizationBoard(Builder $query, Collection $projectIds, User $user, ?Team $team, array $filters): void
+    {
+        $query->whereIn('project_id', $projectIds)
+            ->with(['project', 'assignee', 'sprint', 'team', 'boardColumn'])
+            ->when($filters['status'], fn (Builder $query, string $status) => $query->where('status', $status))
+            ->when(! $filters['status'], fn (Builder $query) => $query->whereNotIn('status', [IssueStatus::Done, IssueStatus::Cancelled]))
+            ->when($filters['project'], fn (Builder $query, string $slug) => $query->whereHas('project', fn (Builder $query) => $query->where('slug', $slug)))
+            ->when($filters['assignee'] === 'me', fn (Builder $query) => $query->where('assignee_id', $user->id))
+            ->ownedBy($team)
+            ->whereNull('sprint_id')
+            ->orderBy('position')
+            ->orderByRaw("CASE priority WHEN 'urgent' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END DESC")
+            ->latest();
+    }
+
+    /**
+     * @param  Collection<int, int>  $projectIds
+     * @return EloquentCollection<int, Activity>
+     */
+    public static function recentActivity(Collection $projectIds, ?Team $team, int $limit = 20): EloquentCollection
+    {
+        return Activity::query()
+            ->where('log_name', 'issues')
+            ->where('subject_type', (new self)->getMorphClass())
+            ->whereIn('subject_id', self::whereIn('project_id', $projectIds)->ownedBy($team)->select('id'))
+            ->with(['causer', 'subject.project'])
+            ->latest('id')
+            ->limit($limit)
+            ->get();
+    }
+
     public function reference(): string
     {
         return "{$this->project->name} #{$this->number}";
     }
 
-    /**
-     * Plan the issue into a sprint (or back to the backlog). The issue takes the sprint's team,
-     * leaves the backlog when planned, and returns to it when unplanned unless already closed.
-     */
+    /** @param  array<string, mixed>  $changes */
+    public function applyChanges(array $changes): void
+    {
+        if (array_key_exists('sprint_id', $changes)) {
+            $this->planInto($changes['sprint_id'] ? Sprint::whereKey($changes['sprint_id'])->firstOrFail() : null);
+        }
+
+        if (array_key_exists('board_column_id', $changes)) {
+            $this->moveToColumn(BoardColumn::whereKey($changes['board_column_id'])->firstOrFail());
+        }
+
+        if (array_key_exists('status', $changes)) {
+            $this->changeStatus(IssueStatus::from($changes['status']));
+        }
+    }
+
     public function planInto(?Sprint $sprint): void
     {
         if (! $sprint) {
@@ -143,31 +151,26 @@ class Issue extends Model
             return;
         }
 
-        $column = $sprint->team->columns->firstWhere('status', $this->status)
-            ?? $sprint->team->columns->firstWhere('status', IssueStatus::Todo)
-            ?? $sprint->team->columns->first();
+        $columns = $sprint->columns();
 
-        $this->update(['sprint_id' => $sprint->id, 'team_id' => $sprint->team_id]);
+        $column = $columns->firstWhere('status', $this->status)
+            ?? $columns->firstWhere('status', IssueStatus::Todo)
+            ?? $columns->first();
+
+        $this->update(['sprint_id' => $sprint->id, 'team_id' => $sprint->teamId()]);
 
         if ($column) {
             $this->moveToColumn($column);
         }
     }
 
-    /**
-     * Place the issue in a board column and take on that column's status.
-     */
     public function moveToColumn(BoardColumn $column): void
     {
-        $this->update(['board_column_id' => $column->id, 'team_id' => $column->team_id]);
+        $this->update(['board_column_id' => $column->id, 'team_id' => $column->teamId()]);
 
         $this->changeStatus($column->status);
     }
 
-    /**
-     * Move the issue to a new status, keeping the completion time and the linked feature in step.
-     * Backlog and cancelled issues sit in no column, and a cancelled issue leaves its sprint.
-     */
     public function changeStatus(IssueStatus $status): void
     {
         DB::transaction(function () use ($status) {
@@ -186,9 +189,6 @@ class Issue extends Model
         });
     }
 
-    /**
-     * Record every meaningful change to the issue with the person who made it.
-     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -198,11 +198,7 @@ class Issue extends Model
             ->dontLogEmptyChanges();
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

@@ -7,16 +7,10 @@ use App\Models\Feature;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<Comment>
- */
+/** @extends Factory<Comment> */
 class CommentFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -27,9 +21,6 @@ class CommentFactory extends Factory
         ];
     }
 
-    /**
-     * Indicate that the comment is a reply to the given comment.
-     */
     public function replyTo(Comment $parent): static
     {
         return $this->state(fn (array $attributes) => [
@@ -39,9 +30,6 @@ class CommentFactory extends Factory
         ]);
     }
 
-    /**
-     * Indicate that the comment is only visible to organization members.
-     */
     public function internal(): static
     {
         return $this->state(fn (array $attributes) => [

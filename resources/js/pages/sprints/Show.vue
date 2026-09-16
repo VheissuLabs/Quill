@@ -131,7 +131,7 @@ const unfinishedCount = computed(
                     </Badge>
                 </div>
                 <p class="text-muted-foreground text-sm">
-                    {{ sprint.team.name }} ·
+                    {{ sprint.owner.name }} ·
                     {{ formatDate(sprint.startsAt) }} to
                     {{ formatDate(sprint.endsAt) }} ·
                     <span class="tabular-nums">
@@ -144,7 +144,7 @@ const unfinishedCount = computed(
 
             <div class="flex items-center gap-2">
                 <Button
-                    v-if="permissions.canManageTeams"
+                    v-if="permissions.canManageTeams && sprint.owner.isTeam"
                     variant="ghost"
                     size="icon"
                     aria-label="Edit board columns"
@@ -154,7 +154,7 @@ const unfinishedCount = computed(
                         :href="
                             editTeam([
                                 currentOrganization.slug,
-                                sprint.team.slug,
+                                sprint.owner.slug,
                             ])
                         "
                     >

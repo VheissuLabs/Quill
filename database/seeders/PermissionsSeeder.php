@@ -13,9 +13,6 @@ use Spatie\Permission\PermissionRegistrar;
  */
 class PermissionsSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
         setPermissionsTeamId(null);

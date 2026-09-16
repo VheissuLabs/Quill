@@ -28,9 +28,6 @@ use Laravel\Passkeys\Contracts\PasskeyLoginResponse as PasskeyLoginResponseContr
 
 class FortifyServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
@@ -40,9 +37,6 @@ class FortifyServiceProvider extends ServiceProvider
         $this->app->singleton(VerifyEmailResponseContract::class, VerifyEmailResponse::class);
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         $this->configureActions();
@@ -50,9 +44,6 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
     }
 
-    /**
-     * Configure Fortify actions.
-     */
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
@@ -60,9 +51,6 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::authenticateUsing(fn (Request $request) => $this->authenticate($request));
     }
 
-    /**
-     * Find the user for the given credentials, accepting the primary email or any verified additional address.
-     */
     private function authenticate(Request $request): ?User
     {
         $email = strtolower((string) $request->input(Fortify::username()));
@@ -81,9 +69,6 @@ class FortifyServiceProvider extends ServiceProvider
         return null;
     }
 
-    /**
-     * Configure Fortify views.
-     */
     private function configureViews(): void
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
@@ -114,9 +99,6 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/ConfirmPassword'));
     }
 
-    /**
-     * Configure rate limiting.
-     */
     private function configureRateLimiting(): void
     {
         RateLimiter::for('two-factor', function (Request $request) {
@@ -138,11 +120,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Get the pending organization invitation context for auth pages.
-     *
-     * @return array{code: string, organizationName: string}|null
-     */
+    /** @return array{code: string, organizationName: string}|null */
     private function organizationInvitation(Request $request): ?array
     {
         $invitationCode = $request->query('invitation');

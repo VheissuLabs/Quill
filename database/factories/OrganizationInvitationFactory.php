@@ -7,31 +7,22 @@ use App\Models\OrganizationInvitation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends Factory<OrganizationInvitation>
- */
+/** @extends Factory<OrganizationInvitation> */
 class OrganizationInvitationFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
             'organization_id' => Organization::factory(),
             'email' => fake()->unique()->safeEmail(),
-            'role_id' => fn (array $attributes) => Organization::findOrFail($attributes['organization_id'])->role('Member')->id,
+            'role_id' => fn (array $attributes) => Organization::whereKey($attributes['organization_id'])->firstOrFail()->role('Member')->id,
             'invited_by' => User::factory(),
             'expires_at' => null,
             'accepted_at' => null,
         ];
     }
 
-    /**
-     * Indicate that the invitation has been accepted.
-     */
     public function accepted(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -39,9 +30,6 @@ class OrganizationInvitationFactory extends Factory
         ]);
     }
 
-    /**
-     * Indicate that the invitation has expired.
-     */
     public function expired(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -49,9 +37,6 @@ class OrganizationInvitationFactory extends Factory
         ]);
     }
 
-    /**
-     * Indicate that the invitation expires in the given time.
-     */
     public function expiresIn(int $value, string $unit = 'days'): static
     {
         return $this->state(fn (array $attributes) => [

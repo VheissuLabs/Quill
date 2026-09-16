@@ -54,7 +54,6 @@ test('the signed verification link marks the address as verified', function () {
 
     $verificationUrl = URL::temporarySignedRoute('email-addresses.verify', now()->addMinutes(60), [
         'emailAddress' => $emailAddress->id,
-        'hash' => sha1($emailAddress->email),
     ]);
 
     $response = $this->actingAs($user)->get($verificationUrl);
@@ -71,7 +70,6 @@ test('a verification link cannot be used by another user', function () {
 
     $verificationUrl = URL::temporarySignedRoute('email-addresses.verify', now()->addMinutes(60), [
         'emailAddress' => $emailAddress->id,
-        'hash' => sha1($emailAddress->email),
     ]);
 
     $this->actingAs($intruder)->get($verificationUrl)->assertForbidden();

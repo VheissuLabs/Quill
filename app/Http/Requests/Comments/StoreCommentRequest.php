@@ -2,18 +2,33 @@
 
 namespace App\Http\Requests\Comments;
 
+use App\Models\Comment;
 use App\Models\Feature;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class StoreCommentRequest extends FormRequest
 {
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
+    public function authorize(): bool
+    {
+        $feature = $this->route('feature');
+
+        if (! $feature instanceof Feature) {
+            return true;
+        }
+
+        $parent = Comment::whereKey($this->input('parent_id'))->first();
+
+        if (! $this->boolean('internal') && ! ($parent->is_internal ?? false)) {
+            return true;
+        }
+
+        return Gate::allows('commentInternally', $feature);
+    }
+
+    /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
         $feature = $this->route('feature');
@@ -29,11 +44,7 @@ class StoreCommentRequest extends FormRequest
         ];
     }
 
-    /**
-     * Get custom messages for validator errors.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

@@ -12,9 +12,6 @@ use Illuminate\Database\Migrations\Migration;
  */
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         activity()->disableLogging();
@@ -37,9 +34,6 @@ return new class extends Migration
         activity()->enableLogging();
     }
 
-    /**
-     * Reverse the migrations. The account and organization are kept on purpose.
-     */
     public function down(): void
     {
         //

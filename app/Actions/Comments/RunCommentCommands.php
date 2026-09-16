@@ -10,21 +10,13 @@ use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Executes slash commands written at the start of comment lines, such as "/for" or
- * "/status planned", and returns the comment text with the commands removed. Text
- * after a command on the same line is kept as part of the comment.
- */
 class RunCommentCommands
 {
-    public function __construct(private CreateIssue $createIssue)
-    {
-        //
-    }
+    public function __construct(
+        private CreateIssue $createIssue
+    ) {}
 
-    /**
-     * @return array{body: string, internal: bool, messages: array<int, string>}
-     */
+    /** @return array{body: string, internal: bool, messages: array<int, string>} */
     public function handle(Feature $feature, User $user, string $body): array
     {
         $remaining = [];
@@ -40,20 +32,21 @@ class RunCommentCommands
 
             $command = strtolower($matches[1]);
             $argument = trim($matches[2] ?? '');
+            $status = null;
 
             if ($command === 'status') {
                 [$status, $argument] = $this->parseStatus($feature, $argument);
-                $messages[] = $this->status($feature, $status);
-            } else {
-                match ($command) {
-                    'for', 'like', 'vote', 'upvote' => $messages[] = $this->voteFor($feature, $user),
-                    'against', 'dislike', 'downvote' => $messages[] = $this->voteAgainst($feature, $user),
-                    'withdraw', 'unlike', 'unvote' => $messages[] = $this->withdrawVote($feature, $user),
-                    'convert' => $messages[] = $this->convert($feature, $user),
-                    'internal' => $internal = $this->internal($feature, $user),
-                    default => throw ValidationException::withMessages(['body' => __('Unknown command /:command.', ['command' => $command])]),
-                };
             }
+
+            match ($command) {
+                'status' => $messages[] = $this->status($feature, $status),
+                'for', 'like', 'vote', 'upvote' => $messages[] = $this->voteFor($feature, $user),
+                'against', 'dislike', 'downvote' => $messages[] = $this->voteAgainst($feature, $user),
+                'withdraw', 'unlike', 'unvote' => $messages[] = $this->withdrawVote($feature, $user),
+                'convert' => $messages[] = $this->convert($feature, $user),
+                'internal' => $internal = $this->internal($feature),
+                default => throw ValidationException::withMessages(['body' => __('Unknown command /:command.', ['command' => $command])]),
+            };
 
             if ($argument !== '') {
                 $remaining[] = $argument;
@@ -67,38 +60,29 @@ class RunCommentCommands
         ];
     }
 
-    /**
-     * The commands the user may run on this feature, for the comment box picker.
-     *
-     * @return array<int, array{name: string, usage: string, description: string}>
-     */
+    /** @return array<int, array{name: string, usage: string, description: string}> */
     public static function availableTo(?User $user, Feature $feature): array
     {
         if (! $user || ! $user->can('comment', $feature)) {
             return [];
         }
 
-        $commands = [];
-
-        if ($user->can('vote', $feature)) {
-            $commands[] = ['name' => 'for', 'usage' => '/for', 'description' => 'Vote for this request'];
-            $commands[] = ['name' => 'against', 'usage' => '/against', 'description' => 'Vote against this request'];
-            $commands[] = ['name' => 'withdraw', 'usage' => '/withdraw', 'description' => 'Withdraw your vote'];
-        }
-
-        if ($user->can('commentInternally', $feature)) {
-            $commands[] = ['name' => 'internal', 'usage' => '/internal', 'description' => 'Post as an internal note'];
-        }
-
-        if ($user->can('updateStatus', $feature)) {
-            $commands[] = ['name' => 'status', 'usage' => '/status <status>', 'description' => 'Change the status'];
-        }
-
-        if ($user->can('convert', $feature)) {
-            $commands[] = ['name' => 'convert', 'usage' => '/convert', 'description' => 'Convert into a backlog issue'];
-        }
-
-        return $commands;
+        return collect([
+            ['ability' => 'vote', 'name' => 'for', 'usage' => '/for', 'description' => 'Vote for this request'],
+            ['ability' => 'vote', 'name' => 'against', 'usage' => '/against', 'description' => 'Vote against this request'],
+            ['ability' => 'vote', 'name' => 'withdraw', 'usage' => '/withdraw', 'description' => 'Withdraw your vote'],
+            ['ability' => 'commentInternally', 'name' => 'internal', 'usage' => '/internal', 'description' => 'Post as an internal note'],
+            ['ability' => 'updateStatus', 'name' => 'status', 'usage' => '/status <status>', 'description' => 'Change the status'],
+            ['ability' => 'convert', 'name' => 'convert', 'usage' => '/convert', 'description' => 'Convert into a backlog issue'],
+        ])
+            ->filter(fn (array $command) => $user->can($command['ability'], $feature))
+            ->map(fn (array $command) => [
+                'name' => $command['name'],
+                'usage' => $command['usage'],
+                'description' => $command['description'],
+            ])
+            ->values()
+            ->all();
     }
 
     private function voteFor(Feature $feature, User $user): string
@@ -128,12 +112,7 @@ class RunCommentCommands
         return __('Vote withdrawn.');
     }
 
-    /**
-     * Split the text after "/status" into the status it names and whatever follows it,
-     * matching the longest name first so "in progress" wins over "in".
-     *
-     * @return array{0: FeatureStatus, 1: string}
-     */
+    /** @return array{0: FeatureStatus, 1: string} */
     private function parseStatus(Feature $feature, string $argument): array
     {
         $this->authorize('updateStatus', $feature, __('You can\'t change the status.'));
@@ -144,7 +123,7 @@ class RunCommentCommands
                 strtolower($status->label()) => $status,
                 str_replace('_', ' ', $status->value) => $status,
             ])
-            ->sortByDesc(fn (FeatureStatus $status, string $name) => strlen($name));
+            ->sortKeysUsing(fn (string $a, string $b) => strlen($b) <=> strlen($a));
 
         foreach ($names as $name => $status) {
             if (preg_match('/^'.preg_quote($name, '/').'(?=\s|$)(.*)$/i', $argument, $matches)) {
@@ -173,15 +152,16 @@ class RunCommentCommands
             throw ValidationException::withMessages(['body' => __('This request is already tracked as an issue.')]);
         }
 
-        $issue = $this->createIssue->handle($feature->project, $user, [
+        $issue = $this->createIssue->handle($feature->project, [
             'title' => $feature->title,
             'description' => $feature->description,
+            'created_by' => $user->getKey(),
         ], $feature);
 
         return __('Added to the backlog as :reference.', ['reference' => $issue->reference()]);
     }
 
-    private function internal(Feature $feature, User $user): bool
+    private function internal(Feature $feature): bool
     {
         $this->authorize('commentInternally', $feature, __('Only organization members can post internal notes.'));
 

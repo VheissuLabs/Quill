@@ -25,9 +25,6 @@ enum OrganizationPermission: string
 
     case ManageRoles = 'role:manage';
 
-    /**
-     * Get the display label for the permission.
-     */
     public function label(): string
     {
         return match ($this) {
@@ -49,9 +46,11 @@ enum OrganizationPermission: string
         };
     }
 
-    /**
-     * Get the group the permission is shown under.
-     */
+    public function key(): string
+    {
+        return 'can'.$this->name;
+    }
+
     public function group(): string
     {
         return match ($this) {
@@ -62,11 +61,7 @@ enum OrganizationPermission: string
         };
     }
 
-    /**
-     * Get every permission as an option for the roles form.
-     *
-     * @return array<int, array{value: string, label: string, group: string}>
-     */
+    /** @return array<int, array{value: string, label: string, group: string}> */
     public static function options(): array
     {
         return array_map(fn (self $permission) => [

@@ -17,10 +17,12 @@
         "laravel/reverb": "^1.11",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
+        "league/flysystem-aws-s3-v3": "^3.35",
         "spatie/laravel-activitylog": "^5.1",
         "spatie/laravel-permission": "^8.3"
     },
     "require-dev": {
+        "barryvdh/laravel-ide-helper": "^3.7",
         "fakerphp/faker": "^1.24",
         "larastan/larastan": "^3.9",
         "laravel/boost": "^2.2",
@@ -71,7 +73,11 @@
             "@test"
         ],
         "types:check": [
-            "phpstan analyse"
+            "phpstan analyse --memory-limit=512M"
+        ],
+        "ide-helper": [
+            "@php artisan ide-helper:models -M -R --no-interaction",
+            "pint app/Models --quiet"
         ],
         "test": [
             "@php artisan config:clear --ansi",
