@@ -10,7 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Features\SaveFeatureRequest;
 use App\Http\Resources\ActivitySummary;
 use App\Http\Resources\CommentSummary;
-use App\Http\Resources\FeatureSummary;
+use App\Http\Resources\FeatureResource;
 use App\Models\Feature;
 use App\Models\Organization;
 use App\Models\Project;
@@ -46,8 +46,8 @@ class FeatureController extends Controller
         return Inertia::render('portal/Feature', [
             'organization' => ['name' => $organization->name, 'slug' => $organization->slug, 'logoUrl' => $organization->logoUrl()],
             'project' => ['name' => $project->name, 'slug' => $project->slug],
-            'feature' => $summary = FeatureSummary::fromFeature($feature, withIssue: $isMember),
-            'issue' => $summary->issue,
+            'feature' => $summary = FeatureResource::make($feature, $isMember)->resolve(),
+            'issue' => $summary['issue'],
             'comments' => CommentSummary::threads(
                 $feature->comments()
                     ->topLevel()

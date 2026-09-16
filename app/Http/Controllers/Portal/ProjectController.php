@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Portal;
 use App\Enums\FeatureStatus;
 use App\Enums\OrganizationPermission;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\FeatureSummary;
+use App\Http\Resources\FeatureResource;
 use App\Models\Feature;
 use App\Models\Organization;
 use App\Models\Project;
@@ -45,7 +45,7 @@ class ProjectController extends Controller
             ->latest()
             ->orderByDesc('id')
             ->get()
-            ->map(fn (Feature $feature) => FeatureSummary::fromFeature($feature, withIssue: $isMember));
+            ->map(fn (Feature $feature) => FeatureResource::make($feature, $isMember)->resolve());
 
         return Inertia::render('portal/Project', [
             'organization' => ['name' => $organization->name, 'slug' => $organization->slug, 'logoUrl' => $organization->logoUrl()],
