@@ -10,10 +10,13 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -78,9 +81,62 @@ class Issue extends Model
             ->where(fn (Builder $query) => $query->where('team_id', $team->id)->orWhereNull('team_id')));
     }
 
+    /**
+     * @param  Builder<$this>  $query
+     * @param  Collection<int, int>  $projectIds
+     * @param  array{status: string|null, project: string|null, assignee: string|null}  $filters
+     */
+    #[Scope]
+    protected function onOrganizationBoard(Builder $query, Collection $projectIds, User $user, ?Team $team, array $filters): void
+    {
+        $query->whereIn('project_id', $projectIds)
+            ->with(['project', 'assignee', 'sprint', 'team', 'boardColumn'])
+            ->when($filters['status'], fn (Builder $query, string $status) => $query->where('status', $status))
+            ->when(! $filters['status'], fn (Builder $query) => $query->whereNotIn('status', [IssueStatus::Done, IssueStatus::Cancelled]))
+            ->when($filters['project'], fn (Builder $query, string $slug) => $query->whereHas('project', fn (Builder $query) => $query->where('slug', $slug)))
+            ->when($filters['assignee'] === 'me', fn (Builder $query) => $query->where('assignee_id', $user->id))
+            ->ownedBy($team)
+            ->whereNull('sprint_id')
+            ->orderBy('position')
+            ->orderByRaw("CASE priority WHEN 'urgent' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END DESC")
+            ->latest();
+    }
+
+    /**
+     * @param  Collection<int, int>  $projectIds
+     * @return EloquentCollection<int, Activity>
+     */
+    public static function recentActivity(Collection $projectIds, ?Team $team, int $limit = 20): EloquentCollection
+    {
+        return Activity::query()
+            ->where('log_name', 'issues')
+            ->where('subject_type', (new self)->getMorphClass())
+            ->whereIn('subject_id', self::whereIn('project_id', $projectIds)->ownedBy($team)->select('id'))
+            ->with(['causer', 'subject.project'])
+            ->latest('id')
+            ->limit($limit)
+            ->get();
+    }
+
     public function reference(): string
     {
         return "{$this->project->name} #{$this->number}";
+    }
+
+    /** @param  array<string, mixed>  $changes */
+    public function applyChanges(array $changes): void
+    {
+        if (array_key_exists('sprint_id', $changes)) {
+            $this->planInto($changes['sprint_id'] ? Sprint::whereKey($changes['sprint_id'])->firstOrFail() : null);
+        }
+
+        if (array_key_exists('board_column_id', $changes)) {
+            $this->moveToColumn(BoardColumn::whereKey($changes['board_column_id'])->firstOrFail());
+        }
+
+        if (array_key_exists('status', $changes)) {
+            $this->changeStatus(IssueStatus::from($changes['status']));
+        }
     }
 
     public function planInto(?Sprint $sprint): void

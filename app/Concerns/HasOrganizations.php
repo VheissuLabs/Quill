@@ -27,7 +27,7 @@ trait HasOrganizations
     {
         return $this->organizations()
             ->whereIn('organizations.id', $this->organizationRoles()
-                ->where('is_owner', true)
+                ->where('name', 'Owner')
                 ->pluck('model_has_roles.organization_id'));
     }
 

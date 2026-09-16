@@ -4,31 +4,31 @@ namespace App\Http\Controllers\Portal;
 
 use App\Actions\Comments\RunCommentCommands;
 use App\Enums\FeatureStatus;
-use App\Enums\OrganizationPermission;
 use App\Enums\VoteDirection;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Features\FeatureRequest;
 use App\Http\Resources\ActivityResource;
 use App\Http\Resources\CommentResource;
 use App\Http\Resources\FeatureResource;
+use App\Http\Resources\FeatureViewerResource;
+use App\Http\Resources\PortalOrganizationResource;
 use App\Models\Comment;
 use App\Models\Feature;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class FeatureController extends Controller
 {
-    public function show(Request $request, Organization $organization, Project $project, Feature $feature): Response|RedirectResponse
+    public function show(Organization $organization, Project $project, Feature $feature): Response|RedirectResponse
     {
-        $user = $request->user();
+        $user = auth()->user();
 
         $isMember = $user?->belongsToOrganization($organization) ?? false;
-        $canViewActivity = $user?->hasOrganizationPermission($organization, OrganizationPermission::ViewActivity) ?? false;
+        $viewer = FeatureViewerResource::make($feature)->for($user)->resolve();
 
         $feature = Feature::query()
             ->whereKey($feature->id)
@@ -38,41 +38,21 @@ class FeatureController extends Controller
             ->firstOrFail();
 
         return Inertia::render('portal/Feature', [
-            'organization' => ['name' => $organization->name, 'slug' => $organization->slug, 'logoUrl' => $organization->logoUrl()],
+            'organization' => PortalOrganizationResource::make($organization),
             'project' => ['name' => $project->name, 'slug' => $project->slug],
-            'feature' => $summary = FeatureResource::make($feature, $isMember)->resolve(),
+            'feature' => $summary = FeatureResource::make($feature)->withIssue($isMember)->resolve(),
             'issue' => $summary['issue'],
-            'comments' => (
-                $feature->comments()
-                    ->topLevel()
-                    ->with([
-                        'author',
-                        'mentions',
-                        'replies' => fn ($query) => $query->with(['author', 'mentions'])->when(! $isMember, fn ($query) => $query->public()),
-                    ])
-                    ->when(! $isMember, fn ($query) => $query->public())
-                    ->oldest()
-                    ->get()
-            )->map(fn (Comment $comment) => CommentResource::make($comment, $user)->resolve()),
-            'activity' => $canViewActivity
+            'comments' => $feature->comments()->threadsVisibleTo($isMember)->get()
+                ->map(fn (Comment $comment) => CommentResource::make($comment, $user)->resolve()),
+            'activity' => $viewer['canViewActivity']
                 ? ActivityResource::collection($feature->activitiesAsSubject()->with('causer')->latest('id')->limit(20)->get())
                 : [],
             'commands' => RunCommentCommands::availableTo($user, $feature),
-            'mentionableUsers' => $user?->can('comment', $feature)
+            'mentionableUsers' => $viewer['canComment']
                 ? $feature->mentionableUsers()->map(fn (User $mentionable) => ['id' => $mentionable->id, 'name' => $mentionable->name])->values()
                 : [],
             'statuses' => FeatureStatus::options(),
-            'viewer' => [
-                'isMember' => $isMember,
-                'canUpdate' => $user?->can('update', $feature) ?? false,
-                'canUpdateStatus' => $user?->can('updateStatus', $feature) ?? false,
-                'canDelete' => $user?->can('delete', $feature) ?? false,
-                'canVote' => $user?->can('vote', $feature) ?? false,
-                'canComment' => $user?->can('comment', $feature) ?? false,
-                'canCommentInternally' => $user?->can('commentInternally', $feature) ?? false,
-                'canConvert' => $user?->can('convert', $feature) ?? false,
-                'canViewActivity' => $canViewActivity,
-            ],
+            'viewer' => $viewer,
         ]);
     }
 

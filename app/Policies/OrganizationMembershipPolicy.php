@@ -21,7 +21,7 @@ class OrganizationMembershipPolicy
             return false;
         }
 
-        return $role === null || ! $role->is_owner || $organization->isOwner($user);
+        return $role === null || ! $organization->isOwnerRole($role) || $organization->isOwner($user);
     }
 
     public function delete(User $user, OrganizationMembership $membership): bool

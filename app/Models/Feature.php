@@ -59,6 +59,7 @@ class Feature extends Model
         $query->whereIn('status', FeatureStatus::active());
     }
 
+    /** @param  Builder<$this>  $query */
     #[Scope]
     protected function withVoteSummary(Builder $query, ?User $viewer): void
     {

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -66,6 +67,20 @@ class Project extends Model
     public function isPublic(): bool
     {
         return $this->visibility === ProjectVisibility::Public;
+    }
+
+    /** @param  array<int, int>  $teamIds */
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @param  array<int, int>  $teamIds
+     */
+    public function saveWithTeams(array $attributes, array $teamIds): void
+    {
+        DB::transaction(function () use ($attributes, $teamIds) {
+            $this->fill($attributes)->save();
+
+            $this->syncTeams($teamIds);
+        });
     }
 
     /** @param  array<int, int>  $teamIds */

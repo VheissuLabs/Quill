@@ -21,16 +21,20 @@ class RolePolicy
 
     public function update(User $user, Role $role): bool
     {
-        return ! $role->is_owner && $this->create($user, $this->organizationOf($role));
+        $organization = $this->organizationOf($role);
+
+        return ! $organization->isOwnerRole($role) && $this->create($user, $organization);
     }
 
     public function delete(User $user, Role $role): bool
     {
-        return ! $role->is_owner && $this->create($user, $this->organizationOf($role));
+        $organization = $this->organizationOf($role);
+
+        return ! $organization->isOwnerRole($role) && $this->create($user, $organization);
     }
 
     protected function organizationOf(Role $role): Organization
     {
-        return Organization::findOrFail($role->getAttribute(config('permission.column_names.team_foreign_key')));
+        return Organization::whereKey($role->getAttribute(config('permission.column_names.team_foreign_key')))->firstOrFail();
     }
 }

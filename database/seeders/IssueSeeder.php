@@ -56,14 +56,14 @@ class IssueSeeder extends Seeder
     protected function seedLooseIssues(Project $project, Collection $sprints, Collection $members): void
     {
         Collection::times(fake()->numberBetween(3, 6), function () use ($project, $sprints, $members) {
-            $issue = $this->createIssue->handle($project, new Issue([
+            $issue = $this->createIssue->handle($project, [
                 'title' => rtrim(fake()->sentence(fake()->numberBetween(3, 6)), '.'),
                 'description' => fake()->boolean(70) ? fake()->paragraph() : null,
                 'priority' => fake()->randomElement(IssuePriority::cases()),
                 'points' => fake()->boolean(60) ? fake()->randomElement([1, 2, 3, 5, 8]) : null,
                 'assignee_id' => fake()->boolean(50) ? $members->random()->getKey() : null,
                 'created_by' => $members->random()->getKey(),
-            ]));
+            ]);
 
             match (fake()->numberBetween(1, 6)) {
                 1 => $issue->planInto($this->sprint($sprints, SprintStatus::Active)),
@@ -83,14 +83,14 @@ class IssueSeeder extends Seeder
     {
         $status = $feature->status;
 
-        $issue = $this->createIssue->handle($feature->project, new Issue([
+        $issue = $this->createIssue->handle($feature->project, [
             'title' => $feature->title,
             'description' => $feature->description,
             'priority' => fake()->randomElement([IssuePriority::Medium, IssuePriority::High, IssuePriority::Urgent]),
             'points' => fake()->randomElement([2, 3, 5, 8]),
             'assignee_id' => $members->random()->getKey(),
             'created_by' => $members->random()->getKey(),
-        ]), $feature);
+        ], $feature);
 
         match ($status) {
             FeatureStatus::Planned => fake()->boolean() ? $issue->planInto($this->sprint($sprints, SprintStatus::Active)) : null,

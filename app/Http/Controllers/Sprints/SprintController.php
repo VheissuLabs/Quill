@@ -12,15 +12,14 @@ use App\Models\BoardColumn;
 use App\Models\Organization;
 use App\Models\Sprint;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SprintController extends Controller
 {
-    public function index(Request $request, Organization $currentOrganization): Response
+    public function index(Organization $currentOrganization): Response
     {
-        $owner = $request->user()->boardOwnerFor($currentOrganization);
+        $owner = auth()->user()->boardOwnerFor($currentOrganization);
 
         $sprints = $owner->sprints()
             ->with('owner')
@@ -34,7 +33,6 @@ class SprintController extends Controller
 
         return Inertia::render('sprints/Index', [
             'sprints' => SprintResource::collection($sprints),
-            'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
         ]);
     }
 
@@ -50,7 +48,7 @@ class SprintController extends Controller
         return to_route('sprints.show', ['sprint' => $sprint]);
     }
 
-    public function show(Request $request, Organization $currentOrganization, Sprint $sprint): Response
+    public function show(Organization $currentOrganization, Sprint $sprint): Response
     {
         $sprint->load('owner.columns')->loadCount([
             'issues',
@@ -71,7 +69,6 @@ class SprintController extends Controller
                 'name' => $column->name,
                 'status' => $column->status->value,
             ]),
-            'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
         ]);
     }
 

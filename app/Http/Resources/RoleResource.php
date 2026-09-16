@@ -16,10 +16,10 @@ class RoleResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'isOwner' => (bool) $this->is_owner,
+            'isOwner' => $this->name === 'Owner',
             'permissions' => $this->permissions->pluck('name')->values(),
             'membersCount' => $this->users_count,
-            'members' => $this->users->map(fn (Model $member) => new UserResource($member, withContact: true)),
+            'members' => $this->users->map(fn (Model $member) => new UserContactResource($member)),
         ];
     }
 }

@@ -5,10 +5,13 @@ namespace App\Models;
 use App\Observers\OrganizationInvitationObserver;
 use Database\Factories\OrganizationInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Models\Role;
@@ -67,6 +70,17 @@ class OrganizationInvitation extends Model
     public function getRouteKeyName(): string
     {
         return 'code';
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function pendingFor(Builder $query, User $user): void
+    {
+        $query->with(['inviter', 'organization'])
+            ->whereIn(DB::raw('LOWER(email)'), $user->verifiedEmailAddresses())
+            ->whereNull('accepted_at')
+            ->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhere('expires_at', '>=', now()))
+            ->latest();
     }
 
     public function getActivitylogOptions(): LogOptions

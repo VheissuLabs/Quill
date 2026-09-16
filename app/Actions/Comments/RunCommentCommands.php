@@ -6,7 +6,6 @@ use App\Actions\Issues\CreateIssue;
 use App\Enums\FeatureStatus;
 use App\Enums\VoteDirection;
 use App\Models\Feature;
-use App\Models\Issue;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -153,11 +152,11 @@ class RunCommentCommands
             throw ValidationException::withMessages(['body' => __('This request is already tracked as an issue.')]);
         }
 
-        $issue = $this->createIssue->handle($feature->project, new Issue([
+        $issue = $this->createIssue->handle($feature->project, [
             'title' => $feature->title,
             'description' => $feature->description,
             'created_by' => $user->getKey(),
-        ]), $feature);
+        ], $feature);
 
         return __('Added to the backlog as :reference.', ['reference' => $issue->reference()]);
     }

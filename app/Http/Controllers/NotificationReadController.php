@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 
 class NotificationReadController extends Controller
 {
-    public function store(Request $request, DatabaseNotification $notification): RedirectResponse
+    public function store(DatabaseNotification $notification): RedirectResponse
     {
-        abort_unless($notification->notifiable()->is($request->user()), 404);
+        abort_unless($notification->notifiable()->is(auth()->user()), 404);
 
         $notification->markAsRead();
 

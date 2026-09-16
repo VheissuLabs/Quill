@@ -8,19 +8,18 @@ use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\EmailAddress;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    public function edit(Request $request): Response
+    public function edit(): Response
     {
         return Inertia::render('settings/Profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => $request->session()->get('status'),
-            'emailAddresses' => $request->user()->emailAddresses()
+            'mustVerifyEmail' => auth()->user() instanceof MustVerifyEmail,
+            'status' => session('status'),
+            'emailAddresses' => auth()->user()->emailAddresses()
                 ->oldest()
                 ->get()
                 ->map(fn (EmailAddress $emailAddress) => [

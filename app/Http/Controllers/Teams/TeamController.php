@@ -6,32 +6,22 @@ use App\Enums\IssueStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Teams\DeleteTeamRequest;
 use App\Http\Requests\Teams\TeamRequest;
-use App\Http\Resources\UserResource;
-use App\Models\BoardColumn;
+use App\Http\Resources\BoardColumnResource;
+use App\Http\Resources\TeamListResource;
+use App\Http\Resources\TeamResource;
+use App\Http\Resources\UserContactResource;
 use App\Models\Organization;
 use App\Models\Team;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class TeamController extends Controller
 {
-    public function index(Request $request, Organization $currentOrganization): Response
+    public function index(Organization $currentOrganization): Response
     {
         return Inertia::render('teams/Index', [
-            'teams' => $currentOrganization->teams()
-                ->withCount('members')
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Team $team) => [
-                    'id' => $team->id,
-                    'name' => $team->name,
-                    'slug' => $team->slug,
-                    'membersCount' => $team->members_count,
-                ]),
-            'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
+            'teams' => TeamListResource::collection($currentOrganization->teams()->withCount('members')->orderBy('name')->get()),
         ]);
     }
 
@@ -44,39 +34,18 @@ class TeamController extends Controller
         return to_route('teams.edit', ['team' => $team->slug]);
     }
 
-    public function edit(Request $request, Organization $currentOrganization, Team $team): Response
+    public function edit(Organization $currentOrganization, Team $team): Response
     {
-        $memberIds = $team->members()->pluck('users.id');
-
         return Inertia::render('teams/Edit', [
-            'team' => [
-                'id' => $team->id,
-                'name' => $team->name,
-                'slug' => $team->slug,
-            ],
-            'members' => $team->members()
-                ->orderBy('name')
-                ->get()
-                ->map(fn (User $member) => new UserResource($member, withContact: true)),
-            'availableMembers' => $currentOrganization->members()
-                ->whereKeyNot($memberIds)
-                ->orderBy('name')
-                ->get()
-                ->map(fn (User $member) => new UserResource($member, withContact: true)),
-            'columns' => $team->columns()->withCount('issues')->get()->map(fn (BoardColumn $column) => [
-                'id' => $column->id,
-                'name' => $column->name,
-                'status' => $column->status->value,
-                'issuesCount' => $column->issues_count,
-            ]),
+            'team' => TeamResource::make($team),
+            'members' => UserContactResource::collection($team->members()->orderBy('name')->get()),
+            'availableMembers' => UserContactResource::collection(
+                $currentOrganization->members()->whereKeyNot($team->members()->pluck('users.id'))->orderBy('name')->get()
+            ),
+            'columns' => BoardColumnResource::collection($team->columns()->withCount('issues')->get()),
             'columnStatuses' => collect(IssueStatus::columnStatuses())
                 ->map(fn (IssueStatus $status) => ['value' => $status->value, 'label' => $status->label()]),
-            'otherTeams' => $currentOrganization->teams()
-                ->whereKeyNot($team->id)
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Team $other) => ['id' => $other->id, 'name' => $other->name]),
-            'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
+            'otherTeams' => TeamResource::collection($currentOrganization->teams()->whereKeyNot($team->id)->orderBy('name')->get()),
         ]);
     }
 

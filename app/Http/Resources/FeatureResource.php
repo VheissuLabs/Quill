@@ -10,9 +10,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /** @mixin Feature */
 class FeatureResource extends JsonResource
 {
-    public function __construct(Feature $resource, private bool $withIssue = false)
+    private bool $withIssue = false;
+
+    public function withIssue(bool $withIssue = true): static
     {
-        parent::__construct($resource);
+        $this->withIssue = $withIssue;
+
+        return $this;
     }
 
     /** @return array<string, mixed> */

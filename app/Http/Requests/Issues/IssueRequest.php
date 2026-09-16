@@ -55,6 +55,21 @@ class IssueRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, mixed> */
+    public function issueAttributes(): array
+    {
+        return [
+            'title' => $this->validated('title'),
+            'description' => $this->validated('description'),
+            'priority' => IssuePriority::from($this->validated('priority')),
+            'points' => $this->filled('points') ? $this->integer('points') : null,
+            'team_id' => $this->integer('team_id') ?: null,
+            'assignee_id' => $this->integer('assignee_id') ?: null,
+            'sprint_id' => $this->integer('sprint_id') ?: null,
+            'created_by' => $this->user()->getKey(),
+        ];
+    }
+
     private function ownedBy(Organization $organization, string $table): Exists
     {
         return Rule::exists($table, 'id')->where(fn ($query) => $query

@@ -7,10 +7,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Boards and sprints belonged to a team, which made teams mandatory for any organization that
- * wanted either. They now belong to whoever runs the board: a team, or the organization itself.
- */
 return new class extends Migration
 {
     public function up(): void
@@ -30,7 +26,6 @@ return new class extends Migration
             ]);
         }
 
-        // The foreign key leans on the composite index, so it has to go first.
         Schema::table('board_columns', function (Blueprint $table) {
             $table->dropForeign(['team_id']);
             $table->dropIndex(['team_id', 'position']);
@@ -45,7 +40,6 @@ return new class extends Migration
             $table->index(['owner_type', 'owner_id', 'status']);
         });
 
-        // Organizations that never set up a team had no board at all. They get their own now.
         Organization::query()->doesntHave('teams')->each(
             fn (Organization $organization) => $organization->createDefaultColumns()
         );

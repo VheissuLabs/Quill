@@ -16,7 +16,7 @@ class OrganizationInvitationFactory extends Factory
         return [
             'organization_id' => Organization::factory(),
             'email' => fake()->unique()->safeEmail(),
-            'role_id' => fn (array $attributes) => Organization::findOrFail($attributes['organization_id'])->role('Member')->id,
+            'role_id' => fn (array $attributes) => Organization::whereKey($attributes['organization_id'])->firstOrFail()->role('Member')->id,
             'invited_by' => User::factory(),
             'expires_at' => null,
             'accepted_at' => null,

@@ -65,6 +65,20 @@ class Comment extends Model
 
     /** @param  Builder<$this>  $query */
     #[Scope]
+    protected function threadsVisibleTo(Builder $query, bool $isMember): void
+    {
+        $query->topLevel()
+            ->with([
+                'author',
+                'mentions',
+                'replies' => fn ($query) => $query->with(['author', 'mentions'])->when(! $isMember, fn ($query) => $query->public()),
+            ])
+            ->when(! $isMember, fn (Builder $query) => $query->public())
+            ->oldest();
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
     protected function topLevel(Builder $query): void
     {
         $query->whereNull('parent_id');

@@ -3,26 +3,26 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Enums\FeatureStatus;
-use App\Enums\OrganizationPermission;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Portal\ProjectBoardRequest;
 use App\Http\Resources\FeatureResource;
+use App\Http\Resources\ProjectViewerResource;
 use App\Models\Feature;
 use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProjectController extends Controller
 {
-    public function show(Request $request, Organization $organization, Project $project): Response|RedirectResponse
+    public function show(ProjectBoardRequest $request, Organization $organization, Project $project): Response|RedirectResponse
     {
         $user = $request->user();
 
         $isMember = $user?->belongsToOrganization($organization) ?? false;
-        $status = FeatureStatus::tryFrom((string) $request->query('status'));
-        $sort = $request->query('sort') === 'new' ? 'new' : 'top';
+        $status = $request->status();
+        $sort = $request->sort();
 
         $countsByStatus = $project->features()
             ->selectRaw('status, count(*) as aggregate')
@@ -38,7 +38,7 @@ class ProjectController extends Controller
             ->latest()
             ->orderByDesc('id')
             ->get()
-            ->map(fn (Feature $feature) => FeatureResource::make($feature, $isMember)->resolve());
+            ->map(fn (Feature $feature) => FeatureResource::make($feature)->withIssue($isMember)->resolve());
 
         return Inertia::render('portal/Project', [
             'organization' => ['name' => $organization->name, 'slug' => $organization->slug, 'logoUrl' => $organization->logoUrl()],
@@ -56,11 +56,7 @@ class ProjectController extends Controller
                 'count' => (int) ($countsByStatus[$status->value] ?? 0),
             ]),
             'activeCount' => (int) collect(FeatureStatus::active())->sum(fn (FeatureStatus $status) => $countsByStatus[$status->value] ?? 0),
-            'viewer' => [
-                'isMember' => $isMember,
-                'canCreateFeature' => $user?->can('create', [Feature::class, $project]) ?? false,
-                'canManageFeatures' => $user?->hasOrganizationPermission($organization, OrganizationPermission::ManageFeatures) ?? false,
-            ],
+            'viewer' => ProjectViewerResource::make($project)->for($user),
         ]);
     }
 }

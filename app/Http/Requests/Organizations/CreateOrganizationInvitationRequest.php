@@ -19,7 +19,7 @@ class CreateOrganizationInvitationRequest extends FormRequest
 
         return [
             'email' => ['required', 'string', 'email', 'max:255', new UniqueOrganizationInvitation($organization)],
-            'role_id' => ['required', 'integer', Rule::exists('roles', 'id')->where('organization_id', $organization->id)->where('is_owner', 0)],
+            'role_id' => ['required', 'integer', Rule::exists('roles', 'id')->where('organization_id', $organization->id)->where(fn ($query) => $query->where('name', '!=', 'Owner'))],
         ];
     }
 }

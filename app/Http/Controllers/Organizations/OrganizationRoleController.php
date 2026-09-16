@@ -9,7 +9,6 @@ use App\Http\Resources\RoleResource;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,21 +16,20 @@ use Spatie\Permission\Models\Role;
 
 class OrganizationRoleController extends Controller
 {
-    public function index(Request $request, Organization $currentOrganization): Response
+    public function index(Organization $currentOrganization): Response
     {
         return Inertia::render('roles/Index', [
             'roles' => RoleResource::collection($currentOrganization->rolesWithMembers()->get()),
             'availablePermissions' => OrganizationPermission::options(),
-            'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
         ]);
     }
 
-    public function show(Request $request, Organization $currentOrganization, Role $role): Response
+    public function show(Organization $currentOrganization, Role $role): Response
     {
-        $user = $request->user();
+        $user = auth()->user();
 
         $grantableRoles = $currentOrganization->isOwner($user)
-            ? $currentOrganization->roles()->orderByDesc('is_owner')->orderBy('name')->get()
+            ? $currentOrganization->roles()->orderByRaw("CASE WHEN name = 'Owner' THEN 0 ELSE 1 END")->orderBy('name')->get()
             : $currentOrganization->assignableRoles();
 
         return Inertia::render('roles/Show', [
@@ -51,7 +49,6 @@ class OrganizationRoleController extends Controller
                     'role' => $member->organizationRole($currentOrganization)?->name,
                 ])
                 ->values(),
-            'permissions' => $user->toOrganizationPermissions($currentOrganization),
         ]);
     }
 

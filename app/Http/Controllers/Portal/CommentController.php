@@ -27,10 +27,6 @@ class CommentController extends Controller
 
         $internal = $request->boolean('internal') || $result['internal'] || ($parent->is_internal ?? false);
 
-        if ($internal) {
-            abort_unless($request->user()->can('commentInternally', $feature), 403);
-        }
-
         if ($result['body'] !== '') {
             $comment = DB::transaction(function () use ($request, $feature, $parent, $internal, $result) {
                 $comment = $feature->comments()->create([

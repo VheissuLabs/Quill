@@ -2,6 +2,11 @@ includes:
     - vendor/larastan/larastan/extension.neon
     - vendor/nesbot/carbon/extension.neon
 
+rules:
+    - Tests\Rules\NoAuthorizationInControllersRule
+    - Tests\Rules\NoNewModelsRule
+    - Tests\Rules\UnsafeResourceCollectionRule
+
 parameters:
     paths:
         - app/

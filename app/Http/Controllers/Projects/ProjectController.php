@@ -5,55 +5,31 @@ namespace App\Http\Controllers\Projects;
 use App\Enums\ProjectVisibility;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\ProjectRequest;
-use App\Models\Client;
+use App\Http\Resources\ClientResource;
+use App\Http\Resources\ProjectFormResource;
+use App\Http\Resources\ProjectListResource;
+use App\Http\Resources\TeamResource;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProjectController extends Controller
 {
-    public function index(Request $request, Organization $currentOrganization): Response
+    public function index(Organization $currentOrganization): Response
     {
         return Inertia::render('projects/Index', [
-            'projects' => $currentOrganization->projects()
-                ->visibleTo($request->user())
-                ->with('client')
-                ->withCount('features')
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Project $project) => [
-                    'id' => $project->id,
-                    'name' => $project->name,
-                    'slug' => $project->slug,
-                    'description' => $project->description,
-                    'visibility' => $project->visibility->value,
-                    'visibilityLabel' => $project->visibility->label(),
-                    'clientName' => $project->client?->name,
-                    'featuresCount' => $project->features_count,
-                ]),
-            'clients' => $currentOrganization->clients()
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Client $client) => ['id' => $client->id, 'name' => $client->name]),
+            'projects' => ProjectListResource::collection($currentOrganization->projects()->visibleTo(auth()->user())->with('client')->withCount('features')->orderBy('name')->get()),
+            'clients' => ClientResource::collection($currentOrganization->clients()->orderBy('name')->get()),
             'visibilities' => ProjectVisibility::options(),
-            'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
         ]);
     }
 
     public function store(ProjectRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        $project = DB::transaction(function () use ($request, $currentOrganization) {
-            $project = $currentOrganization->projects()->create($request->safe()->except('team_ids'));
-
-            $project->syncTeams($request->validated('team_ids', []));
-
-            return $project;
-        });
+        $project = $currentOrganization->projects()->make();
+        $project->saveWithTeams($request->safe()->except('team_ids'), $request->validated('team_ids', []));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project created.')]);
 
@@ -63,34 +39,16 @@ class ProjectController extends Controller
     public function edit(Organization $currentOrganization, Project $project): Response
     {
         return Inertia::render('projects/Edit', [
-            'project' => [
-                'id' => $project->id,
-                'name' => $project->name,
-                'slug' => $project->slug,
-                'description' => $project->description,
-                'visibility' => $project->visibility->value,
-                'clientId' => $project->client_id,
-                'teamIds' => $project->teams()->pluck('teams.id'),
-            ],
-            'clients' => $currentOrganization->clients()
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Client $client) => ['id' => $client->id, 'name' => $client->name]),
-            'teams' => $currentOrganization->teams()
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Team $team) => ['id' => $team->id, 'name' => $team->name, 'slug' => $team->slug]),
+            'project' => ProjectFormResource::make($project),
+            'clients' => ClientResource::collection($currentOrganization->clients()->orderBy('name')->get()),
+            'teams' => TeamResource::collection($currentOrganization->teams()->orderBy('name')->get()),
             'visibilities' => ProjectVisibility::options(),
         ]);
     }
 
     public function update(ProjectRequest $request, Organization $currentOrganization, Project $project): RedirectResponse
     {
-        DB::transaction(function () use ($request, $project) {
-            $project->update($request->safe()->except('team_ids'));
-
-            $project->syncTeams($request->validated('team_ids', []));
-        });
+        $project->saveWithTeams($request->safe()->except('team_ids'), $request->validated('team_ids', []));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project updated.')]);
 

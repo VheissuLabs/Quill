@@ -5,14 +5,13 @@ namespace App\Http\Controllers\Organizations;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class LeaveOrganizationController extends Controller
 {
-    public function __invoke(Request $request, Organization $organization): RedirectResponse
+    public function __invoke(Organization $organization): RedirectResponse
     {
-        $user = $request->user();
+        $user = auth()->user();
 
         $organization->removeMember($user);
 

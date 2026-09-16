@@ -44,6 +44,9 @@ class HandleInertiaRequests extends Middleware
             'currentOrganization' => fn () => $user?->currentOrganization ? UserOrganizationResource::make($user->currentOrganization, $user) : null,
             'organizations' => fn () => $user?->memberOrganizations(includeCurrent: true)
                 ->map(fn (Organization $organization) => UserOrganizationResource::make($organization, $user)->resolve()) ?? [],
+            'permissions' => fn () => $user?->currentOrganization
+                ? $user->toOrganizationPermissions($user->currentOrganization)
+                : [],
             'currentTeam' => fn () => $this->currentTeam($user),
             'notifications' => fn () => $this->notifications($user),
             'availableTeams' => fn () => $user?->currentOrganization?->teams()

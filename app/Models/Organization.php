@@ -79,7 +79,7 @@ class Organization extends Model
 
     public function createOwnerRole(): void
     {
-        $this->roles()->firstOrCreate(['is_owner' => true], ['name' => 'Owner', 'guard_name' => 'web'])
+        $this->roles()->firstOrCreate(['name' => 'Owner'], ['guard_name' => 'web'])
             ->syncPermissions(array_map(fn (OrganizationPermission $permission) => $permission->value, OrganizationPermission::cases()));
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -223,7 +223,7 @@ class Organization extends Model
         return $this->roles()
             ->with(['permissions', 'users' => fn ($query) => $query->orderBy('name')])
             ->withCount('users')
-            ->orderByDesc('is_owner')
+            ->orderByRaw("CASE WHEN name = 'Owner' THEN 0 ELSE 1 END")
             ->orderBy('name');
     }
 
@@ -234,18 +234,59 @@ class Organization extends Model
 
     public function ownerRole(): Role
     {
-        return $this->roles()->where('is_owner', true)->firstOrFail();
+        return $this->roles()->where('name', 'Owner')->firstOrFail();
+    }
+
+    public function isOwnerRole(Role $role): bool
+    {
+        return $role->name === 'Owner';
     }
 
     /** @return Collection<int, Role> */
     public function assignableRoles(): Collection
     {
-        return $this->roles()->where('is_owner', false)->orderBy('name')->get();
+        return $this->roles()->where('name', '!=', 'Owner')->orderBy('name')->get();
+    }
+
+    /** @return Collection<int, Role> */
+    public function rolesVisibleTo(User $user): Collection
+    {
+        return $this->roles()
+            ->when(! $this->isOwner($user), fn ($query) => $query->where('name', '!=', 'Owner'))
+            ->orderByRaw("CASE WHEN name = 'Owner' THEN 0 ELSE 1 END")
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function renameTo(string $name): self
+    {
+        return DB::transaction(function () use ($name) {
+            $organization = self::whereKey($this->id)->lockForUpdate()->firstOrFail();
+
+            $organization->update(['name' => $name]);
+
+            return $organization;
+        });
+    }
+
+    public function deleteWith(User $actor): void
+    {
+        DB::transaction(function () use ($actor) {
+            User::where('current_organization_id', $this->id)
+                ->where('id', '!=', $actor->id)
+                ->each(fn (User $affected) => $affected->switchToFallbackOrganization($this));
+
+            $this->invitations()->delete();
+            $this->members->each(fn (User $member) => $this->removeMember($member));
+            $this->delete();
+        });
     }
 
     public function isOwner(User $user): bool
     {
-        return (bool) $user->organizationRole($this)?->is_owner;
+        $role = $user->organizationRole($this);
+
+        return $role !== null && $this->isOwnerRole($role);
     }
 
     /** @return Collection<int, User> */
@@ -253,7 +294,7 @@ class Organization extends Model
     {
         return $this->members()
             ->whereHas('organizationRoles', fn ($query) => $query
-                ->where('is_owner', true)
+                ->where('name', 'Owner')
                 ->where('model_has_roles.organization_id', $this->id))
             ->get();
     }

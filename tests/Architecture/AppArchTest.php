@@ -7,3 +7,7 @@ arch()
 arch()
     ->preset()
     ->security();
+
+arch()
+    ->expect('App')
+    ->toBeCasedCorrectly();

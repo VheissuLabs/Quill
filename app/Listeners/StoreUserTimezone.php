@@ -7,16 +7,9 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 
-/**
- * Remembers the browser's timezone, sent as a hidden field by the login and registration forms,
- * so dates in email and other server-rendered output can be shown in the user's local time.
- */
 class StoreUserTimezone
 {
-    public function __construct(private Request $request)
-    {
-        //
-    }
+    public function __construct(private Request $request) {}
 
     public function handle(Login|Registered $event): void
     {
