@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Data;
+namespace App\Http\Resources;
 
 use App\Models\Comment;
 use App\Models\User;
@@ -21,9 +21,7 @@ readonly class CommentSummary
         public bool $canDelete,
         public array $mentions,
         public array $replies,
-    ) {
-        //
-    }
+    ) {}
 
     public static function fromComment(Comment $comment, ?User $viewer): self
     {

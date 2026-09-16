@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Data;
+namespace App\Http\Resources;
 
 readonly class OrganizationPermissions
 {
@@ -20,7 +20,5 @@ readonly class OrganizationPermissions
         public bool $canManageSprints,
         public bool $canViewActivity,
         public bool $canManageRoles,
-    ) {
-        //
-    }
+    ) {}
 }

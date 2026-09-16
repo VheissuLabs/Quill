@@ -1,9 +1,9 @@
 <?php
 
-use App\Data\ActivitySummary;
 use App\Enums\FeatureStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
+use App\Http\Resources\ActivitySummary;
 use App\Models\Comment;
 use App\Models\EmailAddress;
 use App\Models\Feature;

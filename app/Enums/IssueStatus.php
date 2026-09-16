@@ -2,10 +2,6 @@
 
 namespace App\Enums;
 
-/**
- * The stage an issue is in. Teams name their own board columns; each column maps to one of the
- * column statuses (Todo, In progress, Done) so the rest of the app can reason about progress.
- */
 enum IssueStatus: string
 {
     case Backlog = 'backlog';

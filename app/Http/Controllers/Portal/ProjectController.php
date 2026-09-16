@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Portal;
 
-use App\Data\FeatureSummary;
 use App\Enums\FeatureStatus;
 use App\Enums\OrganizationPermission;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\FeatureSummary;
 use App\Models\Feature;
 use App\Models\Organization;
 use App\Models\Project;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Data;
+namespace App\Http\Resources;
 
 use App\Enums\VoteDirection;
 use App\Models\Feature;
@@ -23,9 +23,7 @@ readonly class FeatureSummary
         public string $createdAt,
         /** @var array{id: int, reference: string, status: string, statusLabel: string}|null */
         public ?array $issue,
-    ) {
-        //
-    }
+    ) {}
 
     public static function fromFeature(Feature $feature, bool $withIssue = false): self
     {

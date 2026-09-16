@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Actions\Comments\RunCommentCommands;
-use App\Data\ActivitySummary;
-use App\Data\CommentSummary;
-use App\Data\FeatureSummary;
 use App\Enums\FeatureStatus;
 use App\Enums\OrganizationPermission;
 use App\Enums\VoteDirection;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Features\SaveFeatureRequest;
+use App\Http\Resources\ActivitySummary;
+use App\Http\Resources\CommentSummary;
+use App\Http\Resources\FeatureSummary;
 use App\Models\Feature;
 use App\Models\Organization;
 use App\Models\Project;

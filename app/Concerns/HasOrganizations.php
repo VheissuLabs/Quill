@@ -2,9 +2,9 @@
 
 namespace App\Concerns;
 
-use App\Data\OrganizationPermissions;
-use App\Data\UserOrganization;
 use App\Enums\OrganizationPermission;
+use App\Http\Resources\OrganizationPermissions;
+use App\Http\Resources\UserOrganization;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

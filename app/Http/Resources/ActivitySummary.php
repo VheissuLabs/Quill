@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Data;
+namespace App\Http\Resources;
 
 use App\Enums\FeatureStatus;
 use App\Enums\IssuePriority;
@@ -21,7 +21,6 @@ use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 
-/** One activity log entry, with its changed attributes turned into readable "from → to" pairs. */
 readonly class ActivitySummary
 {
     /** @param  array<int, array{field: string, from: string|null, to: string|null}>  $changes */
@@ -31,9 +30,7 @@ readonly class ActivitySummary
         public ?string $causerName,
         public string $createdAt,
         public array $changes,
-    ) {
-        //
-    }
+    ) {}
 
     public static function fromActivity(Activity $activity): self
     {

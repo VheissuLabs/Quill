@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Data;
+namespace App\Http\Resources;
 
 readonly class UserOrganization
 {
@@ -15,7 +15,5 @@ readonly class UserOrganization
         /** @var array<string, array{enabled: bool, capabilities: array<string, bool>}> */
         public array $modules = [],
         public ?bool $isCurrent = null,
-    ) {
-        //
-    }
+    ) {}
 }

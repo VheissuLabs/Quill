@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Issues;
 
 use App\Actions\Issues\CreateIssue;
-use App\Data\ActivitySummary;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationPermission;
@@ -11,6 +10,7 @@ use App\Enums\SprintStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Issues\StoreIssueRequest;
 use App\Http\Requests\Issues\UpdateIssueRequest;
+use App\Http\Resources\ActivitySummary;
 use App\Models\BoardColumn;
 use App\Models\Issue;
 use App\Models\Organization;
