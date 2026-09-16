@@ -1,20 +1,16 @@
 <?php
 
-namespace App\Listeners;
+namespace App\Http\Responses\Concerns;
 
 use App\Models\User;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 
-class StoreUserTimezone
+trait StoresTheBrowserTimezone
 {
-    public function __construct(private Request $request) {}
-
-    public function handle(Login|Registered $event): void
+    protected function storeSubmittedTimezone(Request $request): void
     {
-        $timezone = $this->request->input('timezone');
-        $user = $event->user;
+        $timezone = $request->input('timezone');
+        $user = $request->user();
 
         if (! $user instanceof User || ! is_string($timezone) || ! in_array($timezone, timezone_identifiers_list(), true)) {
             return;

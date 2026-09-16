@@ -23,7 +23,6 @@ test('app keeps the directories it has agreed on', function () {
         'Concerns',
         'Enums',
         'Http',
-        'Listeners',
         'Models',
         'Notifications',
         'Observers',

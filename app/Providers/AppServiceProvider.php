@@ -2,16 +2,12 @@
 
 namespace App\Providers;
 
-use App\Listeners\StoreUserTimezone;
 use App\Policies\RolePolicy;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -24,8 +20,6 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
 
         DevCommands::except('reverb');
-
-        Event::listen([Login::class, Registered::class], StoreUserTimezone::class);
 
         Gate::policy(Role::class, RolePolicy::class);
     }
