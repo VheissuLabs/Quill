@@ -8,11 +8,25 @@ use App\Models\Organization;
 use App\Models\Team;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
 
 class IssueRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        $organization = $this->route('current_organization');
+
+        if (! $organization instanceof Organization) {
+            return true;
+        }
+
+        $project = $organization->projects()->whereKey($this->input('project_id'))->first();
+
+        return $project === null || Gate::allows('view', $project);
+    }
+
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {

@@ -32,6 +32,7 @@ export type IssueListItem = {
     priority: IssuePriority;
     priorityLabel: string;
     points: number | null;
+    boardColumnId: number | null;
     project: { name: string; slug: string };
     teamName: string | null;
     assigneeName: string | null;
@@ -47,7 +48,6 @@ export type IssueDetail = IssueListItem & {
     description: string | null;
     teamId: number | null;
     sprintId: number | null;
-    boardColumnId: number | null;
     columns: BoardColumn[];
     assigneeId: number | null;
     creatorName: string | null;
@@ -111,20 +111,7 @@ export type SprintListItem = {
     points: number;
 };
 
-export type SprintIssue = {
-    id: number;
-    number: number;
-    reference: string;
-    title: string;
-    status: IssueStatus;
-    boardColumnId: number | null;
-    priority: IssuePriority;
-    priorityLabel: string;
-    points: number | null;
-    projectName: string;
-    assigneeName: string | null;
-    hasFeature: boolean;
-};
+export type SprintIssue = IssueListItem;
 
 export type LinkedIssue = {
     id: number;

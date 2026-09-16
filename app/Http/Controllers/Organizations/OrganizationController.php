@@ -6,20 +6,16 @@ use App\Actions\Organizations\CreateOrganization;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\DeleteOrganizationRequest;
 use App\Http\Requests\Organizations\OrganizationRequest;
-use App\Http\Requests\Organizations\UpdateOrganizationModulesRequest;
+use App\Http\Resources\UserOrganizationResource;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
-use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class OrganizationController extends Controller
 {
@@ -28,7 +24,7 @@ class OrganizationController extends Controller
         $user = $request->user();
 
         return Inertia::render('organizations/Index', [
-            'organizations' => $user->toUserOrganizations(includeCurrent: true),
+            'organizations' => $user->memberOrganizations(includeCurrent: true)->map(fn (Organization $organization) => UserOrganizationResource::make($organization, $user)->resolve()),
         ]);
     }
 
@@ -102,8 +98,6 @@ class OrganizationController extends Controller
 
     public function update(OrganizationRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        Gate::authorize('update', $currentOrganization);
-
         $currentOrganization = DB::transaction(function () use ($request, $currentOrganization) {
             $currentOrganization = Organization::whereKey($currentOrganization->id)->lockForUpdate()->firstOrFail();
 
@@ -115,73 +109,6 @@ class OrganizationController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Organization updated.')]);
 
         return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
-    }
-
-    public function updateModules(UpdateOrganizationModulesRequest $request, Organization $currentOrganization): RedirectResponse
-    {
-        Gate::authorize('manageModules', $currentOrganization);
-
-        $currentOrganization->updateModuleSettings($request->validated());
-
-        if (! $request->boolean('teams_enabled')) {
-            $currentOrganization->dissolveTeams();
-        }
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Product modules updated.')]);
-
-        return to_route('organizations.edit', ['current_organization' => $currentOrganization->slug]);
-    }
-
-    public function switch(Request $request, Organization $organization): RedirectResponse
-    {
-        abort_unless($request->user()->belongsToOrganization($organization), 403);
-
-        $request->user()->switchOrganization($organization);
-
-        return redirect($this->urlAfterSwitching($organization));
-    }
-
-    protected function urlAfterSwitching(Organization $organization): string
-    {
-        $previous = url()->previous();
-        $dashboard = route('dashboard', ['current_organization' => $organization]);
-
-        try {
-            $route = Route::getRoutes()->match(Request::create($previous));
-        } catch (NotFoundHttpException|MethodNotAllowedHttpException) {
-            return $dashboard;
-        }
-
-        $parameters = $route->parameterNames();
-
-        if (! in_array('current_organization', $parameters, true)) {
-            return $previous;
-        }
-
-        if (count($parameters) > 1 || ! $route->getName()) {
-            return $dashboard;
-        }
-
-        $query = parse_url($previous, PHP_URL_QUERY);
-
-        return route($route->getName(), ['current_organization' => $organization]).($query ? "?{$query}" : '');
-    }
-
-    public function leave(Request $request, Organization $organization): RedirectResponse
-    {
-        Gate::authorize('leave', $organization);
-
-        $user = $request->user();
-
-        $organization->removeMember($user);
-
-        if ($user->isCurrentOrganization($organization)) {
-            $user->switchToFallbackOrganization($organization);
-        }
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('You left the organization ":name"', ['name' => $organization->name])]);
-
-        return to_route('organizations.index');
     }
 
     public function destroy(DeleteOrganizationRequest $request, Organization $currentOrganization): RedirectResponse

@@ -11,7 +11,6 @@ use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,12 +19,6 @@ class ProjectController extends Controller
     public function show(Request $request, Organization $organization, Project $project): Response|RedirectResponse
     {
         $user = $request->user();
-
-        if (! $user && ! $project->isPublic()) {
-            return redirect()->guest(route('login'));
-        }
-
-        Gate::authorize('viewFeatureBoard', $project);
 
         $isMember = $user?->belongsToOrganization($organization) ?? false;
         $status = FeatureStatus::tryFrom((string) $request->query('status'));

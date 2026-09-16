@@ -10,7 +10,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /** @mixin Feature */
 class FeatureResource extends JsonResource
 {
-    public function __construct($resource, private bool $withIssue = false)
+    public function __construct(Feature $resource, private bool $withIssue = false)
     {
         parent::__construct($resource);
     }

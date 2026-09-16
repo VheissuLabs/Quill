@@ -6,22 +6,19 @@ use App\Actions\Issues\CreateIssue;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationPermission;
-use App\Enums\SprintStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Issues\IssueRequest;
-use App\Http\Resources\ActivitySummary;
+use App\Http\Resources\ActivityResource;
+use App\Http\Resources\IssueActivityResource;
+use App\Http\Resources\IssueFormResource;
+use App\Http\Resources\IssueResource;
 use App\Models\BoardColumn;
 use App\Models\Issue;
 use App\Models\Organization;
-use App\Models\Project;
 use App\Models\Sprint;
-use App\Models\Team;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
@@ -30,8 +27,6 @@ class IssueController extends Controller
 {
     public function index(Request $request, Organization $currentOrganization): Response
     {
-        Gate::authorize('viewAny', [Issue::class, $currentOrganization]);
-
         $user = $request->user();
         $team = $user->currentTeamFor($currentOrganization);
         $projectIds = $currentOrganization->projects()->visibleTo($user)->pluck('projects.id');
@@ -48,33 +43,37 @@ class IssueController extends Controller
             ->when($filters['status'], fn (Builder $query, string $status) => $query->where('status', $status))
             ->when(! $filters['status'], fn (Builder $query) => $query->whereNotIn('status', [IssueStatus::Done, IssueStatus::Cancelled]))
             ->when($filters['project'], fn (Builder $query, string $slug) => $query->whereHas('project', fn (Builder $query) => $query->where('slug', $slug)))
-            ->when($team, fn (Builder $query, Team $team) => $query->where(fn (Builder $query) => $query->where('team_id', $team->id)->orWhereNull('team_id')))
+            ->ownedBy($team)
             ->whereNull('sprint_id')
             ->when($filters['assignee'] === 'me', fn (Builder $query) => $query->where('assignee_id', $user->id))
             ->orderBy('position')
             ->orderByRaw("CASE priority WHEN 'urgent' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END DESC")
             ->latest()
-            ->get()
-            ->map(fn (Issue $issue) => $this->issueSummary($issue));
+            ->get();
 
         return Inertia::render('issues/Index', [
-            'issues' => $issues,
+            'issues' => IssueResource::collection($issues),
             'filters' => $filters,
             'activity' => $user->hasOrganizationPermission($currentOrganization, OrganizationPermission::ViewActivity)
-                ? $this->recentActivity($projectIds, $team)
+                ? IssueActivityResource::collection(
+                    Activity::query()
+                        ->where('log_name', 'issues')
+                        ->where('subject_type', (new Issue)->getMorphClass())
+                        ->whereIn('subject_id', Issue::whereIn('project_id', $projectIds)->ownedBy($team)->select('id'))
+                        ->with(['causer', 'subject.project'])
+                        ->latest('id')
+                        ->limit(20)
+                        ->get()
+                )
                 : [],
-            ...$this->formOptions($currentOrganization, $user, $team),
+            ...IssueFormResource::make($currentOrganization, $user, $team)->resolve(),
             'permissions' => $user->toOrganizationPermissions($currentOrganization),
         ]);
     }
 
     public function store(IssueRequest $request, Organization $currentOrganization, CreateIssue $createIssue): RedirectResponse
     {
-        Gate::authorize('create', [Issue::class, $currentOrganization]);
-
         $project = $currentOrganization->projects()->whereKey($request->integer('project_id'))->firstOrFail();
-
-        Gate::authorize('view', $project);
 
         $issue = new Issue([
             'title' => $request->validated('title'),
@@ -97,13 +96,11 @@ class IssueController extends Controller
 
     public function show(Request $request, Organization $currentOrganization, Issue $issue): Response
     {
-        Gate::authorize('view', $issue);
-
         $issue->load(['project', 'team.columns', 'sprint', 'boardColumn.owner', 'assignee', 'creator', 'feature.author']);
 
         return Inertia::render('issues/Show', [
             'issue' => [
-                ...$this->issueSummary($issue),
+                ...IssueResource::make($issue)->resolve(),
                 'description' => $issue->description,
                 'teamId' => $issue->team_id,
                 'sprintId' => $issue->sprint_id,
@@ -130,17 +127,15 @@ class IssueController extends Controller
                 'createdAt' => $issue->feature->created_at->toISOString(),
             ] : null,
             'activity' => $request->user()->hasOrganizationPermission($currentOrganization, OrganizationPermission::ViewActivity)
-                ? ActivitySummary::collection($issue->activitiesAsSubject()->with('causer')->latest('id')->limit(30)->get())
+                ? ActivityResource::collection($issue->activitiesAsSubject()->with('causer')->latest('id')->limit(30)->get())
                 : [],
-            ...$this->formOptions($currentOrganization, $request->user(), $issue->team ?? $request->user()->currentTeamFor($currentOrganization)),
+            ...IssueFormResource::make($currentOrganization, $request->user(), $issue->team ?? $request->user()->currentTeamFor($currentOrganization))->resolve(),
             'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
         ]);
     }
 
     public function update(IssueRequest $request, Organization $currentOrganization, Issue $issue): RedirectResponse
     {
-        Gate::authorize('update', $issue);
-
         $issue->update($request->safe()->except(['status', 'sprint_id', 'board_column_id']));
 
         if ($request->has('sprint_id')) {
@@ -160,118 +155,10 @@ class IssueController extends Controller
 
     public function destroy(Organization $currentOrganization, Issue $issue): RedirectResponse
     {
-        Gate::authorize('delete', $issue);
-
         $issue->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Issue deleted.')]);
 
         return to_route('issues.index');
-    }
-
-    /**
-     * @param  Collection<int, int>  $projectIds
-     * @return Collection<int, array<string, mixed>>
-     */
-    private function recentActivity(Collection $projectIds, ?Team $team): Collection
-    {
-        $issueIds = Issue::query()
-            ->select('id')
-            ->whereIn('project_id', $projectIds)
-            ->when($team, fn (Builder $query, Team $team) => $query->where(fn (Builder $query) => $query->where('team_id', $team->id)->orWhereNull('team_id')));
-
-        return Activity::query()
-            ->where('log_name', 'issues')
-            ->where('subject_type', (new Issue)->getMorphClass())
-            ->whereIn('subject_id', $issueIds)
-            ->with(['causer', 'subject.project'])
-            ->latest('id')
-            ->limit(20)
-            ->get()
-            ->map(function (Activity $activity) {
-                /** @var Issue $issue */
-                $issue = $activity->subject;
-
-                return [
-                    ...(array) ActivitySummary::fromActivity($activity),
-                    'issue' => [
-                        'id' => $issue->id,
-                        'reference' => $issue->reference(),
-                        'title' => $issue->title,
-                    ],
-                ];
-            });
-    }
-
-    /** @return array<string, mixed> */
-    private function issueSummary(Issue $issue): array
-    {
-        return [
-            'id' => $issue->id,
-            'number' => $issue->number,
-            'reference' => $issue->reference(),
-            'title' => $issue->title,
-            'status' => $issue->status->value,
-            'statusLabel' => $issue->boardColumn->name ?? $issue->status->label(),
-            'priority' => $issue->priority->value,
-            'priorityLabel' => $issue->priority->label(),
-            'points' => $issue->points,
-            'project' => ['name' => $issue->project->name, 'slug' => $issue->project->slug],
-            'teamName' => $issue->team?->name,
-            'assigneeName' => $issue->assignee?->name,
-            'hasFeature' => $issue->feature_id !== null,
-            'createdAt' => $issue->created_at->toISOString(),
-        ];
-    }
-
-    /** @return array<string, mixed> */
-    private function formOptions(Organization $organization, User $user, ?Team $team = null): array
-    {
-        return [
-            'projects' => $organization->projects()
-                ->visibleTo($user)
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Project $project) => ['id' => $project->id, 'name' => $project->name, 'slug' => $project->slug]),
-            'teams' => $organization->teams()
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Team $team) => ['id' => $team->id, 'name' => $team->name, 'slug' => $team->slug]),
-            'sprints' => Sprint::query()
-                ->when(
-                    $team,
-                    fn (Builder $query, Team $team) => $query->whereMorphedTo('owner', $team),
-                    fn (Builder $query) => $query->where(fn (Builder $query) => $query
-                        ->whereMorphedTo('owner', $organization)
-                        ->orWhere(fn (Builder $query) => $query
-                            ->where('owner_type', (new Team)->getMorphClass())
-                            ->whereIn('owner_id', $organization->teams()->select('id')))),
-                )
-                ->where('status', '!=', SprintStatus::Completed)
-                ->with(['owner', 'issues' => fn ($query) => $query->with(['project', 'assignee', 'sprint', 'team', 'boardColumn'])->orderBy('position')->orderBy('number')])
-                ->withCount('issues')
-                ->withSum('issues', 'points')
-                ->orderBy('starts_at')
-                ->get()
-                ->map(fn (Sprint $sprint) => [
-                    'id' => $sprint->id,
-                    'name' => $sprint->name,
-                    'teamId' => $sprint->teamId(),
-                    'teamName' => $sprint->owner->name,
-                    'status' => $sprint->status->value,
-                    'statusLabel' => $sprint->status->label(),
-                    'startsAt' => $sprint->starts_at->toDateString(),
-                    'endsAt' => $sprint->ends_at->toDateString(),
-                    'issuesCount' => $sprint->issues_count,
-                    'points' => (int) $sprint->issues_sum_points,
-                    'issues' => $sprint->issues->map(fn (Issue $issue) => $this->issueSummary($issue)),
-                ]),
-            'members' => $organization->members()
-                ->orderBy('name')
-                ->get()
-                ->map(fn (User $member) => ['id' => $member->id, 'name' => $member->name]),
-            'statuses' => IssueStatus::options(),
-            'priorities' => IssuePriority::options(),
-        ];
     }
 }

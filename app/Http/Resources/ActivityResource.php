@@ -16,55 +16,38 @@ use App\Models\Sprint;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 
-readonly class ActivitySummary
+/** @mixin Activity */
+class ActivityResource extends JsonResource
 {
-    /** @param  array<int, array{field: string, from: string|null, to: string|null}>  $changes */
-    public function __construct(
-        public int $id,
-        public string $event,
-        public ?string $causerName,
-        public string $createdAt,
-        public array $changes,
-    ) {}
-
-    public static function fromActivity(Activity $activity): self
+    /** @return array<string, mixed> */
+    public function toArray(Request $request): array
     {
         /** @var array<string, mixed> $attributes */
-        $attributes = (array) ($activity->attribute_changes ?? collect())->get('attributes', []);
+        $attributes = (array) ($this->attribute_changes ?? collect())->get('attributes', []);
         /** @var array<string, mixed> $old */
-        $old = (array) ($activity->attribute_changes ?? collect())->get('old', []);
+        $old = (array) ($this->attribute_changes ?? collect())->get('old', []);
 
-        $changes = collect($attributes)
-            ->reject(fn ($value, string $attribute) => $activity->event === 'updated' && ! array_key_exists($attribute, $old))
-            ->map(fn ($value, string $attribute) => [
-                'field' => self::label($attribute),
-                'from' => $activity->event === 'updated' ? self::display($attribute, $old[$attribute] ?? null) : null,
-                'to' => self::display($attribute, $value),
-            ])
-            ->values()
-            ->all();
-
-        return new self(
-            id: $activity->id,
-            event: $activity->event ?? $activity->description,
-            causerName: $activity->causer instanceof User ? $activity->causer->name : null,
-            createdAt: $activity->created_at->toISOString(),
-            changes: $changes,
-        );
-    }
-
-    /**
-     * @param  Collection<int, Activity>  $activities
-     * @return Collection<int, self>
-     */
-    public static function collection(Collection $activities): Collection
-    {
-        return $activities->map(fn (Activity $activity) => self::fromActivity($activity));
+        return [
+            'id' => $this->id,
+            'event' => $this->event ?? $this->description,
+            'causerName' => $this->causer instanceof User ? $this->causer->name : null,
+            'createdAt' => $this->created_at->toISOString(),
+            'changes' => collect($attributes)
+                ->reject(fn ($value, string $attribute) => $this->event === 'updated' && ! array_key_exists($attribute, $old))
+                ->map(fn ($value, string $attribute) => [
+                    'field' => self::label($attribute),
+                    'from' => $this->event === 'updated' ? self::display($attribute, $old[$attribute] ?? null) : null,
+                    'to' => self::display($attribute, $value),
+                ])
+                ->values()
+                ->all(),
+        ];
     }
 
     protected static function label(string $attribute): string
@@ -100,7 +83,7 @@ readonly class ActivitySummary
 
     protected static function display(string $attribute, mixed $value): ?string
     {
-        if ($value === null || $value === '') {
+        if ($value === null) {
             return null;
         }
 

@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Http\Resources;
+
+use App\Enums\IssuePriority;
+use App\Enums\IssueStatus;
+use App\Enums\SprintStatus;
+use App\Models\Organization;
+use App\Models\Project;
+use App\Models\Sprint;
+use App\Models\Team;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/** @mixin Organization */
+class IssueFormResource extends JsonResource
+{
+    public function __construct(Organization $resource, private User $user, private ?Team $team)
+    {
+        parent::__construct($resource);
+    }
+
+    /** @return array<string, mixed> */
+    public function toArray(Request $request): array
+    {
+        return [
+            'projects' => $this->projects()
+                ->visibleTo($this->user)
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Project $project) => ['id' => $project->id, 'name' => $project->name, 'slug' => $project->slug]),
+            'teams' => $this->teams()
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Team $team) => ['id' => $team->id, 'name' => $team->name, 'slug' => $team->slug]),
+            'sprints' => SprintResource::collection(
+                Sprint::query()->onBoardFor($this->resource, $this->team)
+                    ->where('status', '!=', SprintStatus::Completed)
+                    ->with([
+                        'owner',
+                        'issues' => fn ($query) => $query
+                            ->with(['project', 'assignee', 'sprint', 'team', 'boardColumn'])
+                            ->orderBy('position')
+                            ->orderBy('number'),
+                    ])
+                    ->withCount('issues')
+                    ->withSum('issues', 'points')
+                    ->orderBy('starts_at')
+                    ->get()
+            ),
+            'members' => UserResource::collection($this->members()->orderBy('name')->get()),
+            'statuses' => IssueStatus::options(),
+            'priorities' => IssuePriority::options(),
+        ];
+    }
+}

@@ -4,8 +4,12 @@ namespace App\Models;
 
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
+use App\Observers\IssueObserver;
 use Database\Factories\IssueFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +18,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperIssue */
+#[ObservedBy(IssueObserver::class)]
 #[UseFactory(IssueFactory::class)]
 class Issue extends Model
 {
@@ -63,6 +68,14 @@ class Issue extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function ownedBy(Builder $query, ?Team $team): void
+    {
+        $query->when($team, fn (Builder $query, Team $team) => $query
+            ->where(fn (Builder $query) => $query->where('team_id', $team->id)->orWhereNull('team_id')));
     }
 
     public function reference(): string

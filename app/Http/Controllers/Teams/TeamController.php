@@ -6,13 +6,13 @@ use App\Enums\IssueStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Teams\DeleteTeamRequest;
 use App\Http\Requests\Teams\TeamRequest;
+use App\Http\Resources\UserResource;
 use App\Models\BoardColumn;
 use App\Models\Organization;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,8 +20,6 @@ class TeamController extends Controller
 {
     public function index(Request $request, Organization $currentOrganization): Response
     {
-        Gate::authorize('viewAny', [Team::class, $currentOrganization]);
-
         return Inertia::render('teams/Index', [
             'teams' => $currentOrganization->teams()
                 ->withCount('members')
@@ -39,8 +37,6 @@ class TeamController extends Controller
 
     public function store(TeamRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        Gate::authorize('create', [Team::class, $currentOrganization]);
-
         $team = $currentOrganization->teams()->create($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Team created.')]);
@@ -50,8 +46,6 @@ class TeamController extends Controller
 
     public function edit(Request $request, Organization $currentOrganization, Team $team): Response
     {
-        Gate::authorize('view', $team);
-
         $memberIds = $team->members()->pluck('users.id');
 
         return Inertia::render('teams/Edit', [
@@ -63,12 +57,12 @@ class TeamController extends Controller
             'members' => $team->members()
                 ->orderBy('name')
                 ->get()
-                ->map(fn (User $member) => $this->memberSummary($member)),
+                ->map(fn (User $member) => new UserResource($member, withContact: true)),
             'availableMembers' => $currentOrganization->members()
                 ->whereKeyNot($memberIds)
                 ->orderBy('name')
                 ->get()
-                ->map(fn (User $member) => $this->memberSummary($member)),
+                ->map(fn (User $member) => new UserResource($member, withContact: true)),
             'columns' => $team->columns()->withCount('issues')->get()->map(fn (BoardColumn $column) => [
                 'id' => $column->id,
                 'name' => $column->name,
@@ -86,17 +80,8 @@ class TeamController extends Controller
         ]);
     }
 
-    public function switch(Request $request, Organization $currentOrganization, Team $team): RedirectResponse
-    {
-        abort_unless($request->user()->switchTeam($team), 403);
-
-        return back();
-    }
-
     public function update(TeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
-        Gate::authorize('update', $team);
-
         $team->update($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Team updated.')]);
@@ -106,8 +91,6 @@ class TeamController extends Controller
 
     public function destroy(DeleteTeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
-        Gate::authorize('delete', $team);
-
         $target = $request->filled('target_team_id')
             ? $currentOrganization->teams()->whereKey($request->integer('target_team_id'))->firstOrFail()
             : $currentOrganization;
@@ -117,16 +100,5 @@ class TeamController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted, its work moved to ":name".', ['name' => $target->name])]);
 
         return to_route('teams.index');
-    }
-
-    /** @return array{id: int, name: string, email: string, avatar: string|null} */
-    private function memberSummary(User $member): array
-    {
-        return [
-            'id' => $member->id,
-            'name' => $member->name,
-            'email' => $member->email,
-            'avatar' => $member->avatar ?? null,
-        ];
     }
 }

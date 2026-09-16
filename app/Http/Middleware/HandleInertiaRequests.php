@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Resources\UserOrganizationResource;
+use App\Models\Organization;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -39,8 +41,9 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            'currentOrganization' => fn () => $user?->currentOrganization ? $user->toUserOrganization($user->currentOrganization) : null,
-            'organizations' => fn () => $user?->toUserOrganizations(includeCurrent: true) ?? [],
+            'currentOrganization' => fn () => $user?->currentOrganization ? UserOrganizationResource::make($user->currentOrganization, $user) : null,
+            'organizations' => fn () => $user?->memberOrganizations(includeCurrent: true)
+                ->map(fn (Organization $organization) => UserOrganizationResource::make($organization, $user)->resolve()) ?? [],
             'currentTeam' => fn () => $this->currentTeam($user),
             'notifications' => fn () => $this->notifications($user),
             'availableTeams' => fn () => $user?->currentOrganization?->teams()

@@ -205,3 +205,23 @@ Vue components must have a single root element.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
 </laravel-boost-guidelines>
+
+# Project overrides
+
+These take precedence over the Boost guidelines above.
+
+## Comments
+
+Do not write comments. This specifically overrides "Prefer PHPDoc blocks over inline
+comments" — the answer is neither a docblock nor an inline comment, it is no comment.
+
+Allowed annotations are only the ones a tool consumes: PHPStan generics and array
+shapes, `@mixin`, `@var` where inference fails, `@deprecated`. Flat, one line.
+Everything else — prose docblocks, section banners, commented-out code — is removed
+on sight. This codebase is actively deleting comments; do not add to the pile.
+
+## Controllers
+
+Controllers contain public actions only. No private or protected methods. Array
+shaping belongs in `app/Http/Resources`, queries belong in model scopes, state
+changes belong on the model.

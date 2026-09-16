@@ -10,7 +10,6 @@ use App\Models\Project;
 use App\Models\Vote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,7 +18,7 @@ class DashboardController extends Controller
     public function __invoke(Request $request, Organization $currentOrganization): Response
     {
         $user = $request->user();
-        $featureVotingEnabled = Gate::allows('viewAny', [Project::class, $currentOrganization]);
+        $featureVotingEnabled = $user->can('viewAny', [Project::class, $currentOrganization]);
 
         $pendingInvitations = OrganizationInvitation::query()
             ->with(['inviter', 'organization'])

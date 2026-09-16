@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Foundation\DevCommands;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -18,11 +19,6 @@ use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void
-    {
-        //
-    }
-
     public function boot(): void
     {
         $this->configureDefaults();
@@ -37,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+
+        JsonResource::withoutWrapping();
 
         DB::prohibitDestructiveCommands(
             app()->isProduction(),

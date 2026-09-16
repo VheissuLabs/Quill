@@ -3,7 +3,7 @@
 use App\Enums\FeatureStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
-use App\Http\Resources\ActivitySummary;
+use App\Http\Resources\ActivityResource;
 use App\Models\Comment;
 use App\Models\EmailAddress;
 use App\Models\Feature;
@@ -164,7 +164,7 @@ test('adding and removing a team member is logged with the member named', functi
     expect($entries[1])
         ->event->toBe('deleted')
         ->causer_id->toBe($admin->id);
-    expect(ActivitySummary::fromActivity($entries[0])->changes)
+    expect(ActivityResource::make($entries[0])->resolve()['changes'])
         ->toContain(['field' => 'Team', 'from' => null, 'to' => 'Development'])
         ->toContain(['field' => 'Member', 'from' => null, 'to' => 'Grace Hopper']);
 });
@@ -186,7 +186,7 @@ test('joining and leaving an organization is logged', function () {
         ->get();
 
     expect($entries->pluck('event')->all())->toBe(['created', 'deleted']);
-    expect(ActivitySummary::fromActivity($entries[0])->changes)
+    expect(ActivityResource::make($entries[0])->resolve()['changes'])
         ->toContain(['field' => 'Organization', 'from' => null, 'to' => 'Acme'])
         ->toContain(['field' => 'Member', 'from' => null, 'to' => 'Grace Hopper']);
     expect($organization->members()->whereKey($member->id)->exists())->toBeFalse();
@@ -217,6 +217,34 @@ test('user activity never includes passwords, secrets or tokens', function () {
     $loggedAttributes = $entries->flatMap(fn (Activity $entry) => array_keys($entry->attribute_changes['attributes']))->unique()->values()->all();
 
     expect($loggedAttributes)->not->toContain('password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes');
-    expect(ActivitySummary::fromActivity($entries->last())->changes)
+    expect(ActivityResource::make($entries->last())->resolve()['changes'])
         ->toBe([['field' => 'Name', 'from' => 'Grace Hopper', 'to' => 'Grace Brewster Hopper']]);
+});
+
+test('turning an internal comment public logs the new value as No', function () {
+    $comment = Comment::factory()->internal()->create();
+
+    $comment->update(['is_internal' => false]);
+
+    $entry = Activity::query()->where('log_name', 'comments')->where('subject_id', $comment->id)->latest('id')->first();
+
+    expect(ActivityResource::make($entry)->resolve()['changes'])
+        ->toBe([['field' => 'Internal', 'from' => 'Yes', 'to' => 'No']]);
+});
+
+test('merging a team that owns nothing logs the counts as zero', function () {
+    $organization = Organization::factory()->create();
+    $source = Team::factory()->for($organization)->create(['name' => 'Marketing']);
+    $target = Team::factory()->for($organization)->create(['name' => 'Development']);
+
+    $source->mergeInto($target);
+
+    $entry = Activity::query()->where('log_name', 'teams')->where('event', 'merged')->latest('id')->first();
+
+    expect(ActivityResource::make($entry)->resolve()['changes'])
+        ->toContain(['field' => 'Merged from', 'from' => null, 'to' => 'Marketing'])
+        ->toContain(['field' => 'Members added', 'from' => null, 'to' => '0'])
+        ->toContain(['field' => 'Projects moved', 'from' => null, 'to' => '0'])
+        ->toContain(['field' => 'Sprints moved', 'from' => null, 'to' => '0'])
+        ->toContain(['field' => 'Issues moved', 'from' => null, 'to' => '0']);
 });

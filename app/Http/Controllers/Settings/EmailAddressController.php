@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\StoreEmailAddressRequest;
 use App\Models\EmailAddress;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class EmailAddressController extends Controller
@@ -24,8 +23,6 @@ class EmailAddressController extends Controller
 
     public function destroy(EmailAddress $emailAddress): RedirectResponse
     {
-        Gate::authorize('manage', $emailAddress);
-
         $emailAddress->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Email address removed.')]);

@@ -68,6 +68,12 @@ class Project extends Model
         return $this->visibility === ProjectVisibility::Public;
     }
 
+    /** @param  array<int, int>  $teamIds */
+    public function syncTeams(array $teamIds): void
+    {
+        $this->teams()->sync($this->isPublic() ? [] : $teamIds);
+    }
+
     /** @param  Builder<$this>  $query */
     #[Scope]
     protected function visibleTo(Builder $query, ?User $user): void

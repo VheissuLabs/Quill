@@ -2,15 +2,22 @@
 
 namespace App\Models;
 
+use App\Observers\OrganizationMembershipObserver;
+use Database\Factories\OrganizationMembershipFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperOrganizationMembership */
+#[ObservedBy(OrganizationMembershipObserver::class)]
+#[UseFactory(OrganizationMembershipFactory::class)]
 class OrganizationMembership extends Pivot
 {
-    use LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $guarded = [];
 

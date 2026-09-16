@@ -22,7 +22,7 @@ const { getInitials } = useInitials();
     >
         <div class="flex items-center justify-between gap-2">
             <span class="text-muted-foreground truncate text-xs tabular-nums">
-                {{ issue.projectName }} #{{ issue.number }}
+                {{ issue.project.name }} #{{ issue.number }}
             </span>
             <span class="flex items-center gap-1.5">
                 <Lightbulb

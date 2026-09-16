@@ -11,9 +11,7 @@ use App\Models\Project;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,8 +19,6 @@ class ProjectController extends Controller
 {
     public function index(Request $request, Organization $currentOrganization): Response
     {
-        Gate::authorize('viewAny', [Project::class, $currentOrganization]);
-
         return Inertia::render('projects/Index', [
             'projects' => $currentOrganization->projects()
                 ->visibleTo($request->user())
@@ -40,7 +36,10 @@ class ProjectController extends Controller
                     'clientName' => $project->client?->name,
                     'featuresCount' => $project->features_count,
                 ]),
-            'clients' => $this->clientOptions($currentOrganization),
+            'clients' => $currentOrganization->clients()
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Client $client) => ['id' => $client->id, 'name' => $client->name]),
             'visibilities' => ProjectVisibility::options(),
             'permissions' => $request->user()->toOrganizationPermissions($currentOrganization),
         ]);
@@ -48,12 +47,10 @@ class ProjectController extends Controller
 
     public function store(ProjectRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        Gate::authorize('create', [Project::class, $currentOrganization]);
-
         $project = DB::transaction(function () use ($request, $currentOrganization) {
             $project = $currentOrganization->projects()->create($request->safe()->except('team_ids'));
 
-            $this->syncTeams($project, $request->validated('team_ids', []));
+            $project->syncTeams($request->validated('team_ids', []));
 
             return $project;
         });
@@ -65,8 +62,6 @@ class ProjectController extends Controller
 
     public function edit(Organization $currentOrganization, Project $project): Response
     {
-        Gate::authorize('update', $project);
-
         return Inertia::render('projects/Edit', [
             'project' => [
                 'id' => $project->id,
@@ -77,7 +72,10 @@ class ProjectController extends Controller
                 'clientId' => $project->client_id,
                 'teamIds' => $project->teams()->pluck('teams.id'),
             ],
-            'clients' => $this->clientOptions($currentOrganization),
+            'clients' => $currentOrganization->clients()
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Client $client) => ['id' => $client->id, 'name' => $client->name]),
             'teams' => $currentOrganization->teams()
                 ->orderBy('name')
                 ->get()
@@ -88,12 +86,10 @@ class ProjectController extends Controller
 
     public function update(ProjectRequest $request, Organization $currentOrganization, Project $project): RedirectResponse
     {
-        Gate::authorize('update', $project);
-
         DB::transaction(function () use ($request, $project) {
             $project->update($request->safe()->except('team_ids'));
 
-            $this->syncTeams($project, $request->validated('team_ids', []));
+            $project->syncTeams($request->validated('team_ids', []));
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project updated.')]);
@@ -103,27 +99,10 @@ class ProjectController extends Controller
 
     public function destroy(Organization $currentOrganization, Project $project): RedirectResponse
     {
-        Gate::authorize('delete', $project);
-
         $project->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project deleted.')]);
 
         return to_route('projects.index');
-    }
-
-    /** @param  array<int, int>  $teamIds */
-    private function syncTeams(Project $project, array $teamIds): void
-    {
-        $project->teams()->sync($project->isPublic() ? [] : $teamIds);
-    }
-
-    /** @return Collection<int, array{id: int, name: string}> */
-    private function clientOptions(Organization $organization): Collection
-    {
-        return $organization->clients()
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Client $client) => ['id' => $client->id, 'name' => $client->name]);
     }
 }

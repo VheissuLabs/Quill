@@ -10,15 +10,12 @@ use App\Models\Organization;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class BoardColumnController extends Controller
 {
     public function store(BoardColumnRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
-        Gate::authorize('create', [BoardColumn::class, $team]);
-
         $team->columns()->create([
             ...$request->validated(),
             'position' => ($team->columns()->max('position') ?? -1) + 1,
@@ -31,8 +28,6 @@ class BoardColumnController extends Controller
 
     public function update(BoardColumnRequest $request, Organization $currentOrganization, Team $team, BoardColumn $column): RedirectResponse
     {
-        Gate::authorize('update', $column);
-
         DB::transaction(function () use ($request, $column) {
             $column->update($request->validated());
 
@@ -48,8 +43,6 @@ class BoardColumnController extends Controller
 
     public function destroy(Organization $currentOrganization, Team $team, BoardColumn $column): RedirectResponse
     {
-        Gate::authorize('delete', $column);
-
         $columns = $team->columns()->get();
 
         abort_if($columns->count() === 1, 409, __('A board needs at least one column.'));

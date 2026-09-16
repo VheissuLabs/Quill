@@ -46,6 +46,11 @@ enum OrganizationPermission: string
         };
     }
 
+    public function key(): string
+    {
+        return 'can'.$this->name;
+    }
+
     public function group(): string
     {
         return match ($this) {

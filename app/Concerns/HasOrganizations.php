@@ -3,8 +3,6 @@
 namespace App\Concerns;
 
 use App\Enums\OrganizationPermission;
-use App\Http\Resources\OrganizationPermissions;
-use App\Http\Resources\UserOrganization;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -104,36 +102,19 @@ trait HasOrganizations
             ->pluck('model_has_roles.organization_id');
     }
 
-    /** @return Collection<int, UserOrganization> */
-    public function toUserOrganizations(bool $includeCurrent = false): Collection
+    /** @return Collection<int, Organization> */
+    public function memberOrganizations(bool $includeCurrent = false): Collection
     {
         $this->loadMissing('organizationRoles');
 
         return $this->organizations()
             ->get()
-            ->map(fn (Organization $organization) => ! $includeCurrent && $this->isCurrentOrganization($organization) ? null : $this->toUserOrganization($organization))
-            ->filter()
+            ->reject(fn (Organization $organization) => ! $includeCurrent && $this->isCurrentOrganization($organization))
             ->values();
     }
 
-    public function toUserOrganization(Organization $organization): UserOrganization
-    {
-        $role = $this->organizationRole($organization);
-
-        return new UserOrganization(
-            id: $organization->id,
-            name: $organization->name,
-            slug: $organization->slug,
-            role: $role?->name,
-            isOwner: (bool) $role?->is_owner,
-            canUpdate: $this->hasOrganizationPermission($organization, OrganizationPermission::UpdateOrganization),
-            canManageRoles: $this->hasOrganizationPermission($organization, OrganizationPermission::ManageRoles),
-            modules: $organization->moduleSettings(),
-            isCurrent: $this->isCurrentOrganization($organization),
-        );
-    }
-
-    public function toOrganizationPermissions(Organization $organization): OrganizationPermissions
+    /** @return array<string, bool> */
+    public function toOrganizationPermissions(Organization $organization): array
     {
         $granted = $this->organizationRoles()
             ->wherePivot('organization_id', $organization->id)
@@ -142,23 +123,9 @@ trait HasOrganizations
             ->flatMap(fn (Role $role) => $role->permissions->pluck('name'))
             ->map(fn (string $name) => OrganizationPermission::from($name));
 
-        return new OrganizationPermissions(
-            canUpdateOrganization: $granted->contains(OrganizationPermission::UpdateOrganization),
-            canDeleteOrganization: $granted->contains(OrganizationPermission::DeleteOrganization),
-            canAddMember: $granted->contains(OrganizationPermission::AddMember),
-            canUpdateMember: $granted->contains(OrganizationPermission::UpdateMember),
-            canRemoveMember: $granted->contains(OrganizationPermission::RemoveMember),
-            canCreateInvitation: $granted->contains(OrganizationPermission::CreateInvitation),
-            canCancelInvitation: $granted->contains(OrganizationPermission::CancelInvitation),
-            canManageTeams: $granted->contains(OrganizationPermission::ManageTeams),
-            canManageClients: $granted->contains(OrganizationPermission::ManageClients),
-            canManageProjects: $granted->contains(OrganizationPermission::ManageProjects),
-            canManageFeatures: $granted->contains(OrganizationPermission::ManageFeatures),
-            canManageIssues: $granted->contains(OrganizationPermission::ManageIssues),
-            canManageSprints: $granted->contains(OrganizationPermission::ManageSprints),
-            canViewActivity: $granted->contains(OrganizationPermission::ViewActivity),
-            canManageRoles: $granted->contains(OrganizationPermission::ManageRoles),
-        );
+        return collect(OrganizationPermission::cases())
+            ->mapWithKeys(fn (OrganizationPermission $permission) => [$permission->key() => $granted->contains($permission)])
+            ->all();
     }
 
     public function fallbackOrganization(?Organization $excluding = null): ?Organization

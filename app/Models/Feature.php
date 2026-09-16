@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Enums\FeatureStatus;
 use App\Enums\VoteDirection;
+use App\Observers\FeatureObserver;
 use Database\Factories\FeatureFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,6 +26,7 @@ use Spatie\Activitylog\Support\LogOptions;
  *
  * @mixin IdeHelperFeature
  */
+#[ObservedBy(FeatureObserver::class)]
 #[UseFactory(FeatureFactory::class)]
 class Feature extends Model
 {

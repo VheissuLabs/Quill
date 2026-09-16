@@ -5,15 +5,12 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Models\EmailAddress;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class EmailAddressVerificationNotificationController extends Controller
 {
     public function store(EmailAddress $emailAddress): RedirectResponse
     {
-        Gate::authorize('manage', $emailAddress);
-
         if (! $emailAddress->isVerified()) {
             $emailAddress->sendVerificationNotification();
         }

@@ -7,7 +7,9 @@ use App\Enums\SprintStatus;
 use App\Observers\SprintObserver;
 use Database\Factories\SprintFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,6 +38,21 @@ class Sprint extends Model
     public function owner(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function onBoardFor(Builder $query, Organization $organization, ?Team $team): void
+    {
+        $query->when(
+            $team,
+            fn (Builder $query, Team $team) => $query->whereMorphedTo('owner', $team),
+            fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                ->whereMorphedTo('owner', $organization)
+                ->orWhere(fn (Builder $query) => $query
+                    ->where('owner_type', (new Team)->getMorphClass())
+                    ->whereIn('owner_id', $organization->teams()->select('id')))),
+        );
     }
 
     public function organization(): Organization

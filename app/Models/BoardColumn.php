@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Enums\IssueStatus;
+use App\Observers\BoardColumnObserver;
 use Database\Factories\BoardColumnFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +19,7 @@ use Spatie\Activitylog\Support\LogOptions;
  *
  * @mixin IdeHelperBoardColumn
  */
+#[ObservedBy(BoardColumnObserver::class)]
 #[UseFactory(BoardColumnFactory::class)]
 class BoardColumn extends Model
 {

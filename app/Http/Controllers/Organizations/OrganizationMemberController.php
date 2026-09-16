@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Organizations;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Organizations\DeleteOrganizationMemberRequest;
 use App\Http\Requests\Organizations\UpdateOrganizationMemberRequest;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 
@@ -18,8 +18,6 @@ class OrganizationMemberController extends Controller
         $membership = $currentOrganization->memberships()->where('user_id', $user->id)->firstOrFail();
         $role = Role::findOrFail($request->integer('role_id'));
 
-        Gate::authorize('update', [$membership, $role]);
-
         $currentOrganization->changeMemberRole($user, $role);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member role updated.')]);
@@ -27,11 +25,9 @@ class OrganizationMemberController extends Controller
         return back();
     }
 
-    public function destroy(Organization $currentOrganization, User $user): RedirectResponse
+    public function destroy(DeleteOrganizationMemberRequest $request, Organization $currentOrganization, User $user): RedirectResponse
     {
         $membership = $currentOrganization->memberships()->where('user_id', $user->id)->firstOrFail();
-
-        Gate::authorize('delete', $membership);
 
         $currentOrganization->removeMember($user);
 

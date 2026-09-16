@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Notifications\VerifyEmailAddress;
+use App\Observers\EmailAddressObserver;
 use Database\Factories\EmailAddressFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +17,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperEmailAddress */
+#[ObservedBy(EmailAddressObserver::class)]
 #[UseFactory(EmailAddressFactory::class)]
 class EmailAddress extends Model
 {

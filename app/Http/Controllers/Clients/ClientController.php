@@ -9,7 +9,6 @@ use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,8 +16,6 @@ class ClientController extends Controller
 {
     public function index(Request $request, Organization $currentOrganization): Response
     {
-        Gate::authorize('viewAny', [Client::class, $currentOrganization]);
-
         return Inertia::render('clients/Index', [
             'clients' => $currentOrganization->clients()
                 ->withCount('projects')
@@ -36,8 +33,6 @@ class ClientController extends Controller
 
     public function store(ClientRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        Gate::authorize('create', [Client::class, $currentOrganization]);
-
         $currentOrganization->clients()->create($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client created.')]);
@@ -47,8 +42,6 @@ class ClientController extends Controller
 
     public function edit(Request $request, Organization $currentOrganization, Client $client): Response
     {
-        Gate::authorize('view', $client);
-
         return Inertia::render('clients/Edit', [
             'client' => [
                 'id' => $client->id,
@@ -70,8 +63,6 @@ class ClientController extends Controller
 
     public function update(ClientRequest $request, Organization $currentOrganization, Client $client): RedirectResponse
     {
-        Gate::authorize('update', $client);
-
         $client->update($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client updated.')]);
@@ -81,8 +72,6 @@ class ClientController extends Controller
 
     public function destroy(Organization $currentOrganization, Client $client): RedirectResponse
     {
-        Gate::authorize('delete', $client);
-
         $client->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client deleted.')]);

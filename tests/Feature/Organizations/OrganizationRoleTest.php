@@ -27,9 +27,7 @@ test('owners can define a role with permissions and it becomes grantable', funct
     $organization->changeMemberRole($member, $role);
 
     expect($member->fresh()->toOrganizationPermissions($organization))
-        ->canManageProjects->toBeTrue()
-        ->canManageFeatures->toBeTrue()
-        ->canManageIssues->toBeFalse();
+        ->toMatchArray(['canManageProjects' => true, 'canManageFeatures' => true, 'canManageIssues' => false]);
 
     $this
         ->actingAs($owner)

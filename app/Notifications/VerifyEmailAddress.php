@@ -43,10 +43,7 @@ class VerifyEmailAddress extends Notification implements ShouldQueue
         return URL::temporarySignedRoute(
             'email-addresses.verify',
             now()->addMinutes(60),
-            [
-                'emailAddress' => $this->emailAddress->id,
-                'hash' => sha1($this->emailAddress->email),
-            ],
+            ['emailAddress' => $this->emailAddress->id],
         );
     }
 }

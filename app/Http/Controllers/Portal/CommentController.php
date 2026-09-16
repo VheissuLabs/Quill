@@ -13,15 +13,12 @@ use App\Models\User;
 use App\Notifications\MentionedInComment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class CommentController extends Controller
 {
     public function store(StoreCommentRequest $request, Organization $organization, Project $project, Feature $feature, RunCommentCommands $commands): RedirectResponse
     {
-        Gate::authorize('comment', $feature);
-
         $parent = $request->filled('parent_id')
             ? $feature->comments()->whereKey($request->integer('parent_id'))->firstOrFail()
             : null;
@@ -31,7 +28,7 @@ class CommentController extends Controller
         $internal = $request->boolean('internal') || $result['internal'] || ($parent->is_internal ?? false);
 
         if ($internal) {
-            Gate::authorize('commentInternally', $feature);
+            abort_unless($request->user()->can('commentInternally', $feature), 403);
         }
 
         if ($result['body'] !== '') {
@@ -62,8 +59,6 @@ class CommentController extends Controller
 
     public function destroy(Organization $organization, Project $project, Feature $feature, Comment $comment): RedirectResponse
     {
-        Gate::authorize('delete', $comment);
-
         $comment->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Comment deleted.')]);

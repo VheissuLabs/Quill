@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Observers\CommentObserver;
 use Database\Factories\CommentFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +17,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperComment */
+#[ObservedBy(CommentObserver::class)]
 #[UseFactory(CommentFactory::class)]
 class Comment extends Model
 {

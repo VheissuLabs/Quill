@@ -19,14 +19,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /** @mixin IdeHelperOrganization */
 #[UseFactory(OrganizationFactory::class)]
@@ -84,6 +88,31 @@ class Organization extends Model
     public function logoUrl(): ?string
     {
         return $this->logo_path ? Storage::url($this->logo_path) : null;
+    }
+
+    public function urlAfterSwitching(string $previous): string
+    {
+        $dashboard = route('dashboard', ['current_organization' => $this]);
+
+        try {
+            $route = Route::getRoutes()->match(Request::create($previous));
+        } catch (NotFoundHttpException|MethodNotAllowedHttpException) {
+            return $dashboard;
+        }
+
+        $parameters = $route->parameterNames();
+
+        if (! in_array('current_organization', $parameters, true)) {
+            return $previous;
+        }
+
+        if (count($parameters) > 1 || ! $route->getName()) {
+            return $dashboard;
+        }
+
+        $query = parse_url($previous, PHP_URL_QUERY);
+
+        return route($route->getName(), ['current_organization' => $this]).($query ? "?{$query}" : '');
     }
 
     public function isModuleEnabled(OrganizationModule $module): bool
@@ -186,6 +215,16 @@ class Organization extends Model
     public function roles(): HasMany
     {
         return $this->hasMany(Role::class, config('permission.column_names.team_foreign_key'));
+    }
+
+    /** @return HasMany<Role, $this> */
+    public function rolesWithMembers(): HasMany
+    {
+        return $this->roles()
+            ->with(['permissions', 'users' => fn ($query) => $query->orderBy('name')])
+            ->withCount('users')
+            ->orderByDesc('is_owner')
+            ->orderBy('name');
     }
 
     public function role(string $name): ?Role
