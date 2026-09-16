@@ -28,7 +28,9 @@ trait HasOrganizations
     public function ownedOrganizations(): BelongsToMany
     {
         return $this->organizations()
-            ->whereIn('organizations.id', $this->organizationRoles()->where('is_owner', true)->pluck('model_has_roles.organization_id'));
+            ->whereIn('organizations.id', $this->organizationRoles()
+                ->where('is_owner', true)
+                ->pluck('model_has_roles.organization_id'));
     }
 
     /** @return HasMany<OrganizationMembership, $this> */

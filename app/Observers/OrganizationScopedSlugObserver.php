@@ -12,9 +12,7 @@ class OrganizationScopedSlugObserver
 {
     public function creating(Client|Project|Team $model): void
     {
-        if (empty($model->slug)) {
-            $model->slug = $this->slugFor($model, $model->name);
-        }
+        $model->slug = $this->slugFor($model, $model->name);
     }
 
     public function updating(Client|Project|Team $model): void

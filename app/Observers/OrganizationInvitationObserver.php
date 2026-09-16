@@ -9,8 +9,6 @@ class OrganizationInvitationObserver
 {
     public function creating(OrganizationInvitation $invitation): void
     {
-        if (empty($invitation->code)) {
-            $invitation->code = Str::random(64);
-        }
+        $invitation->code = Str::random(64);
     }
 }
