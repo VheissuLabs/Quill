@@ -52,16 +52,16 @@ trait HasOrganizations
         return $this->belongsTo(Organization::class, 'current_organization_id');
     }
 
-    public function switchOrganization(Organization $organization): bool
+    public function switchOrganization(?Organization $organization): bool
     {
-        if (! $this->belongsToOrganization($organization)) {
+        if ($organization && ! $this->belongsToOrganization($organization)) {
             return false;
         }
 
-        $this->update(['current_organization_id' => $organization->id]);
+        $this->update(['current_organization_id' => $organization?->getKey()]);
         $this->setRelation('currentOrganization', $organization);
 
-        URL::defaults(['current_organization' => $organization->slug]);
+        URL::defaults(['current_organization' => $organization?->slug]);
 
         return true;
     }
@@ -171,15 +171,6 @@ trait HasOrganizations
 
     public function switchToFallbackOrganization(?Organization $excluding = null): void
     {
-        $fallback = $this->fallbackOrganization($excluding);
-
-        if ($fallback) {
-            $this->switchOrganization($fallback);
-
-            return;
-        }
-
-        $this->update(['current_organization_id' => null]);
-        $this->setRelation('currentOrganization', null);
+        $this->switchOrganization($this->fallbackOrganization($excluding));
     }
 }
