@@ -21,6 +21,8 @@ class Issue extends Model
 
     protected $guarded = [];
 
+    protected $attributes = ['priority' => IssuePriority::None->value];
+
     /** @return BelongsTo<Project, $this> */
     public function project(): BelongsTo
     {

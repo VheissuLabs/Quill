@@ -77,17 +77,19 @@ class IssueController extends Controller
 
         Gate::authorize('view', $project);
 
-        $issue = $createIssue->handle(
-            project: $project,
-            creator: $request->user(),
-            title: $request->validated('title'),
-            description: $request->validated('description'),
-            priority: IssuePriority::from($request->validated('priority')),
-            points: $request->filled('points') ? $request->integer('points') : null,
-            team: Team::find($request->integer('team_id')),
-            sprint: Sprint::find($request->integer('sprint_id')),
-            assignee: User::find($request->integer('assignee_id')),
-        );
+        $issue = new Issue([
+            'title' => $request->validated('title'),
+            'description' => $request->validated('description'),
+            'priority' => IssuePriority::from($request->validated('priority')),
+            'points' => $request->filled('points') ? $request->integer('points') : null,
+            'team_id' => $request->integer('team_id') ?: null,
+            'assignee_id' => $request->integer('assignee_id') ?: null,
+            'created_by' => $request->user()->getKey(),
+        ]);
+
+        $issue->sprint()->associate(Sprint::find($request->integer('sprint_id')));
+
+        $issue = $createIssue->handle($project, $issue);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':reference created.', ['reference' => $issue->reference()])]);
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Portal;
 use App\Actions\Issues\CreateIssue;
 use App\Http\Controllers\Controller;
 use App\Models\Feature;
+use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
@@ -20,13 +21,11 @@ class FeatureIssueController extends Controller
 
         abort_if($feature->issue()->exists(), 409, __('This feature has already been converted to an issue.'));
 
-        $issue = $createIssue->handle(
-            project: $project,
-            creator: $request->user(),
-            title: $feature->title,
-            description: $feature->description,
-            feature: $feature,
-        );
+        $issue = $createIssue->handle($project, new Issue([
+            'title' => $feature->title,
+            'description' => $feature->description,
+            'created_by' => $request->user()->getKey(),
+        ]), $feature);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Added to the backlog as :reference.', ['reference' => $issue->reference()])]);
 
