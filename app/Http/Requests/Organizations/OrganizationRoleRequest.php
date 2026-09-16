@@ -9,7 +9,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
-class SaveOrganizationRoleRequest extends FormRequest
+class OrganizationRoleRequest extends FormRequest
 {
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array

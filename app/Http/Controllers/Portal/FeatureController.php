@@ -7,7 +7,7 @@ use App\Enums\FeatureStatus;
 use App\Enums\OrganizationPermission;
 use App\Enums\VoteDirection;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Features\SaveFeatureRequest;
+use App\Http\Requests\Features\FeatureRequest;
 use App\Http\Resources\ActivitySummary;
 use App\Http\Resources\CommentSummary;
 use App\Http\Resources\FeatureResource;
@@ -83,7 +83,7 @@ class FeatureController extends Controller
         ]);
     }
 
-    public function store(SaveFeatureRequest $request, Organization $organization, Project $project): RedirectResponse
+    public function store(FeatureRequest $request, Organization $organization, Project $project): RedirectResponse
     {
         Gate::authorize('create', [Feature::class, $project]);
 
@@ -100,7 +100,7 @@ class FeatureController extends Controller
         return to_route('portal.features.show', [$organization, $project, $feature]);
     }
 
-    public function update(SaveFeatureRequest $request, Organization $organization, Project $project, Feature $feature): RedirectResponse
+    public function update(FeatureRequest $request, Organization $organization, Project $project, Feature $feature): RedirectResponse
     {
         Gate::authorize('update', $feature);
 

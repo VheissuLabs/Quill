@@ -8,7 +8,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class SaveProjectRequest extends FormRequest
+class ProjectRequest extends FormRequest
 {
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array

@@ -8,7 +8,7 @@ use App\Enums\IssueStatus;
 use App\Enums\OrganizationPermission;
 use App\Enums\SprintStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Issues\SaveIssueRequest;
+use App\Http\Requests\Issues\IssueRequest;
 use App\Http\Resources\ActivitySummary;
 use App\Models\BoardColumn;
 use App\Models\Issue;
@@ -68,7 +68,7 @@ class IssueController extends Controller
         ]);
     }
 
-    public function store(SaveIssueRequest $request, Organization $currentOrganization, CreateIssue $createIssue): RedirectResponse
+    public function store(IssueRequest $request, Organization $currentOrganization, CreateIssue $createIssue): RedirectResponse
     {
         Gate::authorize('create', [Issue::class, $currentOrganization]);
 
@@ -137,7 +137,7 @@ class IssueController extends Controller
         ]);
     }
 
-    public function update(SaveIssueRequest $request, Organization $currentOrganization, Issue $issue): RedirectResponse
+    public function update(IssueRequest $request, Organization $currentOrganization, Issue $issue): RedirectResponse
     {
         Gate::authorize('update', $issue);
 

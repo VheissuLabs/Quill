@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Organizations;
 use App\Actions\Organizations\CreateOrganization;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\DeleteOrganizationRequest;
-use App\Http\Requests\Organizations\SaveOrganizationRequest;
+use App\Http\Requests\Organizations\OrganizationRequest;
 use App\Http\Requests\Organizations\UpdateOrganizationModulesRequest;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
@@ -32,7 +32,7 @@ class OrganizationController extends Controller
         ]);
     }
 
-    public function store(SaveOrganizationRequest $request, CreateOrganization $createOrganization): RedirectResponse
+    public function store(OrganizationRequest $request, CreateOrganization $createOrganization): RedirectResponse
     {
         $organization = $createOrganization->handle($request->user(), $request->validated('name'));
 
@@ -100,7 +100,7 @@ class OrganizationController extends Controller
         ]);
     }
 
-    public function update(SaveOrganizationRequest $request, Organization $currentOrganization): RedirectResponse
+    public function update(OrganizationRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('update', $currentOrganization);
 

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Projects;
 
 use App\Enums\ProjectVisibility;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Projects\SaveProjectRequest;
+use App\Http\Requests\Projects\ProjectRequest;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Project;
@@ -46,7 +46,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function store(SaveProjectRequest $request, Organization $currentOrganization): RedirectResponse
+    public function store(ProjectRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Project::class, $currentOrganization]);
 
@@ -86,7 +86,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function update(SaveProjectRequest $request, Organization $currentOrganization, Project $project): RedirectResponse
+    public function update(ProjectRequest $request, Organization $currentOrganization, Project $project): RedirectResponse
     {
         Gate::authorize('update', $project);
 

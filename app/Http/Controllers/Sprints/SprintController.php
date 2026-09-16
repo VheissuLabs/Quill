@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Sprints;
 use App\Enums\IssueStatus;
 use App\Enums\SprintStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Sprints\SaveSprintRequest;
+use App\Http\Requests\Sprints\SprintRequest;
 use App\Models\BoardColumn;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -42,7 +42,7 @@ class SprintController extends Controller
         ]);
     }
 
-    public function store(SaveSprintRequest $request, Organization $currentOrganization): RedirectResponse
+    public function store(SprintRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Sprint::class, $currentOrganization]);
 
@@ -84,7 +84,7 @@ class SprintController extends Controller
         ]);
     }
 
-    public function update(SaveSprintRequest $request, Organization $currentOrganization, Sprint $sprint): RedirectResponse
+    public function update(SprintRequest $request, Organization $currentOrganization, Sprint $sprint): RedirectResponse
     {
         Gate::authorize('update', $sprint);
 

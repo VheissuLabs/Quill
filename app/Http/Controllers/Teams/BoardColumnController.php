@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Teams;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Teams\SaveBoardColumnRequest;
+use App\Http\Requests\Teams\BoardColumnRequest;
 use App\Models\BoardColumn;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -15,7 +15,7 @@ use Inertia\Inertia;
 
 class BoardColumnController extends Controller
 {
-    public function store(SaveBoardColumnRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
+    public function store(BoardColumnRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
         Gate::authorize('create', [BoardColumn::class, $team]);
 
@@ -29,7 +29,7 @@ class BoardColumnController extends Controller
         return back();
     }
 
-    public function update(SaveBoardColumnRequest $request, Organization $currentOrganization, Team $team, BoardColumn $column): RedirectResponse
+    public function update(BoardColumnRequest $request, Organization $currentOrganization, Team $team, BoardColumn $column): RedirectResponse
     {
         Gate::authorize('update', $column);
 

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Organizations;
 
 use App\Enums\OrganizationPermission;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Organizations\SaveOrganizationRoleRequest;
+use App\Http\Requests\Organizations\OrganizationRoleRequest;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -62,7 +62,7 @@ class OrganizationRoleController extends Controller
         ]);
     }
 
-    public function store(SaveOrganizationRoleRequest $request, Organization $currentOrganization): RedirectResponse
+    public function store(OrganizationRoleRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Role::class, $currentOrganization]);
 
@@ -77,7 +77,7 @@ class OrganizationRoleController extends Controller
         return to_route('roles.index', ['current_organization' => $currentOrganization->slug]);
     }
 
-    public function update(SaveOrganizationRoleRequest $request, Organization $currentOrganization, Role $role): RedirectResponse
+    public function update(OrganizationRoleRequest $request, Organization $currentOrganization, Role $role): RedirectResponse
     {
         $this->ensureRoleBelongsTo($currentOrganization, $role);
 

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Teams;
 use App\Enums\IssueStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Teams\DeleteTeamRequest;
-use App\Http\Requests\Teams\SaveTeamRequest;
+use App\Http\Requests\Teams\TeamRequest;
 use App\Models\BoardColumn;
 use App\Models\Organization;
 use App\Models\Team;
@@ -37,7 +37,7 @@ class TeamController extends Controller
         ]);
     }
 
-    public function store(SaveTeamRequest $request, Organization $currentOrganization): RedirectResponse
+    public function store(TeamRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Team::class, $currentOrganization]);
 
@@ -93,7 +93,7 @@ class TeamController extends Controller
         return back();
     }
 
-    public function update(SaveTeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
+    public function update(TeamRequest $request, Organization $currentOrganization, Team $team): RedirectResponse
     {
         Gate::authorize('update', $team);
 

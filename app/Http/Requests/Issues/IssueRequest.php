@@ -11,7 +11,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
 
-class SaveIssueRequest extends FormRequest
+class IssueRequest extends FormRequest
 {
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array

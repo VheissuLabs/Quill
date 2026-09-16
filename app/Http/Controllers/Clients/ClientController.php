@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Clients;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Clients\SaveClientRequest;
+use App\Http\Requests\Clients\ClientRequest;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\Project;
@@ -34,7 +34,7 @@ class ClientController extends Controller
         ]);
     }
 
-    public function store(SaveClientRequest $request, Organization $currentOrganization): RedirectResponse
+    public function store(ClientRequest $request, Organization $currentOrganization): RedirectResponse
     {
         Gate::authorize('create', [Client::class, $currentOrganization]);
 
@@ -68,7 +68,7 @@ class ClientController extends Controller
         ]);
     }
 
-    public function update(SaveClientRequest $request, Organization $currentOrganization, Client $client): RedirectResponse
+    public function update(ClientRequest $request, Organization $currentOrganization, Client $client): RedirectResponse
     {
         Gate::authorize('update', $client);
 
