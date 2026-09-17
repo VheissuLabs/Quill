@@ -120,23 +120,9 @@ class Issue extends Model
 
     public function reference(): string
     {
+        $this->loadMissing('project');
+
         return "{$this->project->name} #{$this->number}";
-    }
-
-    /** @param  array<string, mixed>  $changes */
-    public function applyChanges(array $changes): void
-    {
-        if (array_key_exists('sprint_id', $changes)) {
-            $this->planInto($changes['sprint_id'] ? Sprint::whereKey($changes['sprint_id'])->firstOrFail() : null);
-        }
-
-        if (array_key_exists('board_column_id', $changes)) {
-            $this->moveToColumn(BoardColumn::whereKey($changes['board_column_id'])->firstOrFail());
-        }
-
-        if (array_key_exists('status', $changes)) {
-            $this->changeStatus(IssueStatus::from($changes['status']));
-        }
     }
 
     public function planInto(?Sprint $sprint): void
@@ -173,8 +159,14 @@ class Issue extends Model
 
     public function changeStatus(IssueStatus $status): void
     {
+        $this->loadMissing('feature');
+
         DB::transaction(function () use ($status) {
-            $leavesBoard = in_array($status, [IssueStatus::Backlog, IssueStatus::Cancelled], true);
+            $leavesBoard = in_array($status, [
+                IssueStatus::Backlog,
+                IssueStatus::Cancelled],
+                true
+            );
 
             $this->forceFill([
                 'status' => $status,
@@ -193,7 +185,17 @@ class Issue extends Model
     {
         return LogOptions::defaults()
             ->useLogName('issues')
-            ->logOnly(['title', 'description', 'status', 'priority', 'points', 'sprint_id', 'board_column_id', 'assignee_id', 'team_id'])
+            ->logOnly([
+                'title',
+                'description',
+                'status',
+                'priority',
+                'points',
+                'sprint_id',
+                'board_column_id',
+                'assignee_id',
+                'team_id',
+            ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

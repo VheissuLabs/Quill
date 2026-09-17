@@ -15,8 +15,6 @@ class SprintColumnController extends Controller
 {
     public function update(UpdateSprintColumnRequest $request, Organization $currentOrganization, Sprint $sprint, BoardColumn $column): RedirectResponse
     {
-        abort_unless($column->owner_type === $sprint->owner_type && $column->owner_id === $sprint->owner_id, 404);
-
         /** @var array<int, int> $issueIds */
         $issueIds = $request->validated('issue_ids');
 

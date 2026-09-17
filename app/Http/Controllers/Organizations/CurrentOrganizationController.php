@@ -10,8 +10,6 @@ class CurrentOrganizationController extends Controller
 {
     public function store(Organization $organization): RedirectResponse
     {
-        abort_unless(auth()->user()->belongsToOrganization($organization), 403);
-
         auth()->user()->switchOrganization($organization);
 
         return redirect($organization->urlAfterSwitching(url()->previous()));

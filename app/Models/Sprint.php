@@ -6,6 +6,7 @@ use App\Enums\IssueStatus;
 use App\Enums\SprintStatus;
 use App\Observers\SprintObserver;
 use Database\Factories\SprintFactory;
+use DomainException;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -93,11 +94,19 @@ class Sprint extends Model
 
     public function start(): void
     {
+        if ($this->status !== SprintStatus::Planned) {
+            throw new DomainException(__('Only a planned sprint can be started.'));
+        }
+
         $this->update(['status' => SprintStatus::Active]);
     }
 
     public function complete(): void
     {
+        if ($this->status !== SprintStatus::Active) {
+            throw new DomainException(__('Only an active sprint can be completed.'));
+        }
+
         DB::transaction(function () {
             $this->issues()
                 ->whereNotIn('status', [IssueStatus::Done, IssueStatus::Cancelled])

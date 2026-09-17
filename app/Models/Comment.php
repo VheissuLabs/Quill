@@ -71,7 +71,10 @@ class Comment extends Model
             ->with([
                 'author',
                 'mentions',
-                'replies' => fn ($query) => $query->with(['author', 'mentions'])->when(! $isMember, fn ($query) => $query->public()),
+                'feature.project.organization',
+                'replies' => fn ($query) => $query
+                    ->with(['author', 'mentions', 'feature.project.organization'])
+                    ->when(! $isMember, fn ($query) => $query->public()),
             ])
             ->when(! $isMember, fn (Builder $query) => $query->public())
             ->oldest();

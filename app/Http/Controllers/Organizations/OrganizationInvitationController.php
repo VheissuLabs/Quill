@@ -32,8 +32,6 @@ class OrganizationInvitationController extends Controller
 
     public function destroy(Organization $currentOrganization, OrganizationInvitation $invitation): RedirectResponse
     {
-        abort_unless($invitation->organization_id === $currentOrganization->id, 404);
-
         $invitation->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Invitation cancelled.')]);

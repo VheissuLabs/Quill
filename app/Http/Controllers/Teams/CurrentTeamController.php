@@ -11,7 +11,7 @@ class CurrentTeamController extends Controller
 {
     public function store(Organization $currentOrganization, Team $team): RedirectResponse
     {
-        abort_unless(auth()->user()->switchTeam($team), 403);
+        auth()->user()->switchTeam($team);
 
         return back();
     }

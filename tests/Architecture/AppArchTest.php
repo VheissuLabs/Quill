@@ -10,7 +10,8 @@ arch()
 
 arch()
     ->expect('App')
-    ->toBeCasedCorrectly();
+    ->toBeCasedCorrectly()
+    ->not->toUse(['env', 'dd', 'dump', 'ray']);
 
 test('app keeps the directories it has agreed on', function () {
     $directories = collect(glob(dirname(__DIR__, 2).'/app/*', GLOB_ONLYDIR))
@@ -21,6 +22,7 @@ test('app keeps the directories it has agreed on', function () {
     expect($directories)->toBe([
         'Actions',
         'Concerns',
+        'Data',
         'Enums',
         'Http',
         'Models',

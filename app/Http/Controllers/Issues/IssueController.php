@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Issues;
 
 use App\Actions\Issues\CreateIssue;
+use App\Actions\Issues\UpdateIssue;
+use App\Data\IssueChangesData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Issues\IssueIndexRequest;
 use App\Http\Requests\Issues\IssueRequest;
@@ -67,11 +69,9 @@ class IssueController extends Controller
         ]);
     }
 
-    public function update(IssueRequest $request, Organization $currentOrganization, Issue $issue): RedirectResponse
+    public function update(IssueRequest $request, Organization $currentOrganization, Issue $issue, UpdateIssue $updateIssue): RedirectResponse
     {
-        $issue->update($request->safe()->except(['status', 'sprint_id', 'board_column_id']));
-
-        $issue->applyChanges($request->safe()->only(['sprint_id', 'board_column_id', 'status']));
+        $updateIssue->handle($issue, IssueChangesData::from($request->safe()));
 
         return back();
     }

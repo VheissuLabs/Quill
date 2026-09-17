@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Organizations;
 
+use App\Actions\Organizations\DeleteOrganizationRole;
 use App\Enums\OrganizationPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\OrganizationRoleRequest;
@@ -77,15 +78,9 @@ class OrganizationRoleController extends Controller
         return to_route('roles.index', ['current_organization' => $currentOrganization->slug]);
     }
 
-    public function destroy(Organization $currentOrganization, Role $role): RedirectResponse
+    public function destroy(Organization $currentOrganization, Role $role, DeleteOrganizationRole $deleteOrganizationRole): RedirectResponse
     {
-        abort_if(
-            DB::table('model_has_roles')->where('role_id', $role->id)->exists(),
-            409,
-            __('Move its members to another role before deleting this one.'),
-        );
-
-        $role->delete();
+        $deleteOrganizationRole->handle($role);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role deleted.')]);
 

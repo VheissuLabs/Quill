@@ -19,44 +19,45 @@ class RunCommentCommands
     /** @return array{body: string, internal: bool, messages: array<int, string>} */
     public function handle(Feature $feature, User $user, string $body): array
     {
-        $remaining = [];
-        $messages = [];
-        $internal = false;
-
-        foreach (preg_split('/\R/', $body) ?: [] as $line) {
-            if (! preg_match('/^\/(\w+)(?:\s+(.*))?$/', trim($line), $matches)) {
-                $remaining[] = $line;
-
-                continue;
-            }
-
-            $command = strtolower($matches[1]);
-            $argument = trim($matches[2] ?? '');
-            $status = null;
-
-            if ($command === 'status') {
-                [$status, $argument] = $this->parseStatus($feature, $argument);
-            }
-
-            match ($command) {
-                'status' => $messages[] = $this->status($feature, $status),
-                'for', 'like', 'vote', 'upvote' => $messages[] = $this->voteFor($feature, $user),
-                'against', 'dislike', 'downvote' => $messages[] = $this->voteAgainst($feature, $user),
-                'withdraw', 'unlike', 'unvote' => $messages[] = $this->withdrawVote($feature, $user),
-                'convert' => $messages[] = $this->convert($feature, $user),
-                'internal' => $internal = $this->internal($feature),
-                default => throw ValidationException::withMessages(['body' => __('Unknown command /:command.', ['command' => $command])]),
-            };
-
-            if ($argument !== '') {
-                $remaining[] = $argument;
-            }
-        }
+        $lines = collect(preg_split('/\R/', $body) ?: [])
+            ->map(fn (string $line) => $this->runLine($feature, $user, $line));
 
         return [
-            'body' => trim(implode("\n", $remaining)),
-            'internal' => $internal,
-            'messages' => $messages,
+            'body' => trim($lines->pluck('text')->reject(fn (?string $text) => $text === null)->implode("\n")),
+            'internal' => $lines->pluck('internal')->contains(true),
+            'messages' => $lines->pluck('message')->reject(fn (?string $message) => $message === null)->values()->all(),
+        ];
+    }
+
+    /** @return array{text: ?string, message: ?string, internal: bool} */
+    private function runLine(Feature $feature, User $user, string $line): array
+    {
+        if (! preg_match('/^\/(\w+)(?:\s+(.*))?$/', trim($line), $matches)) {
+            return ['text' => $line, 'message' => null, 'internal' => false];
+        }
+
+        $command = strtolower($matches[1]);
+        $argument = trim($matches[2] ?? '');
+        $status = null;
+
+        if ($command === 'status') {
+            [$status, $argument] = $this->parseStatus($feature, $argument);
+        }
+
+        $outcome = match ($command) {
+            'status' => ['message' => $this->status($feature, $status)],
+            'for', 'like', 'vote', 'upvote' => ['message' => $this->voteFor($feature, $user)],
+            'against', 'dislike', 'downvote' => ['message' => $this->voteAgainst($feature, $user)],
+            'withdraw', 'unlike', 'unvote' => ['message' => $this->withdrawVote($feature, $user)],
+            'convert' => ['message' => $this->convert($feature, $user)],
+            'internal' => ['internal' => $this->internal($feature)],
+            default => throw ValidationException::withMessages(['body' => __('Unknown command /:command.', ['command' => $command])]),
+        };
+
+        return [
+            'text' => $argument !== '' ? $argument : null,
+            'message' => $outcome['message'] ?? null,
+            'internal' => $outcome['internal'] ?? false,
         ];
     }
 

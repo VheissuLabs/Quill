@@ -374,3 +374,26 @@ test('users can switch their current team within the organization', function () 
         ->post(route('teams.switch', ['current_organization' => $organization, 'team' => $foreignTeam]))
         ->assertNotFound();
 });
+
+test('an update cannot combine conflicting placements', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $project = Project::factory()->for($organization)->create();
+    $team = Team::factory()->for($organization)->create();
+    $sprint = Sprint::factory()->for($team, 'owner')->active()->create();
+    $issue = Issue::factory()->for($project)->create();
+    $column = $team->columns()->where('status', IssueStatus::Done)->firstOrFail();
+
+    $this->actingAs($member)
+        ->patch(route('issues.update', ['current_organization' => $organization, 'issue' => $issue]), [
+            'sprint_id' => $sprint->id,
+            'board_column_id' => $column->id,
+        ])
+        ->assertSessionHasErrors('board_column_id');
+
+    expect($issue->fresh())
+        ->sprint_id->toBeNull()
+        ->board_column_id->toBeNull()
+        ->status->toBe(IssueStatus::Backlog);
+});

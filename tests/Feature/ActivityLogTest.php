@@ -148,13 +148,21 @@ test('adding and removing a team member is logged with the member named', functi
     $team = Team::factory()->for($organization)->create(['name' => 'Development']);
 
     $this->actingAs($admin)
-        ->post(route('teams.members.store', ['current_organization' => $organization, 'team' => $team]), ['user_id' => $member->id])
+        ->post(route('teams.members.store', [
+            'current_organization' => $organization,
+            'team' => $team]), ['user_id' => $member->id]
+        )
         ->assertRedirect();
+
     $this->actingAs($admin)
         ->delete(route('teams.members.destroy', ['current_organization' => $organization, 'team' => $team, 'member' => $member]))
         ->assertRedirect();
 
-    $entries = Activity::query()->where('log_name', 'team_members')->oldest('id')->get();
+    $entries = Activity::query()
+        ->where('log_name', 'team_members')
+        ->with('causer')
+        ->oldest('id')
+        ->get();
 
     expect($entries)->toHaveCount(2);
     expect($entries[0])
@@ -182,6 +190,7 @@ test('joining and leaving an organization is logged', function () {
     $entries = Activity::query()
         ->where('log_name', 'organization_members')
         ->where('subject_id', $membershipId)
+        ->with('causer')
         ->oldest('id')
         ->get();
 
@@ -213,7 +222,7 @@ test('user activity never includes passwords, secrets or tokens', function () {
 
     $user->update(['name' => 'Grace Brewster Hopper', 'password' => 'new-secret', 'remember_token' => 'token']);
 
-    $entries = Activity::query()->where('log_name', 'users')->where('subject_id', $user->id)->get();
+    $entries = Activity::query()->where('log_name', 'users')->where('subject_id', $user->id)->with('causer')->get();
     $loggedAttributes = $entries->flatMap(fn (Activity $entry) => array_keys($entry->attribute_changes['attributes']))->unique()->values()->all();
 
     expect($loggedAttributes)->not->toContain('password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes');
