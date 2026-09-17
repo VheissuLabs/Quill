@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Portal;
 
-use App\Actions\Comments\RunCommentCommands;
+use App\Actions\Comments\FeatureCommentCommands;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Comments\StoreCommentRequest;
 use App\Models\Comment;
@@ -17,7 +17,7 @@ use Inertia\Inertia;
 
 class CommentController extends Controller
 {
-    public function store(StoreCommentRequest $request, Organization $organization, Project $project, Feature $feature, RunCommentCommands $commands): RedirectResponse
+    public function store(StoreCommentRequest $request, Organization $organization, Project $project, Feature $feature, FeatureCommentCommands $commands): RedirectResponse
     {
         $parent = $request->filled('parent_id')
             ? $feature->comments()->whereKey($request->integer('parent_id'))->firstOrFail()

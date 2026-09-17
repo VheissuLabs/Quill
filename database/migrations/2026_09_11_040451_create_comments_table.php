@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('feature_id')->constrained()->cascadeOnDelete();
+            $table->morphs('commentable');
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->text('body');
             $table->timestamps();

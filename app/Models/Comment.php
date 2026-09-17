@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -25,10 +27,10 @@ class Comment extends Model
 
     protected $guarded = [];
 
-    /** @return BelongsTo<Feature, $this> */
-    public function feature(): BelongsTo
+    /** @return MorphTo<Model, $this> */
+    public function commentable(): MorphTo
     {
-        return $this->belongsTo(Feature::class);
+        return $this->morphTo();
     }
 
     /** @return BelongsTo<Comment, $this> */
@@ -71,9 +73,27 @@ class Comment extends Model
             ->with([
                 'author',
                 'mentions',
-                'feature.project.organization',
+                'commentable' => function (Relation $commentable): void {
+                    if ($commentable instanceof MorphTo) {
+                        $commentable->morphWith([
+                            Feature::class => ['project.organization'],
+                            Issue::class => ['project.organization'],
+                        ]);
+                    }
+                },
                 'replies' => fn ($query) => $query
-                    ->with(['author', 'mentions', 'feature.project.organization'])
+                    ->with([
+                        'author',
+                        'mentions',
+                        'commentable' => function (Relation $commentable): void {
+                            if ($commentable instanceof MorphTo) {
+                                $commentable->morphWith([
+                                    Feature::class => ['project.organization'],
+                                    Issue::class => ['project.organization'],
+                                ]);
+                            }
+                        },
+                    ])
                     ->when(! $isMember, fn ($query) => $query->public()),
             ])
             ->when(! $isMember, fn (Builder $query) => $query->public())
@@ -99,7 +119,7 @@ class Comment extends Model
     {
         return LogOptions::defaults()
             ->useLogName('comments')
-            ->logOnly(['feature_id', 'parent_id', 'user_id', 'body', 'is_internal'])
+            ->logOnly(['commentable_type', 'commentable_id', 'parent_id', 'user_id', 'body', 'is_internal'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

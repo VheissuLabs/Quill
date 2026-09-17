@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -82,10 +83,10 @@ class Feature extends Model
         $this->votes()->updateOrCreate(['user_id' => $user->id], ['direction' => $direction->weight()]);
     }
 
-    /** @return HasMany<Comment, $this> */
-    public function comments(): HasMany
+    /** @return MorphMany<Comment, $this> */
+    public function comments(): MorphMany
     {
-        return $this->hasMany(Comment::class);
+        return $this->morphMany(Comment::class, 'commentable');
     }
 
     /** @return Collection<int, User> */

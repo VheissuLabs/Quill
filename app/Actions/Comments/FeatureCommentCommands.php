@@ -7,64 +7,19 @@ use App\Enums\FeatureStatus;
 use App\Enums\VoteDirection;
 use App\Models\Feature;
 use App\Models\User;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
-class RunCommentCommands
+class FeatureCommentCommands extends CommentCommands
 {
     public function __construct(
         private CreateIssue $createIssue
     ) {}
 
-    /** @return array{body: string, internal: bool, messages: array<int, string>} */
-    public function handle(Feature $feature, User $user, string $body): array
-    {
-        $lines = collect(preg_split('/\R/', $body) ?: [])
-            ->map(fn (string $line) => $this->runLine($feature, $user, $line));
-
-        return [
-            'body' => trim($lines->pluck('text')->reject(fn (?string $text) => $text === null)->implode("\n")),
-            'internal' => $lines->pluck('internal')->contains(true),
-            'messages' => $lines->pluck('message')->reject(fn (?string $message) => $message === null)->values()->all(),
-        ];
-    }
-
-    /** @return array{text: ?string, message: ?string, internal: bool} */
-    private function runLine(Feature $feature, User $user, string $line): array
-    {
-        if (! preg_match('/^\/(\w+)(?:\s+(.*))?$/', trim($line), $matches)) {
-            return ['text' => $line, 'message' => null, 'internal' => false];
-        }
-
-        $command = strtolower($matches[1]);
-        $argument = trim($matches[2] ?? '');
-        $status = null;
-
-        if ($command === 'status') {
-            [$status, $argument] = $this->parseStatus($feature, $argument);
-        }
-
-        $outcome = match ($command) {
-            'status' => ['message' => $this->status($feature, $status)],
-            'for', 'like', 'vote', 'upvote' => ['message' => $this->voteFor($feature, $user)],
-            'against', 'dislike', 'downvote' => ['message' => $this->voteAgainst($feature, $user)],
-            'withdraw', 'unlike', 'unvote' => ['message' => $this->withdrawVote($feature, $user)],
-            'convert' => ['message' => $this->convert($feature, $user)],
-            'internal' => ['internal' => $this->internal($feature)],
-            default => throw ValidationException::withMessages(['body' => __('Unknown command /:command.', ['command' => $command])]),
-        };
-
-        return [
-            'text' => $argument !== '' ? $argument : null,
-            'message' => $outcome['message'] ?? null,
-            'internal' => $outcome['internal'] ?? false,
-        ];
-    }
-
     /** @return array<int, array{name: string, usage: string, description: string}> */
-    public static function availableTo(?User $user, Feature $feature): array
+    public function availableTo(?User $user, Model $commentable): array
     {
-        if (! $user || ! $user->can('comment', $feature)) {
+        if (! $user || ! $commentable instanceof Feature || ! $user->can('comment', $commentable)) {
             return [];
         }
 
@@ -76,7 +31,7 @@ class RunCommentCommands
             ['ability' => 'updateStatus', 'name' => 'status', 'usage' => '/status <status>', 'description' => 'Change the status'],
             ['ability' => 'convert', 'name' => 'convert', 'usage' => '/convert', 'description' => 'Convert into a backlog issue'],
         ])
-            ->filter(fn (array $command) => $user->can($command['ability'], $feature))
+            ->filter(fn (array $command) => $user->can($command['ability'], $commentable))
             ->map(fn (array $command) => [
                 'name' => $command['name'],
                 'usage' => $command['usage'],
@@ -84,6 +39,36 @@ class RunCommentCommands
             ])
             ->values()
             ->all();
+    }
+
+    /** @return array{text: ?string, message: ?string, internal: bool} */
+    protected function run(Model $commentable, User $user, string $command, string $argument): array
+    {
+        if (! $commentable instanceof Feature) {
+            $this->unknown($command);
+        }
+
+        $status = null;
+
+        if ($command === 'status') {
+            [$status, $argument] = $this->parseStatus($commentable, $argument);
+        }
+
+        $outcome = match ($command) {
+            'status' => ['message' => $this->status($commentable, $status)],
+            'for', 'like', 'vote', 'upvote' => ['message' => $this->voteFor($commentable, $user)],
+            'against', 'dislike', 'downvote' => ['message' => $this->voteAgainst($commentable, $user)],
+            'withdraw', 'unlike', 'unvote' => ['message' => $this->withdrawVote($commentable, $user)],
+            'convert' => ['message' => $this->convert($commentable, $user)],
+            'internal' => ['internal' => $this->internal($commentable)],
+            default => $this->unknown($command),
+        };
+
+        return [
+            'text' => $argument !== '' ? $argument : null,
+            'message' => $outcome['message'] ?? null,
+            'internal' => $outcome['internal'] ?? false,
+        ];
     }
 
     private function voteFor(Feature $feature, User $user): string
@@ -167,12 +152,5 @@ class RunCommentCommands
         $this->authorize('commentInternally', $feature, __('Only organization members can post internal notes.'));
 
         return true;
-    }
-
-    private function authorize(string $ability, Feature $feature, string $message): void
-    {
-        if (! Gate::allows($ability, $feature)) {
-            throw ValidationException::withMessages(['body' => $message]);
-        }
     }
 }
