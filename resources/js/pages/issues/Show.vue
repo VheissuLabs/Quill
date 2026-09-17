@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ChevronDown, ChevronUp, Lightbulb, Pencil, Trash2 } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import ActivityFeed from '@/components/ActivityFeed.vue';
+import CommentForm from '@/components/CommentForm.vue';
+import CommentThread from '@/components/CommentThread.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import FeatureStatusBadge from '@/components/FeatureStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
@@ -21,10 +23,17 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { destroy, index, show, update } from '@/routes/issues';
+import {
+    destroy as destroyComment,
+    store as storeComment,
+} from '@/routes/issues/comments';
 import { show as showFeature } from '@/routes/portal/features';
 import { pointOptions } from '@/lib/points';
 import { show as showSprint } from '@/routes/sprints';
 import type {
+    CommentCommand,
+    CommentMention,
+    FeatureComment,
     ActivityEntry,
     IssueDetail,
     IssueFormOptions,
@@ -36,6 +45,9 @@ import type {
 type Props = IssueFormOptions & {
     currentOrganization: Organization;
     issue: IssueDetail;
+    comments: FeatureComment[];
+    commands: CommentCommand[];
+    mentionables: CommentMention[];
     feature: IssueOriginFeature | null;
     activity: ActivityEntry[];
     permissions: OrganizationPermissions;
@@ -62,8 +74,9 @@ defineOptions({
 });
 
 const none = 'none';
-const editing = ref(false);
+const editing = ref<'title' | 'description' | null>(null);
 const deleteDialogOpen = ref(false);
+const commentToDelete = ref<FeatureComment | null>(null);
 
 const routeArgs = computed((): [string, number] => [
     props.currentOrganization.slug,
@@ -75,10 +88,18 @@ const detailsForm = useForm({
     description: props.issue.description ?? '',
 });
 
+const startEditing = (field: 'title' | 'description') => {
+    detailsForm.title = props.issue.title;
+    detailsForm.description = props.issue.description ?? '';
+    editing.value = field;
+
+    void nextTick(() => document.getElementById(field)?.focus());
+};
+
 const saveDetails = () => {
     detailsForm.submit(update(routeArgs.value), {
         preserveScroll: true,
-        onSuccess: () => (editing.value = false),
+        onSuccess: () => (editing.value = null),
     });
 };
 
@@ -134,6 +155,12 @@ const sprintsForTeam = computed(() =>
         : props.sprints,
 );
 
+const commandStatuses = computed(() =>
+    props.statuses.filter((status) =>
+        ['backlog', 'done', 'cancelled'].includes(status.value),
+    ),
+);
+
 const currentSprint = computed(() =>
     props.sprints.find((sprint) => sprint.id === props.issue.sprintId),
 );
@@ -150,7 +177,7 @@ const currentSprint = computed(() =>
                 </p>
 
                 <form
-                    v-if="editing"
+                    v-if="editing !== null"
                     class="space-y-4"
                     @submit.prevent="saveDetails"
                 >
@@ -185,7 +212,7 @@ const currentSprint = computed(() =>
                         <Button
                             type="button"
                             variant="secondary"
-                            @click="editing = false"
+                            @click="editing = null"
                         >
                             Cancel
                         </Button>
@@ -195,7 +222,13 @@ const currentSprint = computed(() =>
                 <template v-else>
                     <div class="flex items-start justify-between gap-4">
                         <h1
-                            class="text-2xl font-semibold tracking-tight text-balance"
+                            class="hover:bg-muted/60 -mx-2 cursor-text rounded-md px-2 text-2xl font-semibold tracking-tight text-balance"
+                            role="button"
+                            tabindex="0"
+                            data-test="issue-title"
+                            title="Click to edit"
+                            @click="startEditing('title')"
+                            @keydown.enter.prevent="startEditing('title')"
                         >
                             {{ issue.title }}
                         </h1>
@@ -205,7 +238,7 @@ const currentSprint = computed(() =>
                                 size="icon-sm"
                                 data-test="edit-issue-button"
                                 aria-label="Edit issue"
-                                @click="editing = true"
+                                @click="startEditing('title')"
                             >
                                 <Pencil />
                             </Button>
@@ -223,11 +256,25 @@ const currentSprint = computed(() =>
                     </div>
                     <p
                         v-if="issue.description"
-                        class="max-w-prose leading-7 whitespace-pre-line"
+                        class="hover:bg-muted/60 -mx-2 max-w-prose cursor-text rounded-md px-2 leading-7 whitespace-pre-line"
+                        role="button"
+                        tabindex="0"
+                        data-test="issue-description"
+                        title="Click to edit"
+                        @click="startEditing('description')"
+                        @keydown.enter.prevent="startEditing('description')"
                     >
                         {{ issue.description }}
                     </p>
-                    <p v-else class="text-muted-foreground text-sm italic">
+                    <p
+                        v-else
+                        class="hover:bg-muted/60 text-muted-foreground -mx-2 cursor-text rounded-md px-2 text-sm italic"
+                        role="button"
+                        tabindex="0"
+                        data-test="issue-description"
+                        @click="startEditing('description')"
+                        @keydown.enter.prevent="startEditing('description')"
+                    >
                         No description yet.
                     </p>
                 </template>
@@ -291,6 +338,35 @@ const currentSprint = computed(() =>
                         </div>
                     </div>
                 </div>
+            </section>
+
+            <section
+                class="space-y-5 border-t pt-8"
+                data-test="issue-discussion"
+            >
+                <Heading variant="small" title="Discussion" />
+
+                <ol v-if="comments.length > 0" class="space-y-6">
+                    <CommentThread
+                        v-for="comment in comments"
+                        :key="comment.id"
+                        :comment="comment"
+                        :action="storeComment(routeArgs).url"
+                        :can-comment="true"
+                        :mentionable="mentionables"
+                        @delete="commentToDelete = $event"
+                    />
+                </ol>
+                <p v-else class="text-muted-foreground text-sm italic">
+                    Nothing here yet. Start the conversation.
+                </p>
+
+                <CommentForm
+                    :action="storeComment(routeArgs).url"
+                    :mentionable="mentionables"
+                    :commands="commands"
+                    :statuses="commandStatuses"
+                />
             </section>
         </div>
 

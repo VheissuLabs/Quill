@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Issues;
 
+use App\Actions\Comments\IssueCommentCommands;
 use App\Actions\Issues\CreateIssue;
 use App\Actions\Issues\UpdateIssue;
 use App\Data\IssueChangesData;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Issues\IssueIndexRequest;
 use App\Http\Requests\Issues\IssueRequest;
 use App\Http\Resources\ActivityResource;
+use App\Http\Resources\CommentResource;
 use App\Http\Resources\FeatureResource;
 use App\Http\Resources\IssueActivityResource;
 use App\Http\Resources\IssueDetailResource;
@@ -61,6 +63,10 @@ class IssueController extends Controller
 
         return Inertia::render('issues/Show', [
             'issue' => IssueDetailResource::make($issue, $user)->resolve(),
+            'comments' => $issue->comments()->threadsVisibleTo(true)->get()
+                ->map(fn ($comment) => CommentResource::make($comment, $user)->resolve()),
+            'commands' => app(IssueCommentCommands::class)->availableTo($user, $issue),
+            'mentionables' => $issue->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]),
             'feature' => $issue->feature ? FeatureResource::make($issue->feature)->resolve() : null,
             'activity' => $permissions['canViewActivity']
                 ? ActivityResource::collection($issue->activitiesAsSubject()->with('causer')->latest('id')->limit(30)->get())

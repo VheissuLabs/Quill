@@ -27,7 +27,10 @@ import { useInitials } from '@/composables/useInitials';
 import { login } from '@/routes';
 import { show as showIssue } from '@/routes/issues';
 import { destroy, update } from '@/routes/portal/features';
-import { destroy as destroyComment } from '@/routes/portal/features/comments';
+import {
+    destroy as destroyComment,
+    store as storeComment,
+} from '@/routes/portal/features/comments';
 import { store as convertToIssue } from '@/routes/portal/features/issue';
 import { update as updateStatus } from '@/routes/portal/features/status';
 import { show as showBoard } from '@/routes/portal/projects';
@@ -240,10 +243,8 @@ const commentCount = computed(() =>
                             v-for="comment in comments"
                             :key="comment.id"
                             :comment="comment"
-                            :organization="organization.slug"
+                            :action="storeComment(routeArgs).url"
                             :organization-name="organization.name"
-                            :project="project.slug"
-                            :feature-id="feature.id"
                             :can-comment="viewer.canComment"
                             :can-comment-internally="
                                 viewer.canCommentInternally
@@ -261,10 +262,8 @@ const commentCount = computed(() =>
                         </Avatar>
                         <div class="flex-1">
                             <CommentForm
-                                :organization="organization.slug"
+                                :action="storeComment(routeArgs).url"
                                 :organization-name="organization.name"
-                                :project="project.slug"
-                                :feature-id="feature.id"
                                 :mentionable="mentionableUsers"
                                 :commands="commands"
                                 :statuses="statuses"

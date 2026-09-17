@@ -6,18 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { store } from '@/routes/portal/features/comments';
 import type { CommentCommand, CommentMention, SelectOption } from '@/types';
 
 type Props = {
-    organization: string;
-    project: string;
-    featureId: number;
+    action: string;
     mentionable: CommentMention[];
     commands?: CommentCommand[];
     statuses?: SelectOption[];
-    canCommentInternally: boolean;
-    organizationName: string;
+    canCommentInternally?: boolean;
+    organizationName?: string;
     parentId?: number | null;
     forceInternal?: boolean;
     placeholder?: string;
@@ -26,6 +23,8 @@ type Props = {
 };
 
 const props = withDefaults(defineProps<Props>(), {
+    canCommentInternally: false,
+    organizationName: '',
     commands: () => [],
     statuses: () => [],
     parentId: null,
@@ -227,7 +226,7 @@ const submit = () => {
                 person !== undefined && data.body.includes(`@${person.name}`)
             );
         }),
-    })).submit(store([props.organization, props.project, props.featureId]), {
+    })).post(props.action, {
         preserveScroll: true,
         onSuccess: () => {
             form.reset();

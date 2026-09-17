@@ -4,6 +4,7 @@ use App\Http\Controllers\ClearNotificationsController;
 use App\Http\Controllers\Clients\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Issues\CommentController as IssueCommentController;
 use App\Http\Controllers\Issues\IssueController;
 use App\Http\Controllers\Issues\IssueOrderController;
 use App\Http\Controllers\NotificationController;
@@ -106,6 +107,9 @@ Route::prefix('{current_organization}')
             ->middlewareFor('show', 'can:view,issue')
             ->middlewareFor('update', 'can:update,issue')
             ->middlewareFor('destroy', 'can:delete,issue');
+        Route::post('issues/{issue}/comments', [IssueCommentController::class, 'store'])->can('comment', 'issue')->name('issues.comments.store');
+        Route::delete('issues/{issue}/comments/{comment}', [IssueCommentController::class, 'destroy'])->can('delete', 'comment')->name('issues.comments.destroy');
+
         Route::resource('sprints', SprintController::class)->except(['create', 'edit'])
             ->middlewareFor('index', 'can:viewAny,'.Sprint::class.',current_organization')
             ->middlewareFor('store', 'can:create,'.Sprint::class.',current_organization')
