@@ -46,6 +46,7 @@ const options = ref<PaletteOptions | null>(null);
 const activeAction = ref<PaletteActionName | null>(null);
 const loadingAction = ref(false);
 const pendingSearch = ref(false);
+const searchError = ref<string | null>(null);
 
 const searchRequest = useHttp<Record<string, never>, PaletteResult[]>();
 const optionsRequest = useHttp<Record<string, never>, PaletteOptions>();
@@ -77,7 +78,8 @@ const nothingFound = computed(
         navigation.value.length === 0 &&
         actions.value.length === 0 &&
         results.value.length === 0 &&
-        !searching.value,
+        !searching.value &&
+        searchError.value === null,
 );
 
 const runSearch = useDebounceFn(async () => {
@@ -97,6 +99,14 @@ const runSearch = useDebounceFn(async () => {
         results.value = await searchRequest.get(
             paletteSearch(slug, { query: { q: term } }).url,
         );
+        searchError.value = null;
+    } catch (error) {
+        results.value = [];
+        searchError.value =
+            (error as { response?: { status?: number } })?.response?.status ===
+            401
+                ? 'Your session expired. Reload the page to sign in again.'
+                : 'Search is unavailable right now.';
     } finally {
         pendingSearch.value = false;
     }
@@ -115,6 +125,7 @@ watch(open, (isOpen) => {
     query.value = '';
     results.value = [];
     pendingSearch.value = false;
+    searchError.value = null;
     searchRequest.cancel();
 });
 
@@ -194,6 +205,14 @@ useEventListener('keydown', (event: KeyboardEvent) => {
                         <CommandEmpty v-if="nothingFound">
                             Nothing matches “{{ query }}”.
                         </CommandEmpty>
+
+                        <p
+                            v-if="searchError"
+                            class="text-destructive px-3 py-6 text-center text-sm"
+                            data-test="palette-search-error"
+                        >
+                            {{ searchError }}
+                        </p>
 
                         <CommandGroup v-if="navigation.length" heading="Go to">
                             <CommandItem

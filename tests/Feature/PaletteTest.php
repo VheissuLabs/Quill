@@ -176,3 +176,40 @@ test('a non member cannot read palette options', function () {
         ->getJson(route('palette.options', ['current_organization' => $organization]))
         ->assertForbidden();
 });
+
+test('a title that opens with the term outranks one that merely contains it', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $project = Project::factory()->for($organization)->create();
+
+    Issue::factory()->for($project)->create(['title' => 'Aut fugit esse molestiae', 'number' => 1]);
+    Issue::factory()->for($project)->create(['title' => 'Consectetur fugit sit', 'number' => 2]);
+    Issue::factory()->for($project)->create(['title' => 'Delectus ut fugit eligendi', 'number' => 3]);
+    Issue::factory()->for($project)->create(['title' => 'Et alia fugit quidem', 'number' => 4]);
+    Issue::factory()->for($project)->create(['title' => 'Fugit aut excepturi nihil', 'number' => 5]);
+    Issue::factory()->for($project)->create(['title' => 'Beatae fugit rerum', 'number' => 6]);
+
+    $response = $this->actingAs($member)->getJson(palette($organization, 'fugit'));
+
+    expect($response->json('0.title'))->toBe('Fugit aut excepturi nihil');
+});
+
+test('an alphabetically late leading match is not cut off by the per type cap', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $project = Project::factory()->for($organization)->create();
+
+    foreach (['Aa', 'Ab', 'Ac', 'Ad', 'Ae', 'Af', 'Ag'] as $index => $prefix) {
+        Issue::factory()->for($project)->create([
+            'title' => "{$prefix} contains fugit here",
+            'number' => $index + 1,
+        ]);
+    }
+    Issue::factory()->for($project)->create(['title' => 'Fugit leads the title', 'number' => 99]);
+
+    $response = $this->actingAs($member)->getJson(palette($organization, 'fugit'));
+
+    expect(collect($response->json())->pluck('title'))->toContain('Fugit leads the title');
+});

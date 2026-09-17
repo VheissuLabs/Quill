@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 
 class SearchOrganization
@@ -22,7 +23,7 @@ class SearchOrganization
 
     private const MINIMUM_TERM = 2;
 
-    /** @return Collection<int, Model> */
+    /** @return Collection<int, Client|Feature|Issue|Project|Sprint|Team> */
     public function handle(Organization $organization, User $user, string $term): Collection
     {
         if (mb_strlen($term) < self::MINIMUM_TERM) {
@@ -31,8 +32,7 @@ class SearchOrganization
 
         $projectIds = $organization->projects()->visibleTo($user)->pluck('projects.id');
 
-        return collect()
-            ->concat($this->projects($organization, $user, $term))
+        return $this->projects($organization, $user, $term)
             ->concat($organization->canUse(OrganizationCapability::Issues) ? $this->issues($projectIds, $term) : [])
             ->concat($organization->canUse(OrganizationCapability::Boards) ? $this->features($projectIds, $term) : [])
             ->concat($organization->canUse(OrganizationCapability::Sprints) ? $this->sprints($organization, $term) : [])
@@ -47,7 +47,7 @@ class SearchOrganization
             ->visibleTo($user)
             ->where('name', 'like', $this->wildcard($term))
             ->with(['organization', 'client'])
-            ->orderBy('name')
+            ->tap(fn (Builder $query) => $this->rank($query, 'name', $term))
             ->limit(self::PER_TYPE)
             ->get();
     }
@@ -64,7 +64,7 @@ class SearchOrganization
                 ->where('title', 'like', $this->wildcard($term))
                 ->when(ctype_digit($term), fn (Builder $query) => $query->orWhere('number', (int) $term)))
             ->with('project.organization')
-            ->orderBy('title')
+            ->tap(fn (Builder $query) => $this->rank($query, 'title', $term))
             ->limit(self::PER_TYPE)
             ->get();
     }
@@ -79,7 +79,7 @@ class SearchOrganization
             ->whereIn('project_id', $projectIds)
             ->where('title', 'like', $this->wildcard($term))
             ->with('project.organization')
-            ->orderBy('title')
+            ->tap(fn (Builder $query) => $this->rank($query, 'title', $term))
             ->limit(self::PER_TYPE)
             ->get();
     }
@@ -90,8 +90,12 @@ class SearchOrganization
         return Sprint::query()
             ->onBoardFor($organization, null)
             ->where('name', 'like', $this->wildcard($term))
-            ->with(['owner' => fn (MorphTo $owner) => $owner->morphWith([Team::class => ['organization']])])
-            ->orderBy('name')
+            ->with(['owner' => function (Relation $owner): void {
+                if ($owner instanceof MorphTo) {
+                    $owner->morphWith([Team::class => ['organization']]);
+                }
+            }])
+            ->tap(fn (Builder $query) => $this->rank($query, 'name', $term))
             ->limit(self::PER_TYPE)
             ->get();
     }
@@ -102,7 +106,7 @@ class SearchOrganization
         return $organization->teams()
             ->where('name', 'like', $this->wildcard($term))
             ->with('organization')
-            ->orderBy('name')
+            ->tap(fn (Builder $query) => $this->rank($query, 'name', $term))
             ->limit(self::PER_TYPE)
             ->get();
     }
@@ -113,9 +117,18 @@ class SearchOrganization
         return $organization->clients()
             ->where('name', 'like', $this->wildcard($term))
             ->with('organization')
-            ->orderBy('name')
+            ->tap(fn (Builder $query) => $this->rank($query, 'name', $term))
             ->limit(self::PER_TYPE)
             ->get();
+    }
+
+    /** @param  Builder<covariant Model>  $query */
+    private function rank(Builder $query, string $column, string $term): void
+    {
+        $query->orderByRaw(
+            $column === 'title' ? 'INSTR(LOWER(title), ?)' : 'INSTR(LOWER(name), ?)',
+            [mb_strtolower($term)],
+        )->orderBy($column);
     }
 
     private function wildcard(string $term): string
