@@ -8,6 +8,7 @@ import IssueCard from '@/components/IssueCard.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/dates';
+import { mutate } from '@/lib/optimistic';
 import { index as issuesIndex } from '@/routes/issues';
 import { complete, destroy, index, show, start } from '@/routes/sprints';
 import { update as updateColumn } from '@/routes/sprints/columns';
@@ -87,7 +88,7 @@ const onLaneChange = (lane: BoardLane, change: DragChange) => {
         return;
     }
 
-    router.visit(
+    mutate(
         updateColumn([
             props.currentOrganization.slug,
             props.sprint.id,
@@ -95,8 +96,7 @@ const onLaneChange = (lane: BoardLane, change: DragChange) => {
         ]),
         {
             data: { issue_ids: lane.issues.map((issue) => issue.id) },
-            preserveScroll: true,
-            preserveState: true,
+            errorMessage: 'That board change could not be saved.',
         },
     );
 };

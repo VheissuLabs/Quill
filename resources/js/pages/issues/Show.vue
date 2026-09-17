@@ -12,6 +12,7 @@ import InputError from '@/components/InputError.vue';
 import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/dates';
+import { mutate } from '@/lib/optimistic';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -97,14 +98,34 @@ const startEditing = (field: 'title' | 'description') => {
 };
 
 const saveDetails = () => {
+    const { title, description } = detailsForm;
+
     detailsForm.submit(update(routeArgs.value), {
         preserveScroll: true,
+        optimistic: (current) => ({
+            issue: { ...(current.issue as IssueDetail), title, description },
+        }),
         onSuccess: () => (editing.value = null),
     });
 };
 
-const patch = (data: Record<string, string | number | null>) => {
-    router.visit(update(routeArgs.value), { data, preserveScroll: true });
+/**
+ * The sidebar fields all patch one column, so the detail is updated in place and only
+ * the derived props are refetched.
+ */
+const patch = (
+    data: Record<string, string | number | null>,
+    optimistic?: Partial<IssueDetail>,
+) => {
+    mutate(update(routeArgs.value), {
+        data,
+        errorMessage: 'That change could not be saved.',
+        optimistic: optimistic
+            ? (current) => ({
+                  issue: { ...(current.issue as IssueDetail), ...optimistic },
+              })
+            : undefined,
+    });
 };
 
 const toId = (value: string) => (value === none ? null : Number(value));
@@ -146,7 +167,12 @@ const currentStage = computed(() =>
 const changeStage = (value: string) => {
     const [kind, id] = value.split(':');
 
-    patch(kind === 'column' ? { board_column_id: Number(id) } : { status: id });
+    patch(
+        kind === 'column' ? { board_column_id: Number(id) } : { status: id },
+        kind === 'column'
+            ? { boardColumnId: Number(id) }
+            : { status: id as IssueDetail['status'] },
+    );
 };
 
 const sprintsForTeam = computed(() =>

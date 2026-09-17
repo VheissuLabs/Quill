@@ -36,6 +36,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { formatDateRange } from '@/lib/dates';
+import { mutate } from '@/lib/optimistic';
 import { index, update } from '@/routes/issues';
 import { update as updateOrder } from '@/routes/issues/order';
 import {
@@ -92,6 +93,7 @@ const options = computed<IssueFormOptions>(() => ({
     projects: props.projects,
     teams: props.teams,
     sprints: props.sprints,
+    sprintsEnabled: props.sprintsEnabled,
     members: props.members,
     statuses: props.statuses,
     priorities: props.priorities,
@@ -243,11 +245,53 @@ const plannableSprints = computed(() =>
     props.sprints.filter((sprint) => sprint.status !== 'completed'),
 );
 
+/**
+ * Moves the row between the backlog and a sprint in the page props first; Inertia puts it
+ * back if the request is refused.
+ */
 const planInto = (issueId: number, sprintId: number | null) => {
-    router.visit(update([props.currentOrganization.slug, issueId]), {
+    mutate(update([props.currentOrganization.slug, issueId]), {
         data: { sprint_id: sprintId },
-        preserveScroll: true,
-        preserveState: true,
+        errorMessage: 'That issue could not be moved.',
+        optimistic: (current) => {
+            const issues = [...(current.issues as IssueListItem[])];
+            const sprints = (current.sprints as IssueSprintOption[]).map(
+                (sprint) => ({ ...sprint, issues: [...sprint.issues] }),
+            );
+
+            let moving = issues.find((issue) => issue.id === issueId) ?? null;
+            const from = sprints.find((sprint) =>
+                sprint.issues.some((issue) => issue.id === issueId),
+            );
+
+            if (moving) {
+                issues.splice(
+                    issues.findIndex((issue) => issue.id === issueId),
+                    1,
+                );
+            } else if (from) {
+                moving =
+                    from.issues.find((issue) => issue.id === issueId) ?? null;
+                from.issues.splice(
+                    from.issues.findIndex((issue) => issue.id === issueId),
+                    1,
+                );
+            }
+
+            if (!moving) {
+                return;
+            }
+
+            const to = sprints.find((sprint) => sprint.id === sprintId);
+
+            if (to) {
+                to.issues.push(moving);
+            } else {
+                issues.unshift(moving);
+            }
+
+            return { issues, sprints };
+        },
     });
 };
 
@@ -256,10 +300,10 @@ const onListChange = (change: DragChange) => {
         return;
     }
 
-    router.visit(updateOrder(props.currentOrganization.slug), {
+    mutate(updateOrder(props.currentOrganization.slug), {
         data: { issue_ids: list.value.map((issue) => issue.id) },
-        preserveScroll: true,
-        preserveState: true,
+        errorMessage: 'That order could not be saved.',
+        optimistic: () => ({ issues: [...list.value] }),
     });
 };
 
@@ -333,7 +377,9 @@ const totalPoints = computed(() =>
                 title="Issues"
                 :description="
                     currentTeam
-                        ? `${currentTeam.name}'s backlog, with its sprints below. Drag an issue onto a sprint to plan it, or back into the list to unplan it.`
+                        ? sprintsEnabled
+                            ? `${currentTeam.name}'s backlog, with its sprints below. Drag an issue onto a sprint to plan it, or back into the list to unplan it.`
+                            : `${currentTeam.name}'s backlog.`
                         : 'Every open issue. Create a team to start planning sprints.'
                 "
             />
@@ -476,7 +522,7 @@ const totalPoints = computed(() =>
                     </div>
                 </section>
 
-                <aside class="min-w-0 space-y-3">
+                <aside v-if="sprintsEnabled" class="min-w-0 space-y-3">
                     <h2
                         class="text-muted-foreground px-1 text-xs font-medium tracking-wide uppercase"
                     >
