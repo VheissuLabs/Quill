@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureRouteBindings();
 
-        DevCommands::except('reverb');
+        DevCommands::except('reverb', 'server');
 
         Gate::policy(Role::class, RolePolicy::class);
     }
