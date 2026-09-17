@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,7 +41,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const none = 'none';
 
-const open = ref(false);
+const open = defineModel<boolean>('open', { default: false });
 const page = usePage();
 
 const form = useForm({
@@ -90,7 +90,7 @@ const submit = () => {
 
 <template>
     <Dialog :open="open" @update:open="handleOpenChange">
-        <DialogTrigger as-child>
+        <DialogTrigger v-if="$slots.default" as-child>
             <slot />
         </DialogTrigger>
         <DialogContent class="sm:max-w-lg">

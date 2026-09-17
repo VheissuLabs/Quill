@@ -21,7 +21,7 @@ defineProps<{
     organization: string;
 }>();
 
-const open = ref(false);
+const open = defineModel<boolean>('open', { default: false });
 const formKey = ref(0);
 
 function handleOpenChange(value: boolean) {
@@ -35,7 +35,7 @@ function handleOpenChange(value: boolean) {
 
 <template>
     <Dialog :open="open" @update:open="handleOpenChange">
-        <DialogTrigger as-child>
+        <DialogTrigger v-if="$slots.default" as-child>
             <slot />
         </DialogTrigger>
         <DialogContent>

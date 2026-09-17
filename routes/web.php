@@ -16,6 +16,8 @@ use App\Http\Controllers\Organizations\OrganizationLogoController;
 use App\Http\Controllers\Organizations\OrganizationMemberController;
 use App\Http\Controllers\Organizations\OrganizationModuleController;
 use App\Http\Controllers\Organizations\OrganizationRoleController;
+use App\Http\Controllers\Palette\PaletteController;
+use App\Http\Controllers\Palette\PaletteOptionsController;
 use App\Http\Controllers\Portal\CommentController;
 use App\Http\Controllers\Portal\FeatureController;
 use App\Http\Controllers\Portal\FeatureIssueController;
@@ -75,6 +77,8 @@ Route::prefix('{current_organization}')
     ->scopeBindings()
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+        Route::get('palette', [PaletteController::class, 'index'])->name('palette.search');
+        Route::get('palette/options', [PaletteOptionsController::class, 'index'])->name('palette.options');
 
         Route::resource('projects', ProjectController::class)->except(['create', 'show'])
             ->middlewareFor('index', 'can:viewAny,'.Project::class.',current_organization')
