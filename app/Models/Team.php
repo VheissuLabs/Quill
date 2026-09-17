@@ -41,6 +41,57 @@ class Team extends Model
         return $this->hasMany(TeamModuleSetting::class);
     }
 
+    /** @param  array<string, bool>  $settings */
+    public function updateModuleSettings(array $settings): void
+    {
+        $now = now();
+
+        $this->capabilitySettings()->upsert(
+            collect(self::overridableCapabilities())
+                ->map(fn (OrganizationCapability $capability) => [
+                    'team_id' => $this->id,
+                    'module' => $capability->module()->value,
+                    'capability' => $capability->value,
+                    'enabled' => (bool) ($settings[$capability->value.'_enabled'] ?? true),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])
+                ->all(),
+            ['team_id', 'module', 'capability'],
+            ['enabled', 'updated_at'],
+        );
+
+        $this->unsetRelation('capabilitySettings');
+    }
+
+    /**
+     * Work planned into this team's sprints returns to the backlog, so switching sprints off
+     * does not strand issues on a board nobody can reach.
+     */
+    public function returnSprintWorkToBacklog(): void
+    {
+        DB::transaction(fn () => Issue::query()
+            ->whereIn('sprint_id', $this->sprints()->select('id'))
+            ->get()
+            ->each(fn (Issue $issue) => $issue->planInto(null)));
+    }
+
+    /** @return array<int, OrganizationCapability> */
+    public static function overridableCapabilities(): array
+    {
+        return [OrganizationCapability::Sprints];
+    }
+
+    /** @return array<string, bool> */
+    public function moduleSettings(): array
+    {
+        return collect(self::overridableCapabilities())
+            ->mapWithKeys(fn (OrganizationCapability $capability) => [
+                $capability->value => $this->canUse($capability),
+            ])
+            ->all();
+    }
+
     public function canUse(OrganizationCapability $capability): bool
     {
         $this->loadMissing('organization');

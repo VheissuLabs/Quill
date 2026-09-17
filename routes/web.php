@@ -35,6 +35,7 @@ use App\Http\Controllers\Teams\BoardColumnOrderController;
 use App\Http\Controllers\Teams\CurrentTeamController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Teams\TeamMemberController;
+use App\Http\Controllers\Teams\TeamModuleController;
 use App\Http\Middleware\EnsureOrganizationMembership;
 use App\Http\Middleware\RedirectGuestsFromPrivateProject;
 use App\Http\Middleware\RememberPortalPage;
@@ -121,6 +122,7 @@ Route::prefix('{current_organization}')
         Route::put('sprints/{sprint}/columns/{column}', [SprintColumnController::class, 'update'])->can('view', 'sprint')->name('sprints.columns.update');
 
         Route::post('teams/{team}/switch', [CurrentTeamController::class, 'store'])->name('teams.switch');
+        Route::patch('teams/{team}/modules', [TeamModuleController::class, 'update'])->can('update', 'team')->name('teams.modules.update');
         Route::post('teams/{team}/members', [TeamMemberController::class, 'store'])->can('update', 'team')->name('teams.members.store');
         Route::delete('teams/{team}/members/{member}', [TeamMemberController::class, 'destroy'])->can('update', 'team')->name('teams.members.destroy');
         Route::put('teams/{team}/columns/order', [BoardColumnOrderController::class, 'update'])->can('create', [BoardColumn::class, 'team'])->name('teams.columns.order.update');

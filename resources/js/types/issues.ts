@@ -84,6 +84,7 @@ export type IssueFormOptions = {
     projects: IssueProjectOption[];
     teams: IssueTeamOption[];
     sprints: IssueSprintOption[];
+    sprintsEnabled: boolean;
     members: IssueMemberOption[];
     statuses: SelectOption[];
     priorities: SelectOption[];
