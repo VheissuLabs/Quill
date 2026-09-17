@@ -119,6 +119,7 @@ class IssueCommentCommands extends CommentCommands
             ->onBoardFor($issue->project->organization, null)
             ->where('status', '!=', 'completed')
             ->get()
+            ->filter(fn (Sprint $sprint) => $sprint->runsSprints())
             ->first(fn (Sprint $sprint) => strcasecmp($sprint->name, $argument) === 0);
 
         if (! $sprint) {

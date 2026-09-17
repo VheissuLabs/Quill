@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
+use App\Enums\OrganizationCapability;
 use App\Enums\SprintStatus;
 use App\Models\Organization;
 use App\Models\Project;
@@ -48,8 +49,13 @@ class IssueFormResource extends JsonResource
                     ->withSum('issues', 'points')
                     ->orderBy('starts_at')
                     ->get()
+                    ->filter(fn (Sprint $sprint) => $sprint->runsSprints())
+                    ->values()
             ),
             'members' => UserResource::collection($this->members()->orderBy('name')->get()),
+            'sprintsEnabled' => $this->team
+                ? $this->team->canUse(OrganizationCapability::Sprints)
+                : $this->resource->canUse(OrganizationCapability::Sprints),
             'statuses' => IssueStatus::options(),
             'priorities' => IssuePriority::options(),
         ];

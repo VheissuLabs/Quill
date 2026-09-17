@@ -97,7 +97,9 @@ class SearchOrganization
             }])
             ->tap(fn (Builder $query) => $this->rank($query, 'name', $term))
             ->limit(self::PER_TYPE)
-            ->get();
+            ->get()
+            ->filter(fn (Sprint $sprint) => $sprint->runsSprints())
+            ->values();
     }
 
     /** @return Collection<int, Team> */

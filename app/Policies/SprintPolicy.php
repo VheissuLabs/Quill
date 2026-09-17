@@ -45,11 +45,7 @@ class SprintPolicy
         $organization = $sprint->organization();
         $owner = $sprint->owner;
 
-        if ($owner instanceof Team && ! $owner->canUse(OrganizationCapability::Sprints)) {
-            return false;
-        }
-
-        if (! $organization->canUse(OrganizationCapability::Sprints)) {
+        if (! $sprint->runsSprints()) {
             return false;
         }
 

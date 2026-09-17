@@ -19,20 +19,10 @@ class SprintController extends Controller
 {
     public function index(Organization $currentOrganization): Response
     {
-        $owner = auth()->user()->boardOwnerFor($currentOrganization);
-
-        $sprints = $owner->sprints()
-            ->with('owner')
-            ->withCount([
-                'issues',
-                'issues as done_issues_count' => fn ($query) => $query->where('status', IssueStatus::Done),
-            ])
-            ->withSum('issues', 'points')
-            ->orderByDesc('starts_at')
-            ->get();
-
         return Inertia::render('sprints/Index', [
-            'sprints' => SprintResource::collection($sprints),
+            'sprints' => SprintResource::collection(
+                Sprint::boardFor(auth()->user()->boardOwnerFor($currentOrganization))
+            ),
         ]);
     }
 

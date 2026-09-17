@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\IssueStatus;
+use App\Enums\OrganizationCapability;
 use App\Enums\SprintStatus;
 use App\Observers\SprintObserver;
 use Database\Factories\SprintFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -54,6 +56,27 @@ class Sprint extends Model
                     ->where('owner_type', (new Team)->getMorphClass())
                     ->whereIn('owner_id', $organization->teams()->select('id')))),
         );
+    }
+
+    /** @return EloquentCollection<int, self> */
+    public static function boardFor(Organization|Team $owner): EloquentCollection
+    {
+        return $owner->sprints()
+            ->with('owner')
+            ->withCount([
+                'issues',
+                'issues as done_issues_count' => fn (Builder $query) => $query->where('status', IssueStatus::Done),
+            ])
+            ->withSum('issues', 'points')
+            ->orderByDesc('starts_at')
+            ->get()
+            ->filter(fn (self $sprint) => $sprint->runsSprints())
+            ->values();
+    }
+
+    public function runsSprints(): bool
+    {
+        return $this->owner->canUse(OrganizationCapability::Sprints);
     }
 
     public function organization(): Organization
