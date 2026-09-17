@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\RunsABoard;
 use App\Enums\IssueStatus;
+use App\Enums\OrganizationCapability;
 use App\Observers\OrganizationScopedSlugObserver;
 use App\Observers\TeamObserver;
 use Database\Factories\TeamFactory;
@@ -32,6 +33,27 @@ class Team extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    /** @return HasMany<TeamModuleSetting, $this> */
+    public function capabilitySettings(): HasMany
+    {
+        return $this->hasMany(TeamModuleSetting::class);
+    }
+
+    public function canUse(OrganizationCapability $capability): bool
+    {
+        $this->loadMissing('organization');
+
+        if (! $this->organization->canUse($capability)) {
+            return false;
+        }
+
+        $setting = $this->relationLoaded('capabilitySettings')
+            ? $this->capabilitySettings->first(fn (TeamModuleSetting $setting) => $setting->module === $capability->module()->value && $setting->capability === $capability->value)
+            : $this->capabilitySettings()->where('module', $capability->module()->value)->where('capability', $capability->value)->first();
+
+        return $setting === null || $setting->enabled;
     }
 
     /** @return BelongsToMany<User, $this, TeamMembership, 'pivot'> */

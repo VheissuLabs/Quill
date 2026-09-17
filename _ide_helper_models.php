@@ -76,7 +76,8 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
- * @property int $feature_id
+ * @property string $commentable_type
+ * @property int $commentable_id
  * @property int|null $parent_id
  * @property int|null $user_id
  * @property string $body
@@ -86,7 +87,7 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\User|null $author
- * @property-read \App\Models\Feature $feature
+ * @property-read \Illuminate\Database\Eloquent\Model $commentable
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $mentions
  * @property-read int|null $mentions_count
  * @property-read Comment|null $parent
@@ -97,10 +98,12 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment public()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment threadsVisibleTo(bool $isMember)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment topLevel()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereBody($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereCommentableId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereCommentableType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereFeatureId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereIsInternal($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereParentId($value)
@@ -203,6 +206,8 @@ namespace App\Models{
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\User|null $assignee
  * @property-read \App\Models\BoardColumn|null $boardColumn
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comment> $comments
+ * @property-read int|null $comments_count
  * @property-read \App\Models\User|null $creator
  * @property-read \App\Models\Feature|null $feature
  * @property-read \App\Models\Project $project
@@ -211,6 +216,8 @@ namespace App\Models{
  * @method static \Database\Factories\IssueFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue onOrganizationBoard(\Illuminate\Support\Collection $projectIds, \App\Models\User $user, ?\App\Models\Team $team, array $filters)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue ownedBy(?\App\Models\Team $team)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereAssigneeId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereBoardColumnId($value)
@@ -266,6 +273,8 @@ namespace App\Models{
  * @property-read int|null $projects_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $roles
  * @property-read int|null $roles_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $rolesWithMembers
+ * @property-read int|null $roles_with_members_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Sprint> $sprints
  * @property-read int|null $sprints_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Team> $teams
@@ -310,6 +319,7 @@ namespace App\Models{
  * @method static \Database\Factories\OrganizationInvitationFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation pendingFor(\App\Models\User $user)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation whereAcceptedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation whereCode($value)
@@ -338,6 +348,7 @@ namespace App\Models{
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Organization|null $organization
  * @property-read \App\Models\User $user
+ * @method static \Database\Factories\OrganizationMembershipFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationMembership newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationMembership newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationMembership query()
@@ -440,6 +451,7 @@ namespace App\Models{
  * @method static \Database\Factories\SprintFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sprint newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sprint newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Sprint onBoardFor(\App\Models\Organization $organization, ?\App\Models\Team $team)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sprint query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sprint whereCompletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sprint whereCreatedAt($value)
@@ -467,6 +479,8 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TeamModuleSetting> $capabilitySettings
+ * @property-read int|null $capability_settings_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\BoardColumn> $columns
  * @property-read int|null $columns_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $issues
@@ -508,6 +522,7 @@ namespace App\Models{
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Team $team
  * @property-read \App\Models\User $user
+ * @method static \Database\Factories\TeamMembershipFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamMembership newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamMembership newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamMembership query()
@@ -520,6 +535,33 @@ namespace App\Models{
  */
 	#[\AllowDynamicProperties]
 	class IdeHelperTeamMembership {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $team_id
+ * @property string $module
+ * @property string $capability
+ * @property bool $enabled
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\Team $team
+ * @method static \Database\Factories\TeamModuleSettingFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamModuleSetting newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamModuleSetting newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamModuleSetting query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamModuleSetting whereCapability($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamModuleSetting whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamModuleSetting whereEnabled($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamModuleSetting whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamModuleSetting whereModule($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamModuleSetting whereTeamId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TeamModuleSetting whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperTeamModuleSetting {}
 }
 
 namespace App\Models{
