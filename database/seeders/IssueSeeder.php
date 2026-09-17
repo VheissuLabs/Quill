@@ -38,12 +38,13 @@ class IssueSeeder extends Seeder
                 $members = $organization->members;
 
                 $owners = $organization->teams->isEmpty() ? [$organization] : $organization->teams->all();
-                $sprints = collect($owners)->flatMap(fn (Organization|Team $owner) => $owner->sprints);
+                $sprints = collect($owners)->flatMap(fn (Organization|Team $owner) => $owner->sprints
+                    ->each(fn (Sprint $sprint) => $sprint->setRelation('owner', $owner)));
 
                 $project->features()
                     ->whereIn('status', [FeatureStatus::Planned, FeatureStatus::InProgress, FeatureStatus::Completed])
                     ->get()
-                    ->each(fn (Feature $feature) => $this->convert($feature, $sprints, $members));
+                    ->each(fn (Feature $feature) => $this->convert($project, $feature, $sprints, $members));
 
                 $this->seedLooseIssues($project, $sprints, $members);
             });
@@ -79,11 +80,11 @@ class IssueSeeder extends Seeder
      * @param  Collection<int, Sprint>  $sprints
      * @param  Collection<int, User>  $members
      */
-    protected function convert(Feature $feature, Collection $sprints, Collection $members): void
+    protected function convert(Project $project, Feature $feature, Collection $sprints, Collection $members): void
     {
         $status = $feature->status;
 
-        $issue = $this->createIssue->handle($feature->project, [
+        $issue = $this->createIssue->handle($project, [
             'title' => $feature->title,
             'description' => $feature->description,
             'priority' => fake()->randomElement([IssuePriority::Medium, IssuePriority::High, IssuePriority::Urgent]),
