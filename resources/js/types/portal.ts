@@ -71,6 +71,7 @@ export type BoardStatusOption = {
 export type BoardFilters = {
     status: FeatureStatus | null;
     sort: 'top' | 'new';
+    search: string | null;
 };
 
 export type BoardViewer = {

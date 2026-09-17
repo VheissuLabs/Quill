@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Activity;
@@ -30,6 +31,23 @@ class Issue extends Model
     protected $guarded = [];
 
     protected $attributes = ['priority' => IssuePriority::None->value];
+
+    /** @return BelongsTo<Project, $this> */
+    /** @return MorphMany<Comment, $this> */
+    public function comments(): MorphMany
+    {
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+
+    /** @return Collection<int, User> */
+    public function mentionableUsers(): Collection
+    {
+        return $this->project->organization->members()->get()
+            ->merge(User::whereIn('id', $this->comments()->whereNotNull('user_id')->select('user_id'))->get())
+            ->unique('id')
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+    }
 
     /** @return BelongsTo<Project, $this> */
     public function project(): BelongsTo
@@ -84,7 +102,7 @@ class Issue extends Model
     /**
      * @param  Builder<$this>  $query
      * @param  Collection<int, int>  $projectIds
-     * @param  array{status: string|null, project: string|null, assignee: string|null}  $filters
+     * @param  array{status: string|null, project: string|null, assignee: string|null, search: string|null}  $filters
      */
     #[Scope]
     protected function onOrganizationBoard(Builder $query, Collection $projectIds, User $user, ?Team $team, array $filters): void
@@ -95,6 +113,7 @@ class Issue extends Model
             ->when(! $filters['status'], fn (Builder $query) => $query->whereNotIn('status', [IssueStatus::Done, IssueStatus::Cancelled]))
             ->when($filters['project'], fn (Builder $query, string $slug) => $query->whereHas('project', fn (Builder $query) => $query->where('slug', $slug)))
             ->when($filters['assignee'] === 'me', fn (Builder $query) => $query->where('assignee_id', $user->id))
+            ->when($filters['search'], fn (Builder $query, string $term) => $query->where('title', 'like', '%'.addcslashes($term, '%_\\').'%'))
             ->ownedBy($team)
             ->whereNull('sprint_id')
             ->orderBy('position')

@@ -23,6 +23,7 @@ class ProjectController extends Controller
         $isMember = $user?->belongsToOrganization($organization) ?? false;
         $status = $request->status();
         $sort = $request->sort();
+        $search = $request->search();
 
         $countsByStatus = $project->features()
             ->selectRaw('status, count(*) as aggregate')
@@ -34,6 +35,7 @@ class ProjectController extends Controller
             ->withVoteSummary($user)
             ->withCount(['comments' => fn ($query) => $query->public()])
             ->when($status, fn ($query) => $query->where('status', $status), fn ($query) => $query->active())
+            ->when($search, fn ($query, string $term) => $query->where('title', 'like', '%'.addcslashes($term, '%_\\').'%'))
             ->when($sort === 'top', fn ($query) => $query->orderByRaw('coalesce(score, 0) desc'))
             ->latest()
             ->orderByDesc('id')
@@ -49,7 +51,7 @@ class ProjectController extends Controller
                 'visibility' => $project->visibility->value,
             ],
             'features' => $features,
-            'filters' => ['status' => $status?->value, 'sort' => $sort],
+            'filters' => ['status' => $status?->value, 'sort' => $sort, 'search' => $search],
             'statuses' => collect(FeatureStatus::cases())->map(fn (FeatureStatus $status) => [
                 'value' => $status->value,
                 'label' => $status->label(),
