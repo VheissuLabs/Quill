@@ -35,6 +35,7 @@ export type IssueListItem = {
     boardColumnId: number | null;
     project: { name: string; slug: string };
     teamName: string | null;
+    assigneeId: number | null;
     assigneeName: string | null;
     hasFeature: boolean;
     createdAt: string;
@@ -58,6 +59,7 @@ export type IssueFilters = {
     status: IssueStatus | null;
     project: string | null;
     assignee: string | null;
+    search: string | null;
 };
 
 export type IssueProjectOption = { id: number; name: string; slug: string };

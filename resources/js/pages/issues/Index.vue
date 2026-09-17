@@ -6,10 +6,11 @@ import {
     MoreHorizontal,
     Pencil,
     Plus,
+    Search,
     Timer,
     Trash2,
 } from '@lucide/vue';
-import { useLocalStorage } from '@vueuse/core';
+import { useDebounceFn, useLocalStorage } from '@vueuse/core';
 import { computed, nextTick, ref, watch } from 'vue';
 import draggable from 'vuedraggable';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
@@ -224,6 +225,24 @@ const projectFilter = filterModel('project');
 
 const assignedToMe = computed(() => props.filters.assignee === 'me');
 
+const search = ref(props.filters.search ?? '');
+
+const runSearch = useDebounceFn(
+    () => applyFilters({ search: search.value.trim() || null }),
+    250,
+);
+
+watch(
+    () => props.filters.search,
+    (value) => {
+        search.value = value ?? '';
+    },
+);
+
+const plannableSprints = computed(() =>
+    props.sprints.filter((sprint) => sprint.status !== 'completed'),
+);
+
 const planInto = (issueId: number, sprintId: number | null) => {
     router.visit(update([props.currentOrganization.slug, issueId]), {
         data: { sprint_id: sprintId },
@@ -329,13 +348,7 @@ const totalPoints = computed(() =>
             </CreateIssueModal>
         </div>
 
-        <div
-            :class="[
-                'grid gap-8',
-                permissions.canViewActivity &&
-                    '2xl:grid-cols-[minmax(0,1fr)_400px]',
-            ]"
-        >
+        <div class="grid gap-8">
             <div class="grid min-w-0 gap-8">
                 <section class="min-w-0 space-y-4">
                     <div class="flex flex-wrap items-center gap-2">
@@ -377,6 +390,20 @@ const totalPoints = computed(() =>
                                 </SelectItem>
                             </SelectContent>
                         </Select>
+
+                        <div class="relative">
+                            <Search
+                                class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
+                            />
+                            <Input
+                                v-model="search"
+                                type="search"
+                                placeholder="Search issues"
+                                class="h-9 w-56 pl-8"
+                                data-test="issue-search"
+                                @input="runSearch"
+                            />
+                        </div>
 
                         <Button
                             :variant="assignedToMe ? 'secondary' : 'ghost'"
@@ -430,6 +457,9 @@ const totalPoints = computed(() =>
                                     <IssueRow
                                         :organization="currentOrganization.slug"
                                         :issue="issue"
+                                        :sprints="plannableSprints"
+                                        :current-sprint-id="null"
+                                        @plan="planInto(issue.id, $event)"
                                     />
                                 </div>
                             </template>
@@ -620,6 +650,9 @@ const totalPoints = computed(() =>
                                                 currentOrganization.slug
                                             "
                                             :issue="issue"
+                                            :sprints="plannableSprints"
+                                            :current-sprint-id="sprint.id"
+                                            @plan="planInto(issue.id, $event)"
                                         />
                                     </li>
                                 </template>
@@ -656,7 +689,6 @@ const totalPoints = computed(() =>
                 v-if="permissions.canViewActivity"
                 :entries="activity"
                 :organization="currentOrganization.slug"
-                class="2xl:sticky 2xl:top-20 2xl:self-start"
             />
         </div>
     </div>

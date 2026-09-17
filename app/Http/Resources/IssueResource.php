@@ -25,6 +25,7 @@ class IssueResource extends JsonResource
             'points' => $this->points,
             'project' => ['name' => $this->project->name, 'slug' => $this->project->slug],
             'teamName' => $this->team?->name,
+            'assigneeId' => $this->assignee_id,
             'assigneeName' => $this->assignee?->name,
             'hasFeature' => $this->feature_id !== null,
             'createdAt' => $this->created_at->toISOString(),

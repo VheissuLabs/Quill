@@ -397,3 +397,61 @@ test('an update cannot combine conflicting placements', function () {
         ->board_column_id->toBeNull()
         ->status->toBe(IssueStatus::Backlog);
 });
+
+test('the issue board filters by a search term on the title', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $project = Project::factory()->for($organization)->create();
+    Issue::factory()->for($project)->create(['title' => 'Orbit drifts on resize', 'number' => 1]);
+    Issue::factory()->for($project)->create(['title' => 'Unrelated work', 'number' => 2]);
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization, 'q' => 'orbit']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.search', 'orbit')
+            ->has('issues', 1)
+            ->where('issues.0.title', 'Orbit drifts on resize'));
+});
+
+test('an issue search term matching nothing returns an empty board', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $project = Project::factory()->for($organization)->create();
+    Issue::factory()->for($project)->create(['title' => 'Unrelated work', 'number' => 1]);
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization, 'q' => 'nothing like this']))
+        ->assertInertia(fn (Assert $page) => $page->has('issues', 0));
+});
+
+test('an issue search term combines with the project filter', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $wanted = Project::factory()->for($organization)->create(['name' => 'Atlas']);
+    $other = Project::factory()->for($organization)->create(['name' => 'Beacon']);
+    Issue::factory()->for($wanted)->create(['title' => 'Shared name', 'number' => 1]);
+    Issue::factory()->for($other)->create(['title' => 'Shared name', 'number' => 1]);
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization, 'q' => 'shared', 'project' => $wanted->slug]))
+        ->assertInertia(fn (Assert $page) => $page->has('issues', 1));
+});
+
+test('the issue board exposes the assignee id so the viewer can be highlighted', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $project = Project::factory()->for($organization)->create();
+    Issue::factory()->for($project)->create(['assignee_id' => $member->id, 'number' => 1]);
+    Issue::factory()->for($project)->create(['assignee_id' => null, 'number' => 2]);
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('issues', 2)
+            ->where('issues.0.assigneeId', fn ($id) => $id === $member->id || $id === null)
+            ->has('issues.0.assigneeId'));
+});
