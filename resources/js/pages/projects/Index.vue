@@ -57,7 +57,7 @@ defineOptions({
             <Heading
                 variant="small"
                 title="Projects"
-                description="Each project has a board where feedback are requested and voted on"
+                description="Each project has a board where feedback is collected and voted on"
             />
 
             <CreateProjectModal
@@ -177,7 +177,7 @@ defineOptions({
                 title="No projects yet"
                 :description="
                     permissions.canManageProjects
-                        ? 'Every project gets a board where feedback are requested and voted on. Create the first one.'
+                        ? 'Every project gets a board where feedback is collected and voted on. Create the first one.'
                         : 'Projects will show up here once an admin creates one you can see.'
                 "
             >

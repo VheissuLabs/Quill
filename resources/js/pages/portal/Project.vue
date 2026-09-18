@@ -124,7 +124,7 @@ const statusRowClass = (status: FeedbackSummary['status'] | null) =>
 </script>
 
 <template>
-    <Head :title="`${project.name} feedback requests`" />
+    <Head :title="`${project.name} feedback`" />
 
     <div class="space-y-10">
         <section
@@ -148,11 +148,11 @@ const statusRowClass = (status: FeedbackSummary['status'] | null) =>
                 :project="project.slug"
             >
                 <Button size="lg" data-test="request-feedback-button">
-                    <Plus /> Request a feedback
+                    <Plus /> Submit feedback
                 </Button>
             </SubmitFeedbackModal>
             <Button v-else-if="isGuest" size="lg" as-child>
-                <Link :href="login()"> Log in to request a feedback </Link>
+                <Link :href="login()"> Log in to submit feedback </Link>
             </Button>
         </section>
 
@@ -307,12 +307,12 @@ const statusRowClass = (status: FeedbackSummary['status'] | null) =>
                 <EmptyState
                     v-else
                     :icon="Lightbulb"
-                    title="No feedback requests yet"
+                    title="No feedback yet"
                     :description="
                         viewer.canCreateFeedback
                             ? 'Be the first to ask for something. Others can vote on it.'
                             : isGuest
-                              ? 'Log in to request a feedback and vote on what gets built next.'
+                              ? 'Log in to submit feedback and vote on what gets built next.'
                               : 'Requests will show up here once people start asking.'
                     "
                 >
@@ -322,7 +322,7 @@ const statusRowClass = (status: FeedbackSummary['status'] | null) =>
                         :project="project.slug"
                     >
                         <Button variant="outline">
-                            <Plus /> Request a feedback
+                            <Plus /> Submit feedback
                         </Button>
                     </SubmitFeedbackModal>
                     <Button v-else-if="isGuest" variant="outline" as-child>
@@ -369,7 +369,10 @@ const statusRowClass = (status: FeedbackSummary['status'] | null) =>
                     <ol
                         class="text-muted-foreground space-y-2 text-sm leading-relaxed"
                     >
-                        <li>Request a feedback or find one that matches.</li>
+                        <li>
+                            Submit feedback, or find something that already
+                            matches.
+                        </li>
                         <li>Vote for the requests you want most.</li>
                         <li>
                             Follow the status as {{ organization.name }} plans,

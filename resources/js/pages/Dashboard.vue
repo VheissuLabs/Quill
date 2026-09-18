@@ -283,8 +283,8 @@ const statCards = computed(() => [
         <EmptyState
             v-else-if="!feedbackEnabled"
             :icon="FolderKanban"
-            title="Feedback voting is turned off"
-            description="An organization owner can enable feedback voting from organization settings."
+            title="Feedback is turned off"
+            description="An organization owner can enable feedback from organization settings."
         />
 
         <EmptyState
@@ -293,7 +293,7 @@ const statCards = computed(() => [
             title="No boards yet"
             :description="
                 permissions.canManageProjects
-                    ? 'Create a project to open a feedback board. Every project gets a board where people request and vote.'
+                    ? 'Create a project to open a feedback board. Every project gets a board where people submit feedback and vote.'
                     : 'Boards will show up here once an admin creates a project you can see.'
             "
         >

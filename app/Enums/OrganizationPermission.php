@@ -38,7 +38,7 @@ enum OrganizationPermission: string
             self::ManageTeams => __('Manage teams'),
             self::ManageClients => __('Manage clients'),
             self::ManageProjects => __('Manage projects and boards'),
-            self::ManageFeedback => __('Manage feedback requests'),
+            self::ManageFeedback => __('Manage feedback'),
             self::ManageIssues => __('Manage issues'),
             self::ManageSprints => __('Manage sprints'),
             self::ViewActivity => __('View activity history'),

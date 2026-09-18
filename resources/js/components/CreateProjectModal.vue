@@ -104,7 +104,7 @@ function handleOpenChange(value: boolean) {
                         <p class="text-muted-foreground text-sm">
                             {{
                                 visibility === 'public'
-                                    ? 'Anyone can view the board. Signed in users can request feedback and vote.'
+                                    ? 'Anyone can view the board. Signed in users can submit feedback and vote.'
                                     : 'Only members of this organization can view the board.'
                             }}
                         </p>

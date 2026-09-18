@@ -49,7 +49,7 @@ function handleOpenChange(value: boolean) {
                 @success="open = false"
             >
                 <DialogHeader>
-                    <DialogTitle>Request a feedback</DialogTitle>
+                    <DialogTitle>Submit feedback</DialogTitle>
                     <DialogDescription>
                         Describe what you need and why. Others can vote for it.
                     </DialogDescription>
@@ -62,7 +62,7 @@ function handleOpenChange(value: boolean) {
                             id="title"
                             name="title"
                             data-test="feedback-title"
-                            placeholder="Short summary of the feedback"
+                            placeholder="Short summary"
                             required
                         />
                         <InputError :message="errors.title" />

@@ -450,7 +450,7 @@ const commentCount = computed(() =>
 
     <ConfirmDeleteModal
         v-model:open="deleteDialogOpen"
-        title="Delete feedback request"
+        title="Delete feedback"
         confirm-label="Delete"
         :href="destroy(routeArgs)"
     >
