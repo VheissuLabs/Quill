@@ -36,7 +36,13 @@ test('app keeps the directories it has agreed on', function () {
     ]);
 });
 
-test('closures do not reach outside themselves to change what they find', function () {
+/**
+ * Both rules are about the same habit: building a value by starting with nothing and changing
+ * it, rather than saying what the value is. Pest's arch plugin reasons about dependencies, not
+ * syntax, so these read the source and name what they find.
+ */
+function appFilesMatching(string $pattern): array
+{
     $files = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator(dirname(__DIR__, 2).'/app')
     );
@@ -48,12 +54,20 @@ test('closures do not reach outside themselves to change what they find', functi
             continue;
         }
 
-        $contents = (string) file_get_contents($file->getPathname());
-
-        if (preg_match('/\buse\s*\([^)]*&\s*\$/', $contents) === 1) {
+        if (preg_match($pattern, (string) file_get_contents($file->getPathname())) === 1) {
             $offenders[] = str_replace(dirname(__DIR__, 2).'/', '', $file->getPathname());
         }
     }
 
-    expect($offenders)->toBe([]);
+    sort($offenders);
+
+    return $offenders;
+}
+
+test('values are built rather than started empty and filled in', function () {
+    expect(appFilesMatching('/^\s*\$\w+ = \[\];\s*$/m'))->toBe([]);
+});
+
+test('closures do not reach outside themselves to change what they find', function () {
+    expect(appFilesMatching('/\buse\s*\([^)]*&\s*\$/'))->toBe([]);
 });

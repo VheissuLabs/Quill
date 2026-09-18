@@ -44,15 +44,10 @@ class PresentViewers
             ? $decoded['users']
             : [];
 
-        $ids = [];
-
-        foreach ($users as $user) {
-            if (is_array($user) && isset($user['id'])) {
-                $ids[] = (int) $user['id'];
-            }
-        }
-
-        return $ids;
+        return array_values(array_map(
+            fn (array $user) => (int) $user['id'],
+            array_filter($users, fn (mixed $user) => is_array($user) && isset($user['id']))
+        ));
     }
 
     private function channelFor(Comment $comment): ?string
