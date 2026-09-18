@@ -38,7 +38,7 @@ test('an issue is found by its number as well as its title', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
     $organization->addMember($member, 'Member');
-    $project = Project::factory()->for($organization)->create();
+    $project = Project::factory()->for($organization)->create(['name' => 'Ranking']);
     Issue::factory()->for($project)->create(['title' => 'Nothing alike', 'number' => 142]);
 
     $response = $this->actingAs($member)->getJson(palette($organization, '142'));
@@ -179,9 +179,9 @@ test('a non member cannot read palette options', function () {
 
 test('a title that opens with the term outranks one that merely contains it', function () {
     $member = User::factory()->create();
-    $organization = Organization::factory()->create();
+    $organization = Organization::factory()->create(['name' => 'Ranking Co']);
     $organization->addMember($member, 'Member');
-    $project = Project::factory()->for($organization)->create();
+    $project = Project::factory()->for($organization)->create(['name' => 'Ranking']);
 
     Issue::factory()->for($project)->create(['title' => 'Aut fugit esse molestiae', 'number' => 1]);
     Issue::factory()->for($project)->create(['title' => 'Consectetur fugit sit', 'number' => 2]);
@@ -199,7 +199,7 @@ test('an alphabetically late leading match is not cut off by the per type cap', 
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
     $organization->addMember($member, 'Member');
-    $project = Project::factory()->for($organization)->create();
+    $project = Project::factory()->for($organization)->create(['name' => 'Ranking']);
 
     foreach (['Aa', 'Ab', 'Ac', 'Ad', 'Ae', 'Af', 'Ag'] as $index => $prefix) {
         Issue::factory()->for($project)->create([
