@@ -288,23 +288,6 @@ const commentCount = computed(() =>
                         </button>
                     </h2>
 
-                    <ol v-if="comments.length > 0" class="space-y-6">
-                        <CommentThread
-                            v-for="comment in sortedComments"
-                            :key="comment.id"
-                            :comment="comment"
-                            @typing="reportTyping"
-                            :action="storeComment(routeArgs).url"
-                            :organization-name="organization.name"
-                            :can-comment="viewer.canComment"
-                            :can-comment-internally="
-                                viewer.canCommentInternally
-                            "
-                            :mentionable="mentionableUsers"
-                            @delete="commentToDelete = $event"
-                        />
-                    </ol>
-
                     <div v-if="viewer.canComment" class="flex gap-3">
                         <Avatar class="size-8 shrink-0">
                             <AvatarFallback class="text-xs">
@@ -334,6 +317,23 @@ const commentCount = computed(() =>
                         </Link>
                         to join the discussion.
                     </p>
+
+                    <ol v-if="comments.length > 0" class="space-y-6">
+                        <CommentThread
+                            v-for="comment in sortedComments"
+                            :key="comment.id"
+                            :comment="comment"
+                            @typing="reportTyping"
+                            :action="storeComment(routeArgs).url"
+                            :organization-name="organization.name"
+                            :can-comment="viewer.canComment"
+                            :can-comment-internally="
+                                viewer.canCommentInternally
+                            "
+                            :mentionable="mentionableUsers"
+                            @delete="commentToDelete = $event"
+                        />
+                    </ol>
                 </section>
             </div>
 

@@ -490,6 +490,18 @@ const currentSprint = computed(() =>
             >
                 <Heading variant="small" title="Discussion" />
 
+                <CommentForm
+                    :action="storeComment(routeArgs).url"
+                    :issue-lookup="
+                        issueLookup(currentOrganization.slug, {
+                            query: { except: issue.id },
+                        }).url
+                    "
+                    :mentionable="mentionables"
+                    :commands="commands"
+                    :statuses="commandStatuses"
+                />
+
                 <ol v-if="comments.length > 0" class="space-y-6">
                     <CommentThread
                         v-for="comment in comments"
@@ -504,18 +516,6 @@ const currentSprint = computed(() =>
                 <p v-else class="text-muted-foreground text-sm italic">
                     Nothing here yet. Start the conversation.
                 </p>
-
-                <CommentForm
-                    :action="storeComment(routeArgs).url"
-                    :issue-lookup="
-                        issueLookup(currentOrganization.slug, {
-                            query: { except: issue.id },
-                        }).url
-                    "
-                    :mentionable="mentionables"
-                    :commands="commands"
-                    :statuses="commandStatuses"
-                />
             </section>
         </div>
 
