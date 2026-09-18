@@ -10,8 +10,12 @@ portal, are separate designs that build on the conventions this one establishes.
 
 A change made by anyone in the organization appears on other people's screens within about
 a second. Status, assignee, team, sprint, points, priority, title, ordering, creation and
-deletion all count — there is no list of "changes that are live" to remember, because the
-broadcast hangs off the model rather than off the code paths we thought of.
+deletion all count.
+
+Most of that comes free from the model's lifecycle, but not all of it: bulk updates bypass
+Eloquent's events entirely, and this codebase uses them. Those paths are listed below and
+dispatch explicitly. Assuming the observer covers everything would have left sprint
+completion — dozens of cards moving at once — completely silent.
 
 Updates apply immediately and unconditionally, including while the viewer is dragging a row
 or has a menu open. This was chosen deliberately over queuing updates until the viewer is
@@ -22,7 +26,7 @@ The person who made the change does not receive their own event.
 
 ## The event
 
-`App\Events\IssuesChanged`, implementing `ShouldBroadcastNow`.
+`App\Events\IssuesChanged`, implementing `ShouldBroadcastNow` and `ShouldDispatchAfterCommit`.
 
 It carries an organization id and a list of issue ids:
 
@@ -47,27 +51,31 @@ second client will need to read them.
 
 ## Where it fires
 
-`IssueObserver` on `saved` and `deleted`. `saved` covers creation, so a new issue appears in
-other people's lists on its own.
-
-The observer does not broadcast. It records the issue's id and organization id in a
-request-scoped collector, and a single event per organization fires from `App::terminating()`.
-
-Two reasons:
-
-1. Reordering a list saves every row it touched. Broadcasting per save would make twenty
-   sequential HTTP calls to Reverb inside one request, because `ShouldBroadcastNow` does not
-   use a queue.
-2. `terminating` runs after the response has been sent to the browser, so the cost of the
-   broadcast lands where nobody is waiting on it.
-
-The collector is a singleton registered in the container, holding a map of organization id to
-a set of issue ids. A singleton lives for exactly one request under PHP-FPM, so it starts
-empty every time.
+The ordinary path is `IssueObserver` on `saved` and `deleted`. `saved` covers creation, so a
+new issue appears in other people's lists on its own. That handles every single-issue change:
+the chip menus, the slash commands, the detail page, a tinker session, a future MCP tool call.
 
 Reading the organization id requires the issue's project. Lazy loading is prevented outside
 production, so the observer uses `loadMissing('project')` rather than touching `$issue->project`
 and hoping it was eager loaded.
+
+Three paths change many issues at once and need more than the observer.
+
+**`IssueOrderController` becomes a single query.** It currently loads every issue in the list
+and calls `update()` on each one, so a drag on a 512-issue backlog writes 512 rows
+individually — and would dispatch 512 events. It changes to one bulk write of the positions,
+dispatching once with the ids it was given. This is worth doing on its own merits; the
+broadcast just makes it urgent.
+
+**`Sprint::complete()` and `Team::moveIssuesTo()`** already use bulk updates, so no model
+event fires. Each plucks the ids before updating and dispatches once.
+
+`Team::returnSprintWorkToBacklog()` needs nothing: it deliberately loops through `planInto`
+per issue so a finished issue is not dragged back out of Done, so the observer already sees
+every one.
+
+The event is `ShouldDispatchAfterCommit`. All of these run inside transactions, and a change
+that rolls back must not have been announced.
 
 ## Channel authorization
 
@@ -122,10 +130,12 @@ actor then receives their own event and reloads once, which is wasteful but corr
 
 None of it requires a running Reverb.
 
-- Updating an issue records it in the collector, and terminating the request dispatches
-  `IssuesChanged` carrying that id and organization. `Event::fake`.
-- A request that changes several issues dispatches one event carrying all of their ids, not
-  one event each.
+- Updating an issue dispatches `IssuesChanged` carrying that id and organization. `Event::fake`.
+- Reordering a list dispatches one event carrying every id it was given, not one event each,
+  and writes the positions in a single query.
+- Completing a sprint dispatches an event for the issues it returned to the backlog, proving
+  the bulk paths are not silent.
+- A transaction that rolls back dispatches nothing.
 - The event broadcasts on the private channel for its organization, under the expected name.
 - `/broadcasting/auth` refuses a user who is not a member of the organization, and admits one
   who is. This is the test that matters; the rest are shape assertions.
@@ -152,3 +162,6 @@ The listener shape is unchanged.
   calls tools rather than subscribing. Left alone until something actually needs it.
 - **Broadcasting anything other than issues.** Organizations, teams, projects and sprints do
   not broadcast yet.
+- **User-facing bulk editing.** There is no multi-select and no bulk endpoint today. When one
+  arrives it follows the pattern the three paths above establish: write in bulk, dispatch once
+  with the ids touched.
