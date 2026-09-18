@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\FeedbackStatus;
+use App\Enums\FeedbackType;
 use App\Models\Feedback;
 use App\Models\Project;
 use Illuminate\Database\Seeder;
@@ -24,6 +25,7 @@ class FeedbackSeeder extends Seeder
                 ->for($project)
                 ->sequence(fn () => [
                     'user_id' => $authors->random()->id,
+                    'type' => fake()->boolean(70) ? FeedbackType::Feature : FeedbackType::Bug,
                     'status' => fake()->randomElement([
                         FeedbackStatus::Open, FeedbackStatus::Open, FeedbackStatus::Open,
                         FeedbackStatus::Planned, FeedbackStatus::InProgress,

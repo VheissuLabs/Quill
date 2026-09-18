@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\FeedbackStatus;
+use App\Enums\FeedbackType;
 use App\Enums\VoteDirection;
 use App\Events\FeedbackVoted;
 use App\Observers\FeedbackObserver;
@@ -25,6 +26,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read int|null $downvotes_count
  * @property-read int|null $score
  * @property-read int|null $user_vote
+ *
  * @mixin IdeHelperFeedback
  */
 #[ObservedBy(FeedbackObserver::class)]
@@ -131,6 +133,7 @@ class Feedback extends Model
     {
         return [
             'status' => FeedbackStatus::class,
+            'type' => FeedbackType::class,
         ];
     }
 }

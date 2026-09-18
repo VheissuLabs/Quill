@@ -381,7 +381,17 @@ const commentCount = computed(() =>
                         <dt
                             class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                         >
-                            Requested by
+                            Type
+                        </dt>
+                        <dd data-test="feedback-type">
+                            {{ feedback.typeLabel }}
+                        </dd>
+                    </div>
+                    <div class="space-y-1.5">
+                        <dt
+                            class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                        >
+                            Submitted by
                         </dt>
                         <dd>{{ feedback.authorName ?? 'Deleted user' }}</dd>
                     </div>
@@ -389,7 +399,7 @@ const commentCount = computed(() =>
                         <dt
                             class="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                         >
-                            Requested on
+                            Submitted on
                         </dt>
                         <dd>{{ formatDate(feedback.createdAt) }}</dd>
                     </div>

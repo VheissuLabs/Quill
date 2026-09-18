@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Enums\FeedbackStatus;
+use App\Enums\FeedbackType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\ProjectBoardRequest;
 use App\Http\Resources\FeedbackResource;
@@ -22,8 +23,14 @@ class ProjectController extends Controller
 
         $isMember = $user?->belongsToOrganization($organization) ?? false;
         $status = $request->status();
+        $type = $request->type();
         $sort = $request->sort();
         $search = $request->search();
+
+        $countsByType = $project->feedback()
+            ->selectRaw('type, count(*) as aggregate')
+            ->groupBy('type')
+            ->pluck('aggregate', 'type');
 
         $countsByStatus = $project->feedback()
             ->selectRaw('status, count(*) as aggregate')
@@ -35,6 +42,7 @@ class ProjectController extends Controller
             ->withVoteSummary($user)
             ->withCount(['comments' => fn ($query) => $query->public()])
             ->when($status, fn ($query) => $query->where('status', $status), fn ($query) => $query->active())
+            ->when($type, fn ($query) => $query->where('type', $type))
             ->when($search, fn ($query, string $term) => $query->where('title', 'like', '%'.addcslashes($term, '%_\\').'%'))
             ->when($sort === 'top', fn ($query) => $query->orderByRaw('coalesce(score, 0) desc'))
             ->latest()
@@ -52,7 +60,12 @@ class ProjectController extends Controller
                 'visibility' => $project->visibility->value,
             ],
             'feedback' => $feedback,
-            'filters' => ['status' => $status?->value, 'sort' => $sort, 'search' => $search],
+            'filters' => ['status' => $status?->value, 'type' => $type?->value, 'sort' => $sort, 'search' => $search],
+            'types' => collect(FeedbackType::cases())->map(fn (FeedbackType $type) => [
+                'value' => $type->value,
+                'label' => $type->label(),
+                'count' => (int) ($countsByType[$type->value] ?? 0),
+            ]),
             'statuses' => collect(FeedbackStatus::cases())->map(fn (FeedbackStatus $status) => [
                 'value' => $status->value,
                 'label' => $status->label(),

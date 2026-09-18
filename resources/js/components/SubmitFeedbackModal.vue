@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Bug, Lightbulb } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +26,34 @@ defineProps<{
 
 const open = ref(false);
 const formKey = ref(0);
+
+/**
+ * The prompt is the point of asking. An idea wants to know what problem it solves; a bug is
+ * worth nothing without what happened and what was expected instead.
+ */
+const type = ref<'feature' | 'bug'>('feature');
+
+const choices = [
+    { value: 'feature', label: 'Idea', icon: Lightbulb },
+    { value: 'bug', label: 'Something is broken', icon: Bug },
+] as const;
+
+const copy = computed(() =>
+    type.value === 'bug'
+        ? {
+              description: 'Tell us what went wrong so it can be reproduced.',
+              title: 'What is broken, in a few words',
+              details: 'What happened, and what did you expect instead?',
+              submit: 'Submit report',
+          }
+        : {
+              description:
+                  'Describe what you need and why. Others can vote for it.',
+              title: 'Short summary',
+              details: 'What problem would this solve for you?',
+              submit: 'Submit request',
+          },
+);
 
 function handleOpenChange(value: boolean) {
     open.value = value;
@@ -51,18 +80,40 @@ function handleOpenChange(value: boolean) {
                 <DialogHeader>
                     <DialogTitle>Submit feedback</DialogTitle>
                     <DialogDescription>
-                        Describe what you need and why. Others can vote for it.
+                        {{ copy.description }}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div class="grid gap-4">
+                    <input type="hidden" name="type" :value="type" />
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button
+                            v-for="choice in choices"
+                            :key="choice.value"
+                            type="button"
+                            :data-test="`feedback-type-${choice.value}`"
+                            :aria-pressed="type === choice.value"
+                            :class="[
+                                'flex cursor-pointer items-center justify-center gap-2 rounded-md border p-3 text-sm transition-colors',
+                                type === choice.value
+                                    ? 'border-foreground bg-accent font-medium'
+                                    : 'text-muted-foreground hover:bg-accent/50',
+                            ]"
+                            @click="type = choice.value"
+                        >
+                            <component :is="choice.icon" class="size-4" />
+                            {{ choice.label }}
+                        </button>
+                    </div>
+
                     <div class="grid gap-2">
                         <Label for="title">Title</Label>
                         <Input
                             id="title"
                             name="title"
                             data-test="feedback-title"
-                            placeholder="Short summary"
+                            :placeholder="copy.title"
                             required
                         />
                         <InputError :message="errors.title" />
@@ -74,7 +125,7 @@ function handleOpenChange(value: boolean) {
                             id="description"
                             name="description"
                             data-test="feedback-description"
-                            placeholder="What problem would this solve for you?"
+                            :placeholder="copy.details"
                         />
                         <InputError :message="errors.description" />
                     </div>
@@ -90,7 +141,7 @@ function handleOpenChange(value: boolean) {
                         data-test="feedback-submit"
                         :disabled="processing"
                     >
-                        Submit request
+                        {{ copy.submit }}
                     </Button>
                 </DialogFooter>
             </Form>

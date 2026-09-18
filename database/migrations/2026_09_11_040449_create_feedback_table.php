@@ -14,10 +14,12 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
+            $table->string('type')->default('feature');
             $table->string('status');
             $table->timestamps();
 
             $table->index(['project_id', 'status']);
+            $table->index(['project_id', 'type']);
         });
     }
 

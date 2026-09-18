@@ -19,6 +19,7 @@ import { useLiveFeedback } from '@/composables/useLiveFeedback';
 import type {
     BoardFilters,
     BoardStatusOption,
+    BoardTypeOption,
     BoardViewer,
     FeedbackSummary,
     PortalOrganization,
@@ -31,6 +32,7 @@ type Props = {
     feedback: FeedbackSummary[];
     filters: BoardFilters;
     statuses: BoardStatusOption[];
+    types: BoardTypeOption[];
     activeCount: number;
     viewer: BoardViewer;
 };
@@ -56,11 +58,13 @@ useLiveFeedback(props.project.id, ['feedback']);
 
 const applyFilters = (changes: {
     status?: string | null;
+    type?: string | null;
     sort?: string;
     search?: string | null;
 }) => {
     const status =
         changes.status === undefined ? props.filters.status : changes.status;
+    const type = changes.type === undefined ? props.filters.type : changes.type;
     const sort = changes.sort ?? props.filters.sort;
     const term =
         changes.search === undefined ? props.filters.search : changes.search;
@@ -69,6 +73,7 @@ const applyFilters = (changes: {
         showBoard([props.organization.slug, props.project.slug], {
             query: {
                 status: status ?? undefined,
+                type: type ?? undefined,
                 sort: sort === 'top' ? undefined : sort,
                 q: term ?? undefined,
             },
@@ -112,6 +117,14 @@ const sortButtonClass = (sort: BoardFilters['sort']) =>
         props.filters.sort === sort
             ? 'bg-background text-foreground shadow-xs'
             : 'text-muted-foreground hover:text-foreground',
+    );
+
+const typeRowClass = (type: FeedbackSummary['type'] | null) =>
+    cn(
+        'flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-sm transition-colors',
+        props.filters.type === type
+            ? 'bg-accent text-accent-foreground font-medium'
+            : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
     );
 
 const statusRowClass = (status: FeedbackSummary['status'] | null) =>
@@ -247,6 +260,13 @@ const statusRowClass = (status: FeedbackSummary['status'] | null) =>
                             <div
                                 class="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
                             >
+                                <span
+                                    v-if="feedback.type === 'bug'"
+                                    data-test="feedback-type-badge"
+                                    class="text-destructive border-destructive/30 rounded-full border px-2 py-0.5 font-medium"
+                                >
+                                    {{ feedback.typeLabel }}
+                                </span>
                                 <span v-if="feedback.authorName">
                                     {{ feedback.authorName }}
                                 </span>
@@ -357,6 +377,33 @@ const statusRowClass = (status: FeedbackSummary['status'] | null) =>
                     >
                         <span>{{ status.label }}</span>
                         <span class="tabular-nums">{{ status.count }}</span>
+                    </button>
+                </nav>
+
+                <nav class="space-y-1 border-t pt-6">
+                    <p
+                        class="text-muted-foreground px-2.5 pb-1 text-xs font-medium tracking-wide uppercase"
+                    >
+                        Type
+                    </p>
+                    <button
+                        type="button"
+                        data-test="type-filter-all"
+                        :class="typeRowClass(null)"
+                        @click="applyFilters({ type: null })"
+                    >
+                        <span>Everything</span>
+                    </button>
+                    <button
+                        v-for="option in types"
+                        :key="option.value"
+                        type="button"
+                        data-test="type-filter"
+                        :class="typeRowClass(option.value)"
+                        @click="applyFilters({ type: option.value })"
+                    >
+                        <span>{{ option.label }}</span>
+                        <span class="tabular-nums">{{ option.count }}</span>
                     </button>
                 </nav>
 

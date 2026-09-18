@@ -145,14 +145,22 @@ namespace App\Models{
 
 namespace App\Models{
 /**
+ * @property int $id
+ * @property int $project_id
+ * @property int|null $user_id
+ * @property string $title
+ * @property string|null $description
+ * @property \App\Enums\FeedbackType $type
  * @property \App\Enums\FeedbackStatus $status
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\User|null $author
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comment> $comments
  * @property-read int|null $comments_count
  * @property-read \App\Models\Issue|null $issue
- * @property-read \App\Models\Project|null $project
+ * @property-read \App\Models\Project $project
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Vote> $votes
  * @property-read int|null $votes_count
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback active()
@@ -160,6 +168,15 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereProjectId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereTitle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback withVoteSummary(?\App\Models\User $viewer)
  * @mixin \Eloquent
  */
@@ -174,7 +191,7 @@ namespace App\Models{
  * @property int|null $team_id
  * @property int|null $sprint_id
  * @property int|null $board_column_id
- * @property int|null $feature_id
+ * @property int|null $feedback_id
  * @property int|null $assignee_id
  * @property int|null $created_by
  * @property int $number
@@ -214,7 +231,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereCreatedBy($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereFeatureId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereFeedbackId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereNumber($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue wherePoints($value)
@@ -658,12 +675,12 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
- * @property int $feature_id
+ * @property int $feedback_id
  * @property int $user_id
  * @property int $direction
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \App\Models\Feedback|null $feedback
+ * @property-read \App\Models\Feedback $feedback
  * @property-read \App\Models\User $user
  * @method static \Database\Factories\VoteFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vote newModelQuery()
@@ -671,7 +688,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vote query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vote whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vote whereDirection($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Vote whereFeatureId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Vote whereFeedbackId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vote whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vote whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vote whereUserId($value)

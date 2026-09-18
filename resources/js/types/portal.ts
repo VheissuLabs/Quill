@@ -24,7 +24,13 @@ export type PortalProject = {
 
 export type VoteDirection = 'up' | 'down';
 
+export type FeedbackType = 'feature' | 'bug';
+
 export type FeedbackSummary = {
+    type: FeedbackType;
+    typeLabel: string;
+    voteLabel: string;
+    acceptsOpposingVotes: boolean;
     id: number;
     title: string;
     description: string | null;
@@ -69,8 +75,15 @@ export type BoardStatusOption = {
     count: number;
 };
 
+export type BoardTypeOption = {
+    value: FeedbackType;
+    label: string;
+    count: number;
+};
+
 export type BoardFilters = {
     status: FeedbackStatus | null;
+    type: FeedbackType | null;
     sort: 'top' | 'new';
     search: string | null;
 };

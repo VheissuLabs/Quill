@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Portal;
 
 use App\Enums\FeedbackStatus;
+use App\Enums\FeedbackType;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ProjectBoardRequest extends FormRequest
@@ -18,6 +19,11 @@ class ProjectBoardRequest extends FormRequest
     public function status(): ?FeedbackStatus
     {
         return FeedbackStatus::tryFrom((string) $this->query('status'));
+    }
+
+    public function type(): ?FeedbackType
+    {
+        return FeedbackType::tryFrom((string) $this->query('type'));
     }
 
     public function sort(): string
