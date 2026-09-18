@@ -13,24 +13,38 @@ class CommentObserver
         $this->announce($comment);
     }
 
-    public function deleted(Comment $comment): void
+    public function deleting(Comment $comment): void
     {
         $this->recordDeletion($comment);
+    }
+
+    public function deleted(Comment $comment): void
+    {
         $this->announce($comment);
     }
 
+    /**
+     * Recorded before the row goes, because replies are cascaded by the database and Eloquent
+     * never sees them leave. Deleting the top of a thread takes the whole conversation with it,
+     * so the whole conversation is what gets written down.
+     */
     private function recordDeletion(Comment $comment): void
     {
-        $comment->loadMissing(['commentable', 'author']);
+        $comment->loadMissing(['commentable', 'author', 'replies.author']);
+
+        $replies = $comment->replies
+            ->map(fn (Comment $reply) => ($reply->author->name ?? __('Someone')).': '.$reply->body)
+            ->implode("\n\n");
 
         activity('comments')
             ->on($comment->commentable)
             ->event('comment_deleted')
-            ->withChanges(['attributes' => [
+            ->withChanges(['attributes' => array_filter([
                 'comment' => $comment->body,
                 'author' => $comment->author?->name,
                 'is_internal' => $comment->is_internal,
-            ]])
+                'replies' => $replies === '' ? null : $replies,
+            ], fn ($value) => $value !== null)])
             ->log('comment_deleted');
     }
 

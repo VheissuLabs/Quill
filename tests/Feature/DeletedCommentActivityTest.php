@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Resources\ActivityResource;
+use App\Models\Comment;
 use App\Models\Feature;
 use App\Models\Organization;
 use App\Models\Project;
@@ -63,4 +64,50 @@ test('deleting the whole request does not log each comment leaving with it', fun
     $feature->delete();
 
     expect(Activity::query()->where('event', 'comment_deleted')->count())->toBe(0);
+});
+
+test('deleting the top of a thread writes down the replies that go with it', function () {
+    $project = Project::factory()->for(Organization::factory())->create();
+    $feature = Feature::factory()->for($project)->create();
+
+    $root = $feature->comments()->create([
+        'body' => 'The original question',
+        'user_id' => User::factory()->create(['name' => 'Ada Lovelace'])->id,
+        'is_internal' => false,
+    ]);
+
+    foreach ([['Grace Hopper', 'First answer'], ['Alan Turing', 'Second answer']] as [$name, $body]) {
+        $feature->comments()->create([
+            'body' => $body,
+            'user_id' => User::factory()->create(['name' => $name])->id,
+            'is_internal' => false,
+            'parent_id' => $root->id,
+        ]);
+    }
+
+    $root->delete();
+
+    $entry = Activity::query()->where('event', 'comment_deleted')->latest('id')->first();
+    $attributes = $entry->attribute_changes['attributes'];
+
+    expect($attributes['comment'])->toBe('The original question')
+        ->and($attributes['replies'])->toContain('Grace Hopper: First answer')
+        ->and($attributes['replies'])->toContain('Alan Turing: Second answer');
+
+    expect(Comment::query()->where('commentable_id', $feature->id)->count())->toBe(0);
+});
+
+test('deleting a lone comment records no replies', function () {
+    $project = Project::factory()->for(Organization::factory())->create();
+    $feature = Feature::factory()->for($project)->create();
+
+    $comment = $feature->comments()->create([
+        'body' => 'On its own', 'user_id' => User::factory()->create()->id, 'is_internal' => false,
+    ]);
+
+    $comment->delete();
+
+    $entry = Activity::query()->where('event', 'comment_deleted')->latest('id')->first();
+
+    expect($entry->attribute_changes['attributes'])->not->toHaveKey('replies');
 });
