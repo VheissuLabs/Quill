@@ -2,11 +2,14 @@
 
 namespace App\Actions\Comments;
 
+use App\Enums\IssueLinkType;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Models\Issue;
 use App\Models\Sprint;
 use App\Models\User;
+use DomainException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
@@ -29,6 +32,13 @@ class IssueCommentCommands extends CommentCommands
             ['name' => 'sprint', 'usage' => '/sprint <name|none>', 'description' => 'Plan into a sprint'],
             ['name' => 'points', 'usage' => '/points <number|none>', 'description' => 'Set the estimate'],
             ['name' => 'priority', 'usage' => '/priority <none|low|medium|high|urgent>', 'description' => 'Set the priority'],
+            ['name' => 'parent', 'usage' => '/parent <issue id>', 'description' => 'Make this the parent of another issue'],
+            ['name' => 'child', 'usage' => '/child <issue id>', 'description' => 'Make this a child of another issue'],
+            ['name' => 'blocks', 'usage' => '/blocks <issue id>', 'description' => 'Mark this as blocking another issue'],
+            ['name' => 'relates', 'usage' => '/relates <issue id>', 'description' => 'Relate another issue'],
+            ['name' => 'duplicates', 'usage' => '/duplicates <issue id>', 'description' => 'Mark this as duplicating another'],
+            ['name' => 'clones', 'usage' => '/clones <issue id>', 'description' => 'Mark this as cloning another'],
+            ['name' => 'unlink', 'usage' => '/unlink <issue id>', 'description' => 'Remove every link to another issue'],
         ];
     }
 
@@ -45,6 +55,13 @@ class IssueCommentCommands extends CommentCommands
             'sprint' => $this->sprint($commentable, $argument),
             'points' => $this->points($commentable, $argument),
             'priority' => $this->priority($commentable, $argument),
+            'parent' => $this->link($commentable, IssueLinkType::Parent, $argument),
+            'child' => $this->linkFrom($commentable, IssueLinkType::Parent, $argument),
+            'blocks' => $this->link($commentable, IssueLinkType::Blocks, $argument),
+            'relates' => $this->link($commentable, IssueLinkType::Relates, $argument),
+            'duplicates' => $this->link($commentable, IssueLinkType::Duplicates, $argument),
+            'clones' => $this->link($commentable, IssueLinkType::Clones, $argument),
+            'unlink' => $this->unlink($commentable, $argument),
             default => $this->unknown($command),
         };
 
@@ -129,6 +146,67 @@ class IssueCommentCommands extends CommentCommands
         $issue->planInto($sprint);
 
         return __('Planned into :sprint.', ['sprint' => $sprint->name]);
+    }
+
+    private function link(Issue $issue, IssueLinkType $type, string $argument): string
+    {
+        $this->authorize('update', $issue, __('You can\'t change this issue.'));
+
+        $other = $this->resolve($issue, $argument);
+
+        try {
+            $issue->linkTo($other, $type);
+        } catch (DomainException $exception) {
+            throw ValidationException::withMessages(['body' => $exception->getMessage()]);
+        }
+
+        return __(':label :reference.', ['label' => $type->label(), 'reference' => $other->reference()]);
+    }
+
+    /** The other issue becomes the parent, so the row is stored the other way round. */
+    private function linkFrom(Issue $issue, IssueLinkType $type, string $argument): string
+    {
+        $this->authorize('update', $issue, __('You can\'t change this issue.'));
+
+        $other = $this->resolve($issue, $argument);
+
+        try {
+            $other->linkTo($issue, $type);
+        } catch (DomainException $exception) {
+            throw ValidationException::withMessages(['body' => $exception->getMessage()]);
+        }
+
+        return __(':label :reference.', ['label' => $type->inverseLabel(), 'reference' => $other->reference()]);
+    }
+
+    private function unlink(Issue $issue, string $argument): string
+    {
+        $this->authorize('update', $issue, __('You can\'t change this issue.'));
+
+        $other = $this->resolve($issue, $argument);
+
+        return $issue->unlinkFrom($other) > 0
+            ? __('Unlinked :reference.', ['reference' => $other->reference()])
+            : __('No link to :reference.', ['reference' => $other->reference()]);
+    }
+
+    private function resolve(Issue $issue, string $argument): Issue
+    {
+        $id = (int) ltrim(trim($argument), '#');
+
+        $other = $id > 0
+            ? Issue::query()
+                ->whereKey($id)
+                ->whereHas('project', fn (Builder $query) => $query
+                    ->where('organization_id', $issue->project->organization_id))
+                ->first()
+            : null;
+
+        if (! $other) {
+            throw ValidationException::withMessages(['body' => __('No issue :id in this organization.', ['id' => $argument])]);
+        }
+
+        return $other;
     }
 
     private function points(Issue $issue, string $argument): string

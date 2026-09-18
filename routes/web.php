@@ -6,6 +6,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Issues\CommentController as IssueCommentController;
 use App\Http\Controllers\Issues\IssueController;
+use App\Http\Controllers\Issues\IssueLinkController;
+use App\Http\Controllers\Issues\IssueLookupController;
 use App\Http\Controllers\Issues\IssueOrderController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationReadController;
@@ -101,6 +103,7 @@ Route::prefix('{current_organization}')
             ->middlewareFor('destroy', 'can:delete,team');
         Route::get('roles', [OrganizationRoleController::class, 'index'])->can('viewAny', [Role::class, 'current_organization'])->name('roles.index');
         Route::get('roles/{role}', [OrganizationRoleController::class, 'show'])->can('viewAny', [Role::class, 'current_organization'])->name('roles.show');
+        Route::get('issues/lookup', [IssueLookupController::class, 'index'])->can('viewAny', [Issue::class, 'current_organization'])->name('issues.lookup');
         Route::put('issues/order', [IssueOrderController::class, 'update'])->can('viewAny', [Issue::class, 'current_organization'])->name('issues.order.update');
         Route::resource('issues', IssueController::class)->except(['create', 'edit'])
             ->middlewareFor('index', 'can:viewAny,'.Issue::class.',current_organization')
@@ -108,6 +111,8 @@ Route::prefix('{current_organization}')
             ->middlewareFor('show', 'can:view,issue')
             ->middlewareFor('update', 'can:update,issue')
             ->middlewareFor('destroy', 'can:delete,issue');
+        Route::patch('issues/{issue}/links/{link}', [IssueLinkController::class, 'update'])->withoutScopedBindings()->can('update', 'issue')->name('issues.links.update');
+        Route::delete('issues/{issue}/links/{link}', [IssueLinkController::class, 'destroy'])->withoutScopedBindings()->can('update', 'issue')->name('issues.links.destroy');
         Route::post('issues/{issue}/comments', [IssueCommentController::class, 'store'])->can('comment', 'issue')->name('issues.comments.store');
         Route::delete('issues/{issue}/comments/{comment}', [IssueCommentController::class, 'destroy'])->can('delete', 'comment')->name('issues.comments.destroy');
 

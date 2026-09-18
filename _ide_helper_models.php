@@ -210,6 +210,10 @@ namespace App\Models{
  * @property-read int|null $comments_count
  * @property-read \App\Models\User|null $creator
  * @property-read \App\Models\Feature|null $feature
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\IssueLink> $inverseLinks
+ * @property-read int|null $inverse_links_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\IssueLink> $links
+ * @property-read int|null $links_count
  * @property-read \App\Models\Project $project
  * @property-read \App\Models\Sprint|null $sprint
  * @property-read \App\Models\Team|null $team
@@ -241,6 +245,32 @@ namespace App\Models{
  */
 	#[\AllowDynamicProperties]
 	class IdeHelperIssue {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $issue_id
+ * @property int $related_issue_id
+ * @property \App\Enums\IssueLinkType $type
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\Issue $issue
+ * @property-read \App\Models\Issue $relatedIssue
+ * @method static \Database\Factories\IssueLinkFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IssueLink newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IssueLink newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IssueLink query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IssueLink whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IssueLink whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IssueLink whereIssueId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IssueLink whereRelatedIssueId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IssueLink whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|IssueLink whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperIssueLink {}
 }
 
 namespace App\Models{

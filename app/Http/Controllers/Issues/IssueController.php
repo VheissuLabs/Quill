@@ -6,6 +6,7 @@ use App\Actions\Comments\IssueCommentCommands;
 use App\Actions\Issues\CreateIssue;
 use App\Actions\Issues\UpdateIssue;
 use App\Data\IssueChangesData;
+use App\Enums\IssueLinkType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Issues\IssueIndexRequest;
 use App\Http\Requests\Issues\IssueRequest;
@@ -15,6 +16,7 @@ use App\Http\Resources\FeatureResource;
 use App\Http\Resources\IssueActivityResource;
 use App\Http\Resources\IssueDetailResource;
 use App\Http\Resources\IssueFormResource;
+use App\Http\Resources\IssueLinkResource;
 use App\Http\Resources\IssueResource;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -63,6 +65,8 @@ class IssueController extends Controller
 
         return Inertia::render('issues/Show', [
             'issue' => IssueDetailResource::make($issue, $user)->resolve(),
+            'links' => IssueLinkResource::collection($issue->relatedIssues()),
+            'linkTypes' => IssueLinkType::perspectives(),
             'comments' => $issue->comments()->threadsVisibleTo(true)->get()
                 ->map(fn ($comment) => CommentResource::make($comment, $user)->resolve()),
             'commands' => app(IssueCommentCommands::class)->availableTo($user, $issue),

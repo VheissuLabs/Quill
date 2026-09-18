@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\IssueLinkType;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Observers\IssueObserver;
 use Database\Factories\IssueFactory;
+use DomainException;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -14,6 +16,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +36,112 @@ class Issue extends Model
     protected $attributes = ['priority' => IssuePriority::None->value];
 
     /** @return BelongsTo<Project, $this> */
+    /**
+     * Issues the viewer can see, for picking one by name when only its id can be typed.
+     *
+     * @return EloquentCollection<int, self>
+     */
+    public static function matching(Organization $organization, User $user, string $term, ?int $except = null): EloquentCollection
+    {
+        if (mb_strlen($term) < 2) {
+            return new EloquentCollection;
+        }
+
+        $like = '%'.addcslashes($term, '%_\\').'%';
+
+        return self::query()
+            ->whereIn('project_id', $organization->projects()->visibleTo($user)->select('projects.id'))
+            ->when($except, fn (Builder $query, int $id) => $query->whereKeyNot($id))
+            ->where(fn (Builder $query) => $query
+                ->where('title', 'like', $like)
+                ->when(ctype_digit($term), fn (Builder $query) => $query->orWhere('number', (int) $term)))
+            ->with(['project', 'boardColumn'])
+            ->orderByRaw('INSTR(LOWER(title), ?)', [mb_strtolower($term)])
+            ->orderBy('title')
+            ->limit(8)
+            ->get();
+    }
+
+    /** @return HasMany<IssueLink, $this> */
+    public function links(): HasMany
+    {
+        return $this->hasMany(IssueLink::class);
+    }
+
+    /** @return HasMany<IssueLink, $this> */
+    public function inverseLinks(): HasMany
+    {
+        return $this->hasMany(IssueLink::class, 'related_issue_id');
+    }
+
+    /**
+     * Both directions read from this issue's point of view: a row saying it blocks another
+     * shows as "Blocks", the same row on the other issue shows as "Blocked by".
+     *
+     * @return Collection<int, array{id: int, type: string, label: string, inverse: bool, issue: Issue}>
+     */
+    public function relatedIssues(): Collection
+    {
+        $this->loadMissing(['links.relatedIssue.project', 'inverseLinks.issue.project']);
+
+        return $this->links
+            ->map(fn (IssueLink $link) => [
+                'id' => $link->id,
+                'type' => $link->type->value,
+                'label' => $link->type->label(),
+                'inverse' => false,
+                'issue' => $link->relatedIssue,
+            ])
+            ->concat($this->inverseLinks
+                ->map(fn (IssueLink $link) => [
+                    'id' => $link->id,
+                    'type' => $link->type->value,
+                    'label' => $link->type->inverseLabel(),
+                    'inverse' => true,
+                    'issue' => $link->issue,
+                ]))
+            ->sortBy('label')
+            ->values();
+    }
+
+    public function linkTo(self $other, IssueLinkType $type): IssueLink
+    {
+        if ($other->is($this)) {
+            throw new DomainException(__('An issue cannot be linked to itself.'));
+        }
+
+        if (! $other->project->organization->is($this->project->organization)) {
+            throw new DomainException(__('That issue belongs to another organization.'));
+        }
+
+        return IssueLink::firstOrCreate([
+            'issue_id' => $this->getKey(),
+            'related_issue_id' => $other->getKey(),
+            'type' => $type,
+        ]);
+    }
+
+    /** Rewrites a link so it reads the given way round from this issue. */
+    public function recastLink(IssueLink $link, IssueLinkType $type, bool $inverse): IssueLink
+    {
+        $other = $link->issue_id === $this->getKey() ? $link->relatedIssue : $link->issue;
+
+        $link->delete();
+
+        return $inverse
+            ? $other->linkTo($this, $type)
+            : $this->linkTo($other, $type);
+    }
+
+    public function unlinkFrom(self $other): int
+    {
+        return IssueLink::query()
+            ->where(fn (Builder $query) => $query
+                ->where(fn (Builder $query) => $query->where('issue_id', $this->getKey())->where('related_issue_id', $other->getKey()))
+                ->orWhere(fn (Builder $query) => $query->where('issue_id', $other->getKey())->where('related_issue_id', $this->getKey())))
+            ->delete();
+    }
+
     /** @return MorphMany<Comment, $this> */
     public function comments(): MorphMany
     {
@@ -108,7 +217,7 @@ class Issue extends Model
     protected function onOrganizationBoard(Builder $query, Collection $projectIds, User $user, ?Team $team, array $filters): void
     {
         $query->whereIn('project_id', $projectIds)
-            ->with(['project', 'assignee', 'sprint', 'team', 'boardColumn'])
+            ->with(['project', 'assignee', 'sprint', 'team.columns', 'boardColumn'])
             ->when($filters['status'], fn (Builder $query, string $status) => $query->where('status', $status))
             ->when(! $filters['status'], fn (Builder $query) => $query->whereNotIn('status', [IssueStatus::Done, IssueStatus::Cancelled]))
             ->when($filters['project'], fn (Builder $query, string $slug) => $query->whereHas('project', fn (Builder $query) => $query->where('slug', $slug)))
