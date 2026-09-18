@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\FeatureStatus;
 use App\Enums\VoteDirection;
+use App\Events\FeatureVoted;
 use App\Observers\FeatureObserver;
 use Database\Factories\FeatureFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -81,6 +82,15 @@ class Feature extends Model
     public function castVote(User $user, VoteDirection $direction): void
     {
         $this->votes()->updateOrCreate(['user_id' => $user->id], ['direction' => $direction->weight()]);
+
+        FeatureVoted::dispatch($this->project_id, $this->getKey());
+    }
+
+    public function clearVoteFrom(User $user): void
+    {
+        $this->votes()->where('user_id', $user->getKey())->delete();
+
+        FeatureVoted::dispatch($this->project_id, $this->getKey());
     }
 
     /** @return MorphMany<Comment, $this> */

@@ -39,7 +39,7 @@ class FeatureController extends Controller
 
         return Inertia::render('portal/Feature', [
             'organization' => PortalOrganizationResource::make($organization),
-            'project' => ['name' => $project->name, 'slug' => $project->slug],
+            'project' => ['id' => $project->id, 'name' => $project->name, 'slug' => $project->slug],
             'feature' => $summary = FeatureResource::make($feature)->withIssue($isMember)->resolve(),
             'issue' => $summary['issue'],
             'comments' => $feature->comments()->threadsVisibleTo($isMember)->get()

@@ -45,6 +45,7 @@ class ProjectController extends Controller
         return Inertia::render('portal/Project', [
             'organization' => ['name' => $organization->name, 'slug' => $organization->slug, 'logoUrl' => $organization->logoUrl()],
             'project' => [
+                'id' => $project->id,
                 'name' => $project->name,
                 'slug' => $project->slug,
                 'description' => $project->description,

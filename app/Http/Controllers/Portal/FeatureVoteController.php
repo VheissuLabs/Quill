@@ -20,7 +20,7 @@ class FeatureVoteController extends Controller
 
     public function destroy(Organization $organization, Project $project, Feature $feature): RedirectResponse
     {
-        $feature->votes()->where('user_id', auth()->user()->id)->delete();
+        $feature->clearVoteFrom(auth()->user());
 
         return back();
     }

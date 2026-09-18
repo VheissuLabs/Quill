@@ -15,6 +15,7 @@ export type PortalOrganization = {
 };
 
 export type PortalProject = {
+    id: number;
     name: string;
     slug: string;
     description?: string | null;

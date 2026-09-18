@@ -34,6 +34,7 @@ import {
 import { store as convertToIssue } from '@/routes/portal/features/issue';
 import { update as updateStatus } from '@/routes/portal/features/status';
 import { show as showBoard } from '@/routes/portal/projects';
+import { useLiveVotes } from '@/composables/useLiveVotes';
 import type {
     ActivityEntry,
     CommentCommand,
@@ -61,6 +62,8 @@ type Props = {
 };
 
 const props = defineProps<Props>();
+
+useLiveVotes(props.project.id, ['feature'], props.feature.id);
 
 defineOptions({
     layout: (props: {
