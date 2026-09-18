@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\OrganizationPermission;
 use App\Enums\ProjectVisibility;
 use App\Observers\OrganizationScopedSlugObserver;
+use App\Observers\ProjectObserver;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -27,6 +28,7 @@ use Spatie\Activitylog\Support\LogOptions;
  */
 #[UseFactory(ProjectFactory::class)]
 #[ObservedBy(OrganizationScopedSlugObserver::class)]
+#[ObservedBy(ProjectObserver::class)]
 class Project extends Model
 {
     use HasFactory, LogsActivity;

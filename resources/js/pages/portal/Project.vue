@@ -251,12 +251,11 @@ const statusRowClass = (status: FeedbackSummary['status'] | null) =>
                                     :label="feedback.statusLabel"
                                 />
                             </div>
-                            <p
+                            <div
                                 v-if="feedback.description"
-                                class="text-muted-foreground line-clamp-2 text-sm leading-relaxed"
-                            >
-                                {{ feedback.description }}
-                            </p>
+                                class="text-muted-foreground line-clamp-2 text-sm leading-relaxed [&_p]:inline"
+                                v-html="feedback.description"
+                            />
                             <div
                                 class="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
                             >

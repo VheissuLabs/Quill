@@ -28,7 +28,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/RichTextEditor.vue';
 import { destroy, index, show, update } from '@/routes/issues';
 import {
     destroy as destroyComment,
@@ -264,8 +264,7 @@ const currentSprint = computed(() =>
                     </div>
                     <div class="grid gap-2">
                         <Label for="description">Description</Label>
-                        <Textarea
-                            id="description"
+                        <RichTextEditor
                             v-model="detailsForm.description"
                             data-test="edit-issue-description"
                             class="min-h-40"
@@ -316,18 +315,17 @@ const currentSprint = computed(() =>
                             </Button>
                         </div>
                     </div>
-                    <p
+                    <div
                         v-if="issue.description"
-                        class="hover:bg-muted/60 -mx-2 cursor-text rounded-md px-2 leading-7 whitespace-pre-line"
+                        class="hover:bg-muted/60 rich-text -mx-2 cursor-text rounded-md px-2 leading-7"
                         role="button"
                         tabindex="0"
                         data-test="issue-description"
                         title="Click to edit"
+                        v-html="issue.description"
                         @click="startEditing('description')"
                         @keydown.enter.prevent="startEditing('description')"
-                    >
-                        {{ issue.description }}
-                    </p>
+                    />
                     <p
                         v-else
                         class="hover:bg-muted/60 text-muted-foreground -mx-2 cursor-text rounded-md px-2 text-sm italic"

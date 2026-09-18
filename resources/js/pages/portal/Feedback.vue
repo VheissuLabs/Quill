@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, ListTodo, Pencil, Trash2 } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import ActivityFeed from '@/components/ActivityFeed.vue';
 import CommentForm from '@/components/CommentForm.vue';
 import CommentThread from '@/components/CommentThread.vue';
@@ -97,6 +97,12 @@ const routeArgs = computed((): [string, string, number] => [
 ]);
 
 const editing = ref(false);
+const editedDescription = ref(props.feedback.description ?? '');
+
+watch(
+    () => props.feedback.description,
+    (value) => (editedDescription.value = value ?? ''),
+);
 const deleteDialogOpen = ref(false);
 const commentToDelete = ref<FeedbackComment | null>(null);
 const converting = ref(false);
@@ -167,11 +173,14 @@ const commentCount = computed(() =>
                         </div>
                         <div class="grid gap-2">
                             <Label for="description">Details</Label>
-                            <Textarea
-                                id="description"
+                            <input
+                                type="hidden"
                                 name="description"
+                                :value="editedDescription"
+                            />
+                            <RichTextEditor
+                                v-model="editedDescription"
                                 data-test="edit-feedback-description"
-                                :default-value="feedback.description ?? ''"
                                 class="min-h-32"
                             />
                             <InputError :message="errors.description" />
@@ -242,12 +251,11 @@ const commentCount = computed(() =>
                             </p>
                         </div>
 
-                        <p
+                        <div
                             v-if="feedback.description"
-                            class="max-w-prose leading-7 whitespace-pre-line"
-                        >
-                            {{ feedback.description }}
-                        </p>
+                            class="rich-text max-w-prose leading-7"
+                            v-html="feedback.description"
+                        />
                         <p v-else class="text-muted-foreground text-sm italic">
                             No details were added to this request.
                         </p>

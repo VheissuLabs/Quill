@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/RichTextEditor.vue';
 import { store } from '@/routes/portal/feedback';
 
 defineProps<{
@@ -32,6 +32,7 @@ const formKey = ref(0);
  * worth nothing without what happened and what was expected instead.
  */
 const type = ref<'feature' | 'bug'>('feature');
+const description = ref('');
 
 const choices = [
     { value: 'feature', label: 'Idea', icon: Lightbulb },
@@ -60,6 +61,8 @@ function handleOpenChange(value: boolean) {
 
     if (!value) {
         formKey.value++;
+        description.value = '';
+        type.value = 'feature';
     }
 }
 </script>
@@ -121,9 +124,13 @@ function handleOpenChange(value: boolean) {
 
                     <div class="grid gap-2">
                         <Label for="description">Details</Label>
-                        <Textarea
-                            id="description"
+                        <input
+                            type="hidden"
                             name="description"
+                            :value="description"
+                        />
+                        <RichTextEditor
+                            v-model="description"
                             data-test="feedback-description"
                             :placeholder="copy.details"
                         />

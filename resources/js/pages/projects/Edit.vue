@@ -16,7 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/RichTextEditor.vue';
 import { show as showBoard } from '@/routes/portal/projects';
 import { destroy, edit, index, update } from '@/routes/projects';
 import type {
@@ -118,8 +118,7 @@ const submit = () => {
 
                 <div class="grid gap-2">
                     <Label for="description">Description</Label>
-                    <Textarea
-                        id="description"
+                    <RichTextEditor
                         v-model="form.description"
                         data-test="project-description-input"
                         placeholder="What is this project about?"

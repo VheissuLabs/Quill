@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Feedback;
+use App\Models\Issue;
+use App\Models\Organization;
+use App\Models\Project;
 use App\Support\RichText;
 
 test('it keeps the marks the editor produces', function () {
@@ -48,4 +52,22 @@ test('it reads back as plain text with the lines intact', function () {
 
 test('plain text written before the editor existed survives a round trip', function () {
     expect(RichText::toText('Just a sentence.'))->toBe('Just a sentence.');
+});
+
+test('a description is sanitised wherever it is written', function () {
+    $project = Project::factory()
+        ->for(Organization::factory())
+        ->create(['description' => '<p>Safe<script>alert(1)</script></p>']);
+
+    $feedback = Feedback::factory()
+        ->for($project)
+        ->create(['description' => '<p onclick="x()">Also safe</p>']);
+
+    $issue = Issue::factory()
+        ->for($project)
+        ->create(['description' => '<p><a href="javascript:x()">tap</a></p>']);
+
+    expect($project->description)->not->toContain('script')
+        ->and($feedback->description)->not->toContain('onclick')
+        ->and($issue->description)->not->toContain('javascript:');
 });
