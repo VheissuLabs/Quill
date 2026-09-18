@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Placeholder } from '@tiptap/extensions';
 import StarterKit from '@tiptap/starter-kit';
 import { EditorContent, useEditor } from '@tiptap/vue-3';
 import {
@@ -19,13 +20,21 @@ const props = withDefaults(
         placeholder?: string;
         autofocus?: boolean;
         class?: string;
+        /** Return true to keep the editor from handling the key itself. */
+        onKey?: (event: KeyboardEvent) => boolean;
+        onCaretMove?: () => void;
     }>(),
-    { placeholder: '', autofocus: false, class: '' },
+    {
+        placeholder: '',
+        autofocus: false,
+        class: '',
+        onKey: undefined,
+        onCaretMove: undefined,
+    },
 );
 
 const emit = defineEmits<{
     'update:modelValue': [value: string];
-    keydownEnter: [event: KeyboardEvent];
 }>();
 
 /**
@@ -41,10 +50,12 @@ const editor = useEditor({
         StarterKit.configure({
             heading: { levels: [1, 2, 3] },
         }),
+        Placeholder.configure({ placeholder: () => props.placeholder }),
     ],
     editorProps: {
+        handleKeyDown: (_view, event) => props.onKey?.(event) ?? false,
         attributes: {
-            class: 'rich-text min-h-24 px-3 py-2 focus:outline-none',
+            class: 'prose prose-sm dark:prose-invert max-w-none min-h-24 px-3 py-2 focus:outline-none',
         },
     },
     onUpdate: ({ editor }) =>
@@ -138,17 +149,6 @@ defineExpose({ editor });
             </button>
         </div>
 
-        <EditorContent
-            :editor="editor"
-            data-test="rich-text-editor"
-            @keydown.enter="emit('keydownEnter', $event)"
-        />
-
-        <p
-            v-if="placeholder && editor?.isEmpty"
-            class="text-muted-foreground pointer-events-none -mt-9 px-3 text-sm"
-        >
-            {{ placeholder }}
-        </p>
+        <EditorContent :editor="editor" data-test="rich-text-editor" />
     </div>
 </template>

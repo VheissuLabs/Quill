@@ -7,42 +7,44 @@ const props = defineProps<{
     mentions: CommentMention[];
 }>();
 
-type Segment = { text: string; mention: boolean };
+const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
- * Split the body around "@Name" for each mentioned person so names can be highlighted without
- * rendering the body as HTML.
+ * The body is markup already sanitised by the server, so it is rendered as it was written. Names
+ * are wrapped after the fact, and only in the text between tags, so a name that happens to appear
+ * inside an attribute is left alone.
  */
-const segments = computed<Segment[]>(() => {
+const html = computed(() => {
     if (props.mentions.length === 0) {
-        return [{ text: props.body, mention: false }];
+        return props.body;
     }
 
     const names = props.mentions
-        .map((mention) => mention.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .map((mention) => escape(mention.name))
         .sort((a, b) => b.length - a.length)
         .join('|');
-    const pattern = new RegExp(`(@(?:${names}))`, 'g');
+
+    const pattern = new RegExp(`@(?:${names})`, 'g');
 
     return props.body
-        .split(pattern)
-        .filter((text) => text !== '')
-        .map((text) => ({
-            text,
-            mention: pattern.test(text) && text.startsWith('@'),
-        }));
+        .split(/(<[^>]*>)/)
+        .map((part) =>
+            part.startsWith('<')
+                ? part
+                : part.replace(
+                      pattern,
+                      (name) =>
+                          `<span class="bg-muted rounded px-1 py-0.5 font-medium">${name}</span>`,
+                  ),
+        )
+        .join('');
 });
 </script>
 
 <template>
-    <p class="text-sm leading-relaxed whitespace-pre-line">
-        <template v-for="(segment, index) in segments" :key="index">
-            <span
-                v-if="segment.mention"
-                class="bg-muted rounded px-1 py-0.5 font-medium"
-                >{{ segment.text }}</span
-            >
-            <template v-else>{{ segment.text }}</template>
-        </template>
-    </p>
+    <div
+        class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed"
+        data-test="comment-body-rendered"
+        v-html="html"
+    />
 </template>

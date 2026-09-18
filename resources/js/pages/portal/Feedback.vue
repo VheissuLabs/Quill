@@ -253,7 +253,7 @@ const commentCount = computed(() =>
 
                         <div
                             v-if="feedback.description"
-                            class="rich-text max-w-prose leading-7"
+                            class="prose prose-sm dark:prose-invert max-w-prose leading-7"
                             v-html="feedback.description"
                         />
                         <p v-else class="text-muted-foreground text-sm italic">

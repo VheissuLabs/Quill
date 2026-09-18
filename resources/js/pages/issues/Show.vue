@@ -317,7 +317,7 @@ const currentSprint = computed(() =>
                     </div>
                     <div
                         v-if="issue.description"
-                        class="hover:bg-muted/60 rich-text -mx-2 cursor-text rounded-md px-2 leading-7"
+                        class="hover:bg-muted/60 prose prose-sm dark:prose-invert -mx-2 max-w-none cursor-text rounded-md px-2 leading-7"
                         role="button"
                         tabindex="0"
                         data-test="issue-description"
