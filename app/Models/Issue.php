@@ -142,6 +142,27 @@ class Issue extends Model
             ->delete();
     }
 
+    /** @param  array<int, int>  $ids */
+    public static function reorder(array $ids): void
+    {
+        if ($ids === []) {
+            return;
+        }
+
+        $cases = implode(' ', array_fill(0, count($ids), 'when ? then ?'));
+        $slots = implode(',', array_fill(0, count($ids), '?'));
+
+        $bindings = collect($ids)
+            ->flatMap(fn (int $id, int $position) => [$id, $position])
+            ->concat($ids)
+            ->all();
+
+        DB::update(
+            "update issues set position = case id {$cases} end where id in ({$slots})",
+            $bindings
+        );
+    }
+
     /** @return MorphMany<Comment, $this> */
     public function comments(): MorphMany
     {

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationCapability;
 use App\Enums\SprintStatus;
+use App\Events\IssuesChanged;
 use App\Observers\SprintObserver;
 use Database\Factories\SprintFactory;
 use DomainException;
@@ -124,6 +125,14 @@ class Sprint extends Model
         $this->update(['status' => SprintStatus::Active]);
     }
 
+    /** @param  array<int, int>  $issueIds */
+    private function announce(array $issueIds): void
+    {
+        if ($issueIds !== []) {
+            broadcast(new IssuesChanged($this->organization()->getKey(), $issueIds))->toOthers();
+        }
+    }
+
     public function complete(): void
     {
         if ($this->status !== SprintStatus::Active) {
@@ -131,9 +140,14 @@ class Sprint extends Model
         }
 
         DB::transaction(function () {
-            $this->issues()
-                ->whereNotIn('status', [IssueStatus::Done, IssueStatus::Cancelled])
-                ->update(['sprint_id' => null, 'board_column_id' => null, 'status' => IssueStatus::Backlog]);
+            $returning = $this->issues()
+                ->whereNotIn('status', [IssueStatus::Done, IssueStatus::Cancelled]);
+
+            $returned = $returning->pluck('issues.id')->all();
+
+            $returning->update(['sprint_id' => null, 'board_column_id' => null, 'status' => IssueStatus::Backlog]);
+
+            $this->announce($returned);
 
             $this->forceFill([
                 'status' => SprintStatus::Completed,

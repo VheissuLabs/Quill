@@ -36,7 +36,7 @@ It carries an organization id and a list of issue ids:
 
 It broadcasts as `issues.changed` on the private channel `organizations.{id}`.
 
-The payload is deliberately thin. It says *that* something changed, never *what*. Three
+The payload is deliberately thin. It says _that_ something changed, never _what_. Three
 consequences follow:
 
 - The channel never carries anything sensitive, so channel membership does not have to
@@ -93,7 +93,7 @@ One composable, `resources/js/composables/useLiveIssues.ts`, taking the prop nam
 page wants refreshed:
 
 ```ts
-useLiveIssues(['issues', 'sprints'])
+useLiveIssues(['issues', 'sprints']);
 ```
 
 It subscribes to the organization channel and answers with `router.reload({ only })`, debounced
@@ -105,11 +105,11 @@ WebSocket.
 
 Callers:
 
-| Page | Props reloaded |
-| --- | --- |
-| `issues/Index.vue` | `issues`, `sprints` |
-| `issues/Show.vue` | `issue`, `links`, `activity` |
-| `sprints/Show.vue` | `sprint`, `issues` |
+| Page               | Props reloaded               |
+| ------------------ | ---------------------------- |
+| `issues/Index.vue` | `issues`, `sprints`          |
+| `issues/Show.vue`  | `issue`, `links`, `activity` |
+| `sprints/Show.vue` | `sprint`, `issues`           |
 
 `sprints/Show.vue` is the kanban board. There is no separate team board page.
 
