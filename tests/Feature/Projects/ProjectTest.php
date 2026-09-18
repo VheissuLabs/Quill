@@ -171,3 +171,62 @@ test('project slugs are unique within an organization only', function () {
     expect($second->slug)->toBe('acme-1');
     expect($elsewhere->slug)->toBe('acme');
 });
+
+test('projects survive feature voting being switched off', function () {
+    $manager = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($manager, 'Owner');
+    $organization->updateModuleSettings([
+        'feature_voting_enabled' => false,
+        'feature_voting_boards_enabled' => false,
+        'feature_voting_voting_enabled' => false,
+        'development_enabled' => true,
+        'development_issues_enabled' => true,
+        'development_sprints_enabled' => true,
+        'development_workflow_enabled' => true,
+        'teams_enabled' => true,
+    ]);
+
+    $project = Project::factory()->for($organization)->create(['name' => 'Internal work']);
+
+    $this->actingAs($manager)
+        ->get(route('projects.index', ['current_organization' => $organization]))
+        ->assertOk();
+
+    $this->actingAs($manager)
+        ->post(route('projects.store', ['current_organization' => $organization]), [
+            'name' => 'Another',
+            'visibility' => ProjectVisibility::Private->value,
+        ])
+        ->assertRedirect();
+
+    $this->actingAs($manager)
+        ->patch(route('projects.update', ['current_organization' => $organization, 'project' => $project]), [
+            'name' => 'Renamed',
+            'visibility' => ProjectVisibility::Private->value,
+        ])
+        ->assertRedirect();
+
+    expect($project->fresh()->name)->toBe('Renamed');
+});
+
+test('the public feature board still goes away when feature voting is switched off', function () {
+    $organization = Organization::factory()->create();
+    $organization->updateModuleSettings([
+        'feature_voting_enabled' => false,
+        'feature_voting_boards_enabled' => false,
+        'feature_voting_voting_enabled' => false,
+        'development_enabled' => true,
+        'development_issues_enabled' => true,
+        'development_sprints_enabled' => true,
+        'development_workflow_enabled' => true,
+        'teams_enabled' => true,
+    ]);
+
+    $project = Project::factory()->for($organization)->create([
+        'visibility' => ProjectVisibility::Public,
+    ]);
+
+    $this->get(route('portal.projects.show', ['organization' => $organization, 'project' => $project]))
+        ->assertForbidden();
+});
