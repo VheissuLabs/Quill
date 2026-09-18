@@ -1,446 +1,459 @@
 <script setup lang="ts">
-    import { Head, Link, router, usePage } from '@inertiajs/vue3'
-    import {
-        ChevronDown,
-        ListTodo,
-        MoreHorizontal,
-        Pencil,
-        Plus,
-        Search,
-        Timer,
-        Trash2,
-    } from '@lucide/vue'
-    import { useDebounceFn, useLocalStorage } from '@vueuse/core'
-    import { computed, nextTick, ref, watch } from 'vue'
-    import draggable from 'vuedraggable'
-    import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue'
-    import CreateIssueModal from '@/components/CreateIssueModal.vue'
-    import EmptyState from '@/components/EmptyState.vue'
-    import Heading from '@/components/Heading.vue'
-    import IssueRow from '@/components/IssueRow.vue'
-    import TeamActivityFeed from '@/components/TeamActivityFeed.vue'
-    import { Badge } from '@/components/ui/badge'
-    import { Button } from '@/components/ui/button'
-    import {
-        DropdownMenu,
-        DropdownMenuContent,
-        DropdownMenuItem,
-        DropdownMenuTrigger,
-    } from '@/components/ui/dropdown-menu'
-    import { Input } from '@/components/ui/input'
-    import {
-        Select,
-        SelectContent,
-        SelectItem,
-        SelectTrigger,
-        SelectValue,
-    } from '@/components/ui/select'
-    import { formatDateRange } from '@/lib/dates'
-    import { useRowDrag } from '@/composables/useRowDrag'
-    import { mutate } from '@/lib/optimistic'
-    import { index, update } from '@/routes/issues'
-    import { update as updateOrder } from '@/routes/issues/order'
-    import {
-        destroy as destroySprint,
-        show as showSprint,
-        update as updateSprint,
-    } from '@/routes/sprints'
-    import type {
-        IssueActivityEntry,
-        IssueFilters,
-        IssueFormOptions,
-        IssueListItem,
-        IssueSprintOption,
-        Organization,
-        OrganizationPermissions,
-    } from '@/types'
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import {
+    ChevronDown,
+    ListTodo,
+    MoreHorizontal,
+    Pencil,
+    Plus,
+    Search,
+    Timer,
+    Trash2,
+} from '@lucide/vue';
+import { useDebounceFn, useLocalStorage } from '@vueuse/core';
+import { computed, nextTick, ref, watch } from 'vue';
+import draggable from 'vuedraggable';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import CreateIssueModal from '@/components/CreateIssueModal.vue';
+import EmptyState from '@/components/EmptyState.vue';
+import Heading from '@/components/Heading.vue';
+import IssueRow from '@/components/IssueRow.vue';
+import TeamActivityFeed from '@/components/TeamActivityFeed.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { formatDateRange } from '@/lib/dates';
+import { useRowDrag } from '@/composables/useRowDrag';
+import { mutate } from '@/lib/optimistic';
+import { index, update } from '@/routes/issues';
+import { update as updateOrder } from '@/routes/issues/order';
+import {
+    destroy as destroySprint,
+    show as showSprint,
+    update as updateSprint,
+} from '@/routes/sprints';
+import type {
+    IssueActivityEntry,
+    IssueFilters,
+    IssueFormOptions,
+    IssueListItem,
+    IssueSprintOption,
+    Organization,
+    OrganizationPermissions,
+} from '@/types';
 
-    type Props = IssueFormOptions & {
-        currentOrganization: Organization
-        issues: IssueListItem[]
-        filters: IssueFilters
-        activity: IssueActivityEntry[]
-        permissions: OrganizationPermissions
-    }
+type Props = IssueFormOptions & {
+    currentOrganization: Organization;
+    issues: IssueListItem[];
+    filters: IssueFilters;
+    activity: IssueActivityEntry[];
+    permissions: OrganizationPermissions;
+};
 
-    type DragChange = {
-        moved?: { element: IssueListItem }
-    }
+type DragChange = {
+    moved?: { element: IssueListItem };
+};
 
-    type DropTarget = { kind: 'sprint'; id: number } | { kind: 'backlog' } | null
+type DropTarget = { kind: 'sprint'; id: number } | { kind: 'backlog' } | null;
 
-    type DragEndEvent = {
-        item: HTMLElement
-    }
+type DragEndEvent = {
+    item: HTMLElement;
+};
 
-    const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-    defineOptions({
-        layout: (props: { currentOrganization: Organization }) => ({
-            breadcrumbs: [
-                {
-                    title: 'Issues',
-                    href: index(props.currentOrganization.slug),
-                },
-            ],
-        }),
-    })
-
-    const all = 'all'
-    const page = usePage()
-    const { markDragEnded } = useRowDrag()
-    const currentTeam = computed(() => page.props.currentTeam)
-
-    const options = computed<IssueFormOptions>(() => ({
-        projects: props.projects,
-        teams: props.teams,
-        sprints: props.sprints,
-        sprintsEnabled: props.sprintsEnabled,
-        boardColumns: props.boardColumns,
-        members: props.members,
-        statuses: props.statuses,
-        priorities: props.priorities,
-    }))
-
-    /**
-     * The list keeps its own copy so a drag reorders immediately; the server response
-     * then replaces it with the persisted order.
-     */
-    const list = ref<IssueListItem[]>([...props.issues])
-    const sprintLists = ref<Record<number, IssueListItem[]>>({})
-    const dragging = ref(false)
-    const hoveredTarget = ref<DropTarget>(null)
-
-    const buildSprintLists = () =>
-        Object.fromEntries(props.sprints.map((sprint) => [sprint.id, [...sprint.issues]]))
-
-    sprintLists.value = buildSprintLists()
-    const collapsedSprintIds = useLocalStorage<number[]>(
-        `quill.${props.currentOrganization.slug}.collapsed-sprints`,
-        [],
-    )
-    const collapsedSprints = computed(() => new Set(collapsedSprintIds.value))
-
-    const toggleSprint = (sprintId: number) => {
-        collapsedSprintIds.value = collapsedSprints.value.has(sprintId)
-            ? collapsedSprintIds.value.filter((id) => id !== sprintId)
-            : [...collapsedSprintIds.value, sprintId]
-    }
-
-    const sprintToDelete = ref<IssueSprintOption | null>(null)
-    const sprintBeingRenamed = ref<number | null>(null)
-    const sprintName = ref('')
-    const renameFocused = ref(false)
-
-    const startRenaming = (sprint: IssueSprintOption) => {
-        if (!props.permissions.canManageSprints) {
-            return
-        }
-
-        sprintName.value = sprint.name
-        renameFocused.value = false
-        sprintBeingRenamed.value = sprint.id
-    }
-
-    /**
-     * Focus the field once it exists. Until it has focus a blur is something else letting go, not
-     * the user leaving the field, so it must not close the rename.
-     */
-    const focusRename = (el: unknown) => {
-        const input = (el as { $el?: HTMLInputElement } | null)?.$el
-
-        // Vue re-runs an inline ref on every patch; focus and select belong to the first one only.
-        if (!input || renameFocused.value) {
-            return
-        }
-
-        void nextTick(() => {
-            input.focus()
-            input.select()
-            renameFocused.value = true
-        })
-    }
-
-    /**
-     * The sprint form validates its dates too, so a rename sends them back unchanged.
-     */
-    const saveSprintName = (sprint: IssueSprintOption) => {
-        if (!renameFocused.value) {
-            return
-        }
-
-        const name = sprintName.value.trim()
-
-        sprintBeingRenamed.value = null
-        renameFocused.value = false
-
-        if (!name || name === sprint.name) {
-            return
-        }
-
-        router.patch(
-            updateSprint([props.currentOrganization.slug, sprint.id]),
-            { name, starts_at: sprint.startsAt, ends_at: sprint.endsAt },
+defineOptions({
+    layout: (props: { currentOrganization: Organization }) => ({
+        breadcrumbs: [
             {
-                // Only the sprints change. Reloading the rest tears the lists down and rebuilds them,
-                // which moves the page under the user before the scroll is restored.
-                only: ['sprints'],
-                preserveScroll: true,
-                preserveState: true,
+                title: 'Issues',
+                href: index(props.currentOrganization.slug),
             },
-        )
+        ],
+    }),
+});
+
+const all = 'all';
+const page = usePage();
+const { markDragEnded } = useRowDrag();
+const currentTeam = computed(() => page.props.currentTeam);
+
+const options = computed<IssueFormOptions>(() => ({
+    projects: props.projects,
+    teams: props.teams,
+    sprints: props.sprints,
+    sprintsEnabled: props.sprintsEnabled,
+    boardColumns: props.boardColumns,
+    members: props.members,
+    statuses: props.statuses,
+    priorities: props.priorities,
+}));
+
+/**
+ * The list keeps its own copy so a drag reorders immediately; the server response
+ * then replaces it with the persisted order.
+ */
+const list = ref<IssueListItem[]>([...props.issues]);
+const sprintLists = ref<Record<number, IssueListItem[]>>({});
+const dragging = ref(false);
+const hoveredTarget = ref<DropTarget>(null);
+
+const buildSprintLists = () =>
+    Object.fromEntries(
+        props.sprints.map((sprint) => [sprint.id, [...sprint.issues]]),
+    );
+
+sprintLists.value = buildSprintLists();
+const collapsedSprintIds = useLocalStorage<number[]>(
+    `quill.${props.currentOrganization.slug}.collapsed-sprints`,
+    [],
+);
+const collapsedSprints = computed(() => new Set(collapsedSprintIds.value));
+
+const toggleSprint = (sprintId: number) => {
+    collapsedSprintIds.value = collapsedSprints.value.has(sprintId)
+        ? collapsedSprintIds.value.filter((id) => id !== sprintId)
+        : [...collapsedSprintIds.value, sprintId];
+};
+
+const sprintToDelete = ref<IssueSprintOption | null>(null);
+const sprintBeingRenamed = ref<number | null>(null);
+const sprintName = ref('');
+const renameFocused = ref(false);
+
+const startRenaming = (sprint: IssueSprintOption) => {
+    if (!props.permissions.canManageSprints) {
+        return;
     }
 
-    watch(
-        () => [props.issues, props.sprints],
-        () => {
-            list.value = [...props.issues]
-            sprintLists.value = buildSprintLists()
+    sprintName.value = sprint.name;
+    renameFocused.value = false;
+    sprintBeingRenamed.value = sprint.id;
+};
+
+/**
+ * Focus the field once it exists. Until it has focus a blur is something else letting go, not
+ * the user leaving the field, so it must not close the rename.
+ */
+const focusRename = (el: unknown) => {
+    const input = (el as { $el?: HTMLInputElement } | null)?.$el;
+
+    // Vue re-runs an inline ref on every patch; focus and select belong to the first one only.
+    if (!input || renameFocused.value) {
+        return;
+    }
+
+    void nextTick(() => {
+        input.focus();
+        input.select();
+        renameFocused.value = true;
+    });
+};
+
+/**
+ * The sprint form validates its dates too, so a rename sends them back unchanged.
+ */
+const saveSprintName = (sprint: IssueSprintOption) => {
+    if (!renameFocused.value) {
+        return;
+    }
+
+    const name = sprintName.value.trim();
+
+    sprintBeingRenamed.value = null;
+    renameFocused.value = false;
+
+    if (!name || name === sprint.name) {
+        return;
+    }
+
+    router.patch(
+        updateSprint([props.currentOrganization.slug, sprint.id]),
+        { name, starts_at: sprint.startsAt, ends_at: sprint.endsAt },
+        {
+            // Only the sprints change. Reloading the rest tears the lists down and rebuilds them,
+            // which moves the page under the user before the scroll is restored.
+            only: ['sprints'],
+            preserveScroll: true,
+            preserveState: true,
         },
-    )
+    );
+};
 
-    const applyFilters = (changes: Partial<Record<keyof IssueFilters, string | null>>) => {
-        const next = { ...props.filters, ...changes }
+watch(
+    () => [props.issues, props.sprints],
+    () => {
+        list.value = [...props.issues];
+        sprintLists.value = buildSprintLists();
+    },
+);
 
-        router.visit(
-            index(props.currentOrganization.slug, {
-                query: Object.fromEntries(
-                    Object.entries(next).map(([key, value]) => [
-                        key,
-                        value && value !== all ? value : undefined,
-                    ]),
-                ),
+const applyFilters = (
+    changes: Partial<Record<keyof IssueFilters, string | null>>,
+) => {
+    const next = { ...props.filters, ...changes };
+
+    router.visit(
+        index(props.currentOrganization.slug, {
+            query: Object.fromEntries(
+                Object.entries(next).map(([key, value]) => [
+                    key,
+                    value && value !== all ? value : undefined,
+                ]),
+            ),
+        }),
+        { preserveScroll: true, preserveState: true, replace: true },
+    );
+};
+
+const filterModel = (key: keyof IssueFilters) =>
+    computed({
+        get: () => props.filters[key] ?? all,
+        set: (value: string) => applyFilters({ [key]: value }),
+    });
+
+const statusFilter = filterModel('status');
+const projectFilter = filterModel('project');
+
+const assignedToMe = computed(() => props.filters.assignee === 'me');
+
+const search = ref(props.filters.search ?? '');
+
+const runSearch = useDebounceFn(
+    () => applyFilters({ search: search.value.trim() || null }),
+    250,
+);
+
+watch(
+    () => props.filters.search,
+    (value) => {
+        search.value = value ?? '';
+    },
+);
+
+/**
+ * A row sits either in the backlog list or inside a sprint card, so a change is applied
+ * wherever the issue is found.
+ */
+const withIssue = (
+    current: Record<string, unknown>,
+    issueId: number,
+    changes: Partial<IssueListItem>,
+) => {
+    const apply = (issues: IssueListItem[]) =>
+        issues.map((issue) =>
+            issue.id === issueId ? { ...issue, ...changes } : issue,
+        );
+
+    return {
+        issues: apply(current.issues as IssueListItem[]),
+        sprints: (current.sprints as IssueSprintOption[]).map((sprint) => ({
+            ...sprint,
+            issues: apply(sprint.issues),
+        })),
+    };
+};
+
+const assignTeam = (issueId: number, teamId: number | null) => {
+    mutate(update([props.currentOrganization.slug, issueId]), {
+        data: { team_id: teamId },
+        errorMessage: 'That team could not be changed.',
+        optimistic: (current) =>
+            withIssue(current, issueId, {
+                teamId,
+                teamName:
+                    props.teams.find((team) => team.id === teamId)?.name ??
+                    null,
             }),
-            { preserveScroll: true, preserveState: true, replace: true },
-        )
-    }
+    });
+};
 
-    const filterModel = (key: keyof IssueFilters) =>
-        computed({
-            get: () => props.filters[key] ?? all,
-            set: (value: string) => applyFilters({ [key]: value }),
-        })
+const assignTo = (issueId: number, userId: number | null) => {
+    mutate(update([props.currentOrganization.slug, issueId]), {
+        data: { assignee_id: userId },
+        errorMessage: 'That assignee could not be changed.',
+        optimistic: (current) =>
+            withIssue(current, issueId, {
+                assigneeId: userId,
+                assigneeName:
+                    props.members.find((member) => member.id === userId)
+                        ?.name ?? null,
+            }),
+    });
+};
 
-    const statusFilter = filterModel('status')
-    const projectFilter = filterModel('project')
+/**
+ * Stages are the columns of the board the issue belongs to; without a team the
+ * organization's own board applies.
+ */
+const columnsFor = (issue: IssueListItem) =>
+    issue.teamId === null
+        ? props.boardColumns
+        : (props.teams.find((team) => team.id === issue.teamId)?.columns ?? []);
 
-    const assignedToMe = computed(() => props.filters.assignee === 'me')
+const moveTo = (issueId: number, columnId: number) => {
+    const column = [
+        ...props.boardColumns,
+        ...props.teams.flatMap((team) => team.columns),
+    ].find((candidate) => candidate.id === columnId);
 
-    const search = ref(props.filters.search ?? '')
+    mutate(update([props.currentOrganization.slug, issueId]), {
+        data: { board_column_id: columnId },
+        errorMessage: 'That status could not be changed.',
+        optimistic: (current) =>
+            column
+                ? withIssue(current, issueId, {
+                      boardColumnId: columnId,
+                      status: column.status,
+                      statusLabel: column.name,
+                  })
+                : undefined,
+    });
+};
 
-    const runSearch = useDebounceFn(
-        () => applyFilters({ search: search.value.trim() || null }),
-        250,
-    )
+const plannableSprints = computed(() =>
+    props.sprints.filter((sprint) => sprint.status !== 'completed'),
+);
 
-    watch(
-        () => props.filters.search,
-        (value) => {
-            search.value = value ?? ''
-        },
-    )
-
-    /**
-     * A row sits either in the backlog list or inside a sprint card, so a change is applied
-     * wherever the issue is found.
-     */
-    const withIssue = (
-        current: Record<string, unknown>,
-        issueId: number,
-        changes: Partial<IssueListItem>,
-    ) => {
-        const apply = (issues: IssueListItem[]) =>
-            issues.map((issue) => (issue.id === issueId ? { ...issue, ...changes } : issue))
-
-        return {
-            issues: apply(current.issues as IssueListItem[]),
-            sprints: (current.sprints as IssueSprintOption[]).map((sprint) => ({
-                ...sprint,
-                issues: apply(sprint.issues),
-            })),
-        }
-    }
-
-    const assignTeam = (issueId: number, teamId: number | null) => {
-        mutate(update([props.currentOrganization.slug, issueId]), {
-            data: { team_id: teamId },
-            errorMessage: 'That team could not be changed.',
-            optimistic: (current) =>
-                withIssue(current, issueId, {
-                    teamId,
-                    teamName: props.teams.find((team) => team.id === teamId)?.name ?? null,
-                }),
-        })
-    }
-
-    const assignTo = (issueId: number, userId: number | null) => {
-        mutate(update([props.currentOrganization.slug, issueId]), {
-            data: { assignee_id: userId },
-            errorMessage: 'That assignee could not be changed.',
-            optimistic: (current) =>
-                withIssue(current, issueId, {
-                    assigneeId: userId,
-                    assigneeName:
-                        props.members.find((member) => member.id === userId)?.name ?? null,
-                }),
-        })
-    }
-
-    /**
-     * Stages are the columns of the board the issue belongs to; without a team the
-     * organization's own board applies.
-     */
-    const columnsFor = (issue: IssueListItem) =>
-        issue.teamId === null
-            ? props.boardColumns
-            : (props.teams.find((team) => team.id === issue.teamId)?.columns ?? [])
-
-    const moveTo = (issueId: number, columnId: number) => {
-        const column = [...props.boardColumns, ...props.teams.flatMap((team) => team.columns)].find(
-            (candidate) => candidate.id === columnId,
-        )
-
-        mutate(update([props.currentOrganization.slug, issueId]), {
-            data: { board_column_id: columnId },
-            errorMessage: 'That status could not be changed.',
-            optimistic: (current) =>
-                column
-                    ? withIssue(current, issueId, {
-                          boardColumnId: columnId,
-                          status: column.status,
-                          statusLabel: column.name,
-                      })
-                    : undefined,
-        })
-    }
-
-    const plannableSprints = computed(() =>
-        props.sprints.filter((sprint) => sprint.status !== 'completed'),
-    )
-
-    /**
-     * Moves the row between the backlog and a sprint in the page props first; Inertia puts it
-     * back if the request is refused.
-     */
-    const planInto = (issueId: number, sprintId: number | null) => {
-        mutate(update([props.currentOrganization.slug, issueId]), {
-            data: { sprint_id: sprintId },
-            errorMessage: 'That issue could not be moved.',
-            optimistic: (current) => {
-                const issues = [...(current.issues as IssueListItem[])]
-                const sprints = (current.sprints as IssueSprintOption[]).map((sprint) => ({
+/**
+ * Moves the row between the backlog and a sprint in the page props first; Inertia puts it
+ * back if the request is refused.
+ */
+const planInto = (issueId: number, sprintId: number | null) => {
+    mutate(update([props.currentOrganization.slug, issueId]), {
+        data: { sprint_id: sprintId },
+        errorMessage: 'That issue could not be moved.',
+        optimistic: (current) => {
+            const issues = [...(current.issues as IssueListItem[])];
+            const sprints = (current.sprints as IssueSprintOption[]).map(
+                (sprint) => ({
                     ...sprint,
                     issues: [...sprint.issues],
-                }))
+                }),
+            );
 
-                let moving = issues.find((issue) => issue.id === issueId) ?? null
-                const from = sprints.find((sprint) =>
-                    sprint.issues.some((issue) => issue.id === issueId),
-                )
+            let moving = issues.find((issue) => issue.id === issueId) ?? null;
+            const from = sprints.find((sprint) =>
+                sprint.issues.some((issue) => issue.id === issueId),
+            );
 
-                if (moving) {
-                    issues.splice(
-                        issues.findIndex((issue) => issue.id === issueId),
-                        1,
-                    )
-                } else if (from) {
-                    moving = from.issues.find((issue) => issue.id === issueId) ?? null
-                    from.issues.splice(
-                        from.issues.findIndex((issue) => issue.id === issueId),
-                        1,
-                    )
-                }
-
-                if (!moving) {
-                    return
-                }
-
-                const to = sprints.find((sprint) => sprint.id === sprintId)
-
-                if (to) {
-                    to.issues.push(moving)
-                } else {
-                    issues.unshift(moving)
-                }
-
-                return { issues, sprints }
-            },
-        })
-    }
-
-    const onListChange = (change: DragChange) => {
-        if (!change.moved) {
-            return
-        }
-
-        // Sortable has already moved the row in the local list, so there is nothing to apply
-        // ahead of the response; an optimistic prop would only give Inertia an older order to
-        // roll back to.
-        mutate(updateOrder(props.currentOrganization.slug), {
-            data: { issue_ids: list.value.map((issue) => issue.id) },
-            errorMessage: 'That order could not be saved.',
-        })
-    }
-
-    /**
-     * While a row is being dragged, remember what the pointer is over: a sprint card or the backlog
-     * list. Sortable's drag ghost sits under the pointer at release, so the target is read from
-     * pointer moves rather than at the drop itself.
-     */
-    const trackPointer = (event: PointerEvent) => {
-        const element = document.elementFromPoint(event.clientX, event.clientY)
-        const card = element?.closest<HTMLElement>('[data-sprint-id]')
-
-        if (card) {
-            hoveredTarget.value = {
-                kind: 'sprint',
-                id: Number(card.dataset.sprintId),
+            if (moving) {
+                issues.splice(
+                    issues.findIndex((issue) => issue.id === issueId),
+                    1,
+                );
+            } else if (from) {
+                moving =
+                    from.issues.find((issue) => issue.id === issueId) ?? null;
+                from.issues.splice(
+                    from.issues.findIndex((issue) => issue.id === issueId),
+                    1,
+                );
             }
-        } else if (element?.closest('[data-backlog-list]')) {
-            hoveredTarget.value = { kind: 'backlog' }
-        } else {
-            hoveredTarget.value = null
-        }
+
+            if (!moving) {
+                return;
+            }
+
+            const to = sprints.find((sprint) => sprint.id === sprintId);
+
+            if (to) {
+                to.issues.push(moving);
+            } else {
+                issues.unshift(moving);
+            }
+
+            return { issues, sprints };
+        },
+    });
+};
+
+const onListChange = (change: DragChange) => {
+    if (!change.moved) {
+        return;
     }
 
-    const onDragStart = () => {
-        dragging.value = true
-        hoveredTarget.value = null
-        document.addEventListener('pointermove', trackPointer)
+    // Sortable has already moved the row in the local list, so there is nothing to apply
+    // ahead of the response; an optimistic prop would only give Inertia an older order to
+    // roll back to.
+    mutate(updateOrder(props.currentOrganization.slug), {
+        data: { issue_ids: list.value.map((issue) => issue.id) },
+        errorMessage: 'That order could not be saved.',
+    });
+};
+
+/**
+ * While a row is being dragged, remember what the pointer is over: a sprint card or the backlog
+ * list. Sortable's drag ghost sits under the pointer at release, so the target is read from
+ * pointer moves rather than at the drop itself.
+ */
+const trackPointer = (event: PointerEvent) => {
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const card = element?.closest<HTMLElement>('[data-sprint-id]');
+
+    if (card) {
+        hoveredTarget.value = {
+            kind: 'sprint',
+            id: Number(card.dataset.sprintId),
+        };
+    } else if (element?.closest('[data-backlog-list]')) {
+        hoveredTarget.value = { kind: 'backlog' };
+    } else {
+        hoveredTarget.value = null;
+    }
+};
+
+const onDragStart = () => {
+    dragging.value = true;
+    hoveredTarget.value = null;
+    document.addEventListener('pointermove', trackPointer);
+};
+
+/**
+ * Dropping a row on a sprint card plans it there; dropping a planned row on the backlog list
+ * unplans it. Sortable puts the row back where it came from, and the server response then shows
+ * it in its new place.
+ */
+const onDragEnd = (event: DragEndEvent, currentSprintId: number | null) => {
+    document.removeEventListener('pointermove', trackPointer);
+    dragging.value = false;
+    markDragEnded();
+
+    const issueId = Number(event.item.dataset.issueId);
+    const target = hoveredTarget.value;
+
+    hoveredTarget.value = null;
+
+    if (!issueId || !target) {
+        return;
     }
 
-    /**
-     * Dropping a row on a sprint card plans it there; dropping a planned row on the backlog list
-     * unplans it. Sortable puts the row back where it came from, and the server response then shows
-     * it in its new place.
-     */
-    const onDragEnd = (event: DragEndEvent, currentSprintId: number | null) => {
-        document.removeEventListener('pointermove', trackPointer)
-        dragging.value = false
-        markDragEnded()
-
-        const issueId = Number(event.item.dataset.issueId)
-        const target = hoveredTarget.value
-
-        hoveredTarget.value = null
-
-        if (!issueId || !target) {
-            return
-        }
-
-        if (target.kind === 'sprint' && target.id !== currentSprintId) {
-            planInto(issueId, target.id)
-        } else if (target.kind === 'backlog' && currentSprintId !== null) {
-            planInto(issueId, null)
-        }
+    if (target.kind === 'sprint' && target.id !== currentSprintId) {
+        planInto(issueId, target.id);
+    } else if (target.kind === 'backlog' && currentSprintId !== null) {
+        planInto(issueId, null);
     }
+};
 
-    const isHovered = (target: DropTarget) =>
-        JSON.stringify(hoveredTarget.value) === JSON.stringify(target)
+const isHovered = (target: DropTarget) =>
+    JSON.stringify(hoveredTarget.value) === JSON.stringify(target);
 
-    const totalPoints = computed(() =>
-        list.value.reduce((total, issue) => total + (issue.points ?? 0), 0),
-    )
+const totalPoints = computed(() =>
+    list.value.reduce((total, issue) => total + (issue.points ?? 0), 0),
+);
 </script>
 
 <template>
@@ -483,7 +496,9 @@
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem :value="all">Open issues</SelectItem>
+                                <SelectItem :value="all"
+                                    >Open issues</SelectItem
+                                >
                                 <SelectItem
                                     v-for="status in statuses"
                                     :key="status.value"
@@ -499,7 +514,9 @@
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem :value="all">All projects</SelectItem>
+                                <SelectItem :value="all"
+                                    >All projects</SelectItem
+                                >
                                 <SelectItem
                                     v-for="project in projects"
                                     :key="project.id"
@@ -537,10 +554,14 @@
                             Assigned to me
                         </Button>
 
-                        <span class="text-muted-foreground ml-auto text-sm tabular-nums">
+                        <span
+                            class="text-muted-foreground ml-auto text-sm tabular-nums"
+                        >
                             {{ list.length }}
                             {{ list.length === 1 ? 'issue' : 'issues' }}
-                            <template v-if="totalPoints > 0">· {{ totalPoints }} pts</template>
+                            <template v-if="totalPoints > 0"
+                                >· {{ totalPoints }} pts</template
+                            >
                         </span>
                     </div>
 
@@ -578,7 +599,9 @@
                                         :columns="columnsFor(issue)"
                                         :current-sprint-id="null"
                                         @plan="planInto(issue.id, $event)"
-                                        @assign-team="assignTeam(issue.id, $event)"
+                                        @assign-team="
+                                            assignTeam(issue.id, $event)
+                                        "
                                         @assign="assignTo(issue.id, $event)"
                                         @move-to="moveTo(issue.id, $event)"
                                     />
@@ -597,10 +620,7 @@
                     </div>
                 </section>
 
-                <aside
-                    v-if="sprintsEnabled"
-                    class="min-w-0 space-y-3"
-                >
+                <aside v-if="sprintsEnabled" class="min-w-0 space-y-3">
                     <h2
                         class="text-muted-foreground px-1 text-xs font-medium tracking-wide uppercase"
                     >
@@ -627,20 +647,34 @@
                                     v-model="sprintName"
                                     class="h-7 text-sm font-medium"
                                     :data-test="`sprint-rename-${sprint.id}`"
-                                    @keydown.enter.prevent="saveSprintName(sprint)"
-                                    @keydown.esc.prevent="sprintBeingRenamed = null"
+                                    @keydown.enter.prevent="
+                                        saveSprintName(sprint)
+                                    "
+                                    @keydown.esc.prevent="
+                                        sprintBeingRenamed = null
+                                    "
                                     @blur="saveSprintName(sprint)"
                                 />
                                 <Link
                                     v-else
-                                    :href="showSprint([currentOrganization.slug, sprint.id])"
+                                    :href="
+                                        showSprint([
+                                            currentOrganization.slug,
+                                            sprint.id,
+                                        ])
+                                    "
                                     class="block truncate text-sm font-medium hover:underline"
                                 >
                                     {{ sprint.name }}
                                 </Link>
                                 <p class="text-muted-foreground mt-0.5 text-xs">
                                     {{ sprint.teamName }} ·
-                                    {{ formatDateRange(sprint.startsAt, sprint.endsAt) }}
+                                    {{
+                                        formatDateRange(
+                                            sprint.startsAt,
+                                            sprint.endsAt,
+                                        )
+                                    }}
                                 </p>
                                 <div class="mt-2 flex items-center gap-1.5">
                                     <Badge
@@ -648,7 +682,11 @@
                                         class="tabular-nums"
                                     >
                                         {{ sprint.issuesCount }}
-                                        {{ sprint.issuesCount === 1 ? 'issue' : 'issues' }}
+                                        {{
+                                            sprint.issuesCount === 1
+                                                ? 'issue'
+                                                : 'issues'
+                                        }}
                                     </Badge>
                                     <Badge
                                         variant="secondary"
@@ -660,11 +698,17 @@
                             </div>
                             <span class="flex shrink-0 items-center gap-1">
                                 <Badge
-                                    :variant="sprint.status === 'active' ? 'default' : 'secondary'"
+                                    :variant="
+                                        sprint.status === 'active'
+                                            ? 'default'
+                                            : 'secondary'
+                                    "
                                 >
                                     {{ sprint.statusLabel }}
                                 </Badge>
-                                <DropdownMenu v-if="permissions.canManageSprints">
+                                <DropdownMenu
+                                    v-if="permissions.canManageSprints"
+                                >
                                     <DropdownMenuTrigger as-child>
                                         <Button
                                             variant="ghost"
@@ -677,7 +721,9 @@
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent
                                         align="end"
-                                        @close-auto-focus="(event) => event.preventDefault()"
+                                        @close-auto-focus="
+                                            (event) => event.preventDefault()
+                                        "
                                     >
                                         <DropdownMenuItem
                                             class="cursor-pointer"
@@ -700,7 +746,9 @@
                                     variant="ghost"
                                     size="icon-sm"
                                     data-test="sprint-toggle"
-                                    :aria-expanded="!collapsedSprints.has(sprint.id)"
+                                    :aria-expanded="
+                                        !collapsedSprints.has(sprint.id)
+                                    "
                                     :aria-label="
                                         collapsedSprints.has(sprint.id)
                                             ? 'Expand sprint'
@@ -710,14 +758,20 @@
                                 >
                                     <ChevronDown
                                         class="transition-transform"
-                                        :class="collapsedSprints.has(sprint.id) && '-rotate-90'"
+                                        :class="
+                                            collapsedSprints.has(sprint.id) &&
+                                            '-rotate-90'
+                                        "
                                     />
                                 </Button>
                             </span>
                         </div>
 
                         <div
-                            v-if="!collapsedSprints.has(sprint.id) && sprint.issues.length > 0"
+                            v-if="
+                                !collapsedSprints.has(sprint.id) &&
+                                sprint.issues.length > 0
+                            "
                             class="overflow-x-auto"
                         >
                             <draggable
@@ -738,7 +792,9 @@
                                         class="hover:bg-accent/50 flex cursor-grab items-center px-4 py-2.5 transition-colors active:cursor-grabbing"
                                     >
                                         <IssueRow
-                                            :organization="currentOrganization.slug"
+                                            :organization="
+                                                currentOrganization.slug
+                                            "
                                             :issue="issue"
                                             :sprints="plannableSprints"
                                             :teams="teams"
@@ -746,7 +802,9 @@
                                             :columns="columnsFor(issue)"
                                             :current-sprint-id="sprint.id"
                                             @plan="planInto(issue.id, $event)"
-                                            @assign-team="assignTeam(issue.id, $event)"
+                                            @assign-team="
+                                                assignTeam(issue.id, $event)
+                                            "
                                             @assign="assignTo(issue.id, $event)"
                                             @move-to="moveTo(issue.id, $event)"
                                         />
@@ -758,8 +816,9 @@
                             v-else-if="!collapsedSprints.has(sprint.id)"
                             class="text-muted-foreground border-t px-4 py-3 text-xs"
                         >
-                            Nothing planned yet. Drag an issue onto this card, or drag a planned
-                            issue back into the list to unplan it.
+                            Nothing planned yet. Drag an issue onto this card,
+                            or drag a planned issue back into the list to unplan
+                            it.
                         </p>
                     </div>
 
@@ -769,11 +828,12 @@
                     >
                         <Timer class="mx-auto mb-2 size-4" />
                         <template v-if="currentTeam">
-                            No open sprints for {{ currentTeam.name }}. Create one on the Sprints
-                            page to start planning.
+                            No open sprints for {{ currentTeam.name }}. Create
+                            one on the Sprints page to start planning.
                         </template>
                         <template v-else>
-                            Sprints belong to teams. Create a team to start planning.
+                            Sprints belong to teams. Create a team to start
+                            planning.
                         </template>
                     </div>
                 </aside>
@@ -791,7 +851,11 @@
         :open="sprintToDelete !== null"
         title="Delete sprint"
         confirm-label="Delete sprint"
-        :href="sprintToDelete ? destroySprint([currentOrganization.slug, sprintToDelete.id]) : null"
+        :href="
+            sprintToDelete
+                ? destroySprint([currentOrganization.slug, sprintToDelete.id])
+                : null
+        "
         @update:open="sprintToDelete = null"
     >
         This will delete

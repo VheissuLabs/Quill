@@ -1,85 +1,87 @@
 <script setup lang="ts">
-    import { Link, usePage } from '@inertiajs/vue3'
-    import { Check, Timer, Users } from '@lucide/vue'
-    import { computed } from 'vue'
-    import IssuePriorityBadge from '@/components/IssuePriorityBadge.vue'
-    import IssueStatusBadge from '@/components/IssueStatusBadge.vue'
-    import { Badge } from '@/components/ui/badge'
-    import {
-        DropdownMenu,
-        DropdownMenuContent,
-        DropdownMenuItem,
-        DropdownMenuSeparator,
-        DropdownMenuTrigger,
-    } from '@/components/ui/dropdown-menu'
-    import { useRowDrag } from '@/composables/useRowDrag'
-    import { show } from '@/routes/issues'
-    import type {
-        BoardColumn,
-        IssueListItem,
-        IssueMemberOption,
-        IssueSprintOption,
-        IssueTeamOption,
-    } from '@/types'
+import { Link, usePage } from '@inertiajs/vue3';
+import { Check, Timer, Users } from '@lucide/vue';
+import { computed } from 'vue';
+import IssuePriorityBadge from '@/components/IssuePriorityBadge.vue';
+import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
+import { Badge } from '@/components/ui/badge';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useRowDrag } from '@/composables/useRowDrag';
+import { show } from '@/routes/issues';
+import type {
+    BoardColumn,
+    IssueListItem,
+    IssueMemberOption,
+    IssueSprintOption,
+    IssueTeamOption,
+} from '@/types';
 
-    const {
-        issue,
-        sprints = [],
-        teams = [],
-        members = [],
-        columns = [],
-        currentSprintId = null,
-    } = defineProps<{
-        organization: string
-        issue: IssueListItem
-        sprints?: IssueSprintOption[]
-        teams?: IssueTeamOption[]
-        members?: IssueMemberOption[]
-        columns?: BoardColumn[]
-        currentSprintId?: number | null
-    }>()
+const {
+    issue,
+    sprints = [],
+    teams = [],
+    members = [],
+    columns = [],
+    currentSprintId = null,
+} = defineProps<{
+    organization: string;
+    issue: IssueListItem;
+    sprints?: IssueSprintOption[];
+    teams?: IssueTeamOption[];
+    members?: IssueMemberOption[];
+    columns?: BoardColumn[];
+    currentSprintId?: number | null;
+}>();
 
-    const emit = defineEmits<{
-        plan: [sprintId: number | null]
-        assignTeam: [teamId: number | null]
-        assign: [userId: number | null]
-        moveTo: [columnId: number]
-    }>()
+const emit = defineEmits<{
+    plan: [sprintId: number | null];
+    assignTeam: [teamId: number | null];
+    assign: [userId: number | null];
+    moveTo: [columnId: number];
+}>();
 
-    const canPlan = computed(() => sprints.length > 0)
+const canPlan = computed(() => sprints.length > 0);
 
-    const currentSprint = computed(
-        () => sprints.find((sprint) => sprint.id === currentSprintId) ?? null,
-    )
+const currentSprint = computed(
+    () => sprints.find((sprint) => sprint.id === currentSprintId) ?? null,
+);
 
-    const planned = computed(() => currentSprintId !== null)
+const planned = computed(() => currentSprintId !== null);
 
-    /**
-     * The chip reports where the issue sits, so it only means something on a board that runs
-     * sprints. Without them an unplanned issue has no location to report, and backlog is not a
-     * column anyone configured.
-     */
-    const showsStatus = computed(
-        () => planned.value || (!canPlan.value && issue.status !== 'backlog'),
-    )
+/**
+ * The chip reports where the issue sits, so it only means something on a board that runs
+ * sprints. Without them an unplanned issue has no location to report, and backlog is not a
+ * column anyone configured.
+ */
+const showsStatus = computed(
+    () => planned.value || (!canPlan.value && issue.status !== 'backlog'),
+);
 
-    const page = usePage()
+const page = usePage();
 
-    const assignedToMe = computed(
-        () => issue.assigneeId !== null && issue.assigneeId === page.props.auth.user?.id,
-    )
+const assignedToMe = computed(
+    () =>
+        issue.assigneeId !== null &&
+        issue.assigneeId === page.props.auth.user?.id,
+);
 
-    const { draggedJustNow } = useRowDrag()
+const { draggedJustNow } = useRowDrag();
 
-    /**
-     * Caught on the way down, before Inertia's own click handler on the link can navigate.
-     */
-    const onRowClickCapture = (event: MouseEvent) => {
-        if (draggedJustNow()) {
-            event.preventDefault()
-            event.stopPropagation()
-        }
+/**
+ * Caught on the way down, before Inertia's own click handler on the link can navigate.
+ */
+const onRowClickCapture = (event: MouseEvent) => {
+    if (draggedJustNow()) {
+        event.preventDefault();
+        event.stopPropagation();
     }
+};
 </script>
 
 <template>
@@ -108,18 +110,19 @@
             >
                 {{ issue.title }}
             </Link>
-            <span class="text-muted-foreground block truncate text-xs tabular-nums">
+            <span
+                class="text-muted-foreground block truncate text-xs tabular-nums"
+            >
                 {{ issue.project.name }} #{{ issue.number }}
             </span>
         </div>
 
-        <div
-            v-if="canPlan"
-            class="flex w-32 shrink-0 justify-end"
-        >
+        <div v-if="canPlan" class="flex w-32 shrink-0 justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger
-                    :data-test="planned ? 'issue-sprint-chip' : 'issue-status-chip'"
+                    :data-test="
+                        planned ? 'issue-sprint-chip' : 'issue-status-chip'
+                    "
                     :aria-label="
                         planned
                             ? `Move ${issue.reference} to another sprint`
@@ -134,7 +137,9 @@
                         class="text-muted-foreground max-w-full gap-1"
                     >
                         <Timer class="size-3 shrink-0" />
-                        <span class="truncate">{{ currentSprint?.name ?? 'Sprint' }}</span>
+                        <span class="truncate">{{
+                            currentSprint?.name ?? 'Sprint'
+                        }}</span>
                     </Badge>
                     <IssueStatusBadge
                         v-else
@@ -142,10 +147,7 @@
                         :label="issue.statusLabel"
                     />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                    align="end"
-                    class="w-56"
-                >
+                <DropdownMenuContent align="end" class="w-56">
                     <DropdownMenuItem
                         v-for="sprint in sprints"
                         :key="sprint.id"
@@ -193,10 +195,7 @@
                             :label="issue.statusLabel"
                         />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        align="end"
-                        class="w-52"
-                    >
+                    <DropdownMenuContent align="end" class="w-52">
                         <DropdownMenuItem
                             v-for="column in columns"
                             :key="column.id"
@@ -229,16 +228,15 @@
                             ? 'text-foreground font-medium'
                             : 'text-muted-foreground hover:text-foreground',
                     ]"
-                    :data-test="assignedToMe ? 'issue-assignee-me' : 'issue-assignee'"
+                    :data-test="
+                        assignedToMe ? 'issue-assignee-me' : 'issue-assignee'
+                    "
                     :aria-label="`Change the assignee for ${issue.reference}`"
                     @pointerdown.stop
                 >
                     {{ issue.assigneeName ?? 'Unassigned' }}
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                    align="end"
-                    class="w-52"
-                >
+                <DropdownMenuContent align="end" class="w-52">
                     <DropdownMenuItem
                         v-for="member in members"
                         :key="member.id"
@@ -267,9 +265,13 @@
                 v-else
                 :class="[
                     'block truncate text-xs',
-                    assignedToMe ? 'text-foreground font-medium' : 'text-muted-foreground',
+                    assignedToMe
+                        ? 'text-foreground font-medium'
+                        : 'text-muted-foreground',
                 ]"
-                :data-test="assignedToMe ? 'issue-assignee-me' : 'issue-assignee'"
+                :data-test="
+                    assignedToMe ? 'issue-assignee-me' : 'issue-assignee'
+                "
             >
                 {{ issue.assigneeName ?? 'Unassigned' }}
             </span>
@@ -291,10 +293,7 @@
                             Set team
                         </span>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        align="end"
-                        class="w-52"
-                    >
+                    <DropdownMenuContent align="end" class="w-52">
                         <DropdownMenuItem
                             v-for="team in teams"
                             :key="team.id"
