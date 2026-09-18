@@ -35,4 +35,5 @@ export type TeamOption = {
     id: number;
     name: string;
     slug: string;
+    runsSprints?: boolean;
 };

@@ -196,3 +196,21 @@ test('the issue board hides the sprint column when the team does not run sprints
         ->get(route('issues.index', ['current_organization' => $organization]))
         ->assertInertia(fn (Assert $page) => $page->where('sprintsEnabled', false));
 });
+
+test('the shared current team says whether it runs sprints', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $team = Team::factory()->for($organization)->create();
+    $team->members()->attach($member);
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization]))
+        ->assertInertia(fn (Assert $page) => $page->where('currentTeam.runsSprints', true));
+
+    $team->updateModuleSettings(['sprints_enabled' => false]);
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization]))
+        ->assertInertia(fn (Assert $page) => $page->where('currentTeam.runsSprints', false));
+});

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\OrganizationCapability;
 use App\Http\Resources\UserOrganizationResource;
 use App\Models\Organization;
 use App\Models\Team;
@@ -81,7 +82,7 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    /** @return array{id: int, name: string, slug: string}|null */
+    /** @return array{id: int, name: string, slug: string, runsSprints: bool}|null */
     private function currentTeam(?User $user): ?array
     {
         if (! $user?->currentOrganization) {
@@ -90,6 +91,11 @@ class HandleInertiaRequests extends Middleware
 
         $team = $user->currentTeamFor($user->currentOrganization);
 
-        return $team ? ['id' => $team->id, 'name' => $team->name, 'slug' => $team->slug] : null;
+        return $team ? [
+            'id' => $team->id,
+            'name' => $team->name,
+            'slug' => $team->slug,
+            'runsSprints' => $team->canUse(OrganizationCapability::Sprints),
+        ] : null;
     }
 }
