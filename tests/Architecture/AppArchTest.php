@@ -36,6 +36,11 @@ test('app keeps the directories it has agreed on', function () {
     ]);
 });
 
+/**
+ * Both rules refuse the accumulator pattern: declaring an empty value and mutating it into
+ * shape, rather than saying what the value is. Pest's arch plugin reasons about dependencies,
+ * not syntax, so these read the source and name the files they find.
+ */
 function appFilesMatching(string $pattern): array
 {
     $files = new RecursiveIteratorIterator(
@@ -61,6 +66,10 @@ function appFilesMatching(string $pattern): array
     return $offenders;
 }
 
-test('values are built rather than started empty and filled in', function () {
+test('no accumulator: an array is not declared empty and filled in', function () {
     expect(appFilesMatching('/^\s*\$\w+ = \[\];\s*$/m'))->toBe([]);
+});
+
+test('no accumulator: a closure does not mutate what it captures', function () {
+    expect(appFilesMatching('/\buse\s*\([^)]*&\s*\$/'))->toBe([]);
 });
