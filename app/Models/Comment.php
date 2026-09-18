@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use RuntimeException;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -49,6 +50,46 @@ class Comment extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function url(): string
+    {
+        $commentable = $this->commentable;
+
+        return match (true) {
+            $commentable instanceof Issue => route('issues.show', [
+                'current_organization' => $commentable->project->organization,
+                'issue' => $commentable,
+            ], absolute: false),
+            $commentable instanceof Feature => route('portal.features.show', [
+                'organization' => $commentable->project->organization,
+                'project' => $commentable->project,
+                'feature' => $commentable,
+            ], absolute: false),
+            default => throw new RuntimeException('Comment on an unsupported subject.'),
+        };
+    }
+
+    public function subjectTitle(): string
+    {
+        $commentable = $this->commentable;
+
+        if ($commentable instanceof Issue || $commentable instanceof Feature) {
+            return $commentable->title;
+        }
+
+        throw new RuntimeException('Comment on an unsupported subject.');
+    }
+
+    public function organization(): Organization
+    {
+        $commentable = $this->commentable;
+
+        if ($commentable instanceof Issue || $commentable instanceof Feature) {
+            return $commentable->project->organization;
+        }
+
+        throw new RuntimeException('Comment on an unsupported subject.');
     }
 
     /** @return BelongsToMany<User, $this> */

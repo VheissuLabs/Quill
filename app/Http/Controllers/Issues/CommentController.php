@@ -3,20 +3,19 @@
 namespace App\Http\Controllers\Issues;
 
 use App\Actions\Comments\IssueCommentCommands;
+use App\Actions\Comments\NotifyAboutComment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Comments\StoreIssueCommentRequest;
 use App\Models\Comment;
 use App\Models\Issue;
 use App\Models\Organization;
-use App\Models\User;
-use App\Notifications\MentionedInComment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class CommentController extends Controller
 {
-    public function store(StoreIssueCommentRequest $request, Organization $currentOrganization, Issue $issue, IssueCommentCommands $commands): RedirectResponse
+    public function store(StoreIssueCommentRequest $request, Organization $currentOrganization, Issue $issue, IssueCommentCommands $commands, NotifyAboutComment $notify): RedirectResponse
     {
         $parent = $request->filled('parent_id')
             ? $issue->comments()->whereKey($request->integer('parent_id'))->firstOrFail()
@@ -38,9 +37,7 @@ class CommentController extends Controller
                 return $comment;
             });
 
-            $comment->mentions
-                ->reject(fn (User $user) => $user->is($request->user()))
-                ->each(fn (User $user) => $user->notify(new MentionedInComment($comment)));
+            $notify->handle($comment, $request->user(), $parent);
         }
 
         if ($result['messages'] !== []) {
