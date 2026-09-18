@@ -6,6 +6,7 @@ use App\Concerns\RunsABoard;
 use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationModule;
 use App\Enums\OrganizationPermission;
+use App\Events\ModulesChanged;
 use App\Observers\OrganizationObserver;
 use Closure;
 use Database\Factories\OrganizationFactory;
@@ -188,6 +189,8 @@ class Organization extends Model
         );
 
         $this->unsetRelation('capabilitySettings');
+
+        ModulesChanged::dispatch($this->getKey());
     }
 
     private function settingEnabled(string $module, string $capability): bool

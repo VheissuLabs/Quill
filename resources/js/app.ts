@@ -1,4 +1,4 @@
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, http } from '@inertiajs/vue3';
 import { initializeTheme } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
@@ -6,11 +6,33 @@ import PortalLayout from '@/layouts/portal/PortalLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { broadcastingEnabled } from '@/lib/broadcasting';
 import { initializeFlashToast } from '@/lib/flashToast';
-import { configureEcho } from '@laravel/echo-vue';
+import { configureEcho, echo } from '@laravel/echo-vue';
 
 if (broadcastingEnabled) {
     configureEcho({
         broadcaster: 'reverb',
+    });
+
+    /**
+     * Inertia v3 dropped axios, so nothing stamps the socket id on a request and
+     * broadcast()->toOthers() would exclude nobody. One interceptor covers the router,
+     * useForm, Form and useHttp.
+     */
+    http.onRequest((config) => {
+        try {
+            const socketId = echo().socketId();
+
+            if (socketId) {
+                config.headers = {
+                    ...config.headers,
+                    'X-Socket-Id': socketId,
+                };
+            }
+        } catch {
+            // Echo has not finished connecting; the actor hears their own event and reloads once.
+        }
+
+        return config;
     });
 }
 

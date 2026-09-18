@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\RunsABoard;
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationCapability;
+use App\Events\ModulesChanged;
 use App\Observers\OrganizationScopedSlugObserver;
 use App\Observers\TeamObserver;
 use Database\Factories\TeamFactory;
@@ -62,6 +63,8 @@ class Team extends Model
         );
 
         $this->unsetRelation('capabilitySettings');
+
+        ModulesChanged::dispatch($this->organization_id);
     }
 
     /**
