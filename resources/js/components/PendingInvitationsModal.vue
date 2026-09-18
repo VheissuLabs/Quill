@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import OrganizationInvitationController from '@/actions/App/Http/Controllers/Organizations/OrganizationInvitationController';
+import AcceptOrganizationInvitationController from '@/actions/App/Http/Controllers/Organizations/AcceptOrganizationInvitationController';
+import DeclineOrganizationInvitationController from '@/actions/App/Http/Controllers/Organizations/DeclineOrganizationInvitationController';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -22,14 +23,14 @@ const open = ref(true);
 const processingCode = ref<string | null>(null);
 
 const acceptInvitation = (invitation: DashboardInvitation) => {
-    router.visit(OrganizationInvitationController.accept(invitation), {
+    router.visit(AcceptOrganizationInvitationController(invitation), {
         onStart: () => (processingCode.value = invitation.code),
         onFinish: () => (processingCode.value = null),
     });
 };
 
 const declineInvitation = (invitation: DashboardInvitation) => {
-    router.visit(OrganizationInvitationController.decline(invitation), {
+    router.visit(DeclineOrganizationInvitationController(invitation), {
         onStart: () => (processingCode.value = invitation.code),
         onFinish: () => (processingCode.value = null),
         onSuccess: () => {

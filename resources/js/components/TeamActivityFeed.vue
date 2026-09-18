@@ -94,7 +94,7 @@ const formatTime = (iso: string) =>
                 </p>
                 <Link
                     :href="show([organization, entry.issue.id])"
-                    class="block font-medium leading-snug hover:underline"
+                    class="block leading-snug font-medium hover:underline"
                 >
                     {{ entry.issue.title }}
                 </Link>

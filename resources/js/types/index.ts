@@ -4,6 +4,7 @@ export * from './dashboard';
 export * from './issues';
 export * from './navigation';
 export * from './organizations';
+export * from './palette';
 export * from './portal';
 export * from './projects';
 export * from './teams';

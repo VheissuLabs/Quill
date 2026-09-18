@@ -25,7 +25,7 @@ class CommentSeeder extends Seeder
 
             Comment::factory()
                 ->count(fake()->numberBetween(1, 3))
-                ->for($feature)
+                ->for($feature, 'commentable')
                 ->sequence(fn () => [
                     'user_id' => $members->random()->id,
                     'body' => fake()->sentences(fake()->numberBetween(1, 3), true),

@@ -12,6 +12,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { broadcastingEnabled } from '@/lib/broadcasting';
 import { formatDate } from '@/lib/dates';
 import { destroy, destroyAll, read, readAll } from '@/routes/notifications';
 import type { AppNotification } from '@/types';
@@ -25,7 +26,7 @@ const notifications = computed(() => page.props.notifications);
  * badge and list update without a full visit. Browser only: the composable connects to Reverb
  * synchronously in setup, which has no key (or WebSocket) to work with during server rendering.
  */
-if (!import.meta.env.SSR) {
+if (!import.meta.env.SSR && broadcastingEnabled) {
     useEchoNotification(`App.Models.User.${user.value.id}`, () => {
         router.reload({ only: ['notifications'] });
     });

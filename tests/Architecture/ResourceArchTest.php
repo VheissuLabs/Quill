@@ -2,4 +2,5 @@
 
 arch('resources')
     ->expect('App\Http\Resources')
-    ->toHaveMethod('toArray');
+    ->toHaveMethod('toArray')
+    ->not->toUse('Illuminate\Support\Facades\DB');

@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers\Issues;
 
+use App\Actions\Comments\IssueCommentCommands;
 use App\Actions\Issues\CreateIssue;
+use App\Actions\Issues\UpdateIssue;
+use App\Data\IssueChangesData;
+use App\Enums\IssueLinkType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Issues\IssueIndexRequest;
 use App\Http\Requests\Issues\IssueRequest;
 use App\Http\Resources\ActivityResource;
+use App\Http\Resources\CommentResource;
 use App\Http\Resources\FeatureResource;
 use App\Http\Resources\IssueActivityResource;
 use App\Http\Resources\IssueDetailResource;
 use App\Http\Resources\IssueFormResource;
+use App\Http\Resources\IssueLinkResource;
 use App\Http\Resources\IssueResource;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -59,6 +65,12 @@ class IssueController extends Controller
 
         return Inertia::render('issues/Show', [
             'issue' => IssueDetailResource::make($issue, $user)->resolve(),
+            'links' => IssueLinkResource::collection($issue->relatedIssues()),
+            'linkTypes' => IssueLinkType::perspectives(),
+            'comments' => $issue->comments()->threadsVisibleTo(true)->get()
+                ->map(fn ($comment) => CommentResource::make($comment, $user)->resolve()),
+            'commands' => app(IssueCommentCommands::class)->availableTo($user, $issue),
+            'mentionables' => $issue->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]),
             'feature' => $issue->feature ? FeatureResource::make($issue->feature)->resolve() : null,
             'activity' => $permissions['canViewActivity']
                 ? ActivityResource::collection($issue->activitiesAsSubject()->with('causer')->latest('id')->limit(30)->get())
@@ -67,11 +79,9 @@ class IssueController extends Controller
         ]);
     }
 
-    public function update(IssueRequest $request, Organization $currentOrganization, Issue $issue): RedirectResponse
+    public function update(IssueRequest $request, Organization $currentOrganization, Issue $issue, UpdateIssue $updateIssue): RedirectResponse
     {
-        $issue->update($request->safe()->except(['status', 'sprint_id', 'board_column_id']));
-
-        $issue->applyChanges($request->safe()->only(['sprint_id', 'board_column_id', 'status']));
+        $updateIssue->handle($issue, IssueChangesData::from($request->safe()));
 
         return back();
     }

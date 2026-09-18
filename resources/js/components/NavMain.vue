@@ -60,7 +60,10 @@ const open = computed({
                 <SidebarGroupLabel
                     as="button"
                     type="button"
-                    class="group/label w-full cursor-pointer justify-between"
+                    :disabled="state === 'collapsed'"
+                    :aria-hidden="state === 'collapsed'"
+                    :tabindex="state === 'collapsed' ? -1 : undefined"
+                    class="group/label w-full cursor-pointer justify-between group-data-[collapsible=icon]:pointer-events-none"
                     :data-test="`nav-group-${label}`"
                 >
                     {{ label }}

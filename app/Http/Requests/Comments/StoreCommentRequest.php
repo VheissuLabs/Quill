@@ -38,7 +38,9 @@ class StoreCommentRequest extends FormRequest
         return [
             'body' => ['required', 'string', 'max:5000'],
             'internal' => ['boolean'],
-            'parent_id' => ['nullable', 'integer', Rule::exists('comments', 'id')->where('feature_id', $feature->id)],
+            'parent_id' => ['nullable', 'integer', Rule::exists('comments', 'id')
+                ->where('commentable_type', $feature->getMorphClass())
+                ->where('commentable_id', $feature->getKey())],
             'mentions' => ['array', 'max:20'],
             'mentions.*' => ['integer', 'distinct', Rule::in($feature->mentionableUsers()->pluck('id'))],
         ];

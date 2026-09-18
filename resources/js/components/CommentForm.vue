@@ -1,23 +1,22 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
+import { useForm, useHttp } from '@inertiajs/vue3';
+import { useDebounceFn } from '@vueuse/core';
 import { computed, nextTick, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { store } from '@/routes/portal/features/comments';
 import type { CommentCommand, CommentMention, SelectOption } from '@/types';
 
 type Props = {
-    organization: string;
-    project: string;
-    featureId: number;
+    action: string;
     mentionable: CommentMention[];
+    issueLookup?: string;
     commands?: CommentCommand[];
     statuses?: SelectOption[];
-    canCommentInternally: boolean;
-    organizationName: string;
+    canCommentInternally?: boolean;
+    organizationName?: string;
     parentId?: number | null;
     forceInternal?: boolean;
     placeholder?: string;
@@ -26,6 +25,9 @@ type Props = {
 };
 
 const props = withDefaults(defineProps<Props>(), {
+    issueLookup: '',
+    canCommentInternally: false,
+    organizationName: '',
     commands: () => [],
     statuses: () => [],
     parentId: null,
@@ -68,8 +70,46 @@ const prompt = ref<
     | { kind: 'mention'; start: number; query: string }
     | { kind: 'command'; start: number; query: string }
     | { kind: 'status'; start: number; query: string }
+    | { kind: 'issue'; start: number; query: string }
     | null
 >(null);
+
+type IssueSuggestion = {
+    id: number;
+    reference: string;
+    title: string;
+    statusLabel: string;
+};
+
+const issueResults = ref<IssueSuggestion[]>([]);
+const issueRequest = useHttp<Record<string, never>, IssueSuggestion[]>();
+
+/** Commands whose argument is an issue id, taken from what the server offered. */
+const issueCommands = computed(() =>
+    props.commands
+        .filter((command) => command.usage.includes('<issue id>'))
+        .map((command) => command.name),
+);
+
+const lookUpIssues = useDebounceFn(async (query: string) => {
+    if (!props.issueLookup || query.trim().length < 2) {
+        issueResults.value = [];
+
+        return;
+    }
+
+    issueRequest.cancel();
+
+    try {
+        const separator = props.issueLookup.includes('?') ? '&' : '?';
+
+        issueResults.value = await issueRequest.get(
+            `${props.issueLookup}${separator}q=${encodeURIComponent(query.trim())}`,
+        );
+    } catch {
+        issueResults.value = [];
+    }
+}, 200);
 
 const textareaElement = (): HTMLTextAreaElement | null =>
     (textarea.value?.$el as HTMLTextAreaElement | undefined) ?? null;
@@ -85,6 +125,7 @@ const updatePrompt = () => {
     const mention = /(?:^|\s)@([^@\n]{0,40})$/.exec(beforeCaret);
     const status = /^\/status\s+([^\n]{0,30})$/i.exec(line);
     const command = /^\/(\w{0,20})$/.exec(line);
+    const linked = /^\/(\w+)\s+([^\n]{0,60})$/.exec(line);
 
     highlighted.value = 0;
 
@@ -100,6 +141,16 @@ const updatePrompt = () => {
             start: lineStart + line.length - status[1].length,
             query: status[1],
         };
+    } else if (
+        linked &&
+        issueCommands.value.includes(linked[1].toLowerCase())
+    ) {
+        prompt.value = {
+            kind: 'issue',
+            start: lineStart + line.length - linked[2].length,
+            query: linked[2],
+        };
+        void lookUpIssues(linked[2]);
     } else if (command && props.commands.length > 0) {
         prompt.value = { kind: 'command', start: lineStart, query: command[1] };
     } else {
@@ -138,6 +189,16 @@ const suggestions = computed<Suggestion[]>(() => {
                 start,
                 insertion: `${status.label} `,
             }));
+    }
+
+    if (kind === 'issue') {
+        return issueResults.value.map((issue) => ({
+            key: `issue-${issue.id}`,
+            label: issue.title,
+            description: `${issue.reference} · ${issue.statusLabel}`,
+            start,
+            insertion: `${issue.id} `,
+        }));
     }
 
     return props.commands
@@ -227,7 +288,7 @@ const submit = () => {
                 person !== undefined && data.body.includes(`@${person.name}`)
             );
         }),
-    })).submit(store([props.organization, props.project, props.featureId]), {
+    })).post(props.action, {
         preserveScroll: true,
         onSuccess: () => {
             form.reset();

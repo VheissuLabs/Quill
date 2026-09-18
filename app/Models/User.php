@@ -74,8 +74,7 @@ class User extends Authenticatable implements PasskeyUser
             return $this->currentTeam;
         }
 
-        $team = $this->teams()->where('organization_id', $organization->id)->orderBy('name')->first()
-            ?? $organization->teams()->orderBy('name')->first();
+        $team = $this->teams()->where('organization_id', $organization->id)->orderBy('name')->first();
 
         $this->update(['current_team_id' => $team?->id]);
         $this->setRelation('currentTeam', $team);
@@ -100,6 +99,11 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->belongsToMany(Team::class, 'team_members')
             ->withTimestamps();
+    }
+
+    public function belongsToTeam(Team $team): bool
+    {
+        return $this->teams()->where('teams.id', $team->id)->exists();
     }
 
     /** @return HasMany<Feature, $this> */

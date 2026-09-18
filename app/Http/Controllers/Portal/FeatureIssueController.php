@@ -14,8 +14,6 @@ class FeatureIssueController extends Controller
 {
     public function store(Organization $organization, Project $project, Feature $feature, CreateIssue $createIssue): RedirectResponse
     {
-        abort_if($feature->issue()->exists(), 409, __('This feature has already been converted to an issue.'));
-
         $issue = $createIssue->handle($project, [
             'title' => $feature->title,
             'description' => $feature->description,

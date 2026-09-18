@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Teams;
 
 use App\Enums\IssueStatus;
+use App\Enums\OrganizationCapability;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Teams\DeleteTeamRequest;
 use App\Http\Requests\Teams\TeamRequest;
@@ -38,6 +39,10 @@ class TeamController extends Controller
     {
         return Inertia::render('teams/Edit', [
             'team' => TeamResource::make($team),
+            'modules' => $team->moduleSettings(),
+            'organizationModules' => [
+                'sprints' => $currentOrganization->canUse(OrganizationCapability::Sprints),
+            ],
             'members' => UserContactResource::collection($team->members()->orderBy('name')->get()),
             'availableMembers' => UserContactResource::collection(
                 $currentOrganization->members()->whereKeyNot($team->members()->pluck('users.id'))->orderBy('name')->get()

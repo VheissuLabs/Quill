@@ -195,3 +195,44 @@ test('signed in users outside the organization are not treated as members on pub
             ->where('issue', null),
         );
 });
+
+test('the feature board filters by a search term on the title', function () {
+    $project = Project::factory()->public()->create();
+    Feature::factory()->for($project)->create(['title' => 'Dark mode please']);
+    Feature::factory()->for($project)->create(['title' => 'Unrelated request']);
+
+    $this->get(route('portal.projects.show', [$project->organization, $project, 'q' => 'dark']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.search', 'dark')
+            ->has('features', 1)
+            ->where('features.0.title', 'Dark mode please'));
+});
+
+test('a feature search term narrows within the selected status', function () {
+    $project = Project::factory()->public()->create();
+    Feature::factory()->for($project)->create(['title' => 'Dark mode', 'status' => FeatureStatus::Planned]);
+    Feature::factory()->for($project)->create(['title' => 'Dark theme', 'status' => FeatureStatus::Open]);
+
+    $this->get(route('portal.projects.show', [
+        $project->organization,
+        $project,
+        'q' => 'dark',
+        'status' => FeatureStatus::Planned->value,
+    ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('features', 1)
+            ->where('features.0.title', 'Dark mode'));
+});
+
+test('the status counts ignore the search term so the sidebar stays stable', function () {
+    $project = Project::factory()->public()->create();
+    Feature::factory()->for($project)->count(3)->create(['status' => FeatureStatus::Open]);
+    Feature::factory()->for($project)->create(['title' => 'Dark mode', 'status' => FeatureStatus::Open]);
+
+    $this->get(route('portal.projects.show', [$project->organization, $project, 'q' => 'dark']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('features', 1)
+            ->where('activeCount', 4));
+});

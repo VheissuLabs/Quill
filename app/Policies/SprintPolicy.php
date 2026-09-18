@@ -6,6 +6,7 @@ use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationPermission;
 use App\Models\Organization;
 use App\Models\Sprint;
+use App\Models\Team;
 use App\Models\User;
 
 class SprintPolicy
@@ -18,8 +19,7 @@ class SprintPolicy
 
     public function view(User $user, Sprint $sprint): bool
     {
-        return $sprint->organization()->canUse(OrganizationCapability::Sprints)
-            && $user->belongsToOrganization($sprint->organization());
+        return $this->reachable($user, $sprint);
     }
 
     public function create(User $user, Organization $organization): bool
@@ -30,13 +30,29 @@ class SprintPolicy
 
     public function update(User $user, Sprint $sprint): bool
     {
-        return $sprint->organization()->canUse(OrganizationCapability::Sprints)
+        return $this->reachable($user, $sprint)
             && $user->hasOrganizationPermission($sprint->organization(), OrganizationPermission::ManageSprints);
     }
 
     public function delete(User $user, Sprint $sprint): bool
     {
-        return $sprint->organization()->canUse(OrganizationCapability::Sprints)
+        return $this->reachable($user, $sprint)
             && $user->hasOrganizationPermission($sprint->organization(), OrganizationPermission::ManageSprints);
+    }
+
+    private function reachable(User $user, Sprint $sprint): bool
+    {
+        $organization = $sprint->organization();
+        $owner = $sprint->owner;
+
+        if (! $sprint->runsSprints()) {
+            return false;
+        }
+
+        if ($owner instanceof Team && ! $user->belongsToTeam($owner)) {
+            return $user->hasOrganizationPermission($organization, OrganizationPermission::ManageSprints);
+        }
+
+        return $user->belongsToOrganization($organization);
     }
 }

@@ -4,7 +4,12 @@ arch('models')
     ->expect('App\Models')
     ->toExtend('Illuminate\Database\Eloquent\Model')
     ->toHaveAttribute('Illuminate\Database\Eloquent\Attributes\UseFactory')
-    ->toHaveAttribute('Illuminate\Database\Eloquent\Attributes\ObservedBy');
+    ->toHaveAttribute('Illuminate\Database\Eloquent\Attributes\ObservedBy')
+    ->not->toUse([
+        'abort_if',
+        'abort_unless',
+        'abort',
+    ]);
 
 test('models put side effects in observers rather than declaring boot or booted', function () {
     $offenders = collect(glob(dirname(__DIR__, 2).'/app/Models/*.php'))

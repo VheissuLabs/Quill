@@ -15,6 +15,7 @@ test('sprints can be created by admins for one of the organization teams', funct
     $organization = Organization::factory()->create();
     $organization->addMember($admin, 'Admin');
     $team = Team::factory()->for($organization)->create();
+    $team->members()->attach($admin);
 
     $response = $this
         ->actingAs($admin)
@@ -145,6 +146,7 @@ test('a board column update sets status and order and plans backlog issues into 
     $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $team = Team::factory()->for($organization)->create();
+    $team->members()->attach($member);
     $sprint = Sprint::factory()->for($team, 'owner')->active()->create();
     $inProgress = $team->columns()->where('status', IssueStatus::InProgress)->firstOrFail();
     $planned = Issue::factory()->for($project)->for($sprint)->create(['status' => IssueStatus::Todo]);
@@ -173,6 +175,7 @@ test('board columns reject issues from another organization and columns of anoth
     $organization = Organization::factory()->create();
     $organization->addMember($member, 'Member');
     $team = Team::factory()->for($organization)->create();
+    $team->members()->attach($member);
     $sprint = Sprint::factory()->for($team, 'owner')->active()->create();
     $otherTeamColumn = Team::factory()->for($organization)->create()->columns()->firstOrFail();
     $foreignIssue = Issue::factory()->create();
@@ -195,7 +198,9 @@ test('sprint summaries total the points of their issues', function () {
     $organization = Organization::factory()->create();
     $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
-    $sprint = Sprint::factory()->for(Team::factory()->for($organization), 'owner')->active()->create();
+    $team = Team::factory()->for($organization)->create();
+    $team->members()->attach($member);
+    $sprint = Sprint::factory()->for($team, 'owner')->active()->create();
     Issue::factory()->for($project)->for($sprint)->create(['points' => 3]);
     Issue::factory()->for($project)->for($sprint)->create(['points' => 5]);
     Issue::factory()->for($project)->for($sprint)->create(['points' => null]);

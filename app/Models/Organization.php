@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -401,7 +402,9 @@ class Organization extends Model
             return $this->roles()->where('name', $role)->firstOrFail();
         }
 
-        abort_unless((int) $role->getAttribute(config('permission.column_names.team_foreign_key')) === $this->id, 404);
+        if ((int) $role->getAttribute(config('permission.column_names.team_foreign_key')) !== $this->id) {
+            throw (new ModelNotFoundException)->setModel(Role::class, [$role->getKey()]);
+        }
 
         return $role;
     }

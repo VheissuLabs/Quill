@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Portal;
 
-use App\Actions\Comments\RunCommentCommands;
+use App\Actions\Comments\FeatureCommentCommands;
 use App\Enums\FeatureStatus;
 use App\Enums\VoteDirection;
 use App\Http\Controllers\Controller;
@@ -47,7 +47,7 @@ class FeatureController extends Controller
             'activity' => $viewer['canViewActivity']
                 ? ActivityResource::collection($feature->activitiesAsSubject()->with('causer')->latest('id')->limit(20)->get())
                 : [],
-            'commands' => RunCommentCommands::availableTo($user, $feature),
+            'commands' => app(FeatureCommentCommands::class)->availableTo($user, $feature),
             'mentionableUsers' => $viewer['canComment']
                 ? $feature->mentionableUsers()->map(fn (User $mentionable) => ['id' => $mentionable->id, 'name' => $mentionable->name])->values()
                 : [],

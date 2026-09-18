@@ -2,7 +2,11 @@ import type { LinkedIssue } from './issues';
 import type { ProjectVisibility } from './projects';
 
 export type FeatureStatus =
-    'open' | 'planned' | 'in_progress' | 'completed' | 'declined';
+    | 'open'
+    | 'planned'
+    | 'in_progress'
+    | 'completed'
+    | 'declined';
 
 export type PortalOrganization = {
     name: string;
@@ -67,6 +71,7 @@ export type BoardStatusOption = {
 export type BoardFilters = {
     status: FeatureStatus | null;
     sort: 'top' | 'new';
+    search: string | null;
 };
 
 export type BoardViewer = {

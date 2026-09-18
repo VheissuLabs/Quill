@@ -4,7 +4,10 @@ use App\Http\Controllers\ClearNotificationsController;
 use App\Http\Controllers\Clients\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Issues\CommentController as IssueCommentController;
 use App\Http\Controllers\Issues\IssueController;
+use App\Http\Controllers\Issues\IssueLinkController;
+use App\Http\Controllers\Issues\IssueLookupController;
 use App\Http\Controllers\Issues\IssueOrderController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationReadController;
@@ -16,6 +19,8 @@ use App\Http\Controllers\Organizations\OrganizationLogoController;
 use App\Http\Controllers\Organizations\OrganizationMemberController;
 use App\Http\Controllers\Organizations\OrganizationModuleController;
 use App\Http\Controllers\Organizations\OrganizationRoleController;
+use App\Http\Controllers\Palette\PaletteController;
+use App\Http\Controllers\Palette\PaletteOptionsController;
 use App\Http\Controllers\Portal\CommentController;
 use App\Http\Controllers\Portal\FeatureController;
 use App\Http\Controllers\Portal\FeatureIssueController;
@@ -32,6 +37,7 @@ use App\Http\Controllers\Teams\BoardColumnOrderController;
 use App\Http\Controllers\Teams\CurrentTeamController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Teams\TeamMemberController;
+use App\Http\Controllers\Teams\TeamModuleController;
 use App\Http\Middleware\EnsureOrganizationMembership;
 use App\Http\Middleware\RedirectGuestsFromPrivateProject;
 use App\Http\Middleware\RememberPortalPage;
@@ -75,6 +81,8 @@ Route::prefix('{current_organization}')
     ->scopeBindings()
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+        Route::get('palette', [PaletteController::class, 'index'])->name('palette.search');
+        Route::get('palette/options', [PaletteOptionsController::class, 'index'])->name('palette.options');
 
         Route::resource('projects', ProjectController::class)->except(['create', 'show'])
             ->middlewareFor('index', 'can:viewAny,'.Project::class.',current_organization')
@@ -95,6 +103,7 @@ Route::prefix('{current_organization}')
             ->middlewareFor('destroy', 'can:delete,team');
         Route::get('roles', [OrganizationRoleController::class, 'index'])->can('viewAny', [Role::class, 'current_organization'])->name('roles.index');
         Route::get('roles/{role}', [OrganizationRoleController::class, 'show'])->can('viewAny', [Role::class, 'current_organization'])->name('roles.show');
+        Route::get('issues/lookup', [IssueLookupController::class, 'index'])->can('viewAny', [Issue::class, 'current_organization'])->name('issues.lookup');
         Route::put('issues/order', [IssueOrderController::class, 'update'])->can('viewAny', [Issue::class, 'current_organization'])->name('issues.order.update');
         Route::resource('issues', IssueController::class)->except(['create', 'edit'])
             ->middlewareFor('index', 'can:viewAny,'.Issue::class.',current_organization')
@@ -102,6 +111,11 @@ Route::prefix('{current_organization}')
             ->middlewareFor('show', 'can:view,issue')
             ->middlewareFor('update', 'can:update,issue')
             ->middlewareFor('destroy', 'can:delete,issue');
+        Route::patch('issues/{issue}/links/{link}', [IssueLinkController::class, 'update'])->withoutScopedBindings()->can('update', 'issue')->name('issues.links.update');
+        Route::delete('issues/{issue}/links/{link}', [IssueLinkController::class, 'destroy'])->withoutScopedBindings()->can('update', 'issue')->name('issues.links.destroy');
+        Route::post('issues/{issue}/comments', [IssueCommentController::class, 'store'])->can('comment', 'issue')->name('issues.comments.store');
+        Route::delete('issues/{issue}/comments/{comment}', [IssueCommentController::class, 'destroy'])->can('delete', 'comment')->name('issues.comments.destroy');
+
         Route::resource('sprints', SprintController::class)->except(['create', 'edit'])
             ->middlewareFor('index', 'can:viewAny,'.Sprint::class.',current_organization')
             ->middlewareFor('store', 'can:create,'.Sprint::class.',current_organization')
@@ -113,6 +127,7 @@ Route::prefix('{current_organization}')
         Route::put('sprints/{sprint}/columns/{column}', [SprintColumnController::class, 'update'])->can('view', 'sprint')->name('sprints.columns.update');
 
         Route::post('teams/{team}/switch', [CurrentTeamController::class, 'store'])->name('teams.switch');
+        Route::patch('teams/{team}/modules', [TeamModuleController::class, 'update'])->can('update', 'team')->name('teams.modules.update');
         Route::post('teams/{team}/members', [TeamMemberController::class, 'store'])->can('update', 'team')->name('teams.members.store');
         Route::delete('teams/{team}/members/{member}', [TeamMemberController::class, 'destroy'])->can('update', 'team')->name('teams.members.destroy');
         Route::put('teams/{team}/columns/order', [BoardColumnOrderController::class, 'update'])->can('create', [BoardColumn::class, 'team'])->name('teams.columns.order.update');

@@ -7,6 +7,7 @@ use App\Enums\IssueStatus;
 use App\Models\Feature;
 use App\Models\Issue;
 use App\Models\Project;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 
 class CreateIssue
@@ -14,6 +15,10 @@ class CreateIssue
     /** @param  array<string, mixed>  $attributes */
     public function handle(Project $project, array $attributes, ?Feature $feature = null): Issue
     {
+        if ($feature?->issue()->exists()) {
+            throw new DomainException(__('This feature has already been converted to an issue.'));
+        }
+
         return DB::transaction(function () use ($project, $attributes, $feature): Issue {
             $project = Project::whereKey($project->getKey())->lockForUpdate()->firstOrFail();
 

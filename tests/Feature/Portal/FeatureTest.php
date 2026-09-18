@@ -70,7 +70,7 @@ test('the feature page shows the discussion and the viewer abilities', function 
     $author = User::factory()->create();
     $project = Project::factory()->public()->create();
     $feature = Feature::factory()->for($project)->for($author, 'author')->create();
-    Comment::factory()->for($feature)->create(['body' => 'Great idea']);
+    Comment::factory()->for($feature, 'commentable')->create(['body' => 'Great idea']);
 
     $response = $this
         ->actingAs($author)
@@ -234,7 +234,7 @@ test('comments cannot be deleted by other users', function () {
     $user = User::factory()->create();
     $project = Project::factory()->public()->create();
     $feature = Feature::factory()->for($project)->create();
-    $comment = Comment::factory()->for($feature)->create();
+    $comment = Comment::factory()->for($feature, 'commentable')->create();
 
     $response = $this
         ->actingAs($user)
@@ -246,8 +246,8 @@ test('comments cannot be deleted by other users', function () {
 test('internal comments are only shown to organization members', function () {
     $project = Project::factory()->public()->create();
     $feature = Feature::factory()->for($project)->create();
-    Comment::factory()->for($feature)->create(['body' => 'Public note']);
-    Comment::factory()->for($feature)->internal()->create(['body' => 'Internal note']);
+    Comment::factory()->for($feature, 'commentable')->create(['body' => 'Public note']);
+    Comment::factory()->for($feature, 'commentable')->internal()->create(['body' => 'Internal note']);
     $member = User::factory()->create();
     $project->organization->addMember($member, 'Member');
 
@@ -290,8 +290,8 @@ test('comments can be replied to and replies to internal comments stay internal'
     $feature = Feature::factory()->for($project)->create();
     $member = User::factory()->create();
     $project->organization->addMember($member, 'Member');
-    $public = Comment::factory()->for($feature)->create(['body' => 'Public thread']);
-    $internal = Comment::factory()->for($feature)->internal()->create(['body' => 'Internal thread']);
+    $public = Comment::factory()->for($feature, 'commentable')->create(['body' => 'Public thread']);
+    $internal = Comment::factory()->for($feature, 'commentable')->internal()->create(['body' => 'Internal thread']);
 
     $this->actingAs($member)
         ->post(route('portal.features.comments.store', [$project->organization, $project, $feature]), ['body' => 'Public reply', 'parent_id' => $public->id])
@@ -318,8 +318,8 @@ test('a reply to a reply attaches to the top-level comment', function () {
     $project = Project::factory()->public()->create();
     $feature = Feature::factory()->for($project)->create();
     $user = User::factory()->create();
-    $parent = Comment::factory()->for($feature)->create();
-    $reply = Comment::factory()->for($feature)->replyTo($parent)->create();
+    $parent = Comment::factory()->for($feature, 'commentable')->create();
+    $reply = Comment::factory()->for($feature, 'commentable')->replyTo($parent)->create();
 
     $this->actingAs($user)
         ->post(route('portal.features.comments.store', [$project->organization, $project, $feature]), ['body' => 'Nested', 'parent_id' => $reply->id])

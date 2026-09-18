@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3';
-import { Check, ChevronsUpDown, Plus, Users } from '@lucide/vue';
+import { Building2, Check, ChevronsUpDown, Plus } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import CreateOrganizationModal from '@/components/CreateOrganizationModal.vue';
 import { Button } from '@/components/ui/button';
@@ -79,7 +79,7 @@ onUnmounted(() => {
                         : 'data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground w-full justify-start px-2 has-[>svg]:px-2'
                 "
             >
-                <Users
+                <Building2
                     :class="
                         props.inHeader
                             ? 'hidden'

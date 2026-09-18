@@ -11,16 +11,17 @@ import type { CommentMention, FeatureComment } from '@/types';
 
 type Props = {
     comment: FeatureComment;
-    organization: string;
-    organizationName: string;
-    project: string;
-    featureId: number;
+    action: string;
+    organizationName?: string;
     canComment: boolean;
-    canCommentInternally: boolean;
+    canCommentInternally?: boolean;
     mentionable: CommentMention[];
 };
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+    organizationName: '',
+    canCommentInternally: false,
+});
 
 const emit = defineEmits<{
     delete: [comment: FeatureComment];
@@ -133,10 +134,8 @@ const replying = ref(false);
             </li>
             <li v-if="replying">
                 <CommentForm
-                    :organization="organization"
+                    :action="action"
                     :organization-name="organizationName"
-                    :project="project"
-                    :feature-id="featureId"
                     :mentionable="mentionable"
                     :can-comment-internally="canCommentInternally"
                     :parent-id="comment.id"

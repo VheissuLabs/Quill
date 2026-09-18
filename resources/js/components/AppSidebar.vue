@@ -47,6 +47,14 @@ type NavGroup = {
 const page = usePage();
 
 const organizationSlug = computed(() => page.props.currentOrganization?.slug);
+
+/**
+ * A team can switch sprints off for itself; with no current team the organization's own
+ * board applies and the organization setting is the only one that matters.
+ */
+const teamRunsSprints = computed(
+    () => page.props.currentTeam?.runsSprints ?? true,
+);
 const modules = computed(
     () =>
         page.props.currentOrganization?.modules ?? {
@@ -106,7 +114,8 @@ const navGroups = computed<NavGroup[]>(() => {
                 ? [{ title: 'Issues', href: issues(slug), icon: ListTodo }]
                 : []),
             ...(modules.value.development.enabled &&
-            modules.value.development.capabilities.sprints
+            modules.value.development.capabilities.sprints &&
+            teamRunsSprints.value
                 ? [{ title: 'Sprints', href: sprints(slug), icon: Timer }]
                 : []),
         ];

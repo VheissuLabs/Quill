@@ -42,15 +42,15 @@ class IssueRequest extends FormRequest
                 'project_id' => ['required', 'integer', Rule::exists('projects', 'id')->where('organization_id', $organization->id)],
             ],
             ...$editing ? [
-                'status' => ['sometimes', 'required', 'string', Rule::in([IssueStatus::Backlog->value, IssueStatus::Done->value, IssueStatus::Cancelled->value])],
-                'board_column_id' => ['sometimes', 'required', 'integer', $this->ownedBy($organization, 'board_columns')],
+                'status' => ['sometimes', 'required', 'string', 'prohibits:board_column_id,sprint_id', Rule::in([IssueStatus::Backlog->value, IssueStatus::Done->value, IssueStatus::Cancelled->value])],
+                'board_column_id' => ['sometimes', 'required', 'integer', 'prohibits:status,sprint_id', $this->ownedBy($organization, 'board_columns')],
             ] : [],
             'title' => [...$sent, 'required', 'string', 'max:255'],
             'description' => [...$sent, 'nullable', 'string', 'max:10000'],
             'priority' => [...$sent, 'required', 'string', Rule::enum(IssuePriority::class)],
             'points' => [...$sent, 'nullable', 'integer', 'min:0', 'max:1000'],
             'team_id' => [...$sent, 'nullable', 'integer', Rule::exists('teams', 'id')->where('organization_id', $organization->id)],
-            'sprint_id' => [...$sent, 'nullable', 'integer', $this->ownedBy($organization, 'sprints')],
+            'sprint_id' => [...$sent, 'nullable', 'integer', 'prohibits:status,board_column_id', $this->ownedBy($organization, 'sprints')],
             'assignee_id' => [...$sent, 'nullable', 'integer', Rule::exists('organization_members', 'user_id')->where('organization_id', $organization->id)],
         ];
     }

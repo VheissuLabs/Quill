@@ -20,7 +20,6 @@ class IssueDetailResource extends IssueResource
         return [
             ...parent::toArray($request),
             'description' => $this->description,
-            'teamId' => $this->team_id,
             'sprintId' => $this->sprint_id,
             'assigneeId' => $this->assignee_id,
             'creatorName' => $this->creator?->name,

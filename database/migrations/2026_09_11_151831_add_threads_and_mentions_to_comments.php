@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('comments', function (Blueprint $table) {
-            $table->foreignId('parent_id')->nullable()->after('feature_id')->constrained('comments')->cascadeOnDelete();
+            $table->foreignId('parent_id')->nullable()->after('commentable_id')->constrained('comments')->cascadeOnDelete();
         });
 
         Schema::create('comment_mentions', function (Blueprint $table) {

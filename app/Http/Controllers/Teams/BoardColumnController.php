@@ -43,18 +43,7 @@ class BoardColumnController extends Controller
 
     public function destroy(Organization $currentOrganization, Team $team, BoardColumn $column): RedirectResponse
     {
-        $columns = $team->columns()->get();
-
-        abort_if($columns->count() === 1, 409, __('A board needs at least one column.'));
-
-        $index = $columns->search(fn (BoardColumn $candidate) => $candidate->is($column));
-        $fallback = $columns[$index - 1] ?? $columns[$index + 1];
-
-        DB::transaction(function () use ($column, $fallback) {
-            $column->issues()->each(fn (Issue $issue) => $issue->moveToColumn($fallback));
-
-            $column->delete();
-        });
+        $fallback = $column->deleteAndReassignIssues();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Column removed. Its issues moved to :name.', ['name' => $fallback->name])]);
 

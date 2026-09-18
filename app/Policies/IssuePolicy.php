@@ -22,6 +22,14 @@ class IssuePolicy
             && $user->can('view', $issue->project);
     }
 
+    public function comment(User $user, Issue $issue): bool
+    {
+        $issue->loadMissing('project.organization');
+
+        return $issue->project->organization->canUse(OrganizationCapability::Issues)
+            && $user->can('view', $issue->project);
+    }
+
     public function create(User $user, Organization $organization): bool
     {
         return $organization->canUse(OrganizationCapability::Issues)
@@ -30,12 +38,16 @@ class IssuePolicy
 
     public function update(User $user, Issue $issue): bool
     {
+        $issue->loadMissing('project.organization');
+
         return $issue->project->organization->canUse(OrganizationCapability::Issues)
             && $user->belongsToOrganization($issue->project->organization);
     }
 
     public function delete(User $user, Issue $issue): bool
     {
+        $issue->loadMissing('project.organization');
+
         return $issue->project->organization->canUse(OrganizationCapability::Issues)
             && $user->hasOrganizationPermission($issue->project->organization, OrganizationPermission::ManageIssues);
     }

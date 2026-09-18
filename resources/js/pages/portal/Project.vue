@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { Lightbulb, ListTodo, MessageSquare, Plus } from '@lucide/vue';
-import { computed } from 'vue';
+import { Lightbulb, ListTodo, MessageSquare, Plus, Search } from '@lucide/vue';
+import { useDebounceFn } from '@vueuse/core';
+import { computed, ref, watch } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
 import FeatureStatusBadge from '@/components/FeatureStatusBadge.vue';
 import RequestFeatureModal from '@/components/RequestFeatureModal.vue';
 import VoteButton from '@/components/VoteButton.vue';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { formatDate } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
@@ -49,21 +51,42 @@ defineOptions({
 const page = usePage();
 const isGuest = computed(() => !page.props.auth.user);
 
-const applyFilters = (changes: { status?: string | null; sort?: string }) => {
+const applyFilters = (changes: {
+    status?: string | null;
+    sort?: string;
+    search?: string | null;
+}) => {
     const status =
         changes.status === undefined ? props.filters.status : changes.status;
     const sort = changes.sort ?? props.filters.sort;
+    const term =
+        changes.search === undefined ? props.filters.search : changes.search;
 
     router.visit(
         showBoard([props.organization.slug, props.project.slug], {
             query: {
                 status: status ?? undefined,
                 sort: sort === 'top' ? undefined : sort,
+                q: term ?? undefined,
             },
         }),
         { preserveScroll: true, preserveState: true, replace: true },
     );
 };
+
+const search = ref(props.filters.search ?? '');
+
+const runSearch = useDebounceFn(
+    () => applyFilters({ search: search.value.trim() || null }),
+    250,
+);
+
+watch(
+    () => props.filters.search,
+    (value) => {
+        search.value = value ?? '';
+    },
+);
 
 const activeStatusLabel = computed(
     () =>
@@ -155,6 +178,20 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
                             New
                         </button>
                     </div>
+                    <div class="relative">
+                        <Search
+                            class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
+                        />
+                        <Input
+                            v-model="search"
+                            type="search"
+                            placeholder="Search requests"
+                            class="h-9 w-56 pl-8"
+                            data-test="feature-search"
+                            @input="runSearch"
+                        />
+                    </div>
+
                     <span class="text-muted-foreground text-sm tabular-nums">
                         {{ shownCountLabel }}
                     </span>

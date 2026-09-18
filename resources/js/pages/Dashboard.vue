@@ -223,12 +223,7 @@ const statCards = computed(() => [
                 </div>
 
                 <section class="space-y-4">
-                    <div class="flex items-baseline justify-between gap-4">
-                        <h2 class="font-semibold">Recent requests</h2>
-                        <span class="text-muted-foreground text-sm">
-                            Newest first
-                        </span>
-                    </div>
+                    <h2 class="font-semibold">Recent requests</h2>
                     <ol
                         v-if="recentFeatures.length > 0"
                         class="bg-card divide-y overflow-hidden rounded-xl border shadow-sm"

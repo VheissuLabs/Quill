@@ -14,7 +14,8 @@ class CommentFactory extends Factory
     public function definition(): array
     {
         return [
-            'feature_id' => Feature::factory(),
+            'commentable_id' => Feature::factory(),
+            'commentable_type' => (new Feature)->getMorphClass(),
             'user_id' => User::factory(),
             'body' => fake()->paragraph(),
             'is_internal' => false,
@@ -24,7 +25,8 @@ class CommentFactory extends Factory
     public function replyTo(Comment $parent): static
     {
         return $this->state(fn (array $attributes) => [
-            'feature_id' => $parent->feature_id,
+            'commentable_id' => $parent->commentable_id,
+            'commentable_type' => $parent->commentable_type,
             'parent_id' => $parent->id,
             'is_internal' => $parent->is_internal,
         ]);
