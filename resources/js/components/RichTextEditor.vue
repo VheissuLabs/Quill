@@ -58,8 +58,11 @@ const editor = useEditor({
             class: 'prose prose-sm dark:prose-invert max-w-none min-h-24 px-3 py-2 focus:outline-none',
         },
     },
-    onUpdate: ({ editor }) =>
-        emit('update:modelValue', asValue(editor.getHTML())),
+    onUpdate: ({ editor }) => {
+        emit('update:modelValue', asValue(editor.getHTML()));
+        props.onCaretMove?.();
+    },
+    onSelectionUpdate: () => props.onCaretMove?.(),
 });
 
 watch(

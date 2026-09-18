@@ -519,7 +519,9 @@ const currentSprint = computed(() =>
             </section>
         </div>
 
-        <aside class="space-y-5 lg:sticky lg:top-20 lg:self-start">
+        <aside
+            class="space-y-5 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto lg:pr-1"
+        >
             <dl class="space-y-4 text-sm">
                 <div class="space-y-1.5">
                     <dt

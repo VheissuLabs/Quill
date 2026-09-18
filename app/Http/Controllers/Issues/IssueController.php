@@ -67,8 +67,7 @@ class IssueController extends Controller
             'issue' => IssueDetailResource::make($issue, $user)->resolve(),
             'links' => IssueLinkResource::collection($issue->relatedIssues()),
             'linkTypes' => IssueLinkType::perspectives(),
-            'comments' => $issue->comments()->threadsVisibleTo(true)->get()
-                ->map(fn ($comment) => CommentResource::make($comment, $user)->resolve()),
+            'comments' => Inertia::scroll(fn () => CommentResource::page($issue->comments(), $user, true)),
             'commands' => app(IssueCommentCommands::class)->availableTo($user, $issue),
             'mentionables' => $issue->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]),
             'feedback' => $issue->feedback ? FeedbackResource::make($issue->feedback)->resolve() : null,

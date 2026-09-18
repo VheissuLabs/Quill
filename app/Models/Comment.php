@@ -108,7 +108,7 @@ class Comment extends Model
 
     /** @param  Builder<$this>  $query */
     #[Scope]
-    protected function threadsVisibleTo(Builder $query, bool $isMember): void
+    protected function threadsVisibleTo(Builder $query, bool $isMember, bool $newestFirst = false): void
     {
         $query->topLevel()
             ->with([
@@ -138,7 +138,7 @@ class Comment extends Model
                     ->when(! $isMember, fn ($query) => $query->public()),
             ])
             ->when(! $isMember, fn (Builder $query) => $query->public())
-            ->oldest();
+            ->when($newestFirst, fn (Builder $query) => $query->latest('id'), fn (Builder $query) => $query->oldest('id'));
     }
 
     /** @param  Builder<$this>  $query */

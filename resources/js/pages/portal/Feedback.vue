@@ -337,7 +337,9 @@ const commentCount = computed(() =>
                 </section>
             </div>
 
-            <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
+            <aside
+                class="space-y-6 lg:sticky lg:top-24 lg:max-h-[calc(100vh-8rem)] lg:self-start lg:overflow-y-auto lg:pr-1"
+            >
                 <VotePanel
                     v-if="feedback.acceptsVotes"
                     :organization="organization.slug"
