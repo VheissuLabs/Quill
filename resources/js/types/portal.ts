@@ -75,6 +75,10 @@ export type BoardStatusOption = {
     count: number;
 };
 
+export type CommentPage = {
+    data: FeedbackComment[];
+};
+
 export type BoardTypeOption = {
     value: FeedbackType;
     label: string;

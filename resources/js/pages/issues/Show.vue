@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, InfiniteScroll, Link, router, useForm } from '@inertiajs/vue3';
 import { Check, ChevronDown, ChevronUp, Lightbulb, Trash2 } from '@lucide/vue';
 import { computed, nextTick, ref } from 'vue';
 import ActivityFeed from '@/components/ActivityFeed.vue';
@@ -45,6 +45,7 @@ import { show as showSprint } from '@/routes/sprints';
 import type {
     CommentCommand,
     CommentMention,
+    CommentPage,
     FeedbackComment,
     IssueLink,
     IssueLinkPerspective,
@@ -61,7 +62,7 @@ type Props = IssueFormOptions & {
     issue: IssueDetail;
     links: IssueLink[];
     linkTypes: IssueLinkPerspective[];
-    comments: FeedbackComment[];
+    comments: CommentPage;
     commands: CommentCommand[];
     mentionables: CommentMention[];
     feedback: IssueOriginFeedback | null;
@@ -502,9 +503,15 @@ const currentSprint = computed(() =>
                     :statuses="commandStatuses"
                 />
 
-                <ol v-if="comments.length > 0" class="space-y-6">
+                <InfiniteScroll
+                    v-if="comments.data.length > 0"
+                    data="comments"
+                    as="ol"
+                    class="block space-y-6"
+                    only-next
+                >
                     <CommentThread
-                        v-for="comment in comments"
+                        v-for="comment in comments.data"
                         :key="comment.id"
                         :comment="comment"
                         :action="storeComment(routeArgs).url"
@@ -512,7 +519,7 @@ const currentSprint = computed(() =>
                         :mentionable="mentionables"
                         @delete="commentToDelete = $event"
                     />
-                </ol>
+                </InfiniteScroll>
                 <p v-else class="text-muted-foreground text-sm italic">
                     Nothing here yet. Start the conversation.
                 </p>

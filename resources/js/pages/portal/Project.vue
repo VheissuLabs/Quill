@@ -54,7 +54,13 @@ defineOptions({
 const page = usePage();
 const isGuest = computed(() => !page.props.auth.user);
 
-useLiveFeedback(props.project.id, ['feedback']);
+const refreshBoard = () =>
+    router.reload({ only: ['feedback'], showProgress: false });
+
+useLiveFeedback(props.project.id, {
+    voted: refreshBoard,
+    commented: refreshBoard,
+});
 
 const applyFilters = (changes: {
     status?: string | null;

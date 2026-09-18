@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { Form, Head, Link, router, usePage } from '@inertiajs/vue3';
+import {
+    Form,
+    Head,
+    InfiniteScroll,
+    Link,
+    router,
+    usePage,
+} from '@inertiajs/vue3';
 import { ArrowLeft, ListTodo, Pencil, Trash2 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ActivityFeed from '@/components/ActivityFeed.vue';
@@ -26,7 +33,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { useInitials } from '@/composables/useInitials';
 import { login } from '@/routes';
 import { show as showIssue } from '@/routes/issues';
-import { destroy, update } from '@/routes/portal/feedback';
+import {
+    destroy,
+    show as showFeedback,
+    update,
+} from '@/routes/portal/feedback';
 import {
     destroy as destroyComment,
     store as storeComment,
@@ -41,6 +52,7 @@ import type {
     ActivityEntry,
     CommentCommand,
     CommentMention,
+    CommentPage,
     FeedbackComment,
     FeedbackSummary,
     FeedbackViewer,
@@ -54,7 +66,8 @@ type Props = {
     organization: PortalOrganization;
     project: PortalProject;
     feedback: FeedbackSummary;
-    comments: FeedbackComment[];
+    comments: CommentPage;
+    commentOrder: 'newest' | 'oldest';
     mentionableUsers: CommentMention[];
     commands: CommentCommand[];
     activity: ActivityEntry[];
@@ -65,7 +78,25 @@ type Props = {
 
 const props = defineProps<Props>();
 
-useLiveFeedback(props.project.id, ['feedback', 'comments'], props.feedback.id);
+const arrived = ref(0);
+
+useLiveFeedback(
+    props.project.id,
+    {
+        voted: () => router.reload({ only: ['feedback'], showProgress: false }),
+        commented: () => arrived.value++,
+    },
+    props.feedback.id,
+);
+
+const showArrived = () => {
+    arrived.value = 0;
+    router.reload({
+        only: ['comments'],
+        reset: ['comments'],
+        showProgress: false,
+    });
+};
 
 const currentUser = usePage().props.auth.user;
 
@@ -125,18 +156,20 @@ const changeStatus = (status: string) => {
  * Only the top level flips. A conversation read backwards is nonsense, so replies stay in the
  * order they were written.
  */
-const newestFirst = useLocalStorage('quill.comments.newest-first', false);
+const newestFirst = computed(() => props.commentOrder === 'newest');
 
-const sortedComments = computed(() =>
-    newestFirst.value ? [...props.comments].reverse() : props.comments,
-);
+const reorderComments = () =>
+    router.visit(
+        showFeedback(
+            [props.organization.slug, props.project.slug, props.feedback.id],
+            {
+                query: { comments: newestFirst.value ? undefined : 'newest' },
+            },
+        ),
+        { preserveScroll: true, preserveState: true, replace: true },
+    );
 
-const commentCount = computed(() =>
-    props.comments.reduce(
-        (total, comment) => total + 1 + comment.replies.length,
-        0,
-    ),
-);
+const commentCount = computed(() => props.feedback.commentsCount);
 </script>
 
 <template>
@@ -282,7 +315,7 @@ const commentCount = computed(() =>
                             type="button"
                             data-test="comment-sort"
                             class="text-muted-foreground hover:text-foreground ml-auto cursor-pointer text-xs font-normal"
-                            @click="newestFirst = !newestFirst"
+                            @click="reorderComments"
                         >
                             {{ newestFirst ? 'Newest first' : 'Oldest first' }}
                         </button>
@@ -318,9 +351,26 @@ const commentCount = computed(() =>
                         to join the discussion.
                     </p>
 
-                    <ol v-if="comments.length > 0" class="space-y-6">
+                    <button
+                        v-if="arrived > 0"
+                        type="button"
+                        data-test="new-comments"
+                        class="border-input hover:bg-accent w-full cursor-pointer rounded-md border border-dashed px-3 py-2 text-sm"
+                        @click="showArrived"
+                    >
+                        {{ arrived }}
+                        {{ arrived === 1 ? 'new comment' : 'new comments' }}
+                    </button>
+
+                    <InfiniteScroll
+                        v-if="comments.data.length > 0"
+                        data="comments"
+                        as="ol"
+                        class="block space-y-6"
+                        only-next
+                    >
                         <CommentThread
-                            v-for="comment in sortedComments"
+                            v-for="comment in comments.data"
                             :key="comment.id"
                             :comment="comment"
                             @typing="reportTyping"
@@ -333,7 +383,7 @@ const commentCount = computed(() =>
                             :mentionable="mentionableUsers"
                             @delete="commentToDelete = $event"
                         />
-                    </ol>
+                    </InfiniteScroll>
                 </section>
             </div>
 
