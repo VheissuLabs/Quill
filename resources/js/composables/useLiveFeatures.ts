@@ -10,9 +10,8 @@ type FeaturePayload = { feature: number };
  * feature id. The props are refetched rather than patched, which keeps the counts, the sort
  * order and the viewer's own vote in the server's hands.
  *
- * The refetch preserves component state. Without that the page is torn down and rebuilt on
- * every update: the listener resubscribes, a half-written comment is lost, and what should be
- * a number changing looks like a reload.
+ * Nobody asked for the refetch, so it carries no progress bar. A bar across the top is a reply
+ * to something you did; one that appears on its own reads as the page acting on you.
  *
  * A page showing one feature passes its id and ignores what happens to the rest of the board.
  */
@@ -25,7 +24,10 @@ export function useLiveFeatures(
         return;
     }
 
-    const refresh = useDebounceFn(() => router.reload({ only }), 300);
+    const refresh = useDebounceFn(
+        () => router.reload({ only, showProgress: false }),
+        300,
+    );
 
     useEchoPublic(
         projectChannel(projectId),

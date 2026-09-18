@@ -20,7 +20,11 @@ export function useLiveModules(): void {
     }
 
     const refresh = useDebounceFn(
-        () => router.reload({ only: ['currentOrganization', 'currentTeam'] }),
+        () =>
+            router.reload({
+                only: ['currentOrganization', 'currentTeam'],
+                showProgress: false,
+            }),
         300,
     );
 
