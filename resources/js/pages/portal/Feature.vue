@@ -35,7 +35,7 @@ import { store as convertToIssue } from '@/routes/portal/features/issue';
 import { update as updateStatus } from '@/routes/portal/features/status';
 import { show as showBoard } from '@/routes/portal/projects';
 import { useCommentPresence } from '@/composables/useCommentPresence';
-import { useLiveVotes } from '@/composables/useLiveVotes';
+import { useLiveFeatures } from '@/composables/useLiveFeatures';
 import type {
     ActivityEntry,
     CommentCommand,
@@ -64,7 +64,7 @@ type Props = {
 
 const props = defineProps<Props>();
 
-useLiveVotes(props.project.id, ['feature', 'comments'], props.feature.id);
+useLiveFeatures(props.project.id, ['feature', 'comments'], props.feature.id);
 
 const currentUser = usePage().props.auth.user;
 

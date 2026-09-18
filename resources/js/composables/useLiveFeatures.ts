@@ -3,16 +3,16 @@ import { useEchoPublic } from '@laravel/echo-vue';
 import { useDebounceFn } from '@vueuse/core';
 import { broadcastingEnabled, projectChannel } from '@/lib/broadcasting';
 
-type VotePayload = { feature: number };
+type FeaturePayload = { feature: number };
 
 /**
  * A feature board is readable without an account, so the channel is public and carries only a
  * feature id. The props are refetched rather than patched, which keeps the counts, the sort
  * order and the viewer's own vote in the server's hands.
  *
- * A page showing one feature passes its id and ignores votes cast on the rest of the board.
+ * A page showing one feature passes its id and ignores what happens to the rest of the board.
  */
-export function useLiveVotes(
+export function useLiveFeatures(
     projectId: number,
     only: string[],
     featureId?: number,
@@ -25,8 +25,8 @@ export function useLiveVotes(
 
     useEchoPublic(
         projectChannel(projectId),
-        '.feature.voted',
-        (payload: VotePayload) => {
+        ['.feature.voted', '.feature.commented'],
+        (payload: FeaturePayload) => {
             if (featureId !== undefined && payload.feature !== featureId) {
                 return;
             }
