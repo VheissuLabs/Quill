@@ -78,3 +78,26 @@ test('a comment that is only a command stores nothing', function () {
     expect($feedback->fresh()->status->value)->toBe('declined')
         ->and($feedback->comments()->count())->toBe(0);
 });
+
+test('a command between a list and a quote takes only itself away', function () {
+    $author = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($author, 'Owner');
+    $project = Project::factory()->for($organization)->create(['visibility' => 'public']);
+    $feedback = Feedback::factory()->for($project)->create();
+
+    $this->actingAs($author)
+        ->post(route('portal.feedback.comments.store', [
+            'organization' => $organization, 'project' => $project, 'feedback' => $feedback,
+        ]), [
+            'body' => '<ul><li>first point</li></ul><p>/status planned</p><blockquote><p>a quote</p></blockquote>',
+        ])
+        ->assertRedirect();
+
+    $comment = $feedback->comments()->latest('id')->first();
+
+    expect($feedback->fresh()->status->value)->toBe('planned')
+        ->and($comment->body)->toContain('<li>first point</li>')
+        ->and($comment->body)->toContain('a quote')
+        ->and($comment->body)->not->toContain('/status');
+});
