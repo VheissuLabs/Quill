@@ -17,7 +17,7 @@ withDefaults(
 
 <template>
     <header
-        class="border-sidebar-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-30 flex shrink-0 items-center gap-2 border-b px-6 py-4 backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:py-2.5 md:px-4"
+        class="border-sidebar-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-30 flex shrink-0 items-center gap-2 border-b px-6 py-4 backdrop-blur transition-[width,height] ease-linear md:px-4"
     >
         <div class="flex items-center gap-2">
             <SidebarTrigger class="-ml-1" />
