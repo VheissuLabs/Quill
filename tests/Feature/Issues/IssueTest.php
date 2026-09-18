@@ -455,3 +455,111 @@ test('the issue board exposes the assignee id so the viewer can be highlighted',
             ->where('issues.0.assigneeId', fn ($id) => $id === $member->id || $id === null)
             ->has('issues.0.assigneeId'));
 });
+
+test('a row reports the stage using the teams own column name', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $team = Team::factory()->for($organization)->create();
+    $team->members()->attach($member);
+    $project = Project::factory()->for($organization)->create();
+
+    $column = $team->columns()->where('status', IssueStatus::InProgress)->firstOrFail();
+    $column->update(['name' => 'Cooking']);
+
+    Issue::factory()->for($project)->create([
+        'team_id' => $team->id,
+        'status' => IssueStatus::InProgress,
+        'number' => 1,
+    ]);
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization, 'status' => 'in_progress']))
+        ->assertInertia(fn (Assert $page) => $page->where('issues.0.statusLabel', 'Cooking'));
+});
+
+test('a backlog row keeps its plain label when no column matches', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $team = Team::factory()->for($organization)->create();
+    $team->members()->attach($member);
+    $project = Project::factory()->for($organization)->create();
+
+    Issue::factory()->for($project)->create([
+        'team_id' => $team->id,
+        'status' => IssueStatus::Backlog,
+        'number' => 1,
+    ]);
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization]))
+        ->assertInertia(fn (Assert $page) => $page->where('issues.0.statusLabel', 'Backlog'));
+});
+
+test('the issue page offers the teams columns whether or not it is in a sprint', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $team = Team::factory()->for($organization)->create();
+    $team->members()->attach($member);
+    $project = Project::factory()->for($organization)->create();
+
+    $issue = Issue::factory()->for($project)->create([
+        'team_id' => $team->id,
+        'status' => IssueStatus::Backlog,
+        'number' => 1,
+    ]);
+
+    $this->actingAs($member)
+        ->get(route('issues.show', ['current_organization' => $organization, 'issue' => $issue]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('issue.columns', $team->columns()->count())
+            ->where('issue.sprintId', null));
+});
+
+test('an unplanned issue can be moved straight into a column', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $team = Team::factory()->for($organization)->create();
+    $team->members()->attach($member);
+    $project = Project::factory()->for($organization)->create();
+    $issue = Issue::factory()->for($project)->create(['status' => IssueStatus::Backlog, 'number' => 1]);
+    $column = $team->columns()->where('status', IssueStatus::InProgress)->firstOrFail();
+
+    $this->actingAs($member)
+        ->patch(route('issues.update', ['current_organization' => $organization, 'issue' => $issue]), [
+            'board_column_id' => $column->id,
+        ])
+        ->assertRedirect();
+
+    expect($issue->fresh())
+        ->board_column_id->toBe($column->id)
+        ->status->toBe(IssueStatus::InProgress)
+        ->team_id->toBe($team->id);
+});
+
+test('the issues index offers each row the columns of the board it belongs to', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $project = Project::factory()->for($organization)->create();
+    $team = Team::factory()->for($organization)->create();
+    $team->members()->attach($member);
+    Issue::factory()->for($project)->create(['team_id' => $team->id, 'status' => IssueStatus::Todo]);
+
+    $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('issues/Index')
+            ->where('issues.0.teamId', $team->id)
+            ->where('teams.0.id', $team->id)
+            ->where(
+                'teams.0.columns',
+                fn ($columns) => collect($columns)->pluck('name')->all()
+                    === $team->columns->pluck('name')->all()
+            )
+            ->has('boardColumns', $organization->columns()->count()),
+        );
+});

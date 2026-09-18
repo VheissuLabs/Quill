@@ -32,16 +32,22 @@ class IssueFormResource extends JsonResource
                 ->get()
                 ->map(fn (Project $project) => ['id' => $project->id, 'name' => $project->name, 'slug' => $project->slug]),
             'teams' => $this->teams()
+                ->with('columns')
                 ->orderBy('name')
                 ->get()
-                ->map(fn (Team $team) => ['id' => $team->id, 'name' => $team->name, 'slug' => $team->slug]),
+                ->map(fn (Team $team) => [
+                    'id' => $team->id,
+                    'name' => $team->name,
+                    'slug' => $team->slug,
+                    'columns' => BoardColumnResource::collection($team->columns),
+                ]),
             'sprints' => SprintResource::collection(
                 Sprint::query()->onBoardFor($this->resource, $this->team)
                     ->where('status', '!=', SprintStatus::Completed)
                     ->with([
                         'owner',
                         'issues' => fn ($query) => $query
-                            ->with(['project', 'assignee', 'sprint', 'team', 'boardColumn'])
+                            ->with(['project', 'assignee', 'sprint', 'team.columns', 'boardColumn'])
                             ->orderBy('position')
                             ->orderBy('number'),
                     ])
@@ -56,6 +62,7 @@ class IssueFormResource extends JsonResource
             'sprintsEnabled' => $this->team
                 ? $this->team->canUse(OrganizationCapability::Sprints)
                 : $this->resource->canUse(OrganizationCapability::Sprints),
+            'boardColumns' => BoardColumnResource::collection($this->user->boardOwnerFor($this->resource)->columns),
             'statuses' => IssueStatus::options(),
             'priorities' => IssuePriority::options(),
         ];

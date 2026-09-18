@@ -46,7 +46,7 @@ class SprintController extends Controller
         ])->loadSum('issues', 'points');
 
         $issues = $sprint->issues()
-            ->with(['project', 'assignee', 'team', 'boardColumn'])
+            ->with(['project', 'assignee', 'team.columns', 'boardColumn'])
             ->orderBy('position')
             ->orderBy('number')
             ->get();
