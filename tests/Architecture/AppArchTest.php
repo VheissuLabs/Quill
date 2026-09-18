@@ -46,21 +46,18 @@ function appFilesMatching(string $pattern): array
         new RecursiveDirectoryIterator(dirname(__DIR__, 2).'/app')
     );
 
-    $offenders = [];
-
-    foreach ($files as $file) {
-        if ($file->getExtension() !== 'php') {
-            continue;
-        }
-
-        if (preg_match($pattern, (string) file_get_contents($file->getPathname())) === 1) {
-            $offenders[] = str_replace(
-                dirname(__DIR__, 2).'/', '', $file->getPathname()
-            );
-        }
-    }
-
-    sort($offenders);
-
-    return $offenders;
+    return collect(iterator_to_array($files, false))
+        ->filter(fn (SplFileInfo $file) => $file->getExtension() === 'php')
+        ->filter(fn (SplFileInfo $file) => preg_match(
+            $pattern,
+            (string) file_get_contents($file->getPathname())
+        ) === 1)
+        ->map(fn (SplFileInfo $file) => str_replace(
+            dirname(__DIR__, 2).'/',
+            '',
+            $file->getPathname()
+        ))
+        ->sort()
+        ->values()
+        ->all();
 }
