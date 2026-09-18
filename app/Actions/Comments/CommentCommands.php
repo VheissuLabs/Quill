@@ -46,13 +46,7 @@ abstract class CommentCommands
         ];
     }
 
-    /**
-     * Every paragraph, and everything between them. A command is typed on its own line, which
-     * the editor stores as its own paragraph, so only paragraphs are read as commands and a list
-     * or a quote passes through whatever it happens to contain.
-     *
-     * @return array<int, string>
-     */
+    /** @return array<int, string> */
     protected function blocks(string $body): array
     {
         return preg_split(
