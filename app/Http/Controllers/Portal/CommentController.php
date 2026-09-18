@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Portal;
 
-use App\Actions\Comments\FeatureCommentCommands;
+use App\Actions\Comments\FeedbackCommentCommands;
 use App\Actions\Comments\NotifyAboutComment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Comments\StoreCommentRequest;
 use App\Models\Comment;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
@@ -16,19 +16,19 @@ use Inertia\Inertia;
 
 class CommentController extends Controller
 {
-    public function store(StoreCommentRequest $request, Organization $organization, Project $project, Feature $feature, FeatureCommentCommands $commands, NotifyAboutComment $notify): RedirectResponse
+    public function store(StoreCommentRequest $request, Organization $organization, Project $project, Feedback $feedback, FeedbackCommentCommands $commands, NotifyAboutComment $notify): RedirectResponse
     {
         $parent = $request->filled('parent_id')
-            ? $feature->comments()->whereKey($request->integer('parent_id'))->firstOrFail()
+            ? $feedback->comments()->whereKey($request->integer('parent_id'))->firstOrFail()
             : null;
 
-        $result = $commands->handle($feature, $request->user(), $request->validated('body'));
+        $result = $commands->handle($feedback, $request->user(), $request->validated('body'));
 
         $internal = $request->boolean('internal') || $result['internal'] || ($parent->is_internal ?? false);
 
         if ($result['body'] !== '') {
-            $comment = DB::transaction(function () use ($request, $feature, $parent, $internal, $result) {
-                $comment = $feature->comments()->create([
+            $comment = DB::transaction(function () use ($request, $feedback, $parent, $internal, $result) {
+                $comment = $feedback->comments()->create([
                     'body' => $result['body'],
                     'is_internal' => $internal,
                     'parent_id' => $parent->parent_id ?? $parent?->id,
@@ -50,7 +50,7 @@ class CommentController extends Controller
         return back();
     }
 
-    public function destroy(Organization $organization, Project $project, Feature $feature, Comment $comment): RedirectResponse
+    public function destroy(Organization $organization, Project $project, Feedback $feedback, Comment $comment): RedirectResponse
     {
         $comment->delete();
 

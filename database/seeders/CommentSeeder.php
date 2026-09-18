@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Comment;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
@@ -16,21 +16,21 @@ class CommentSeeder extends Seeder
 {
     public function run(): void
     {
-        Feature::with('project.organization.members')->get()->each(function (Feature $feature) {
+        Feedback::with('project.organization.members')->get()->each(function (Feedback $feedback) {
             if (fake()->boolean(35)) {
                 return;
             }
 
-            $members = $feature->project->organization->members;
+            $members = $feedback->project->organization->members;
 
             Comment::factory()
                 ->count(fake()->numberBetween(1, 3))
-                ->for($feature, 'commentable')
+                ->for($feedback, 'commentable')
                 ->sequence(fn () => [
                     'user_id' => $members->random()->id,
                     'body' => fake()->sentences(fake()->numberBetween(1, 3), true),
                     'is_internal' => fake()->boolean(20),
-                    'created_at' => fake()->dateTimeBetween($feature->created_at, 'now'),
+                    'created_at' => fake()->dateTimeBetween($feedback->created_at, 'now'),
                 ])
                 ->create()
                 ->each(function (Comment $comment) use ($members) {

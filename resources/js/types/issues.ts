@@ -1,4 +1,4 @@
-import type { ActivityEntry, FeatureStatus } from './portal';
+import type { ActivityEntry, FeedbackStatus } from './portal';
 import type { SelectOption } from './projects';
 
 export type IssueStatus =
@@ -38,7 +38,7 @@ export type IssueListItem = {
     teamName: string | null;
     assigneeId: number | null;
     assigneeName: string | null;
-    hasFeature: boolean;
+    hasFeedback: boolean;
     createdAt: string;
 };
 
@@ -117,10 +117,10 @@ export type IssueFormOptions = {
     priorities: SelectOption[];
 };
 
-export type IssueOriginFeature = {
+export type IssueOriginFeedback = {
     id: number;
     title: string;
-    status: FeatureStatus;
+    status: FeedbackStatus;
     statusLabel: string;
     votesCount: number;
     downvotesCount: number;

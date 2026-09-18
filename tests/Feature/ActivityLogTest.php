@@ -1,12 +1,12 @@
 <?php
 
-use App\Enums\FeatureStatus;
+use App\Enums\FeedbackStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Http\Resources\ActivityResource;
 use App\Models\Comment;
 use App\Models\EmailAddress;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
@@ -18,27 +18,27 @@ use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Activitylog\Models\Activity;
 
-test('feature status changes are logged with who made them and shown to members', function () {
+test('feedback status changes are logged with who made them and shown to members', function () {
     $project = Project::factory()->public()->create();
-    $feature = Feature::factory()->for($project)->create(['status' => FeatureStatus::Open]);
+    $feedback = Feedback::factory()->for($project)->create(['status' => FeedbackStatus::Open]);
     $admin = User::factory()->create(['name' => 'Karl Murray']);
     $project->organization->addMember($admin, 'Admin');
 
     $this->actingAs($admin)
-        ->patch(route('portal.features.status.update', [$project->organization, $project, $feature]), ['status' => FeatureStatus::Planned->value])
+        ->patch(route('portal.feedback.status.update', [$project->organization, $project, $feedback]), ['status' => FeedbackStatus::Planned->value])
         ->assertRedirect();
 
-    $activity = $feature->activitiesAsSubject()->latest('id')->first();
+    $activity = $feedback->activitiesAsSubject()->latest('id')->first();
 
     expect($activity)
         ->event->toBe('updated')
-        ->log_name->toBe('features')
+        ->log_name->toBe('feedback')
         ->causer_id->toBe($admin->id);
     expect($activity->attribute_changes['old']['status'])->toBe('open');
     expect($activity->attribute_changes['attributes']['status'])->toBe('planned');
 
     $this->actingAs($admin)
-        ->get(route('portal.features.show', [$project->organization, $project, $feature]))
+        ->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('activity.0.causerName', 'Karl Murray')
             ->where('activity.0.changes.0.field', 'Status')
@@ -48,7 +48,7 @@ test('feature status changes are logged with who made them and shown to members'
 
     auth()->logout();
 
-    $this->get(route('portal.features.show', [$project->organization, $project, $feature]))
+    $this->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
         ->assertInertia(fn (Assert $page) => $page->where('activity', []));
 });
 
@@ -79,13 +79,13 @@ test('planning an issue logs the sprint and status with related names resolved',
 
 test('activity is only shown to people with the view activity permission', function () {
     $project = Project::factory()->public()->create();
-    $feature = Feature::factory()->for($project)->create();
+    $feedback = Feedback::factory()->for($project)->create();
     $member = User::factory()->create();
     $project->organization->addMember($member, 'Member');
-    $feature->update(['status' => FeatureStatus::Planned]);
+    $feedback->update(['status' => FeedbackStatus::Planned]);
 
     $this->actingAs($member)
-        ->get(route('portal.features.show', [$project->organization, $project, $feature]))
+        ->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('viewer.canViewActivity', false)
             ->where('activity', []),

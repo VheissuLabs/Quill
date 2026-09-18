@@ -1,98 +1,98 @@
 <?php
 
 use App\Enums\VoteDirection;
-use App\Events\FeatureCommented;
-use App\Events\FeatureVoted;
-use App\Models\Feature;
+use App\Events\FeedbackCommented;
+use App\Events\FeedbackVoted;
+use App\Models\Feedback;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
 
 test('casting a vote announces it on the project channel', function () {
-    Event::fake([FeatureVoted::class]);
+    Event::fake([FeedbackVoted::class]);
 
     $project = Project::factory()->for(Organization::factory())->create();
-    $feature = Feature::factory()->for($project)->create();
+    $feedback = Feedback::factory()->for($project)->create();
 
-    $feature->castVote(User::factory()->create(), VoteDirection::Up);
+    $feedback->castVote(User::factory()->create(), VoteDirection::Up);
 
     Event::assertDispatched(
-        FeatureVoted::class,
-        fn (FeatureVoted $event) => $event->projectId === $project->id
-            && $event->featureId === $feature->id
+        FeedbackVoted::class,
+        fn (FeedbackVoted $event) => $event->projectId === $project->id
+            && $event->feedbackId === $feedback->id
     );
 });
 
 test('withdrawing a vote announces it too', function () {
     $project = Project::factory()->for(Organization::factory())->create();
-    $feature = Feature::factory()->for($project)->create();
+    $feedback = Feedback::factory()->for($project)->create();
     $voter = User::factory()->create();
-    $feature->castVote($voter, VoteDirection::Up);
+    $feedback->castVote($voter, VoteDirection::Up);
 
-    Event::fake([FeatureVoted::class]);
+    Event::fake([FeedbackVoted::class]);
 
-    $feature->clearVoteFrom($voter);
+    $feedback->clearVoteFrom($voter);
 
-    expect($feature->votes()->where('user_id', $voter->id)->exists())->toBeFalse();
+    expect($feedback->votes()->where('user_id', $voter->id)->exists())->toBeFalse();
 
     Event::assertDispatched(
-        FeatureVoted::class,
-        fn (FeatureVoted $event) => $event->featureId === $feature->id
+        FeedbackVoted::class,
+        fn (FeedbackVoted $event) => $event->feedbackId === $feedback->id
     );
 });
 
 test('the vote announcement rides the public project channel', function () {
-    $event = new FeatureVoted(7, 42);
+    $event = new FeedbackVoted(7, 42);
 
     expect($event->broadcastOn()->name)->toBe('projects.7')
-        ->and($event->broadcastAs())->toBe('feature.voted')
-        ->and($event->broadcastWith())->toBe(['feature' => 42]);
+        ->and($event->broadcastAs())->toBe('feedback.voted')
+        ->and($event->broadcastWith())->toBe(['feedback' => 42]);
 });
 
-test('commenting on a feature announces it on the project channel', function () {
-    Event::fake([FeatureCommented::class]);
+test('commenting on a feedback announces it on the project channel', function () {
+    Event::fake([FeedbackCommented::class]);
 
     $project = Project::factory()->for(Organization::factory())->create();
-    $feature = Feature::factory()->for($project)->create();
+    $feedback = Feedback::factory()->for($project)->create();
 
-    $feature->comments()->create([
+    $feedback->comments()->create([
         'body' => 'Please', 'user_id' => User::factory()->create()->id, 'is_internal' => false,
     ]);
 
     Event::assertDispatched(
-        FeatureCommented::class,
-        fn ($event) => $event->projectId === $project->id && $event->featureId === $feature->id
+        FeedbackCommented::class,
+        fn ($event) => $event->projectId === $project->id && $event->feedbackId === $feedback->id
     );
 });
 
 test('deleting a comment announces it so the count falls', function () {
     $project = Project::factory()->for(Organization::factory())->create();
-    $feature = Feature::factory()->for($project)->create();
-    $comment = $feature->comments()->create([
+    $feedback = Feedback::factory()->for($project)->create();
+    $comment = $feedback->comments()->create([
         'body' => 'Please', 'user_id' => User::factory()->create()->id, 'is_internal' => false,
     ]);
 
-    Event::fake([FeatureCommented::class]);
+    Event::fake([FeedbackCommented::class]);
 
     $comment->delete();
 
-    Event::assertDispatched(FeatureCommented::class);
+    Event::assertDispatched(FeedbackCommented::class);
 });
 
-test('deleting a feature takes its comments quietly', function () {
+test('deleting a feedback takes its comments quietly', function () {
     $project = Project::factory()->for(Organization::factory())->create();
-    $feature = Feature::factory()->for($project)->create();
+    $feedback = Feedback::factory()->for($project)->create();
 
     foreach (range(1, 3) as $index) {
-        $feature->comments()->create([
+        $feedback->comments()->create([
             'body' => "Comment {$index}", 'user_id' => User::factory()->create()->id, 'is_internal' => false,
         ]);
     }
 
-    Event::fake([FeatureCommented::class]);
+    Event::fake([FeedbackCommented::class]);
 
-    $feature->delete();
+    $feedback->delete();
 
-    Event::assertNotDispatched(FeatureCommented::class);
+    Event::assertNotDispatched(FeedbackCommented::class);
 });

@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Features;
+namespace App\Http\Requests\Feedback;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class FeatureRequest extends FormRequest
+class FeedbackRequest extends FormRequest
 {
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array

@@ -13,7 +13,7 @@ class DashboardProjectResource extends ProjectListResource
     {
         return [
             ...parent::toArray($request),
-            'openFeaturesCount' => $this->whenCounted('open_features'),
+            'openFeedbackCount' => $this->whenCounted('open_features'),
         ];
     }
 }

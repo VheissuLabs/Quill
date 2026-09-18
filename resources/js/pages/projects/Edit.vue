@@ -172,7 +172,7 @@ const submit = () => {
                     <p class="text-muted-foreground text-sm">
                         {{
                             form.visibility === 'public'
-                                ? 'Anyone can view the board. Signed in users can request features and vote.'
+                                ? 'Anyone can view the board. Signed in users can request feedback and vote.'
                                 : 'Only members of this organization can view the board.'
                         }}
                     </p>
@@ -253,7 +253,7 @@ const submit = () => {
             <Heading
                 variant="small"
                 title="Delete project"
-                description="Permanently delete this project and every feature request on its board"
+                description="Permanently delete this project and every feedback request on its board"
             />
             <div
                 class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
@@ -284,7 +284,7 @@ const submit = () => {
         :href="destroy([currentOrganization.slug, project.slug])"
     >
         This will permanently delete
-        <strong>{{ project.name }}</strong> and every feature request, vote and
+        <strong>{{ project.name }}</strong> and every feedback request, vote and
         comment on its board.
     </ConfirmDeleteModal>
 </template>

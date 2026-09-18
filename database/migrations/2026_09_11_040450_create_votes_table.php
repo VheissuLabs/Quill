@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::create('votes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('feature_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('feedback_id')->constrained('feedback')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['feature_id', 'user_id']);
+            $table->unique(['feedback_id', 'user_id']);
         });
     }
 

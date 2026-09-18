@@ -11,9 +11,9 @@ class UpdateOrganizationModulesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'feature_voting_enabled' => ['required', 'boolean'],
-            'feature_voting_boards_enabled' => ['required', 'boolean'],
-            'feature_voting_voting_enabled' => ['required', 'boolean'],
+            'feedback_enabled' => ['required', 'boolean'],
+            'feedback_boards_enabled' => ['required', 'boolean'],
+            'feedback_voting_enabled' => ['required', 'boolean'],
             'development_enabled' => ['required', 'boolean'],
             'development_issues_enabled' => ['required', 'boolean'],
             'development_sprints_enabled' => ['required', 'boolean'],

@@ -6,7 +6,7 @@ import ActivityFeed from '@/components/ActivityFeed.vue';
 import CommentForm from '@/components/CommentForm.vue';
 import CommentThread from '@/components/CommentThread.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
-import FeatureStatusBadge from '@/components/FeatureStatusBadge.vue';
+import FeedbackStatusBadge from '@/components/FeedbackStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
@@ -39,19 +39,19 @@ import {
     update as updateLink,
 } from '@/routes/issues/links';
 import { lookup as issueLookup } from '@/routes/issues';
-import { show as showFeature } from '@/routes/portal/features';
+import { show as showFeedback } from '@/routes/portal/feedback';
 import { pointOptions } from '@/lib/points';
 import { show as showSprint } from '@/routes/sprints';
 import type {
     CommentCommand,
     CommentMention,
-    FeatureComment,
+    FeedbackComment,
     IssueLink,
     IssueLinkPerspective,
     ActivityEntry,
     IssueDetail,
     IssueFormOptions,
-    IssueOriginFeature,
+    IssueOriginFeedback,
     Organization,
     OrganizationPermissions,
 } from '@/types';
@@ -61,10 +61,10 @@ type Props = IssueFormOptions & {
     issue: IssueDetail;
     links: IssueLink[];
     linkTypes: IssueLinkPerspective[];
-    comments: FeatureComment[];
+    comments: FeedbackComment[];
     commands: CommentCommand[];
     mentionables: CommentMention[];
-    feature: IssueOriginFeature | null;
+    feedback: IssueOriginFeedback | null;
     activity: ActivityEntry[];
     permissions: OrganizationPermissions;
 };
@@ -92,7 +92,7 @@ defineOptions({
 const none = 'none';
 const editing = ref<'title' | 'description' | null>(null);
 const deleteDialogOpen = ref(false);
-const commentToDelete = ref<FeatureComment | null>(null);
+const commentToDelete = ref<FeedbackComment | null>(null);
 
 const recastLink = (link: IssueLink, perspective: IssueLinkPerspective) => {
     mutate(updateLink([...routeArgs.value, link.id]), {
@@ -426,7 +426,7 @@ const currentSprint = computed(() =>
                 </ul>
             </section>
 
-            <section v-if="feature" class="space-y-5 border-t pt-8">
+            <section v-if="feedback" class="space-y-5 border-t pt-8">
                 <Heading variant="small" title="Context" />
 
                 <div class="rounded-xl border p-5">
@@ -444,22 +444,22 @@ const currentSprint = computed(() =>
                             <div>
                                 <Link
                                     :href="
-                                        showFeature([
+                                        showFeedback([
                                             currentOrganization.slug,
                                             issue.project.slug,
-                                            feature.id,
+                                            feedback.id,
                                         ])
                                     "
                                     class="font-medium hover:underline"
                                 >
-                                    {{ feature.title }}
+                                    {{ feedback.title }}
                                 </Link>
                                 <p class="text-muted-foreground text-sm">
                                     Requested
-                                    <template v-if="feature.authorName">
-                                        by {{ feature.authorName }}
+                                    <template v-if="feedback.authorName">
+                                        by {{ feedback.authorName }}
                                     </template>
-                                    on {{ formatDate(feature.createdAt) }}
+                                    on {{ formatDate(feedback.createdAt) }}
                                 </p>
                             </div>
                         </div>
@@ -468,18 +468,18 @@ const currentSprint = computed(() =>
                                 class="text-muted-foreground inline-flex items-center gap-1 text-sm tabular-nums"
                             >
                                 <ChevronUp class="size-4" />
-                                {{ feature.votesCount }}
+                                {{ feedback.votesCount }}
                             </span>
                             <span
-                                v-if="feature.downvotesCount > 0"
+                                v-if="feedback.downvotesCount > 0"
                                 class="text-destructive inline-flex items-center gap-1 text-sm tabular-nums"
                             >
                                 <ChevronDown class="size-4" />
-                                {{ feature.downvotesCount }}
+                                {{ feedback.downvotesCount }}
                             </span>
-                            <FeatureStatusBadge
-                                :status="feature.status"
-                                :label="feature.statusLabel"
+                            <FeedbackStatusBadge
+                                :status="feedback.status"
+                                :label="feedback.statusLabel"
                             />
                         </div>
                     </div>
@@ -785,6 +785,6 @@ const currentSprint = computed(() =>
         :href="destroy(routeArgs)"
     >
         This permanently deletes <strong>{{ issue.reference }}</strong
-        >. The feature request it came from, if any, is kept.
+        >. The feedback request it came from, if any, is kept.
     </ConfirmDeleteModal>
 </template>

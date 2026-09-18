@@ -3,14 +3,14 @@
 namespace App\Actions\Comments;
 
 use App\Actions\Issues\CreateIssue;
-use App\Enums\FeatureStatus;
+use App\Enums\FeedbackStatus;
 use App\Enums\VoteDirection;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
-class FeatureCommentCommands extends CommentCommands
+class FeedbackCommentCommands extends CommentCommands
 {
     public function __construct(
         private CreateIssue $createIssue
@@ -19,7 +19,7 @@ class FeatureCommentCommands extends CommentCommands
     /** @return array<int, array{name: string, usage: string, description: string}> */
     public function availableTo(?User $user, Model $commentable): array
     {
-        if (! $user || ! $commentable instanceof Feature || ! $user->can('comment', $commentable)) {
+        if (! $user || ! $commentable instanceof Feedback || ! $user->can('comment', $commentable)) {
             return [];
         }
 
@@ -44,7 +44,7 @@ class FeatureCommentCommands extends CommentCommands
     /** @return array{text: ?string, message: ?string, internal: bool} */
     protected function run(Model $commentable, User $user, string $command, string $argument): array
     {
-        if (! $commentable instanceof Feature) {
+        if (! $commentable instanceof Feedback) {
             $this->unknown($command);
         }
 
@@ -71,40 +71,40 @@ class FeatureCommentCommands extends CommentCommands
         ];
     }
 
-    private function voteFor(Feature $feature, User $user): string
+    private function voteFor(Feedback $feedback, User $user): string
     {
-        $this->authorize('vote', $feature, __('You can\'t vote on this request.'));
+        $this->authorize('vote', $feedback, __('You can\'t vote on this request.'));
 
-        $feature->castVote($user, VoteDirection::Up);
+        $feedback->castVote($user, VoteDirection::Up);
 
         return __('Voted for this request.');
     }
 
-    private function voteAgainst(Feature $feature, User $user): string
+    private function voteAgainst(Feedback $feedback, User $user): string
     {
-        $this->authorize('vote', $feature, __('You can\'t vote on this request.'));
+        $this->authorize('vote', $feedback, __('You can\'t vote on this request.'));
 
-        $feature->castVote($user, VoteDirection::Down);
+        $feedback->castVote($user, VoteDirection::Down);
 
         return __('Voted against this request.');
     }
 
-    private function withdrawVote(Feature $feature, User $user): string
+    private function withdrawVote(Feedback $feedback, User $user): string
     {
-        $this->authorize('vote', $feature, __('You can\'t vote on this request.'));
+        $this->authorize('vote', $feedback, __('You can\'t vote on this request.'));
 
-        $feature->votes()->where('user_id', $user->id)->delete();
+        $feedback->votes()->where('user_id', $user->id)->delete();
 
         return __('Vote withdrawn.');
     }
 
-    /** @return array{0: FeatureStatus, 1: string} */
-    private function parseStatus(Feature $feature, string $argument): array
+    /** @return array{0: FeedbackStatus, 1: string} */
+    private function parseStatus(Feedback $feedback, string $argument): array
     {
-        $this->authorize('updateStatus', $feature, __('You can\'t change the status.'));
+        $this->authorize('updateStatus', $feedback, __('You can\'t change the status.'));
 
-        $names = collect(FeatureStatus::cases())
-            ->flatMap(fn (FeatureStatus $status) => [
+        $names = collect(FeedbackStatus::cases())
+            ->flatMap(fn (FeedbackStatus $status) => [
                 $status->value => $status,
                 strtolower($status->label()) => $status,
                 str_replace('_', ' ', $status->value) => $status,
@@ -119,37 +119,37 @@ class FeatureCommentCommands extends CommentCommands
 
         throw ValidationException::withMessages(['body' => __('Unknown status ":status". Use one of: :statuses.', [
             'status' => $argument,
-            'statuses' => collect(FeatureStatus::cases())->map(fn (FeatureStatus $status) => $status->label())->implode(', '),
+            'statuses' => collect(FeedbackStatus::cases())->map(fn (FeedbackStatus $status) => $status->label())->implode(', '),
         ])]);
     }
 
-    private function status(Feature $feature, FeatureStatus $status): string
+    private function status(Feedback $feedback, FeedbackStatus $status): string
     {
-        $feature->update(['status' => $status]);
+        $feedback->update(['status' => $status]);
 
         return __('Status set to :status.', ['status' => $status->label()]);
     }
 
-    private function convert(Feature $feature, User $user): string
+    private function convert(Feedback $feedback, User $user): string
     {
-        $this->authorize('convert', $feature, __('You can\'t convert this request.'));
+        $this->authorize('convert', $feedback, __('You can\'t convert this request.'));
 
-        if ($feature->issue()->exists()) {
+        if ($feedback->issue()->exists()) {
             throw ValidationException::withMessages(['body' => __('This request is already tracked as an issue.')]);
         }
 
-        $issue = $this->createIssue->handle($feature->project, [
-            'title' => $feature->title,
-            'description' => $feature->description,
+        $issue = $this->createIssue->handle($feedback->project, [
+            'title' => $feedback->title,
+            'description' => $feedback->description,
             'created_by' => $user->getKey(),
-        ], $feature);
+        ], $feedback);
 
         return __('Added to the backlog as :reference.', ['reference' => $issue->reference()]);
     }
 
-    private function internal(Feature $feature): bool
+    private function internal(Feedback $feedback): bool
     {
-        $this->authorize('commentInternally', $feature, __('Only organization members can post internal notes.'));
+        $this->authorize('commentInternally', $feedback, __('Only organization members can post internal notes.'));
 
         return true;
     }

@@ -22,10 +22,10 @@ use App\Http\Controllers\Organizations\OrganizationRoleController;
 use App\Http\Controllers\Palette\PaletteController;
 use App\Http\Controllers\Palette\PaletteOptionsController;
 use App\Http\Controllers\Portal\CommentController;
-use App\Http\Controllers\Portal\FeatureController;
-use App\Http\Controllers\Portal\FeatureIssueController;
-use App\Http\Controllers\Portal\FeatureStatusController;
-use App\Http\Controllers\Portal\FeatureVoteController;
+use App\Http\Controllers\Portal\FeedbackController;
+use App\Http\Controllers\Portal\FeedbackIssueController;
+use App\Http\Controllers\Portal\FeedbackStatusController;
+use App\Http\Controllers\Portal\FeedbackVoteController;
 use App\Http\Controllers\Portal\ProjectController as PortalProjectController;
 use App\Http\Controllers\Projects\ProjectController;
 use App\Http\Controllers\ReadAllNotificationsController;
@@ -43,7 +43,7 @@ use App\Http\Middleware\RedirectGuestsFromPrivateProject;
 use App\Http\Middleware\RememberPortalPage;
 use App\Models\BoardColumn;
 use App\Models\Client;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\OrganizationInvitation;
 use App\Models\Project;
@@ -59,20 +59,20 @@ Route::prefix('portal/{organization}/{project}')
     ->name('portal.')
     ->group(function () {
         Route::middleware([RememberPortalPage::class, RedirectGuestsFromPrivateProject::class])->group(function () {
-            Route::get('/', [PortalProjectController::class, 'show'])->can('viewFeatureBoard', 'project')->name('projects.show');
-            Route::get('features/{feature}', [FeatureController::class, 'show'])->can('view', 'feature')->name('features.show');
+            Route::get('/', [PortalProjectController::class, 'show'])->can('viewFeedbackBoard', 'project')->name('projects.show');
+            Route::get('feedback/{feedback}', [FeedbackController::class, 'show'])->can('view', 'feedback')->name('feedback.show');
         });
 
         Route::middleware(['auth', 'verified'])->group(function () {
-            Route::post('features', [FeatureController::class, 'store'])->can('create', [Feature::class, 'project'])->name('features.store');
-            Route::patch('features/{feature}', [FeatureController::class, 'update'])->can('update', 'feature')->name('features.update');
-            Route::delete('features/{feature}', [FeatureController::class, 'destroy'])->can('delete', 'feature')->name('features.destroy');
-            Route::patch('features/{feature}/status', [FeatureStatusController::class, 'update'])->can('updateStatus', 'feature')->name('features.status.update');
-            Route::post('features/{feature}/issue', [FeatureIssueController::class, 'store'])->can('convert', 'feature')->name('features.issue.store');
-            Route::post('features/{feature}/vote', [FeatureVoteController::class, 'store'])->can('vote', 'feature')->name('features.vote.store');
-            Route::delete('features/{feature}/vote', [FeatureVoteController::class, 'destroy'])->can('vote', 'feature')->name('features.vote.destroy');
-            Route::post('features/{feature}/comments', [CommentController::class, 'store'])->can('comment', 'feature')->name('features.comments.store');
-            Route::delete('features/{feature}/comments/{comment}', [CommentController::class, 'destroy'])->can('delete', 'comment')->name('features.comments.destroy');
+            Route::post('feedback', [FeedbackController::class, 'store'])->can('create', [Feedback::class, 'project'])->name('feedback.store');
+            Route::patch('feedback/{feedback}', [FeedbackController::class, 'update'])->can('update', 'feedback')->name('feedback.update');
+            Route::delete('feedback/{feedback}', [FeedbackController::class, 'destroy'])->can('delete', 'feedback')->name('feedback.destroy');
+            Route::patch('feedback/{feedback}/status', [FeedbackStatusController::class, 'update'])->can('updateStatus', 'feedback')->name('feedback.status.update');
+            Route::post('feedback/{feedback}/issue', [FeedbackIssueController::class, 'store'])->can('convert', 'feedback')->name('feedback.issue.store');
+            Route::post('feedback/{feedback}/vote', [FeedbackVoteController::class, 'store'])->can('vote', 'feedback')->name('feedback.vote.store');
+            Route::delete('feedback/{feedback}/vote', [FeedbackVoteController::class, 'destroy'])->can('vote', 'feedback')->name('feedback.vote.destroy');
+            Route::post('feedback/{feedback}/comments', [CommentController::class, 'store'])->can('comment', 'feedback')->name('feedback.comments.store');
+            Route::delete('feedback/{feedback}/comments/{comment}', [CommentController::class, 'destroy'])->can('delete', 'comment')->name('feedback.comments.destroy');
         });
     });
 

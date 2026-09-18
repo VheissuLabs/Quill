@@ -3,13 +3,13 @@
 namespace App\Http\Resources;
 
 use App\Enums\OrganizationPermission;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin Feature */
-class FeatureViewerResource extends JsonResource
+/** @mixin Feedback */
+class FeedbackViewerResource extends JsonResource
 {
     private ?User $viewer = null;
 

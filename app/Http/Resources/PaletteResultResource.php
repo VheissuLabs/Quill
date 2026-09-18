@@ -3,7 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Client;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\Sprint;
@@ -19,7 +19,7 @@ class PaletteResultResource extends JsonResource
     {
         return match (true) {
             $this->resource instanceof Issue => $this->issue($this->resource),
-            $this->resource instanceof Feature => $this->feature($this->resource),
+            $this->resource instanceof Feedback => $this->feedback($this->resource),
             $this->resource instanceof Project => $this->project($this->resource),
             $this->resource instanceof Sprint => $this->sprint($this->resource),
             $this->resource instanceof Team => $this->team($this->resource),
@@ -43,16 +43,16 @@ class PaletteResultResource extends JsonResource
     }
 
     /** @return array{type: string, title: string, subtitle: string|null, url: string} */
-    private function feature(Feature $feature): array
+    private function feedback(Feedback $feedback): array
     {
         return [
-            'type' => 'feature',
-            'title' => $feature->title,
-            'subtitle' => $feature->project->name,
-            'url' => route('portal.features.show', [
-                'organization' => $feature->project->organization,
-                'project' => $feature->project,
-                'feature' => $feature,
+            'type' => 'feedback',
+            'title' => $feedback->title,
+            'subtitle' => $feedback->project->name,
+            'url' => route('portal.feedback.show', [
+                'organization' => $feedback->project->organization,
+                'project' => $feedback->project,
+                'feedback' => $feedback,
             ]),
         ];
     }

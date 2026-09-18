@@ -3,12 +3,12 @@
 namespace App\Http\Resources;
 
 use App\Enums\VoteDirection;
-use App\Models\Feature;
+use App\Models\Feedback;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin Feature */
-class FeatureResource extends JsonResource
+/** @mixin Feedback */
+class FeedbackResource extends JsonResource
 {
     private bool $withIssue = false;
 

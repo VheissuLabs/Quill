@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
-import type { FeatureStatus } from '@/types';
+import type { FeedbackStatus } from '@/types';
 
 defineProps<{
-    status: FeatureStatus;
+    status: FeedbackStatus;
     label: string;
 }>();
 
-const statusClasses: Record<FeatureStatus, string> = {
+const statusClasses: Record<FeedbackStatus, string> = {
     open: 'border-transparent bg-secondary text-secondary-foreground',
     planned:
         'border-transparent bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-200',

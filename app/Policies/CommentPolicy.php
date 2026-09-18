@@ -5,7 +5,7 @@ namespace App\Policies;
 use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationPermission;
 use App\Models\Comment;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\User;
 
@@ -16,12 +16,12 @@ class CommentPolicy
         $comment->loadMissing('commentable.project.organization');
         $commentable = $comment->commentable;
 
-        if (! $commentable instanceof Feature && ! $commentable instanceof Issue) {
+        if (! $commentable instanceof Feedback && ! $commentable instanceof Issue) {
             return false;
         }
 
-        [$capability, $permission] = $commentable instanceof Feature
-            ? [OrganizationCapability::Boards, OrganizationPermission::ManageFeatures]
+        [$capability, $permission] = $commentable instanceof Feedback
+            ? [OrganizationCapability::Boards, OrganizationPermission::ManageFeedback]
             : [OrganizationCapability::Issues, OrganizationPermission::ManageIssues];
 
         $organization = $commentable->project->organization;

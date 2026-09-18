@@ -1,9 +1,9 @@
 <?php
 
-use App\Enums\FeatureStatus;
+use App\Enums\FeedbackStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
@@ -126,13 +126,13 @@ test('issues of another organization cannot be reached through the current organ
         ->assertNotFound();
 });
 
-test('marking a converted issue done completes its feature', function () {
+test('marking a converted issue done completes its feedback', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
     $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
-    $feature = Feature::factory()->for($project)->create(['status' => FeatureStatus::Planned]);
-    $issue = Issue::factory()->for($project)->for($feature)->create(['status' => IssueStatus::InProgress]);
+    $feedback = Feedback::factory()->for($project)->create(['status' => FeedbackStatus::Planned]);
+    $issue = Issue::factory()->for($project)->for($feedback)->create(['status' => IssueStatus::InProgress]);
 
     $this->actingAs($member)
         ->patch(route('issues.update', ['current_organization' => $organization, 'issue' => $issue]), [
@@ -143,17 +143,17 @@ test('marking a converted issue done completes its feature', function () {
     expect($issue->fresh())
         ->status->toBe(IssueStatus::Done)
         ->completed_at->not->toBeNull();
-    expect($feature->fresh()->status)->toBe(FeatureStatus::Completed);
+    expect($feedback->fresh()->status)->toBe(FeedbackStatus::Completed);
 });
 
-test('a converted issue keeps its feature status in step as it moves across the board', function () {
+test('a converted issue keeps its feedback status in step as it moves across the board', function () {
     $organization = Organization::factory()->create();
     $member = User::factory()->create();
     $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create();
     $team = Team::factory()->for($organization)->create();
-    $feature = Feature::factory()->for($project)->create(['status' => FeatureStatus::Planned]);
-    $issue = Issue::factory()->for($project)->for($feature)->create(['team_id' => $team->id]);
+    $feedback = Feedback::factory()->for($project)->create(['status' => FeedbackStatus::Planned]);
+    $issue = Issue::factory()->for($project)->for($feedback)->create(['team_id' => $team->id]);
 
     $moveTo = fn (array $payload) => $this->actingAs($member)
         ->patch(route('issues.update', ['current_organization' => $organization, 'issue' => $issue]), $payload)
@@ -161,13 +161,13 @@ test('a converted issue keeps its feature status in step as it moves across the 
         ->assertSessionHasNoErrors();
 
     $moveTo(['board_column_id' => $team->columns()->where('status', IssueStatus::InProgress)->value('id')]);
-    expect($feature->fresh()->status)->toBe(FeatureStatus::InProgress);
+    expect($feedback->fresh()->status)->toBe(FeedbackStatus::InProgress);
 
     $moveTo(['board_column_id' => $team->columns()->where('status', IssueStatus::Todo)->value('id')]);
-    expect($feature->fresh()->status)->toBe(FeatureStatus::Planned);
+    expect($feedback->fresh()->status)->toBe(FeedbackStatus::Planned);
 
     $moveTo(['status' => IssueStatus::Cancelled->value]);
-    expect($feature->fresh()->status)->toBe(FeatureStatus::Planned);
+    expect($feedback->fresh()->status)->toBe(FeedbackStatus::Planned);
 });
 
 test('the issue page offers only the sprints of the issue team, or of the viewer team for unplanned issues', function () {

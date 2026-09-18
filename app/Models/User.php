@@ -106,10 +106,10 @@ class User extends Authenticatable implements PasskeyUser
         return $this->teams()->where('teams.id', $team->id)->exists();
     }
 
-    /** @return HasMany<Feature, $this> */
-    public function features(): HasMany
+    /** @return HasMany<Feedback, $this> */
+    public function feedback(): HasMany
     {
-        return $this->hasMany(Feature::class);
+        return $this->hasMany(Feedback::class);
     }
 
     /** @return HasMany<Issue, $this> */

@@ -2,12 +2,12 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Feature;
+use App\Models\Feedback;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin Feature */
-class RecentFeatureResource extends JsonResource
+/** @mixin Feedback */
+class RecentFeedbackResource extends JsonResource
 {
     /** @return array<string, mixed> */
     public function toArray(Request $request): array

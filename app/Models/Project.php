@@ -52,10 +52,10 @@ class Project extends Model
             ->withTimestamps();
     }
 
-    /** @return HasMany<Feature, $this> */
-    public function features(): HasMany
+    /** @return HasMany<Feedback, $this> */
+    public function feedback(): HasMany
     {
-        return $this->hasMany(Feature::class);
+        return $this->hasMany(Feedback::class);
     }
 
     /** @return HasMany<Issue, $this> */

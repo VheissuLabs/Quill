@@ -172,14 +172,14 @@ test('project slugs are unique within an organization only', function () {
     expect($elsewhere->slug)->toBe('acme');
 });
 
-test('projects survive feature voting being switched off', function () {
+test('projects survive feedback voting being switched off', function () {
     $manager = User::factory()->create();
     $organization = Organization::factory()->create();
     $organization->addMember($manager, 'Owner');
     $organization->updateModuleSettings([
-        'feature_voting_enabled' => false,
-        'feature_voting_boards_enabled' => false,
-        'feature_voting_voting_enabled' => false,
+        'feedback_enabled' => false,
+        'feedback_boards_enabled' => false,
+        'feedback_voting_enabled' => false,
         'development_enabled' => true,
         'development_issues_enabled' => true,
         'development_sprints_enabled' => true,
@@ -210,12 +210,12 @@ test('projects survive feature voting being switched off', function () {
     expect($project->fresh()->name)->toBe('Renamed');
 });
 
-test('the public feature board still goes away when feature voting is switched off', function () {
+test('the public feedback board still goes away when feedback voting is switched off', function () {
     $organization = Organization::factory()->create();
     $organization->updateModuleSettings([
-        'feature_voting_enabled' => false,
-        'feature_voting_boards_enabled' => false,
-        'feature_voting_voting_enabled' => false,
+        'feedback_enabled' => false,
+        'feedback_boards_enabled' => false,
+        'feedback_voting_enabled' => false,
         'development_enabled' => true,
         'development_issues_enabled' => true,
         'development_sprints_enabled' => true,

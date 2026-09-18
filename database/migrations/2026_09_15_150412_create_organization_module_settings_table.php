@@ -26,7 +26,7 @@ return new class extends Migration
         });
 
         DB::table('organizations')->orderBy('id')->eachById(function (object $organization): void {
-            $featureVotingEnabled = (bool) $organization->feature_voting_enabled;
+            $feedbackEnabled = (bool) $organization->feedback_enabled;
             $issuesEnabled = (bool) $organization->issues_enabled;
             $sprintsEnabled = (bool) $organization->sprints_enabled;
             $now = now();
@@ -34,25 +34,25 @@ return new class extends Migration
             DB::table('organization_module_settings')->insert([
                 [
                     'organization_id' => $organization->id,
-                    'module' => 'feature_voting',
+                    'module' => 'feedback',
                     'capability' => '',
-                    'enabled' => $featureVotingEnabled,
+                    'enabled' => $feedbackEnabled,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ],
                 [
                     'organization_id' => $organization->id,
-                    'module' => 'feature_voting',
+                    'module' => 'feedback',
                     'capability' => 'boards',
-                    'enabled' => $featureVotingEnabled,
+                    'enabled' => $feedbackEnabled,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ],
                 [
                     'organization_id' => $organization->id,
-                    'module' => 'feature_voting',
+                    'module' => 'feedback',
                     'capability' => 'voting',
-                    'enabled' => $featureVotingEnabled,
+                    'enabled' => $feedbackEnabled,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ],
@@ -93,7 +93,7 @@ return new class extends Migration
 
         Schema::table('organizations', function (Blueprint $table) {
             $table->dropColumn([
-                'feature_voting_enabled',
+                'feedback_enabled',
                 'issues_enabled',
                 'sprints_enabled',
             ]);
@@ -103,7 +103,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('organizations', function (Blueprint $table) {
-            $table->boolean('feature_voting_enabled')->default(true);
+            $table->boolean('feedback_enabled')->default(true);
             $table->boolean('issues_enabled')->default(true);
             $table->boolean('sprints_enabled')->default(true);
         });
@@ -122,7 +122,7 @@ return new class extends Migration
             };
 
             DB::table('organizations')->where('id', $organization->id)->update([
-                'feature_voting_enabled' => $enabled('feature_voting:'),
+                'feedback_enabled' => $enabled('feedback:'),
                 'issues_enabled' => $enabled('development:issues'),
                 'sprints_enabled' => $enabled('development:sprints'),
             ]);

@@ -613,7 +613,7 @@ const totalPoints = computed(() =>
                                     class="border-0"
                                     :icon="ListTodo"
                                     title="No issues here"
-                                    description="Nothing matches these filters. Create an issue, or convert a feature request from one of your boards."
+                                    description="Nothing matches these filters. Create an issue, or convert a feedback request from one of your boards."
                                 />
                             </template>
                         </draggable>

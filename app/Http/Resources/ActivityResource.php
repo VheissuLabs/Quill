@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Enums\FeatureStatus;
+use App\Enums\FeedbackStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Enums\ProjectVisibility;
@@ -10,7 +10,7 @@ use App\Enums\SprintStatus;
 use App\Models\BoardColumn;
 use App\Models\Client;
 use App\Models\Comment;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Organization;
 use App\Models\Sprint;
 use App\Models\Team;
@@ -61,7 +61,7 @@ class ActivityResource extends JsonResource
             'organization_id' => 'Organization',
             'user_id' => 'Member',
             'role_id' => 'Role',
-            'feature_id' => 'Feature',
+            'feedback_id' => 'Feedback',
             'parent_id' => 'Reply to',
             'invited_by' => 'Invited by',
             'is_internal' => 'Internal',
@@ -88,7 +88,7 @@ class ActivityResource extends JsonResource
         }
 
         return match ($attribute) {
-            'status' => FeatureStatus::tryFrom((string) $value)?->label()
+            'status' => FeedbackStatus::tryFrom((string) $value)?->label()
                 ?? IssueStatus::tryFrom((string) $value)?->label()
                 ?? SprintStatus::tryFrom((string) $value)?->label()
                 ?? (string) $value,
@@ -101,7 +101,7 @@ class ActivityResource extends JsonResource
             'client_id' => self::nameOf(Client::class, $value, __('a deleted client')),
             'organization_id' => self::nameOf(Organization::class, $value, __('a deleted organization')),
             'user_id' => self::nameOf(User::class, $value, __('a deleted user')),
-            'feature_id' => self::nameOf(Feature::class, $value, __('a deleted request'), 'title'),
+            'feedback_id' => self::nameOf(Feedback::class, $value, __('a deleted request'), 'title'),
             'parent_id' => self::nameOf(Comment::class, $value, __('a deleted comment'), 'body'),
             'invited_by' => self::nameOf(User::class, $value, __('a deleted user')),
             'current_organization_id' => self::nameOf(Organization::class, $value, __('a deleted organization')),

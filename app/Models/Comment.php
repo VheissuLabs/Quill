@@ -61,10 +61,10 @@ class Comment extends Model
                 'current_organization' => $commentable->project->organization,
                 'issue' => $commentable,
             ], absolute: false),
-            $commentable instanceof Feature => route('portal.features.show', [
+            $commentable instanceof Feedback => route('portal.feedback.show', [
                 'organization' => $commentable->project->organization,
                 'project' => $commentable->project,
-                'feature' => $commentable,
+                'feedback' => $commentable,
             ], absolute: false),
             default => throw new RuntimeException('Comment on an unsupported subject.'),
         };
@@ -74,7 +74,7 @@ class Comment extends Model
     {
         $commentable = $this->commentable;
 
-        if ($commentable instanceof Issue || $commentable instanceof Feature) {
+        if ($commentable instanceof Issue || $commentable instanceof Feedback) {
             return $commentable->title;
         }
 
@@ -85,7 +85,7 @@ class Comment extends Model
     {
         $commentable = $this->commentable;
 
-        if ($commentable instanceof Issue || $commentable instanceof Feature) {
+        if ($commentable instanceof Issue || $commentable instanceof Feedback) {
             return $commentable->project->organization;
         }
 
@@ -117,7 +117,7 @@ class Comment extends Model
                 'commentable' => function (Relation $commentable): void {
                     if ($commentable instanceof MorphTo) {
                         $commentable->morphWith([
-                            Feature::class => ['project.organization'],
+                            Feedback::class => ['project.organization'],
                             Issue::class => ['project.organization'],
                         ]);
                     }
@@ -129,7 +129,7 @@ class Comment extends Model
                         'commentable' => function (Relation $commentable): void {
                             if ($commentable instanceof MorphTo) {
                                 $commentable->morphWith([
-                                    Feature::class => ['project.organization'],
+                                    Feedback::class => ['project.organization'],
                                     Issue::class => ['project.organization'],
                                 ]);
                             }

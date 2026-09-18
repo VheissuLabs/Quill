@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Comments;
 
 use App\Models\Comment;
-use App\Models\Feature;
+use App\Models\Feedback;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
@@ -13,9 +13,9 @@ class StoreCommentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $feature = $this->route('feature');
+        $feedback = $this->route('feedback');
 
-        if (! $feature instanceof Feature) {
+        if (! $feedback instanceof Feedback) {
             return true;
         }
 
@@ -25,24 +25,24 @@ class StoreCommentRequest extends FormRequest
             return true;
         }
 
-        return Gate::allows('commentInternally', $feature);
+        return Gate::allows('commentInternally', $feedback);
     }
 
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
-        $feature = $this->route('feature');
+        $feedback = $this->route('feedback');
 
-        abort_if(! $feature instanceof Feature, 404);
+        abort_if(! $feedback instanceof Feedback, 404);
 
         return [
             'body' => ['required', 'string', 'max:5000'],
             'internal' => ['boolean'],
             'parent_id' => ['nullable', 'integer', Rule::exists('comments', 'id')
-                ->where('commentable_type', $feature->getMorphClass())
-                ->where('commentable_id', $feature->getKey())],
+                ->where('commentable_type', $feedback->getMorphClass())
+                ->where('commentable_id', $feedback->getKey())],
             'mentions' => ['array', 'max:20'],
-            'mentions.*' => ['integer', 'distinct', Rule::in($feature->mentionableUsers()->pluck('id'))],
+            'mentions.*' => ['integer', 'distinct', Rule::in($feedback->mentionableUsers()->pluck('id'))],
         ];
     }
 

@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Portal;
 
-use App\Enums\FeatureStatus;
+use App\Enums\FeedbackStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\ProjectBoardRequest;
-use App\Http\Resources\FeatureResource;
+use App\Http\Resources\FeedbackResource;
 use App\Http\Resources\ProjectViewerResource;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
@@ -25,12 +25,12 @@ class ProjectController extends Controller
         $sort = $request->sort();
         $search = $request->search();
 
-        $countsByStatus = $project->features()
+        $countsByStatus = $project->feedback()
             ->selectRaw('status, count(*) as aggregate')
             ->groupBy('status')
             ->pluck('aggregate', 'status');
 
-        $features = $project->features()
+        $feedback = $project->feedback()
             ->with($isMember ? ['author', 'issue.project'] : ['author'])
             ->withVoteSummary($user)
             ->withCount(['comments' => fn ($query) => $query->public()])
@@ -40,7 +40,7 @@ class ProjectController extends Controller
             ->latest()
             ->orderByDesc('id')
             ->get()
-            ->map(fn (Feature $feature) => FeatureResource::make($feature)->withIssue($isMember)->resolve());
+            ->map(fn (Feedback $feedback) => FeedbackResource::make($feedback)->withIssue($isMember)->resolve());
 
         return Inertia::render('portal/Project', [
             'organization' => ['name' => $organization->name, 'slug' => $organization->slug, 'logoUrl' => $organization->logoUrl()],
@@ -51,14 +51,14 @@ class ProjectController extends Controller
                 'description' => $project->description,
                 'visibility' => $project->visibility->value,
             ],
-            'features' => $features,
+            'feedback' => $feedback,
             'filters' => ['status' => $status?->value, 'sort' => $sort, 'search' => $search],
-            'statuses' => collect(FeatureStatus::cases())->map(fn (FeatureStatus $status) => [
+            'statuses' => collect(FeedbackStatus::cases())->map(fn (FeedbackStatus $status) => [
                 'value' => $status->value,
                 'label' => $status->label(),
                 'count' => (int) ($countsByStatus[$status->value] ?? 0),
             ]),
-            'activeCount' => (int) collect(FeatureStatus::active())->sum(fn (FeatureStatus $status) => $countsByStatus[$status->value] ?? 0),
+            'activeCount' => (int) collect(FeedbackStatus::active())->sum(fn (FeedbackStatus $status) => $countsByStatus[$status->value] ?? 0),
             'viewer' => ProjectViewerResource::make($project)->for($user),
         ]);
     }

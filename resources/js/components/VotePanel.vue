@@ -7,13 +7,13 @@ import { login } from '@/routes';
 import {
     destroy as withdrawVote,
     store as castVote,
-} from '@/routes/portal/features/vote';
-import type { FeatureSummary, VoteDirection } from '@/types';
+} from '@/routes/portal/feedback/vote';
+import type { FeedbackSummary, VoteDirection } from '@/types';
 
 type Props = {
     organization: string;
     project: string;
-    feature: FeatureSummary;
+    feedback: FeedbackSummary;
     canVote: boolean;
     isGuest: boolean;
 };
@@ -26,7 +26,7 @@ const choices: {
     direction: VoteDirection;
     label: string;
     icon: typeof ThumbsUp;
-    count: keyof FeatureSummary;
+    count: keyof FeedbackSummary;
     activeClass: string;
 }[] = [
     {
@@ -59,7 +59,7 @@ const people = (count: number) =>
 const others = (count: number) => (count === 1 ? '1 other' : `${count} others`);
 
 const summary = computed(() => {
-    const { votesCount, downvotesCount, vote } = props.feature;
+    const { votesCount, downvotesCount, vote } = props.feedback;
 
     if (votesCount + downvotesCount === 0) {
         return props.isGuest
@@ -92,9 +92,9 @@ const vote = (direction: VoteDirection) => {
     const args: [string, string, number] = [
         props.organization,
         props.project,
-        props.feature.id,
+        props.feedback.id,
     ];
-    const withdrawing = props.feature.vote === direction;
+    const withdrawing = props.feedback.vote === direction;
 
     router.visit(withdrawing ? withdrawVote(args) : castVote(args), {
         data: withdrawing ? {} : { direction },
@@ -121,15 +121,15 @@ const vote = (direction: VoteDirection) => {
                         <component :is="choice.icon" class="size-4" />
                         {{ choice.label }}
                     </span>
-                    <span>{{ feature[choice.count] }}</span>
+                    <span>{{ feedback[choice.count] }}</span>
                 </Link>
                 <button
                     v-else
                     type="button"
                     :data-test="`vote-${choice.direction}-button`"
-                    :aria-pressed="feature.vote === choice.direction"
+                    :aria-pressed="feedback.vote === choice.direction"
                     :aria-label="
-                        feature.vote === choice.direction
+                        feedback.vote === choice.direction
                             ? 'Withdraw your vote'
                             : choice.label
                     "
@@ -137,7 +137,7 @@ const vote = (direction: VoteDirection) => {
                     :class="
                         cn(
                             choiceClass,
-                            feature.vote === choice.direction
+                            feedback.vote === choice.direction
                                 ? choice.activeClass
                                 : inactiveClass,
                         )
@@ -148,7 +148,7 @@ const vote = (direction: VoteDirection) => {
                         <component :is="choice.icon" class="size-4" />
                         {{ choice.label }}
                     </span>
-                    <span>{{ feature[choice.count] }}</span>
+                    <span>{{ feedback[choice.count] }}</span>
                 </button>
             </template>
         </div>

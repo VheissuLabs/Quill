@@ -182,10 +182,10 @@ class Issue extends Model
         return $this->belongsTo(BoardColumn::class);
     }
 
-    /** @return BelongsTo<Feature, $this> */
-    public function feature(): BelongsTo
+    /** @return BelongsTo<Feedback, $this> */
+    public function feedback(): BelongsTo
     {
-        return $this->belongsTo(Feature::class);
+        return $this->belongsTo(Feedback::class);
     }
 
     /** @return BelongsTo<User, $this> */
@@ -287,7 +287,7 @@ class Issue extends Model
 
     public function changeStatus(IssueStatus $status): void
     {
-        $this->loadMissing('feature');
+        $this->loadMissing('feedback');
 
         DB::transaction(function () use ($status) {
             $leavesBoard = in_array($status, [
@@ -303,8 +303,8 @@ class Issue extends Model
                 'completed_at' => $status === IssueStatus::Done ? ($this->completed_at ?? now()) : null,
             ])->save();
 
-            if ($this->feature && ($featureStatus = $status->featureStatus())) {
-                $this->feature->update(['status' => $featureStatus]);
+            if ($this->feedback && ($feedbackStatus = $status->feedbackStatus())) {
+                $this->feedback->update(['status' => $feedbackStatus]);
             }
         });
     }

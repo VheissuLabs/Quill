@@ -1,7 +1,7 @@
 <?php
 
 use App\Events\OrganizationBroadcast;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\User;
@@ -17,10 +17,10 @@ Broadcast::channel(OrganizationBroadcast::CHANNEL_PATTERN, function (User $user,
     return $organization !== null && $user->belongsToOrganization($organization);
 });
 
-Broadcast::channel('features.{feature}', function (User $user, int $feature) {
-    $feature = Feature::with('project')->find($feature);
+Broadcast::channel('feedback.{feedback}', function (User $user, int $feedback) {
+    $feedback = Feedback::with('project')->find($feedback);
 
-    return $feature !== null && $user->can('view', $feature->project)
+    return $feedback !== null && $user->can('view', $feedback->project)
         ? ['id' => $user->getKey(), 'name' => $user->name]
         : null;
 });

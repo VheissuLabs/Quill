@@ -97,9 +97,9 @@ const deleteOrganizationOpen = useLocalStorage(
     false,
 );
 const moduleValues = (modules: Organization['modules']) => ({
-    feature_voting_enabled: modules.featureVoting.enabled,
-    feature_voting_boards_enabled: modules.featureVoting.capabilities.boards,
-    feature_voting_voting_enabled: modules.featureVoting.capabilities.voting,
+    feedback_enabled: modules.feedback.enabled,
+    feedback_boards_enabled: modules.feedback.capabilities.boards,
+    feedback_voting_enabled: modules.feedback.capabilities.voting,
     development_enabled: modules.development.enabled,
     development_issues_enabled: modules.development.capabilities.issues,
     development_sprints_enabled: modules.development.capabilities.sprints,
@@ -165,9 +165,9 @@ const confirmCancelInvitation = (invitation: OrganizationInvitation) => {
 };
 
 type ModuleField =
-    | 'feature_voting_enabled'
-    | 'feature_voting_boards_enabled'
-    | 'feature_voting_voting_enabled'
+    | 'feedback_enabled'
+    | 'feedback_boards_enabled'
+    | 'feedback_voting_enabled'
     | 'development_enabled'
     | 'development_issues_enabled'
     | 'development_sprints_enabled'
@@ -369,7 +369,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                 >
                                     <span class="min-w-0">
                                         <span class="block font-medium">
-                                            Feature voting
+                                            Feedback
                                         </span>
                                         <span
                                             class="text-muted-foreground mt-1 block text-sm"
@@ -379,16 +379,16 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                         </span>
                                     </span>
                                     <Switch
-                                        id="feature-voting-enabled"
-                                        data-test="module-feature-voting"
+                                        id="feedback-voting-enabled"
+                                        data-test="module-feedback-voting"
                                         class="mt-1 shrink-0"
                                         :model-value="
-                                            modulesForm.feature_voting_enabled
+                                            modulesForm.feedback_enabled
                                         "
                                         :disabled="modulesForm.processing"
                                         @update:model-value="
                                             updateModule(
-                                                'feature_voting_enabled',
+                                                'feedback_enabled',
                                                 $event === true,
                                             )
                                         "
@@ -410,19 +410,19 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                             </span>
                                         </span>
                                         <Switch
-                                            id="feature-voting-boards-enabled"
-                                            data-test="module-feature-voting-boards"
+                                            id="feedback-voting-boards-enabled"
+                                            data-test="module-feedback-voting-boards"
                                             class="mt-1 shrink-0"
                                             :model-value="
-                                                modulesForm.feature_voting_boards_enabled
+                                                modulesForm.feedback_boards_enabled
                                             "
                                             :disabled="
                                                 modulesForm.processing ||
-                                                !modulesForm.feature_voting_enabled
+                                                !modulesForm.feedback_enabled
                                             "
                                             @update:model-value="
                                                 updateModule(
-                                                    'feature_voting_boards_enabled',
+                                                    'feedback_boards_enabled',
                                                     $event === true,
                                                 )
                                             "
@@ -442,19 +442,19 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                             </span>
                                         </span>
                                         <Switch
-                                            id="feature-voting-voting-enabled"
-                                            data-test="module-feature-voting-voting"
+                                            id="feedback-voting-voting-enabled"
+                                            data-test="module-feedback-voting-voting"
                                             class="mt-1 shrink-0"
                                             :model-value="
-                                                modulesForm.feature_voting_voting_enabled
+                                                modulesForm.feedback_voting_enabled
                                             "
                                             :disabled="
                                                 modulesForm.processing ||
-                                                !modulesForm.feature_voting_enabled
+                                                !modulesForm.feedback_enabled
                                             "
                                             @update:model-value="
                                                 updateModule(
-                                                    'feature_voting_voting_enabled',
+                                                    'feedback_voting_enabled',
                                                     $event === true,
                                                 )
                                             "

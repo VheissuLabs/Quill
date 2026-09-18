@@ -1,20 +1,20 @@
-import type { FeatureStatus } from './portal';
+import type { FeedbackStatus } from './portal';
 import type { ProjectListItem } from './projects';
 
 export type DashboardProject = ProjectListItem & {
-    openFeaturesCount: number;
+    openFeedbackCount: number;
 };
 
 export type DashboardStats = {
     projectsCount: number;
-    openFeaturesCount: number;
+    openFeedbackCount: number;
     votesCount: number;
 };
 
-export type RecentFeature = {
+export type RecentFeedback = {
     id: number;
     title: string;
-    status: FeatureStatus;
+    status: FeedbackStatus;
     statusLabel: string;
     votesCount: number;
     createdAt: string;

@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Enums\FeatureStatus;
-use App\Models\Feature;
+use App\Enums\FeedbackStatus;
+use App\Models\Feedback;
 use App\Models\Project;
 use Illuminate\Database\Seeder;
 
@@ -12,22 +12,22 @@ use Illuminate\Database\Seeder;
  * Planned, in-progress and completed requests are turned into issues by IssueSeeder, which keeps
  * their status in step with the ticket.
  */
-class FeatureSeeder extends Seeder
+class FeedbackSeeder extends Seeder
 {
     public function run(): void
     {
         Project::with('organization.members')->get()->each(function (Project $project) {
             $authors = $project->organization->members;
 
-            Feature::factory()
+            Feedback::factory()
                 ->count(fake()->numberBetween(8, 16))
                 ->for($project)
                 ->sequence(fn () => [
                     'user_id' => $authors->random()->id,
                     'status' => fake()->randomElement([
-                        FeatureStatus::Open, FeatureStatus::Open, FeatureStatus::Open,
-                        FeatureStatus::Planned, FeatureStatus::InProgress,
-                        FeatureStatus::Completed, FeatureStatus::Declined,
+                        FeedbackStatus::Open, FeedbackStatus::Open, FeedbackStatus::Open,
+                        FeedbackStatus::Planned, FeedbackStatus::InProgress,
+                        FeedbackStatus::Completed, FeedbackStatus::Declined,
                     ]),
                     'title' => rtrim(fake()->sentence(fake()->numberBetween(3, 7)), '.'),
                     'description' => fake()->boolean(85) ? fake()->paragraphs(fake()->numberBetween(1, 2), true) : null,

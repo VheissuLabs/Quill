@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { store } from '@/routes/portal/features';
+import { store } from '@/routes/portal/feedback';
 
 defineProps<{
     organization: string;
@@ -49,7 +49,7 @@ function handleOpenChange(value: boolean) {
                 @success="open = false"
             >
                 <DialogHeader>
-                    <DialogTitle>Request a feature</DialogTitle>
+                    <DialogTitle>Request a feedback</DialogTitle>
                     <DialogDescription>
                         Describe what you need and why. Others can vote for it.
                     </DialogDescription>
@@ -61,8 +61,8 @@ function handleOpenChange(value: boolean) {
                         <Input
                             id="title"
                             name="title"
-                            data-test="feature-title"
-                            placeholder="Short summary of the feature"
+                            data-test="feedback-title"
+                            placeholder="Short summary of the feedback"
                             required
                         />
                         <InputError :message="errors.title" />
@@ -73,7 +73,7 @@ function handleOpenChange(value: boolean) {
                         <Textarea
                             id="description"
                             name="description"
-                            data-test="feature-description"
+                            data-test="feedback-description"
                             placeholder="What problem would this solve for you?"
                         />
                         <InputError :message="errors.description" />
@@ -87,7 +87,7 @@ function handleOpenChange(value: boolean) {
 
                     <Button
                         type="submit"
-                        data-test="feature-submit"
+                        data-test="feedback-submit"
                         :disabled="processing"
                     >
                         Submit request

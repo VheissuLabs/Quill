@@ -16,18 +16,18 @@ test('owners can define a role with permissions and it becomes grantable', funct
         ->actingAs($owner)
         ->post(route('organizations.roles.store', $organization), [
             'name' => 'Product manager',
-            'permissions' => [OrganizationPermission::ManageProjects->value, OrganizationPermission::ManageFeatures->value],
+            'permissions' => [OrganizationPermission::ManageProjects->value, OrganizationPermission::ManageFeedback->value],
         ])
         ->assertRedirect(route('roles.index', ['current_organization' => $organization]));
 
     $role = $organization->role('Product manager');
     expect($role)->not->toBeNull();
-    expect($role->permissions->pluck('name')->sort()->values()->all())->toBe(['feature:manage', 'project:manage']);
+    expect($role->permissions->pluck('name')->sort()->values()->all())->toBe(['feedback:manage', 'project:manage']);
 
     $organization->changeMemberRole($member, $role);
 
     expect($member->fresh()->toOrganizationPermissions($organization))
-        ->toMatchArray(['canManageProjects' => true, 'canManageFeatures' => true, 'canManageIssues' => false]);
+        ->toMatchArray(['canManageProjects' => true, 'canManageFeedback' => true, 'canManageIssues' => false]);
 
     $this
         ->actingAs($owner)

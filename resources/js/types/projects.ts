@@ -13,7 +13,7 @@ export type ProjectListItem = {
     visibility: ProjectVisibility;
     visibilityLabel: string;
     clientName: string | null;
-    featuresCount: number;
+    feedbackCount: number;
 };
 
 export type ProjectSettings = {

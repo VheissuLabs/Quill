@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum FeatureStatus: string
+enum FeedbackStatus: string
 {
     case Open = 'open';
     case Planned = 'planned';

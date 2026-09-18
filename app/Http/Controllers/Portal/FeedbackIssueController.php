@@ -4,21 +4,21 @@ namespace App\Http\Controllers\Portal;
 
 use App\Actions\Issues\CreateIssue;
 use App\Http\Controllers\Controller;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
-class FeatureIssueController extends Controller
+class FeedbackIssueController extends Controller
 {
-    public function store(Organization $organization, Project $project, Feature $feature, CreateIssue $createIssue): RedirectResponse
+    public function store(Organization $organization, Project $project, Feedback $feedback, CreateIssue $createIssue): RedirectResponse
     {
         $issue = $createIssue->handle($project, [
-            'title' => $feature->title,
-            'description' => $feature->description,
+            'title' => $feedback->title,
+            'description' => $feedback->description,
             'created_by' => auth()->user()->getKey(),
-        ], $feature);
+        ], $feedback);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Added to the backlog as :reference.', ['reference' => $issue->reference()])]);
 

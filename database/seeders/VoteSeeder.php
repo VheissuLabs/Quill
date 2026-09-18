@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\VoteDirection;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -17,13 +17,13 @@ class VoteSeeder extends Seeder
     {
         $users = User::all();
 
-        Feature::with('author')->get()->each(function (Feature $feature) use ($users) {
-            if ($feature->author) {
-                $feature->castVote($feature->author, VoteDirection::Up);
+        Feedback::with('author')->get()->each(function (Feedback $feedback) use ($users) {
+            if ($feedback->author) {
+                $feedback->castVote($feedback->author, VoteDirection::Up);
             }
 
             $users->random(fake()->numberBetween(0, 8))->each(
-                fn (User $voter) => $feature->castVote($voter, fake()->boolean(20) ? VoteDirection::Down : VoteDirection::Up),
+                fn (User $voter) => $feedback->castVote($voter, fake()->boolean(20) ? VoteDirection::Down : VoteDirection::Up),
             );
         });
     }

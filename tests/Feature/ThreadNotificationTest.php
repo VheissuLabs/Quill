@@ -1,7 +1,7 @@
 <?php
 
 use App\Actions\Comments\PresentViewers;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
@@ -78,19 +78,19 @@ test('an internal reply stays away from people outside the organization', functi
 
     $organization = Organization::factory()->create();
     $project = Project::factory()->for($organization)->create();
-    $feature = Feature::factory()->for($project)->create();
+    $feedback = Feedback::factory()->for($project)->create();
 
     $outsider = User::factory()->create();
     $member = User::factory()->create();
     $organization->addMember($member, 'Member');
 
-    $root = $feature->comments()->create([
+    $root = $feedback->comments()->create([
         'body' => 'Customer question', 'user_id' => $outsider->id, 'is_internal' => false,
     ]);
 
     $this->actingAs($member)
-        ->post(route('portal.features.comments.store', [
-            'organization' => $organization, 'project' => $project, 'feature' => $feature,
+        ->post(route('portal.feedback.comments.store', [
+            'organization' => $organization, 'project' => $project, 'feedback' => $feedback,
         ]), ['body' => 'Internal note', 'parent_id' => $root->id, 'internal' => true])
         ->assertRedirect();
 

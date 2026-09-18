@@ -3,7 +3,7 @@
 namespace App\Actions\Comments;
 
 use App\Models\Comment;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use Illuminate\Broadcasting\Broadcasters\PusherBroadcaster;
 use Illuminate\Support\Facades\Broadcast;
@@ -58,7 +58,7 @@ class PresentViewers
     private function channelFor(Comment $comment): ?string
     {
         return match ($comment->commentable_type) {
-            (new Feature)->getMorphClass() => 'presence-features.'.$comment->commentable_id,
+            (new Feedback)->getMorphClass() => 'presence-feedback.'.$comment->commentable_id,
             (new Issue)->getMorphClass() => 'presence-issues.'.$comment->commentable_id,
             default => null,
         };

@@ -2,14 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Enums\FeatureStatus;
-use App\Models\Feature;
+use App\Enums\FeedbackStatus;
+use App\Models\Feedback;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/** @extends Factory<Feature> */
-class FeatureFactory extends Factory
+/** @extends Factory<Feedback> */
+class FeedbackFactory extends Factory
 {
     /** @return array<string, mixed> */
     public function definition(): array
@@ -19,7 +19,7 @@ class FeatureFactory extends Factory
             'user_id' => User::factory(),
             'title' => fake()->sentence(4),
             'description' => fake()->paragraph(),
-            'status' => FeatureStatus::Open,
+            'status' => FeedbackStatus::Open,
         ];
     }
 }

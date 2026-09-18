@@ -4,8 +4,8 @@ import { Lightbulb, ListTodo, MessageSquare, Plus, Search } from '@lucide/vue';
 import { useDebounceFn } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
-import FeatureStatusBadge from '@/components/FeatureStatusBadge.vue';
-import RequestFeatureModal from '@/components/RequestFeatureModal.vue';
+import FeedbackStatusBadge from '@/components/FeedbackStatusBadge.vue';
+import SubmitFeedbackModal from '@/components/SubmitFeedbackModal.vue';
 import VoteButton from '@/components/VoteButton.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,14 +13,14 @@ import { formatDate } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import { show as showIssue } from '@/routes/issues';
-import { show as showFeature } from '@/routes/portal/features';
+import { show as showFeedback } from '@/routes/portal/feedback';
 import { show as showBoard } from '@/routes/portal/projects';
-import { useLiveFeatures } from '@/composables/useLiveFeatures';
+import { useLiveFeedback } from '@/composables/useLiveFeedback';
 import type {
     BoardFilters,
     BoardStatusOption,
     BoardViewer,
-    FeatureSummary,
+    FeedbackSummary,
     PortalOrganization,
     PortalProject,
 } from '@/types';
@@ -28,7 +28,7 @@ import type {
 type Props = {
     organization: PortalOrganization;
     project: PortalProject;
-    features: FeatureSummary[];
+    feedback: FeedbackSummary[];
     filters: BoardFilters;
     statuses: BoardStatusOption[];
     activeCount: number;
@@ -52,7 +52,7 @@ defineOptions({
 const page = usePage();
 const isGuest = computed(() => !page.props.auth.user);
 
-useLiveFeatures(props.project.id, ['features']);
+useLiveFeedback(props.project.id, ['feedback']);
 
 const applyFilters = (changes: {
     status?: string | null;
@@ -98,7 +98,7 @@ const activeStatusLabel = computed(
 );
 
 const shownCountLabel = computed(() => {
-    const count = props.features.length;
+    const count = props.feedback.length;
     const noun = count === 1 ? 'request' : 'requests';
 
     return activeStatusLabel.value
@@ -114,7 +114,7 @@ const sortButtonClass = (sort: BoardFilters['sort']) =>
             : 'text-muted-foreground hover:text-foreground',
     );
 
-const statusRowClass = (status: FeatureSummary['status'] | null) =>
+const statusRowClass = (status: FeedbackSummary['status'] | null) =>
     cn(
         'flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-sm transition-colors',
         props.filters.status === status
@@ -124,7 +124,7 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
 </script>
 
 <template>
-    <Head :title="`${project.name} feature requests`" />
+    <Head :title="`${project.name} feedback requests`" />
 
     <div class="space-y-10">
         <section
@@ -142,17 +142,17 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
                 </p>
             </div>
 
-            <RequestFeatureModal
-                v-if="viewer.canCreateFeature"
+            <SubmitFeedbackModal
+                v-if="viewer.canCreateFeedback"
                 :organization="organization.slug"
                 :project="project.slug"
             >
-                <Button size="lg" data-test="request-feature-button">
-                    <Plus /> Request a feature
+                <Button size="lg" data-test="request-feedback-button">
+                    <Plus /> Request a feedback
                 </Button>
-            </RequestFeatureModal>
+            </SubmitFeedbackModal>
             <Button v-else-if="isGuest" size="lg" as-child>
-                <Link :href="login()"> Log in to request a feature </Link>
+                <Link :href="login()"> Log in to request a feedback </Link>
             </Button>
         </section>
 
@@ -190,7 +190,7 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
                             type="search"
                             placeholder="Search requests"
                             class="h-9 w-56 pl-8"
-                            data-test="feature-search"
+                            data-test="feedback-search"
                             @input="runSearch"
                         />
                     </div>
@@ -200,19 +200,19 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
                     </span>
                 </div>
 
-                <div v-if="features.length > 0" class="space-y-3">
+                <div v-if="feedback.length > 0" class="space-y-3">
                     <article
-                        v-for="feature in features"
-                        :key="feature.id"
-                        data-test="feature-row"
+                        v-for="feedback in feedback"
+                        :key="feedback.id"
+                        data-test="feedback-row"
                         class="bg-card hover:border-foreground/20 flex gap-4 rounded-xl border p-4 transition-colors sm:p-5"
                     >
                         <VoteButton
-                            v-if="feature.acceptsVotes"
+                            v-if="feedback.acceptsVotes"
                             :organization="organization.slug"
                             :project="project.slug"
-                            :feature="feature"
-                            :can-vote="viewer.canCreateFeature"
+                            :feedback="feedback"
+                            :can-vote="viewer.canCreateFeedback"
                             :is-guest="isGuest"
                         />
 
@@ -222,66 +222,68 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
                             >
                                 <Link
                                     :href="
-                                        showFeature([
+                                        showFeedback([
                                             organization.slug,
                                             project.slug,
-                                            feature.id,
+                                            feedback.id,
                                         ])
                                     "
                                     class="text-base font-medium hover:underline"
                                 >
-                                    {{ feature.title }}
+                                    {{ feedback.title }}
                                 </Link>
-                                <FeatureStatusBadge
-                                    v-if="feature.status !== 'open'"
-                                    :status="feature.status"
-                                    :label="feature.statusLabel"
+                                <FeedbackStatusBadge
+                                    v-if="feedback.status !== 'open'"
+                                    :status="feedback.status"
+                                    :label="feedback.statusLabel"
                                 />
                             </div>
                             <p
-                                v-if="feature.description"
+                                v-if="feedback.description"
                                 class="text-muted-foreground line-clamp-2 text-sm leading-relaxed"
                             >
-                                {{ feature.description }}
+                                {{ feedback.description }}
                             </p>
                             <div
                                 class="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
                             >
-                                <span v-if="feature.authorName">
-                                    {{ feature.authorName }}
+                                <span v-if="feedback.authorName">
+                                    {{ feedback.authorName }}
                                 </span>
-                                <span>{{ formatDate(feature.createdAt) }}</span>
+                                <span>{{
+                                    formatDate(feedback.createdAt)
+                                }}</span>
                                 <Link
                                     :href="
-                                        showFeature([
+                                        showFeedback([
                                             organization.slug,
                                             project.slug,
-                                            feature.id,
+                                            feedback.id,
                                         ])
                                     "
                                     class="hover:text-foreground inline-flex items-center gap-1"
                                 >
                                     <MessageSquare class="size-3.5" />
-                                    {{ feature.commentsCount }}
+                                    {{ feedback.commentsCount }}
                                     {{
-                                        feature.commentsCount === 1
+                                        feedback.commentsCount === 1
                                             ? 'comment'
                                             : 'comments'
                                     }}
                                 </Link>
                                 <Link
-                                    v-if="feature.issue"
+                                    v-if="feedback.issue"
                                     :href="
                                         showIssue([
                                             organization.slug,
-                                            feature.issue.id,
+                                            feedback.issue.id,
                                         ])
                                     "
                                     class="hover:text-foreground inline-flex items-center gap-1"
                                     data-test="tracked-issue-link"
                                 >
                                     <ListTodo class="size-3.5" />
-                                    Tracked as {{ feature.issue.reference }}
+                                    Tracked as {{ feedback.issue.reference }}
                                 </Link>
                             </div>
                         </div>
@@ -305,24 +307,24 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
                 <EmptyState
                     v-else
                     :icon="Lightbulb"
-                    title="No feature requests yet"
+                    title="No feedback requests yet"
                     :description="
-                        viewer.canCreateFeature
+                        viewer.canCreateFeedback
                             ? 'Be the first to ask for something. Others can vote on it.'
                             : isGuest
-                              ? 'Log in to request a feature and vote on what gets built next.'
+                              ? 'Log in to request a feedback and vote on what gets built next.'
                               : 'Requests will show up here once people start asking.'
                     "
                 >
-                    <RequestFeatureModal
-                        v-if="viewer.canCreateFeature"
+                    <SubmitFeedbackModal
+                        v-if="viewer.canCreateFeedback"
                         :organization="organization.slug"
                         :project="project.slug"
                     >
                         <Button variant="outline">
-                            <Plus /> Request a feature
+                            <Plus /> Request a feedback
                         </Button>
-                    </RequestFeatureModal>
+                    </SubmitFeedbackModal>
                     <Button v-else-if="isGuest" variant="outline" as-child>
                         <Link :href="login()">Log in</Link>
                     </Button>
@@ -367,7 +369,7 @@ const statusRowClass = (status: FeatureSummary['status'] | null) =>
                     <ol
                         class="text-muted-foreground space-y-2 text-sm leading-relaxed"
                     >
-                        <li>Request a feature or find one that matches.</li>
+                        <li>Request a feedback or find one that matches.</li>
                         <li>Vote for the requests you want most.</li>
                         <li>
                             Follow the status as {{ organization.name }} plans,

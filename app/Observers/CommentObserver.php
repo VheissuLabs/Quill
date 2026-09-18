@@ -2,9 +2,9 @@
 
 namespace App\Observers;
 
-use App\Events\FeatureCommented;
+use App\Events\FeedbackCommented;
 use App\Models\Comment;
-use App\Models\Feature;
+use App\Models\Feedback;
 
 class CommentObserver
 {
@@ -54,14 +54,14 @@ class CommentObserver
      */
     private function announce(Comment $comment): void
     {
-        if ($comment->commentable_type !== (new Feature)->getMorphClass()) {
+        if ($comment->commentable_type !== (new Feedback)->getMorphClass()) {
             return;
         }
 
-        $projectId = Feature::query()->whereKey($comment->commentable_id)->value('project_id');
+        $projectId = Feedback::query()->whereKey($comment->commentable_id)->value('project_id');
 
         if ($projectId !== null) {
-            broadcast(new FeatureCommented((int) $projectId, (int) $comment->commentable_id))->toOthers();
+            broadcast(new FeedbackCommented((int) $projectId, (int) $comment->commentable_id))->toOthers();
         }
     }
 }

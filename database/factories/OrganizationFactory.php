@@ -31,7 +31,7 @@ class OrganizationFactory extends Factory
                 OrganizationPermission::ManageTeams->value,
                 OrganizationPermission::ManageClients->value,
                 OrganizationPermission::ManageProjects->value,
-                OrganizationPermission::ManageFeatures->value,
+                OrganizationPermission::ManageFeedback->value,
                 OrganizationPermission::ManageIssues->value,
                 OrganizationPermission::ManageSprints->value,
                 OrganizationPermission::ViewActivity->value,

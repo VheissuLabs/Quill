@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('organizations', function (Blueprint $table) {
-            $table->boolean('feature_voting_enabled')->default(true);
+            $table->boolean('feedback_enabled')->default(true);
             $table->boolean('issues_enabled')->default(true);
             $table->boolean('sprints_enabled')->default(true);
         });
@@ -19,7 +19,7 @@ return new class extends Migration
     {
         Schema::table('organizations', function (Blueprint $table) {
             $table->dropColumn([
-                'feature_voting_enabled',
+                'feedback_enabled',
                 'issues_enabled',
                 'sprints_enabled',
             ]);

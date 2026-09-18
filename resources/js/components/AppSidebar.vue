@@ -61,7 +61,7 @@ const teamRunsSprints = computed(
 const modules = computed(
     () =>
         page.props.currentOrganization?.modules ?? {
-            featureVoting: {
+            feedback: {
                 enabled: true,
                 capabilities: { boards: true, voting: true },
             },

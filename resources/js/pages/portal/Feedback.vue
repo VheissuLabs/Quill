@@ -7,7 +7,7 @@ import CommentForm from '@/components/CommentForm.vue';
 import CommentThread from '@/components/CommentThread.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
-import FeatureStatusBadge from '@/components/FeatureStatusBadge.vue';
+import FeedbackStatusBadge from '@/components/FeedbackStatusBadge.vue';
 import InputError from '@/components/InputError.vue';
 import VotePanel from '@/components/VotePanel.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -26,24 +26,24 @@ import { Textarea } from '@/components/ui/textarea';
 import { useInitials } from '@/composables/useInitials';
 import { login } from '@/routes';
 import { show as showIssue } from '@/routes/issues';
-import { destroy, update } from '@/routes/portal/features';
+import { destroy, update } from '@/routes/portal/feedback';
 import {
     destroy as destroyComment,
     store as storeComment,
-} from '@/routes/portal/features/comments';
-import { store as convertToIssue } from '@/routes/portal/features/issue';
-import { update as updateStatus } from '@/routes/portal/features/status';
+} from '@/routes/portal/feedback/comments';
+import { store as convertToIssue } from '@/routes/portal/feedback/issue';
+import { update as updateStatus } from '@/routes/portal/feedback/status';
 import { show as showBoard } from '@/routes/portal/projects';
 import { useLocalStorage } from '@vueuse/core';
 import { useCommentPresence } from '@/composables/useCommentPresence';
-import { useLiveFeatures } from '@/composables/useLiveFeatures';
+import { useLiveFeedback } from '@/composables/useLiveFeedback';
 import type {
     ActivityEntry,
     CommentCommand,
     CommentMention,
-    FeatureComment,
-    FeatureSummary,
-    FeatureViewer,
+    FeedbackComment,
+    FeedbackSummary,
+    FeedbackViewer,
     LinkedIssue,
     PortalOrganization,
     PortalProject,
@@ -53,24 +53,24 @@ import type {
 type Props = {
     organization: PortalOrganization;
     project: PortalProject;
-    feature: FeatureSummary;
-    comments: FeatureComment[];
+    feedback: FeedbackSummary;
+    comments: FeedbackComment[];
     mentionableUsers: CommentMention[];
     commands: CommentCommand[];
     activity: ActivityEntry[];
     issue: LinkedIssue | null;
     statuses: SelectOption[];
-    viewer: FeatureViewer;
+    viewer: FeedbackViewer;
 };
 
 const props = defineProps<Props>();
 
-useLiveFeatures(props.project.id, ['feature', 'comments'], props.feature.id);
+useLiveFeedback(props.project.id, ['feedback', 'comments'], props.feedback.id);
 
 const currentUser = usePage().props.auth.user;
 
 const { typingLabel, reportTyping } = useCommentPresence(
-    `features.${props.feature.id}`,
+    `feedback.${props.feedback.id}`,
     currentUser ? { id: currentUser.id, name: currentUser.name } : null,
 );
 
@@ -78,7 +78,7 @@ defineOptions({
     layout: (props: {
         organization: PortalOrganization;
         project: PortalProject;
-        viewer: FeatureViewer;
+        viewer: FeedbackViewer;
     }) => ({
         organization: props.organization,
         project: props.project,
@@ -93,12 +93,12 @@ const { getInitials } = useInitials();
 const routeArgs = computed((): [string, string, number] => [
     props.organization.slug,
     props.project.slug,
-    props.feature.id,
+    props.feedback.id,
 ]);
 
 const editing = ref(false);
 const deleteDialogOpen = ref(false);
-const commentToDelete = ref<FeatureComment | null>(null);
+const commentToDelete = ref<FeedbackComment | null>(null);
 const converting = ref(false);
 
 const convert = () => {
@@ -134,7 +134,7 @@ const commentCount = computed(() =>
 </script>
 
 <template>
-    <Head :title="feature.title" />
+    <Head :title="feedback.title" />
 
     <div class="space-y-8">
         <Link
@@ -159,8 +159,8 @@ const commentCount = computed(() =>
                             <Input
                                 id="title"
                                 name="title"
-                                data-test="edit-feature-title"
-                                :default-value="feature.title"
+                                data-test="edit-feedback-title"
+                                :default-value="feedback.title"
                                 required
                             />
                             <InputError :message="errors.title" />
@@ -170,8 +170,8 @@ const commentCount = computed(() =>
                             <Textarea
                                 id="description"
                                 name="description"
-                                data-test="edit-feature-description"
-                                :default-value="feature.description ?? ''"
+                                data-test="edit-feedback-description"
+                                :default-value="feedback.description ?? ''"
                                 class="min-h-32"
                             />
                             <InputError :message="errors.description" />
@@ -179,7 +179,7 @@ const commentCount = computed(() =>
                         <div class="flex gap-2">
                             <Button
                                 type="submit"
-                                data-test="edit-feature-save"
+                                data-test="edit-feedback-save"
                                 :disabled="processing"
                             >
                                 Save
@@ -200,7 +200,7 @@ const commentCount = computed(() =>
                                 <h1
                                     class="text-3xl font-semibold tracking-tight text-balance"
                                 >
-                                    {{ feature.title }}
+                                    {{ feedback.title }}
                                 </h1>
                                 <div
                                     v-if="viewer.canUpdate || viewer.canDelete"
@@ -210,8 +210,8 @@ const commentCount = computed(() =>
                                         v-if="viewer.canUpdate"
                                         variant="ghost"
                                         size="icon-sm"
-                                        data-test="edit-feature-button"
-                                        aria-label="Edit feature"
+                                        data-test="edit-feedback-button"
+                                        aria-label="Edit feedback"
                                         @click="editing = true"
                                     >
                                         <Pencil />
@@ -220,8 +220,8 @@ const commentCount = computed(() =>
                                         v-if="viewer.canDelete"
                                         variant="ghost"
                                         size="icon-sm"
-                                        data-test="delete-feature-button"
-                                        aria-label="Delete feature"
+                                        data-test="delete-feedback-button"
+                                        aria-label="Delete feedback"
                                         @click="deleteDialogOpen = true"
                                     >
                                         <Trash2 />
@@ -230,23 +230,23 @@ const commentCount = computed(() =>
                             </div>
 
                             <p class="text-muted-foreground text-sm">
-                                <template v-if="feature.authorName">
+                                <template v-if="feedback.authorName">
                                     Requested by
                                     <span class="text-foreground font-medium">{{
-                                        feature.authorName
+                                        feedback.authorName
                                     }}</span>
                                     on
                                 </template>
                                 <template v-else>Requested on</template>
-                                {{ formatDate(feature.createdAt) }}
+                                {{ formatDate(feedback.createdAt) }}
                             </p>
                         </div>
 
                         <p
-                            v-if="feature.description"
+                            v-if="feedback.description"
                             class="max-w-prose leading-7 whitespace-pre-line"
                         >
-                            {{ feature.description }}
+                            {{ feedback.description }}
                         </p>
                         <p v-else class="text-muted-foreground text-sm italic">
                             No details were added to this request.
@@ -331,10 +331,10 @@ const commentCount = computed(() =>
 
             <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
                 <VotePanel
-                    v-if="feature.acceptsVotes"
+                    v-if="feedback.acceptsVotes"
                     :organization="organization.slug"
                     :project="project.slug"
-                    :feature="feature"
+                    :feedback="feedback"
                     :can-vote="viewer.canVote"
                     :is-guest="isGuest"
                 />
@@ -349,14 +349,14 @@ const commentCount = computed(() =>
                         <dd>
                             <Select
                                 v-if="viewer.canUpdateStatus"
-                                :model-value="feature.status"
+                                :model-value="feedback.status"
                                 @update:model-value="
                                     changeStatus(String($event))
                                 "
                             >
                                 <SelectTrigger
                                     class="w-full"
-                                    data-test="feature-status-select"
+                                    data-test="feedback-status-select"
                                 >
                                     <SelectValue />
                                 </SelectTrigger>
@@ -370,10 +370,10 @@ const commentCount = computed(() =>
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
-                            <FeatureStatusBadge
+                            <FeedbackStatusBadge
                                 v-else
-                                :status="feature.status"
-                                :label="feature.statusLabel"
+                                :status="feedback.status"
+                                :label="feedback.statusLabel"
                             />
                         </dd>
                     </div>
@@ -383,7 +383,7 @@ const commentCount = computed(() =>
                         >
                             Requested by
                         </dt>
-                        <dd>{{ feature.authorName ?? 'Deleted user' }}</dd>
+                        <dd>{{ feedback.authorName ?? 'Deleted user' }}</dd>
                     </div>
                     <div class="space-y-1.5">
                         <dt
@@ -391,7 +391,7 @@ const commentCount = computed(() =>
                         >
                             Requested on
                         </dt>
-                        <dd>{{ formatDate(feature.createdAt) }}</dd>
+                        <dd>{{ formatDate(feedback.createdAt) }}</dd>
                     </div>
                 </dl>
 
@@ -430,7 +430,7 @@ const commentCount = computed(() =>
                     <Button
                         variant="outline"
                         class="w-full"
-                        data-test="convert-feature-button"
+                        data-test="convert-feedback-button"
                         :disabled="converting"
                         @click="convert"
                     >
@@ -450,12 +450,12 @@ const commentCount = computed(() =>
 
     <ConfirmDeleteModal
         v-model:open="deleteDialogOpen"
-        title="Delete feature request"
+        title="Delete feedback request"
         confirm-label="Delete"
         :href="destroy(routeArgs)"
     >
-        This permanently deletes <strong>{{ feature.title }}</strong> along with
-        its votes and comments.
+        This permanently deletes <strong>{{ feedback.title }}</strong> along
+        with its votes and comments.
     </ConfirmDeleteModal>
 
     <ConfirmDeleteModal

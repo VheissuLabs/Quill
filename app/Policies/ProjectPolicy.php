@@ -23,7 +23,7 @@ class ProjectPolicy
             ->exists();
     }
 
-    public function viewFeatureBoard(?User $user, Project $project): bool
+    public function viewFeedbackBoard(?User $user, Project $project): bool
     {
         return $project->organization->canUse(OrganizationCapability::Boards)
             && $this->view($user, $project);

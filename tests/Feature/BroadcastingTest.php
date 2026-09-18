@@ -2,7 +2,7 @@
 
 use App\Enums\ProjectVisibility;
 use App\Events\ModulesChanged;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Team;
@@ -45,9 +45,9 @@ test('changing the organization modules announces it to the organization', funct
     $organization = Organization::factory()->create();
 
     $organization->updateModuleSettings([
-        'feature_voting_enabled' => false,
-        'feature_voting_boards_enabled' => false,
-        'feature_voting_voting_enabled' => false,
+        'feedback_enabled' => false,
+        'feedback_boards_enabled' => false,
+        'feedback_voting_enabled' => false,
         'development_enabled' => true,
         'development_issues_enabled' => true,
         'development_sprints_enabled' => true,
@@ -84,7 +84,7 @@ test('the announcement rides the organization private channel', function () {
         ->and($event->broadcastAs())->toBe('modules.changed');
 });
 
-test('presence on a feature is open to anyone who may see the project and closed to everyone else', function () {
+test('presence on a feedback is open to anyone who may see the project and closed to everyone else', function () {
     config([
         'broadcasting.default' => 'reverb',
         'broadcasting.connections.reverb.key' => 'test-key',
@@ -98,7 +98,7 @@ test('presence on a feature is open to anyone who may see the project and closed
     $project = Project::factory()->for($organization)->create([
         'visibility' => ProjectVisibility::Private,
     ]);
-    $feature = Feature::factory()->for($project)->create();
+    $feedback = Feedback::factory()->for($project)->create();
 
     $member = User::factory()->create();
     $organization->addMember($member, 'Member');
@@ -106,7 +106,7 @@ test('presence on a feature is open to anyone who may see the project and closed
 
     $payload = [
         'socket_id' => '1234.5678',
-        'channel_name' => "presence-features.{$feature->id}",
+        'channel_name' => "presence-feedback.{$feedback->id}",
     ];
 
     $this->actingAs($member)->post('/broadcasting/auth', $payload)->assertOk();

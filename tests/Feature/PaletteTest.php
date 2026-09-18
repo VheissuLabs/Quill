@@ -2,7 +2,7 @@
 
 use App\Enums\ProjectVisibility;
 use App\Models\Client;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
@@ -21,7 +21,7 @@ test('a member searches every record type at once', function () {
     $organization->addMember($member, 'Member');
     $project = Project::factory()->for($organization)->create(['name' => 'Orbit web']);
     Issue::factory()->for($project)->create(['title' => 'Orbit drifts on resize', 'number' => 12]);
-    Feature::factory()->for($project)->create(['title' => 'Orbit dark mode']);
+    Feedback::factory()->for($project)->create(['title' => 'Orbit dark mode']);
     Team::factory()->for($organization)->create(['name' => 'Orbit crew']);
     Client::factory()->for($organization)->create(['name' => 'Orbit Industries']);
     Sprint::factory()->for(Team::factory()->for($organization), 'owner')->create(['name' => 'Orbit sprint 3']);
@@ -31,7 +31,7 @@ test('a member searches every record type at once', function () {
     $response->assertOk();
 
     expect(collect($response->json())->pluck('type')->unique()->sort()->values()->all())
-        ->toBe(['client', 'feature', 'issue', 'project', 'sprint', 'team']);
+        ->toBe(['client', 'feedback', 'issue', 'project', 'sprint', 'team']);
 });
 
 test('an issue is found by its number as well as its title', function () {
@@ -48,7 +48,7 @@ test('an issue is found by its number as well as its title', function () {
         ->and($response->json('0.title'))->toContain('Nothing alike');
 });
 
-test('projects the member cannot see are left out, along with their issues and features', function () {
+test('projects the member cannot see are left out, along with their issues and feedback', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
     $organization->addMember($member, 'Member');
@@ -59,7 +59,7 @@ test('projects the member cannot see are left out, along with their issues and f
     ]);
     $hidden->teams()->attach(Team::factory()->for($organization)->create());
     Issue::factory()->for($hidden)->create(['title' => 'Secret regression']);
-    Feature::factory()->for($hidden)->create(['title' => 'Secret export']);
+    Feedback::factory()->for($hidden)->create(['title' => 'Secret export']);
 
     $response = $this->actingAs($member)->getJson(palette($organization, 'secret'));
 

@@ -1,5 +1,5 @@
 export type OrganizationModules = {
-    featureVoting: {
+    feedback: {
         enabled: boolean;
         capabilities: {
             boards: boolean;
@@ -75,7 +75,7 @@ export type OrganizationPermissions = {
     canManageTeams: boolean;
     canManageClients: boolean;
     canManageProjects: boolean;
-    canManageFeatures: boolean;
+    canManageFeedback: boolean;
     canManageIssues: boolean;
     canManageSprints: boolean;
     canViewActivity: boolean;

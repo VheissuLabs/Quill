@@ -152,9 +152,9 @@ test('organization owners can update product modules', function () {
     $response = $this
         ->actingAs($owner)
         ->patch(route('organizations.modules.update', $organization), [
-            'feature_voting_enabled' => false,
-            'feature_voting_boards_enabled' => false,
-            'feature_voting_voting_enabled' => false,
+            'feedback_enabled' => false,
+            'feedback_boards_enabled' => false,
+            'feedback_voting_enabled' => false,
             'development_enabled' => true,
             'development_issues_enabled' => true,
             'development_sprints_enabled' => false,
@@ -169,7 +169,7 @@ test('organization owners can update product modules', function () {
     ]);
     $this->assertDatabaseHas('organization_module_settings', [
         'organization_id' => $organization->id,
-        'module' => 'feature_voting',
+        'module' => 'feedback',
         'capability' => '',
         'enabled' => false,
     ]);
@@ -187,9 +187,9 @@ test('enabling a module turns every capability inside it back on', function () {
     $organization->addMember($owner, 'Owner');
 
     $organization->updateModuleSettings([
-        'feature_voting_enabled' => false,
-        'feature_voting_boards_enabled' => false,
-        'feature_voting_voting_enabled' => false,
+        'feedback_enabled' => false,
+        'feedback_boards_enabled' => false,
+        'feedback_voting_enabled' => false,
         'development_enabled' => false,
         'development_issues_enabled' => false,
         'development_sprints_enabled' => false,
@@ -200,9 +200,9 @@ test('enabling a module turns every capability inside it back on', function () {
     $response = $this
         ->actingAs($owner)
         ->patch(route('organizations.modules.update', $organization), [
-            'feature_voting_enabled' => true,
-            'feature_voting_boards_enabled' => false,
-            'feature_voting_voting_enabled' => false,
+            'feedback_enabled' => true,
+            'feedback_boards_enabled' => false,
+            'feedback_voting_enabled' => false,
             'development_enabled' => false,
             'development_issues_enabled' => false,
             'development_sprints_enabled' => false,
@@ -213,7 +213,7 @@ test('enabling a module turns every capability inside it back on', function () {
     $response->assertRedirect(route('organizations.edit', $organization));
 
     expect($organization->fresh()->moduleSettings())->toEqual([
-        'featureVoting' => [
+        'feedback' => [
             'enabled' => true,
             'capabilities' => ['boards' => true, 'voting' => true],
         ],
@@ -233,9 +233,9 @@ test('an enabled module keeps the capabilities an owner turned off', function ()
     $response = $this
         ->actingAs($owner)
         ->patch(route('organizations.modules.update', $organization), [
-            'feature_voting_enabled' => true,
-            'feature_voting_boards_enabled' => true,
-            'feature_voting_voting_enabled' => false,
+            'feedback_enabled' => true,
+            'feedback_boards_enabled' => true,
+            'feedback_voting_enabled' => false,
             'development_enabled' => true,
             'development_issues_enabled' => true,
             'development_sprints_enabled' => true,
@@ -259,9 +259,9 @@ test('organization members cannot update product modules', function () {
     $response = $this
         ->actingAs($member)
         ->patch(route('organizations.modules.update', $organization), [
-            'feature_voting_enabled' => false,
-            'feature_voting_boards_enabled' => false,
-            'feature_voting_voting_enabled' => false,
+            'feedback_enabled' => false,
+            'feedback_boards_enabled' => false,
+            'feedback_voting_enabled' => false,
             'development_enabled' => false,
             'development_issues_enabled' => false,
             'development_sprints_enabled' => false,
@@ -271,7 +271,7 @@ test('organization members cannot update product modules', function () {
 
     $response->assertForbidden();
 
-    expect($organization->fresh()->moduleSettings()['featureVoting']['enabled'])->toBeTrue();
+    expect($organization->fresh()->moduleSettings()['feedback']['enabled'])->toBeTrue();
 });
 
 test('organizations can be deleted by owners', function () {
@@ -612,9 +612,9 @@ test('switching the teams module off flattens every team back into the organizat
     $this
         ->actingAs($owner)
         ->patch(route('organizations.modules.update', $organization), [
-            'feature_voting_enabled' => true,
-            'feature_voting_boards_enabled' => true,
-            'feature_voting_voting_enabled' => true,
+            'feedback_enabled' => true,
+            'feedback_boards_enabled' => true,
+            'feedback_voting_enabled' => true,
             'development_enabled' => true,
             'development_issues_enabled' => true,
             'development_sprints_enabled' => true,

@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\FeatureStatus;
+use App\Enums\FeedbackStatus;
 use App\Enums\OrganizationCapability;
 use App\Http\Resources\DashboardProjectResource;
 use App\Http\Resources\PendingInvitationResource;
-use App\Http\Resources\RecentFeatureResource;
-use App\Models\Feature;
+use App\Http\Resources\RecentFeedbackResource;
+use App\Models\Feedback;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\Vote;
@@ -20,7 +20,7 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         $projects = collect();
-        $recentFeatures = collect();
+        $recentFeedback = collect();
         $visibleProjectIds = collect();
 
         if ($currentOrganization->canUse(OrganizationCapability::Boards)) {
@@ -29,11 +29,11 @@ class DashboardController extends Controller
             $projects = DashboardProjectResource::collection($currentOrganization->projects()
                 ->visibleTo($user)
                 ->with('client')
-                ->withCount(['features', 'features as open_features_count' => fn ($query) => $query->where('status', FeatureStatus::Open)])
+                ->withCount(['feedback', 'feedback as open_features_count' => fn ($query) => $query->where('status', FeedbackStatus::Open)])
                 ->orderBy('name')
                 ->get())->resolve();
 
-            $recentFeatures = RecentFeatureResource::collection(Feature::whereIn('project_id', $visibleProjectIds)
+            $recentFeedback = RecentFeedbackResource::collection(Feedback::whereIn('project_id', $visibleProjectIds)
                 ->with('project')
                 ->withCount(['votes' => fn ($query) => $query->where('direction', 1)])
                 ->latest()
@@ -45,11 +45,11 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'pendingInvitations' => PendingInvitationResource::collection(OrganizationInvitation::pendingFor($user)->get()),
             'projects' => $projects,
-            'recentFeatures' => $recentFeatures,
+            'recentFeedback' => $recentFeedback,
             'stats' => [
                 'projectsCount' => count($projects),
-                'openFeaturesCount' => collect($projects)->sum('openFeaturesCount'),
-                'votesCount' => Vote::where('direction', 1)->whereHas('feature', fn ($query) => $query->whereIn('project_id', $visibleProjectIds))->count(),
+                'openFeedbackCount' => collect($projects)->sum('openFeedbackCount'),
+                'votesCount' => Vote::where('direction', 1)->whereHas('feedback', fn ($query) => $query->whereIn('project_id', $visibleProjectIds))->count(),
             ],
         ]);
     }

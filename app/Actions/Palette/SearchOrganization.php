@@ -4,7 +4,7 @@ namespace App\Actions\Palette;
 
 use App\Enums\OrganizationCapability;
 use App\Models\Client;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
@@ -23,7 +23,7 @@ class SearchOrganization
 
     private const MINIMUM_TERM = 2;
 
-    /** @return Collection<int, Client|Feature|Issue|Project|Sprint|Team> */
+    /** @return Collection<int, Client|Feedback|Issue|Project|Sprint|Team> */
     public function handle(Organization $organization, User $user, string $term): Collection
     {
         if (mb_strlen($term) < self::MINIMUM_TERM) {
@@ -34,7 +34,7 @@ class SearchOrganization
 
         return $this->projects($organization, $user, $term)
             ->concat($organization->canUse(OrganizationCapability::Issues) ? $this->issues($projectIds, $term) : [])
-            ->concat($organization->canUse(OrganizationCapability::Boards) ? $this->features($projectIds, $term) : [])
+            ->concat($organization->canUse(OrganizationCapability::Boards) ? $this->feedback($projectIds, $term) : [])
             ->concat($organization->canUse(OrganizationCapability::Sprints) ? $this->sprints($organization, $term) : [])
             ->concat($this->teams($organization, $term))
             ->concat($this->clients($organization, $term));
@@ -71,11 +71,11 @@ class SearchOrganization
 
     /**
      * @param  Collection<int, int>  $projectIds
-     * @return Collection<int, Feature>
+     * @return Collection<int, Feedback>
      */
-    private function features(Collection $projectIds, string $term): Collection
+    private function feedback(Collection $projectIds, string $term): Collection
     {
-        return Feature::query()
+        return Feedback::query()
             ->whereIn('project_id', $projectIds)
             ->where('title', 'like', $this->wildcard($term))
             ->with('project.organization')

@@ -145,41 +145,26 @@ namespace App\Models{
 
 namespace App\Models{
 /**
- * @property int $id
- * @property int $project_id
- * @property int|null $user_id
- * @property string $title
- * @property string|null $description
- * @property \App\Enums\FeatureStatus $status
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property \App\Enums\FeedbackStatus $status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\User|null $author
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comment> $comments
  * @property-read int|null $comments_count
  * @property-read \App\Models\Issue|null $issue
- * @property-read \App\Models\Project $project
+ * @property-read \App\Models\Project|null $project
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Vote> $votes
  * @property-read int|null $votes_count
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature active()
- * @method static \Database\Factories\FeatureFactory factory($count = null, $state = [])
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature whereProjectId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature whereTitle($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature whereUserId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feature withVoteSummary(?\App\Models\User $viewer)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback active()
+ * @method static \Database\Factories\FeedbackFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback withVoteSummary(?\App\Models\User $viewer)
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
-	class IdeHelperFeature {}
+	class IdeHelperFeedback {}
 }
 
 namespace App\Models{
@@ -209,7 +194,7 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comment> $comments
  * @property-read int|null $comments_count
  * @property-read \App\Models\User|null $creator
- * @property-read \App\Models\Feature|null $feature
+ * @property-read \App\Models\Feedback|null $feedback
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\IssueLink> $inverseLinks
  * @property-read int|null $inverse_links_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\IssueLink> $links
@@ -434,8 +419,8 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Client|null $client
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Feature> $features
- * @property-read int|null $features_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Feedback> $feedback
+ * @property-read int|null $feedback_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $issues
  * @property-read int|null $issues_count
  * @property-read \App\Models\Organization|null $organization
@@ -618,8 +603,8 @@ namespace App\Models{
  * @property-read \App\Models\Team|null $currentTeam
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmailAddress> $emailAddresses
  * @property-read int|null $email_addresses_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Feature> $features
- * @property-read int|null $features_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Feedback> $feedback
+ * @property-read int|null $feedback_count
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read int|null $notifications_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrganizationMembership> $organizationMemberships
@@ -678,7 +663,7 @@ namespace App\Models{
  * @property int $direction
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \App\Models\Feature $feature
+ * @property-read \App\Models\Feedback|null $feedback
  * @property-read \App\Models\User $user
  * @method static \Database\Factories\VoteFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vote newModelQuery()

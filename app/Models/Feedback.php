@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use App\Enums\FeatureStatus;
+use App\Enums\FeedbackStatus;
 use App\Enums\VoteDirection;
-use App\Events\FeatureVoted;
-use App\Observers\FeatureObserver;
-use Database\Factories\FeatureFactory;
+use App\Events\FeedbackVoted;
+use App\Observers\FeedbackObserver;
+use Database\Factories\FeedbackFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -25,14 +25,15 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property-read int|null $downvotes_count
  * @property-read int|null $score
  * @property-read int|null $user_vote
- *
- * @mixin IdeHelperFeature
+ * @mixin IdeHelperFeedback
  */
-#[ObservedBy(FeatureObserver::class)]
-#[UseFactory(FeatureFactory::class)]
-class Feature extends Model
+#[ObservedBy(FeedbackObserver::class)]
+#[UseFactory(FeedbackFactory::class)]
+class Feedback extends Model
 {
     use HasFactory, LogsActivity;
+
+    protected $table = 'feedback';
 
     protected $guarded = [];
 
@@ -58,7 +59,7 @@ class Feature extends Model
     #[Scope]
     protected function active(Builder $query): void
     {
-        $query->whereIn('status', FeatureStatus::active());
+        $query->whereIn('status', FeedbackStatus::active());
     }
 
     /** @param  Builder<$this>  $query */
@@ -73,7 +74,7 @@ class Feature extends Model
             ->withSum('votes as score', 'direction')
             ->when($viewer, fn (Builder $query) => $query->addSelect([
                 'user_vote' => Vote::select('direction')
-                    ->whereColumn('feature_id', 'features.id')
+                    ->whereColumn('feedback_id', 'feedback.id')
                     ->where('user_id', $viewer->id)
                     ->limit(1),
             ]));
@@ -83,14 +84,14 @@ class Feature extends Model
     {
         $this->votes()->updateOrCreate(['user_id' => $user->id], ['direction' => $direction->weight()]);
 
-        broadcast(new FeatureVoted($this->project_id, $this->getKey()))->toOthers();
+        broadcast(new FeedbackVoted($this->project_id, $this->getKey()))->toOthers();
     }
 
     public function clearVoteFrom(User $user): void
     {
         $this->votes()->where('user_id', $user->getKey())->delete();
 
-        broadcast(new FeatureVoted($this->project_id, $this->getKey()))->toOthers();
+        broadcast(new FeedbackVoted($this->project_id, $this->getKey()))->toOthers();
     }
 
     /** @return MorphMany<Comment, $this> */
@@ -119,7 +120,7 @@ class Feature extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->useLogName('features')
+            ->useLogName('feedback')
             ->logOnly(['title', 'description', 'status'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
@@ -129,7 +130,7 @@ class Feature extends Model
     protected function casts(): array
     {
         return [
-            'status' => FeatureStatus::class,
+            'status' => FeedbackStatus::class,
         ];
     }
 }

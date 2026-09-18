@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Features;
+namespace App\Http\Requests\Feedback;
 
 use App\Enums\VoteDirection;
 use Illuminate\Contracts\Validation\ValidationRule;
