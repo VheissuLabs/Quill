@@ -99,6 +99,7 @@ const vote = (direction: VoteDirection) => {
     router.visit(withdrawing ? withdrawVote(args) : castVote(args), {
         data: withdrawing ? {} : { direction },
         preserveScroll: true,
+        preserveState: true,
         onStart: () => (processing.value = true),
         onFinish: () => (processing.value = false),
     });
