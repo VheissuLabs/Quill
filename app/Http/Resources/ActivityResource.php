@@ -114,8 +114,6 @@ class ActivityResource extends JsonResource
             },
             'is_internal' => $value ? __('Yes') : __('No'),
             'starts_at', 'ends_at', 'expires_at', 'accepted_at', 'verified_at', 'email_verified_at', 'two_factor_confirmed_at' => Str::of((string) $value)->substr(0, 10)->toString(),
-            'body' => Str::limit((string) $value, 80),
-            'description' => Str::limit((string) $value, 80),
             default => (string) $value,
         };
     }

@@ -15,7 +15,23 @@ class CommentObserver
 
     public function deleted(Comment $comment): void
     {
+        $this->recordDeletion($comment);
         $this->announce($comment);
+    }
+
+    private function recordDeletion(Comment $comment): void
+    {
+        $comment->loadMissing(['commentable', 'author']);
+
+        activity('comments')
+            ->on($comment->commentable)
+            ->event('comment_deleted')
+            ->withChanges(['attributes' => [
+                'comment' => $comment->body,
+                'author' => $comment->author?->name,
+                'is_internal' => $comment->is_internal,
+            ]])
+            ->log('comment_deleted');
     }
 
     /**

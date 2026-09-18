@@ -156,6 +156,15 @@ class Comment extends Model
         ];
     }
 
+    /**
+     * A deletion is recorded by hand instead, against the thing commented on, so an owner can
+     * still read what was said. The automatic entry logs nothing on delete, because nothing is
+     * dirty by then.
+     *
+     * @var array<int, string>
+     */
+    protected static $recordEvents = ['created', 'updated'];
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

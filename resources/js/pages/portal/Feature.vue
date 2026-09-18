@@ -34,6 +34,7 @@ import {
 import { store as convertToIssue } from '@/routes/portal/features/issue';
 import { update as updateStatus } from '@/routes/portal/features/status';
 import { show as showBoard } from '@/routes/portal/projects';
+import { useLocalStorage } from '@vueuse/core';
 import { useCommentPresence } from '@/composables/useCommentPresence';
 import { useLiveFeatures } from '@/composables/useLiveFeatures';
 import type {
@@ -113,6 +114,16 @@ const changeStatus = (status: string) => {
         preserveScroll: true,
     });
 };
+
+/**
+ * Only the top level flips. A conversation read backwards is nonsense, so replies stay in the
+ * order they were written.
+ */
+const newestFirst = useLocalStorage('quill.comments.newest-first', false);
+
+const sortedComments = computed(() =>
+    newestFirst.value ? [...props.comments].reverse() : props.comments,
+);
 
 const commentCount = computed(() =>
     props.comments.reduce(
@@ -258,11 +269,20 @@ const commentCount = computed(() =>
                         >
                             {{ typingLabel }}
                         </span>
+                        <button
+                            v-if="commentCount > 1"
+                            type="button"
+                            data-test="comment-sort"
+                            class="text-muted-foreground hover:text-foreground ml-auto cursor-pointer text-xs font-normal"
+                            @click="newestFirst = !newestFirst"
+                        >
+                            {{ newestFirst ? 'Newest first' : 'Oldest first' }}
+                        </button>
                     </h2>
 
                     <ol v-if="comments.length > 0" class="space-y-6">
                         <CommentThread
-                            v-for="comment in comments"
+                            v-for="comment in sortedComments"
                             :key="comment.id"
                             :comment="comment"
                             @typing="reportTyping"
