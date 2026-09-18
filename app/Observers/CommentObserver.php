@@ -31,7 +31,7 @@ class CommentObserver
         $projectId = Feature::query()->whereKey($comment->commentable_id)->value('project_id');
 
         if ($projectId !== null) {
-            FeatureCommented::dispatch((int) $projectId, (int) $comment->commentable_id);
+            broadcast(new FeatureCommented((int) $projectId, (int) $comment->commentable_id))->toOthers();
         }
     }
 }

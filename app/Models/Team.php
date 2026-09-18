@@ -64,7 +64,7 @@ class Team extends Model
 
         $this->unsetRelation('capabilitySettings');
 
-        ModulesChanged::dispatch($this->organization_id);
+        broadcast(new ModulesChanged($this->organization_id))->toOthers();
     }
 
     /**

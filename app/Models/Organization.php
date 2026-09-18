@@ -190,7 +190,7 @@ class Organization extends Model
 
         $this->unsetRelation('capabilitySettings');
 
-        ModulesChanged::dispatch($this->getKey());
+        broadcast(new ModulesChanged($this->getKey()))->toOthers();
     }
 
     private function settingEnabled(string $module, string $capability): bool

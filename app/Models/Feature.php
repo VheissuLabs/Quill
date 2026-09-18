@@ -83,14 +83,14 @@ class Feature extends Model
     {
         $this->votes()->updateOrCreate(['user_id' => $user->id], ['direction' => $direction->weight()]);
 
-        FeatureVoted::dispatch($this->project_id, $this->getKey());
+        broadcast(new FeatureVoted($this->project_id, $this->getKey()))->toOthers();
     }
 
     public function clearVoteFrom(User $user): void
     {
         $this->votes()->where('user_id', $user->getKey())->delete();
 
-        FeatureVoted::dispatch($this->project_id, $this->getKey());
+        broadcast(new FeatureVoted($this->project_id, $this->getKey()))->toOthers();
     }
 
     /** @return MorphMany<Comment, $this> */
