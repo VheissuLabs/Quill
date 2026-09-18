@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\VoteDirection;
+use App\Events\FeatureCommented;
 use App\Events\FeatureVoted;
 use App\Models\Feature;
 use App\Models\Organization;
@@ -47,4 +48,51 @@ test('the vote announcement rides the public project channel', function () {
     expect($event->broadcastOn()->name)->toBe('projects.7')
         ->and($event->broadcastAs())->toBe('feature.voted')
         ->and($event->broadcastWith())->toBe(['feature' => 42]);
+});
+
+test('commenting on a feature announces it on the project channel', function () {
+    Event::fake([FeatureCommented::class]);
+
+    $project = Project::factory()->for(Organization::factory())->create();
+    $feature = Feature::factory()->for($project)->create();
+
+    $feature->comments()->create([
+        'body' => 'Please', 'user_id' => User::factory()->create()->id, 'is_internal' => false,
+    ]);
+
+    Event::assertDispatched(
+        FeatureCommented::class,
+        fn ($event) => $event->projectId === $project->id && $event->featureId === $feature->id
+    );
+});
+
+test('deleting a comment announces it so the count falls', function () {
+    $project = Project::factory()->for(Organization::factory())->create();
+    $feature = Feature::factory()->for($project)->create();
+    $comment = $feature->comments()->create([
+        'body' => 'Please', 'user_id' => User::factory()->create()->id, 'is_internal' => false,
+    ]);
+
+    Event::fake([FeatureCommented::class]);
+
+    $comment->delete();
+
+    Event::assertDispatched(FeatureCommented::class);
+});
+
+test('deleting a feature takes its comments quietly', function () {
+    $project = Project::factory()->for(Organization::factory())->create();
+    $feature = Feature::factory()->for($project)->create();
+
+    foreach (range(1, 3) as $index) {
+        $feature->comments()->create([
+            'body' => "Comment {$index}", 'user_id' => User::factory()->create()->id, 'is_internal' => false,
+        ]);
+    }
+
+    Event::fake([FeatureCommented::class]);
+
+    $feature->delete();
+
+    Event::assertNotDispatched(FeatureCommented::class);
 });

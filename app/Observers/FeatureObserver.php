@@ -2,12 +2,15 @@
 
 namespace App\Observers;
 
+use App\Models\Comment;
 use App\Models\Feature;
 
 class FeatureObserver
 {
     public function deleting(Feature $feature): void
     {
-        $feature->comments()->cursor()->each(fn ($comment) => $comment->delete());
+        Comment::withoutEvents(
+            fn () => $feature->comments()->cursor()->each(fn (Comment $comment) => $comment->delete())
+        );
     }
 }

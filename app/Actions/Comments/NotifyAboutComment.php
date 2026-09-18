@@ -10,9 +10,14 @@ use Illuminate\Database\Eloquent\Collection;
 
 class NotifyAboutComment
 {
+    public function __construct(private PresentViewers $present) {}
+
     public function handle(Comment $comment, User $author, ?Comment $parent): void
     {
-        $mentioned = $comment->mentions->reject(fn (User $user) => $user->is($author));
+        $watching = $this->present->handle($comment);
+
+        $mentioned = $comment->mentions
+            ->reject(fn (User $user) => $user->is($author) || in_array($user->getKey(), $watching, true));
 
         $mentioned->each(fn (User $user) => $user->notify(new MentionedInComment($comment)));
 
@@ -21,9 +26,9 @@ class NotifyAboutComment
         }
 
         $this->participants($comment, $parent)
-            ->reject(fn (User $user) => $user->is($author) || $mentioned->contains(
-                fn (User $mention) => $mention->is($user)
-            ))
+            ->reject(fn (User $user) => $user->is($author)
+                || in_array($user->getKey(), $watching, true)
+                || $mentioned->contains(fn (User $mention) => $mention->is($user)))
             ->each(fn (User $user) => $user->notify(new RepliedInThread($comment)));
     }
 

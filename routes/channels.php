@@ -1,6 +1,8 @@
 <?php
 
 use App\Events\OrganizationBroadcast;
+use App\Models\Feature;
+use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
@@ -13,4 +15,20 @@ Broadcast::channel(OrganizationBroadcast::CHANNEL_PATTERN, function (User $user,
     $organization = Organization::find($organization);
 
     return $organization !== null && $user->belongsToOrganization($organization);
+});
+
+Broadcast::channel('features.{feature}', function (User $user, int $feature) {
+    $feature = Feature::with('project')->find($feature);
+
+    return $feature !== null && $user->can('view', $feature->project)
+        ? ['id' => $user->getKey(), 'name' => $user->name]
+        : null;
+});
+
+Broadcast::channel('issues.{issue}', function (User $user, int $issue) {
+    $issue = Issue::with('project')->find($issue);
+
+    return $issue !== null && $user->can('view', $issue->project)
+        ? ['id' => $user->getKey(), 'name' => $user->name]
+        : null;
 });

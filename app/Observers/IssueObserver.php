@@ -2,12 +2,15 @@
 
 namespace App\Observers;
 
+use App\Models\Comment;
 use App\Models\Issue;
 
 class IssueObserver
 {
     public function deleting(Issue $issue): void
     {
-        $issue->comments()->cursor()->each(fn ($comment) => $comment->delete());
+        Comment::withoutEvents(
+            fn () => $issue->comments()->cursor()->each(fn (Comment $comment) => $comment->delete())
+        );
     }
 }

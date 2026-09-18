@@ -25,6 +25,7 @@ withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     delete: [comment: FeatureComment];
+    typing: [];
 }>();
 
 const { getInitials } = useInitials();
@@ -143,6 +144,7 @@ const replying = ref(false);
                     :placeholder="`Reply to ${comment.authorName ?? 'this comment'}`"
                     submit-label="Reply"
                     autofocus
+                    @typing="emit('typing')"
                     @posted="replying = false"
                     @cancel="replying = false"
                 />

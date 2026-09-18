@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Comments\PresentViewers;
 use App\Models\Feature;
 use App\Models\Issue;
 use App\Models\Organization;
@@ -94,4 +95,30 @@ test('an internal reply stays away from people outside the organization', functi
         ->assertRedirect();
 
     Notification::assertNotSentTo($outsider, RepliedInThread::class);
+});
+
+test('someone watching the page is left alone', function () {
+    Notification::fake();
+
+    [, $issue, $root, $starter, $replier, $newcomer] = issueThread();
+
+    $this->mock(PresentViewers::class)
+        ->shouldReceive('handle')
+        ->andReturn([$starter->id]);
+
+    postReply($issue, $newcomer, ['body' => 'Joining in', 'parent_id' => $root->id]);
+
+    Notification::assertNotSentTo($starter, RepliedInThread::class);
+    Notification::assertSentTo($replier, RepliedInThread::class);
+});
+
+test('a broadcaster that cannot answer notifies everybody', function () {
+    Notification::fake();
+
+    [, $issue, $root, $starter, $replier, $newcomer] = issueThread();
+
+    postReply($issue, $newcomer, ['body' => 'Joining in', 'parent_id' => $root->id]);
+
+    Notification::assertSentTo($starter, RepliedInThread::class);
+    Notification::assertSentTo($replier, RepliedInThread::class);
 });

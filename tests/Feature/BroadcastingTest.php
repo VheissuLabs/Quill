@@ -1,7 +1,10 @@
 <?php
 
+use App\Enums\ProjectVisibility;
 use App\Events\ModulesChanged;
+use App\Models\Feature;
 use App\Models\Organization;
+use App\Models\Project;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
@@ -79,4 +82,33 @@ test('the announcement rides the organization private channel', function () {
 
     expect($event->broadcastOn()->name)->toBe("private-organizations.{$organization->id}")
         ->and($event->broadcastAs())->toBe('modules.changed');
+});
+
+test('presence on a feature is open to anyone who may see the project and closed to everyone else', function () {
+    config([
+        'broadcasting.default' => 'reverb',
+        'broadcasting.connections.reverb.key' => 'test-key',
+        'broadcasting.connections.reverb.secret' => 'test-secret',
+        'broadcasting.connections.reverb.app_id' => 'test-app',
+    ]);
+
+    require base_path('routes/channels.php');
+
+    $organization = Organization::factory()->create();
+    $project = Project::factory()->for($organization)->create([
+        'visibility' => ProjectVisibility::Private,
+    ]);
+    $feature = Feature::factory()->for($project)->create();
+
+    $member = User::factory()->create();
+    $organization->addMember($member, 'Member');
+    $outsider = User::factory()->create();
+
+    $payload = [
+        'socket_id' => '1234.5678',
+        'channel_name' => "presence-features.{$feature->id}",
+    ];
+
+    $this->actingAs($member)->post('/broadcasting/auth', $payload)->assertOk();
+    $this->actingAs($outsider)->post('/broadcasting/auth', $payload)->assertForbidden();
 });

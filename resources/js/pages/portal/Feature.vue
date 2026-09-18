@@ -34,6 +34,7 @@ import {
 import { store as convertToIssue } from '@/routes/portal/features/issue';
 import { update as updateStatus } from '@/routes/portal/features/status';
 import { show as showBoard } from '@/routes/portal/projects';
+import { useCommentPresence } from '@/composables/useCommentPresence';
 import { useLiveVotes } from '@/composables/useLiveVotes';
 import type {
     ActivityEntry,
@@ -63,7 +64,14 @@ type Props = {
 
 const props = defineProps<Props>();
 
-useLiveVotes(props.project.id, ['feature'], props.feature.id);
+useLiveVotes(props.project.id, ['feature', 'comments'], props.feature.id);
+
+const currentUser = usePage().props.auth.user;
+
+const { typingLabel, reportTyping } = useCommentPresence(
+    `features.${props.feature.id}`,
+    currentUser ? { id: currentUser.id, name: currentUser.name } : null,
+);
 
 defineOptions({
     layout: (props: {
@@ -236,9 +244,20 @@ const commentCount = computed(() =>
                 </article>
 
                 <section class="space-y-6 border-t pt-8">
-                    <h2 class="font-semibold">
-                        {{ commentCount }}
-                        {{ commentCount === 1 ? 'comment' : 'comments' }}
+                    <h2
+                        class="flex flex-wrap items-baseline gap-x-2 font-semibold"
+                    >
+                        <span>
+                            {{ commentCount }}
+                            {{ commentCount === 1 ? 'comment' : 'comments' }}
+                        </span>
+                        <span
+                            v-if="typingLabel"
+                            data-test="typing-indicator"
+                            class="text-muted-foreground animate-pulse text-xs font-normal"
+                        >
+                            {{ typingLabel }}
+                        </span>
                     </h2>
 
                     <ol v-if="comments.length > 0" class="space-y-6">
@@ -246,6 +265,7 @@ const commentCount = computed(() =>
                             v-for="comment in comments"
                             :key="comment.id"
                             :comment="comment"
+                            @typing="reportTyping"
                             :action="storeComment(routeArgs).url"
                             :organization-name="organization.name"
                             :can-comment="viewer.canComment"
@@ -269,6 +289,7 @@ const commentCount = computed(() =>
                                 :organization-name="organization.name"
                                 :mentionable="mentionableUsers"
                                 :commands="commands"
+                                @typing="reportTyping"
                                 :statuses="statuses"
                                 :can-comment-internally="
                                     viewer.canCommentInternally

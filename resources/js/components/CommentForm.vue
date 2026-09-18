@@ -40,6 +40,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     posted: [];
     cancel: [];
+    typing: [];
 }>();
 
 const form = useForm({
@@ -312,7 +313,10 @@ const submit = () => {
                 :placeholder="placeholder"
                 :autofocus="autofocus"
                 required
-                @input="updatePrompt"
+                @input="
+                    updatePrompt();
+                    emit('typing');
+                "
                 @click="updatePrompt"
                 @keyup.left.right="updatePrompt"
                 @keydown="onKeydown"
