@@ -35,3 +35,25 @@ test('app keeps the directories it has agreed on', function () {
         'Support',
     ]);
 });
+
+test('closures do not reach outside themselves to change what they find', function () {
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(dirname(__DIR__, 2).'/app')
+    );
+
+    $offenders = [];
+
+    foreach ($files as $file) {
+        if ($file->getExtension() !== 'php') {
+            continue;
+        }
+
+        $contents = (string) file_get_contents($file->getPathname());
+
+        if (preg_match('/\buse\s*\([^)]*&\s*\$/', $contents) === 1) {
+            $offenders[] = str_replace(dirname(__DIR__, 2).'/', '', $file->getPathname());
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});
