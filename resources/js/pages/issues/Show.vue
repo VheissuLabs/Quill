@@ -785,4 +785,18 @@ const currentSprint = computed(() =>
         This permanently deletes <strong>{{ issue.reference }}</strong
         >. The feedback request it came from, if any, is kept.
     </ConfirmDeleteModal>
+
+    <ConfirmDeleteModal
+        :open="commentToDelete !== null"
+        title="Delete comment"
+        confirm-label="Delete"
+        :href="
+            commentToDelete
+                ? destroyComment([...routeArgs, commentToDelete.id])
+                : null
+        "
+        @update:open="commentToDelete = null"
+    >
+        This comment will be permanently removed.
+    </ConfirmDeleteModal>
 </template>
