@@ -29,7 +29,7 @@ const eventLabel = (event: string) =>
         created: 'created',
         updated: 'changed',
         deleted: 'deleted',
-        comment_deleted: 'deleted a comment on',
+        comment_deleted: 'deleted a comment',
     })[event] ?? event.replace(/_/g, ' ');
 
 /**
@@ -123,7 +123,6 @@ const openedTitle = computed(() =>
                     <template v-if="entry.event !== 'comment_deleted'">
                         the {{ subject }}
                     </template>
-                    <template v-else>this {{ subject }}</template>
                 </p>
                 <p
                     class="text-muted-foreground mt-0.5 text-[11px] tabular-nums"
