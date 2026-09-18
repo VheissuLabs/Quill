@@ -24,6 +24,7 @@ test('app keeps the directories it has agreed on', function () {
         'Concerns',
         'Data',
         'Enums',
+        'Events',
         'Http',
         'Models',
         'Notifications',
@@ -31,5 +32,6 @@ test('app keeps the directories it has agreed on', function () {
         'Policies',
         'Providers',
         'Rules',
+        'Support',
     ]);
 });

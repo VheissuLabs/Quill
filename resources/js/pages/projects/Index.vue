@@ -57,7 +57,7 @@ defineOptions({
             <Heading
                 variant="small"
                 title="Projects"
-                description="Each project has a board where features are requested and voted on"
+                description="Each project has a board where feedback is collected and voted on"
             />
 
             <CreateProjectModal
@@ -107,11 +107,11 @@ defineOptions({
                         {{ project.description }}
                     </p>
                     <p class="text-muted-foreground mt-1 text-sm">
-                        {{ project.featuresCount }}
+                        {{ project.feedbackCount }}
                         {{
-                            project.featuresCount === 1
-                                ? 'feature request'
-                                : 'feature requests'
+                            project.feedbackCount === 1
+                                ? 'feedback request'
+                                : 'feedback requests'
                         }}
                     </p>
                 </div>
@@ -177,7 +177,7 @@ defineOptions({
                 title="No projects yet"
                 :description="
                     permissions.canManageProjects
-                        ? 'Every project gets a board where features are requested and voted on. Create the first one.'
+                        ? 'Every project gets a board where feedback is collected and voted on. Create the first one.'
                         : 'Projects will show up here once an admin creates one you can see.'
                 "
             >

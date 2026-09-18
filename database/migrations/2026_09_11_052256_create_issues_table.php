@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->foreignId('team_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('sprint_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('feature_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('feedback_id')->nullable()->constrained('feedback')->nullOnDelete();
             $table->foreignId('assignee_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedInteger('number');

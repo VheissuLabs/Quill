@@ -3,11 +3,11 @@
 namespace Database\Seeders;
 
 use App\Actions\Issues\CreateIssue;
-use App\Enums\FeatureStatus;
+use App\Enums\FeedbackStatus;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Enums\SprintStatus;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
@@ -41,10 +41,10 @@ class IssueSeeder extends Seeder
                 $sprints = collect($owners)->flatMap(fn (Organization|Team $owner) => $owner->sprints
                     ->each(fn (Sprint $sprint) => $sprint->setRelation('owner', $owner)));
 
-                $project->features()
-                    ->whereIn('status', [FeatureStatus::Planned, FeatureStatus::InProgress, FeatureStatus::Completed])
+                $project->feedback()
+                    ->whereIn('status', [FeedbackStatus::Planned, FeedbackStatus::InProgress, FeedbackStatus::Completed])
                     ->get()
-                    ->each(fn (Feature $feature) => $this->convert($project, $feature, $sprints, $members));
+                    ->each(fn (Feedback $feedback) => $this->convert($project, $feedback, $sprints, $members));
 
                 $this->seedLooseIssues($project, $sprints, $members);
             });
@@ -80,23 +80,23 @@ class IssueSeeder extends Seeder
      * @param  Collection<int, Sprint>  $sprints
      * @param  Collection<int, User>  $members
      */
-    protected function convert(Project $project, Feature $feature, Collection $sprints, Collection $members): void
+    protected function convert(Project $project, Feedback $feedback, Collection $sprints, Collection $members): void
     {
-        $status = $feature->status;
+        $status = $feedback->status;
 
         $issue = $this->createIssue->handle($project, [
-            'title' => $feature->title,
-            'description' => $feature->description,
+            'title' => $feedback->title,
+            'description' => $feedback->description,
             'priority' => fake()->randomElement([IssuePriority::Medium, IssuePriority::High, IssuePriority::Urgent]),
             'points' => fake()->randomElement([2, 3, 5, 8]),
             'assignee_id' => $members->random()->getKey(),
             'created_by' => $members->random()->getKey(),
-        ], $feature);
+        ], $feedback);
 
         match ($status) {
-            FeatureStatus::Planned => fake()->boolean() ? $issue->planInto($this->sprint($sprints, SprintStatus::Active)) : null,
-            FeatureStatus::InProgress => $this->work($issue, $this->sprint($sprints, SprintStatus::Active)),
-            FeatureStatus::Completed => $this->finish($issue, $this->sprint($sprints, SprintStatus::Completed) ?? $this->sprint($sprints, SprintStatus::Active)),
+            FeedbackStatus::Planned => fake()->boolean() ? $issue->planInto($this->sprint($sprints, SprintStatus::Active)) : null,
+            FeedbackStatus::InProgress => $this->work($issue, $this->sprint($sprints, SprintStatus::Active)),
+            FeedbackStatus::Completed => $this->finish($issue, $this->sprint($sprints, SprintStatus::Completed) ?? $this->sprint($sprints, SprintStatus::Active)),
             default => null,
         };
     }

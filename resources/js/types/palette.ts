@@ -4,7 +4,7 @@ import type { IssueFormOptions } from '@/types/issues';
 
 export type PaletteResultType =
     | 'issue'
-    | 'feature'
+    | 'feedback'
     | 'project'
     | 'sprint'
     | 'team'

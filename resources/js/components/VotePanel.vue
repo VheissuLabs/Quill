@@ -7,13 +7,13 @@ import { login } from '@/routes';
 import {
     destroy as withdrawVote,
     store as castVote,
-} from '@/routes/portal/features/vote';
-import type { FeatureSummary, VoteDirection } from '@/types';
+} from '@/routes/portal/feedback/vote';
+import type { FeedbackSummary, VoteDirection } from '@/types';
 
 type Props = {
     organization: string;
     project: string;
-    feature: FeatureSummary;
+    feedback: FeedbackSummary;
     canVote: boolean;
     isGuest: boolean;
 };
@@ -22,13 +22,15 @@ const props = defineProps<Props>();
 
 const processing = ref(false);
 
-const choices: {
+type Choice = {
     direction: VoteDirection;
     label: string;
     icon: typeof ThumbsUp;
-    count: keyof FeatureSummary;
+    count: keyof FeedbackSummary;
     activeClass: string;
-}[] = [
+};
+
+const allChoices: Choice[] = [
     {
         direction: 'up',
         label: 'For',
@@ -47,6 +49,16 @@ const choices: {
     },
 ];
 
+/**
+ * A bug has no opposite. Nobody argues that a crash should not be fixed, so it offers one
+ * button saying you have hit it too, and the server stores the same vote either way.
+ */
+const choices = computed<Choice[]>(() =>
+    props.feedback.acceptsOpposingVotes
+        ? allChoices
+        : [{ ...allChoices[0], label: props.feedback.voteLabel }],
+);
+
 const choiceClass =
     'flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm font-medium whitespace-nowrap tabular-nums transition-colors outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50';
 
@@ -59,12 +71,22 @@ const people = (count: number) =>
 const others = (count: number) => (count === 1 ? '1 other' : `${count} others`);
 
 const summary = computed(() => {
-    const { votesCount, downvotesCount, vote } = props.feature;
+    const { votesCount, downvotesCount, vote } = props.feedback;
 
     if (votesCount + downvotesCount === 0) {
         return props.isGuest
             ? 'Log in to be the first to vote.'
-            : 'No votes yet.';
+            : props.feedback.acceptsOpposingVotes
+              ? 'No votes yet.'
+              : 'Nobody else has reported this yet.';
+    }
+
+    if (!props.feedback.acceptsOpposingVotes) {
+        return vote === 'up'
+            ? votesCount === 1
+                ? 'You have experienced this.'
+                : `You and ${others(votesCount - 1)} have experienced this.`
+            : `${people(votesCount)} ${votesCount === 1 ? 'has' : 'have'} experienced this.`;
     }
 
     const forLabel =
@@ -92,13 +114,14 @@ const vote = (direction: VoteDirection) => {
     const args: [string, string, number] = [
         props.organization,
         props.project,
-        props.feature.id,
+        props.feedback.id,
     ];
-    const withdrawing = props.feature.vote === direction;
+    const withdrawing = props.feedback.vote === direction;
 
     router.visit(withdrawing ? withdrawVote(args) : castVote(args), {
         data: withdrawing ? {} : { direction },
         preserveScroll: true,
+        preserveState: true,
         onStart: () => (processing.value = true),
         onFinish: () => (processing.value = false),
     });
@@ -107,7 +130,10 @@ const vote = (direction: VoteDirection) => {
 
 <template>
     <div class="space-y-3 rounded-xl border p-4" data-test="vote-panel">
-        <div class="grid grid-cols-2 gap-2">
+        <div
+            class="grid gap-2"
+            :class="choices.length === 1 ? 'grid-cols-1' : 'grid-cols-2'"
+        >
             <template v-for="choice in choices" :key="choice.direction">
                 <Link
                     v-if="isGuest"
@@ -120,15 +146,15 @@ const vote = (direction: VoteDirection) => {
                         <component :is="choice.icon" class="size-4" />
                         {{ choice.label }}
                     </span>
-                    <span>{{ feature[choice.count] }}</span>
+                    <span>{{ feedback[choice.count] }}</span>
                 </Link>
                 <button
                     v-else
                     type="button"
                     :data-test="`vote-${choice.direction}-button`"
-                    :aria-pressed="feature.vote === choice.direction"
+                    :aria-pressed="feedback.vote === choice.direction"
                     :aria-label="
-                        feature.vote === choice.direction
+                        feedback.vote === choice.direction
                             ? 'Withdraw your vote'
                             : choice.label
                     "
@@ -136,7 +162,7 @@ const vote = (direction: VoteDirection) => {
                     :class="
                         cn(
                             choiceClass,
-                            feature.vote === choice.direction
+                            feedback.vote === choice.direction
                                 ? choice.activeClass
                                 : inactiveClass,
                         )
@@ -147,7 +173,7 @@ const vote = (direction: VoteDirection) => {
                         <component :is="choice.icon" class="size-4" />
                         {{ choice.label }}
                     </span>
-                    <span>{{ feature[choice.count] }}</span>
+                    <span>{{ feedback[choice.count] }}</span>
                 </button>
             </template>
         </div>

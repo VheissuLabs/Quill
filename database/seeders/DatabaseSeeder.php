@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             TeamMembershipSeeder::class,
             ClientSeeder::class,
             ProjectSeeder::class,
-            FeatureSeeder::class,
+            FeedbackSeeder::class,
             VoteSeeder::class,
             CommentSeeder::class,
             SprintSeeder::class,

@@ -150,7 +150,7 @@ class OrganizationName implements ValidationRule
                 'events',
                 'explore',
                 'featured',
-                'features',
+                'feedback',
                 'files',
                 'fixtures',
                 'forked',

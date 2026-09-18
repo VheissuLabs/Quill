@@ -26,9 +26,9 @@ const { getInitials } = useInitials();
             </span>
             <span class="flex items-center gap-1.5">
                 <Lightbulb
-                    v-if="issue.hasFeature"
+                    v-if="issue.hasFeedback"
                     class="text-muted-foreground size-3.5"
-                    aria-label="Converted from a feature request"
+                    aria-label="Converted from a feedback request"
                 />
                 <IssuePriorityBadge
                     :priority="issue.priority"

@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Comment;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Project;
 use App\Models\User;
 use App\Notifications\MentionedInComment;
@@ -13,21 +13,21 @@ test('a mention notifies through the database and broadcast channels with a link
 
     $project = Project::factory()->public()->create();
     $requester = User::factory()->create(['name' => 'Ada Lovelace']);
-    $feature = Feature::factory()->for($project)->for($requester, 'author')->create(['title' => 'Dark mode']);
+    $feedback = Feedback::factory()->for($project)->for($requester, 'author')->create(['title' => 'Dark mode']);
     $commenter = User::factory()->create(['name' => 'Grace Hopper']);
 
     $this->actingAs($commenter)
-        ->post(route('portal.features.comments.store', [$project->organization, $project, $feature]), [
+        ->post(route('portal.feedback.comments.store', [$project->organization, $project, $feedback]), [
             'body' => '@Ada Lovelace what do you think?',
             'mentions' => [$requester->id],
         ]);
 
-    Notification::assertSentTo($requester, MentionedInComment::class, function (MentionedInComment $notification, array $channels) use ($requester, $project, $feature) {
+    Notification::assertSentTo($requester, MentionedInComment::class, function (MentionedInComment $notification, array $channels) use ($requester, $project, $feedback) {
         $data = $notification->toArray($requester);
 
         return $channels === ['database', 'broadcast']
             && $data['title'] === 'Grace Hopper mentioned you on "Dark mode"'
-            && $data['url'] === route('portal.features.show', [$project->organization, $project, $feature], absolute: false);
+            && $data['url'] === route('portal.feedback.show', [$project->organization, $project, $feedback], absolute: false);
     });
 });
 

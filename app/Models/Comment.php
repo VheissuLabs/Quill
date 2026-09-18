@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use RuntimeException;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -51,6 +52,46 @@ class Comment extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function url(): string
+    {
+        $commentable = $this->commentable;
+
+        return match (true) {
+            $commentable instanceof Issue => route('issues.show', [
+                'current_organization' => $commentable->project->organization,
+                'issue' => $commentable,
+            ], absolute: false),
+            $commentable instanceof Feedback => route('portal.feedback.show', [
+                'organization' => $commentable->project->organization,
+                'project' => $commentable->project,
+                'feedback' => $commentable,
+            ], absolute: false),
+            default => throw new RuntimeException('Comment on an unsupported subject.'),
+        };
+    }
+
+    public function subjectTitle(): string
+    {
+        $commentable = $this->commentable;
+
+        if ($commentable instanceof Issue || $commentable instanceof Feedback) {
+            return $commentable->title;
+        }
+
+        throw new RuntimeException('Comment on an unsupported subject.');
+    }
+
+    public function organization(): Organization
+    {
+        $commentable = $this->commentable;
+
+        if ($commentable instanceof Issue || $commentable instanceof Feedback) {
+            return $commentable->project->organization;
+        }
+
+        throw new RuntimeException('Comment on an unsupported subject.');
+    }
+
     /** @return BelongsToMany<User, $this> */
     public function mentions(): BelongsToMany
     {
@@ -76,7 +117,7 @@ class Comment extends Model
                 'commentable' => function (Relation $commentable): void {
                     if ($commentable instanceof MorphTo) {
                         $commentable->morphWith([
-                            Feature::class => ['project.organization'],
+                            Feedback::class => ['project.organization'],
                             Issue::class => ['project.organization'],
                         ]);
                     }
@@ -88,7 +129,7 @@ class Comment extends Model
                         'commentable' => function (Relation $commentable): void {
                             if ($commentable instanceof MorphTo) {
                                 $commentable->morphWith([
-                                    Feature::class => ['project.organization'],
+                                    Feedback::class => ['project.organization'],
                                     Issue::class => ['project.organization'],
                                 ]);
                             }
@@ -115,11 +156,20 @@ class Comment extends Model
         ];
     }
 
+    /**
+     * A deletion is recorded by hand instead, against the thing commented on, so an owner can
+     * still read what was said. The automatic entry logs nothing on delete, because nothing is
+     * dirty by then.
+     *
+     * @var array<int, string>
+     */
+    protected static $recordEvents = ['created', 'updated'];
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
             ->useLogName('comments')
-            ->logOnly(['commentable_type', 'commentable_id', 'parent_id', 'user_id', 'body', 'is_internal'])
+            ->logOnly(['commentable_type', 'commentable_id', 'parent_id', 'user_id', 'body_text', 'is_internal'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

@@ -16,7 +16,7 @@ class ProjectListResource extends ProjectResource
             'description' => $this->description,
             'visibilityLabel' => $this->visibility->label(),
             'clientName' => $this->client?->name,
-            'featuresCount' => $this->whenCounted('features'),
+            'feedbackCount' => $this->whenCounted('feedback'),
         ];
     }
 }

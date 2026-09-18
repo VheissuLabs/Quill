@@ -14,7 +14,7 @@ class OrganizationModuleSettingFactory extends Factory
     {
         return [
             'organization_id' => Organization::factory(),
-            'module' => 'feature_voting',
+            'module' => 'feedback',
             'capability' => '',
             'enabled' => true,
         ];

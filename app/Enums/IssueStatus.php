@@ -26,12 +26,12 @@ enum IssueStatus: string
         return in_array($this, [self::Done, self::Cancelled], true);
     }
 
-    public function featureStatus(): ?FeatureStatus
+    public function feedbackStatus(): ?FeedbackStatus
     {
         return match ($this) {
-            self::Backlog, self::Todo => FeatureStatus::Planned,
-            self::InProgress => FeatureStatus::InProgress,
-            self::Done => FeatureStatus::Completed,
+            self::Backlog, self::Todo => FeedbackStatus::Planned,
+            self::InProgress => FeedbackStatus::InProgress,
+            self::Done => FeedbackStatus::Completed,
             self::Cancelled => null,
         };
     }

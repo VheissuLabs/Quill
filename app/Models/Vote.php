@@ -19,10 +19,10 @@ class Vote extends Model
 
     protected $guarded = [];
 
-    /** @return BelongsTo<Feature, $this> */
-    public function feature(): BelongsTo
+    /** @return BelongsTo<Feedback, $this> */
+    public function feedback(): BelongsTo
     {
-        return $this->belongsTo(Feature::class);
+        return $this->belongsTo(Feedback::class);
     }
 
     /** @return BelongsTo<User, $this> */

@@ -12,8 +12,7 @@ class ProjectPolicy
 {
     public function viewAny(User $user, Organization $organization): bool
     {
-        return $organization->canUse(OrganizationCapability::Boards)
-            && $user->belongsToOrganization($organization);
+        return $user->belongsToOrganization($organization);
     }
 
     public function view(?User $user, Project $project): bool
@@ -24,7 +23,7 @@ class ProjectPolicy
             ->exists();
     }
 
-    public function viewFeatureBoard(?User $user, Project $project): bool
+    public function viewFeedbackBoard(?User $user, Project $project): bool
     {
         return $project->organization->canUse(OrganizationCapability::Boards)
             && $this->view($user, $project);
@@ -32,19 +31,16 @@ class ProjectPolicy
 
     public function create(User $user, Organization $organization): bool
     {
-        return $organization->canUse(OrganizationCapability::Boards)
-            && $user->hasOrganizationPermission($organization, OrganizationPermission::ManageProjects);
+        return $user->hasOrganizationPermission($organization, OrganizationPermission::ManageProjects);
     }
 
     public function update(User $user, Project $project): bool
     {
-        return $project->organization->canUse(OrganizationCapability::Boards)
-            && $user->hasOrganizationPermission($project->organization, OrganizationPermission::ManageProjects);
+        return $user->hasOrganizationPermission($project->organization, OrganizationPermission::ManageProjects);
     }
 
     public function delete(User $user, Project $project): bool
     {
-        return $project->organization->canUse(OrganizationCapability::Boards)
-            && $user->hasOrganizationPermission($project->organization, OrganizationPermission::ManageProjects);
+        return $user->hasOrganizationPermission($project->organization, OrganizationPermission::ManageProjects);
     }
 }

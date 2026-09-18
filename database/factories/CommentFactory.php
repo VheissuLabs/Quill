@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Comment;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -14,8 +14,8 @@ class CommentFactory extends Factory
     public function definition(): array
     {
         return [
-            'commentable_id' => Feature::factory(),
-            'commentable_type' => (new Feature)->getMorphClass(),
+            'commentable_id' => Feedback::factory(),
+            'commentable_type' => (new Feedback)->getMorphClass(),
             'user_id' => User::factory(),
             'body' => fake()->paragraph(),
             'is_internal' => false,

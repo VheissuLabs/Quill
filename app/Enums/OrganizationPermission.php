@@ -17,7 +17,7 @@ enum OrganizationPermission: string
     case ManageTeams = 'team:manage';
     case ManageClients = 'client:manage';
     case ManageProjects = 'project:manage';
-    case ManageFeatures = 'feature:manage';
+    case ManageFeedback = 'feedback:manage';
     case ManageIssues = 'issue:manage';
     case ManageSprints = 'sprint:manage';
 
@@ -38,7 +38,7 @@ enum OrganizationPermission: string
             self::ManageTeams => __('Manage teams'),
             self::ManageClients => __('Manage clients'),
             self::ManageProjects => __('Manage projects and boards'),
-            self::ManageFeatures => __('Manage feature requests'),
+            self::ManageFeedback => __('Manage feedback'),
             self::ManageIssues => __('Manage issues'),
             self::ManageSprints => __('Manage sprints'),
             self::ViewActivity => __('View activity history'),
@@ -56,7 +56,7 @@ enum OrganizationPermission: string
         return match ($this) {
             self::UpdateOrganization, self::DeleteOrganization, self::ManageRoles => __('Organization'),
             self::AddMember, self::UpdateMember, self::RemoveMember, self::CreateInvitation, self::CancelInvitation => __('People'),
-            self::ManageTeams, self::ManageClients, self::ManageProjects, self::ManageFeatures, self::ManageIssues, self::ManageSprints => __('Work'),
+            self::ManageTeams, self::ManageClients, self::ManageProjects, self::ManageFeedback, self::ManageIssues, self::ManageSprints => __('Work'),
             self::ViewActivity => __('Insights'),
         };
     }

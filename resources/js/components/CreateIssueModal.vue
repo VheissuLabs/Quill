@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/RichTextEditor.vue';
 import { store } from '@/routes/issues';
 import type { IssueFormOptions } from '@/types';
 import { pointOptions } from '@/lib/points';
@@ -140,8 +140,7 @@ const submit = () => {
 
                     <div class="grid gap-2">
                         <Label for="issue-description">Description</Label>
-                        <Textarea
-                            id="issue-description"
+                        <RichTextEditor
                             v-model="form.description"
                             data-test="create-issue-description"
                             placeholder="Context, acceptance criteria, links"

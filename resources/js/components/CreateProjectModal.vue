@@ -62,7 +62,7 @@ function handleOpenChange(value: boolean) {
                 <DialogHeader>
                     <DialogTitle>Create a new project</DialogTitle>
                     <DialogDescription>
-                        Every project gets a board where features are requested
+                        Every project gets a board where feedback are requested
                         and voted on. You can pick a client and restrict the
                         board to teams afterwards.
                     </DialogDescription>
@@ -104,7 +104,7 @@ function handleOpenChange(value: boolean) {
                         <p class="text-muted-foreground text-sm">
                             {{
                                 visibility === 'public'
-                                    ? 'Anyone can view the board. Signed in users can request features and vote.'
+                                    ? 'Anyone can view the board. Signed in users can submit feedback and vote.'
                                     : 'Only members of this organization can view the board.'
                             }}
                         </p>

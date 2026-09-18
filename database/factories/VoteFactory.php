@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -14,7 +14,7 @@ class VoteFactory extends Factory
     public function definition(): array
     {
         return [
-            'feature_id' => Feature::factory(),
+            'feedback_id' => Feedback::factory(),
             'user_id' => User::factory(),
             'direction' => 1,
         ];

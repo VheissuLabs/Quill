@@ -16,7 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/RichTextEditor.vue';
 import { show as showBoard } from '@/routes/portal/projects';
 import { destroy, edit, index, update } from '@/routes/projects';
 import type {
@@ -118,8 +118,7 @@ const submit = () => {
 
                 <div class="grid gap-2">
                     <Label for="description">Description</Label>
-                    <Textarea
-                        id="description"
+                    <RichTextEditor
                         v-model="form.description"
                         data-test="project-description-input"
                         placeholder="What is this project about?"
@@ -172,7 +171,7 @@ const submit = () => {
                     <p class="text-muted-foreground text-sm">
                         {{
                             form.visibility === 'public'
-                                ? 'Anyone can view the board. Signed in users can request features and vote.'
+                                ? 'Anyone can view the board. Signed in users can submit feedback and vote.'
                                 : 'Only members of this organization can view the board.'
                         }}
                     </p>
@@ -253,7 +252,7 @@ const submit = () => {
             <Heading
                 variant="small"
                 title="Delete project"
-                description="Permanently delete this project and every feature request on its board"
+                description="Permanently delete this project and all the feedback on its board"
             />
             <div
                 class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
@@ -284,7 +283,7 @@ const submit = () => {
         :href="destroy([currentOrganization.slug, project.slug])"
     >
         This will permanently delete
-        <strong>{{ project.name }}</strong> and every feature request, vote and
+        <strong>{{ project.name }}</strong> and every feedback request, vote and
         comment on its board.
     </ConfirmDeleteModal>
 </template>

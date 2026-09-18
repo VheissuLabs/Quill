@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Portal;
 
-use App\Enums\FeatureStatus;
+use App\Enums\FeedbackStatus;
+use App\Enums\FeedbackType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\ProjectBoardRequest;
-use App\Http\Resources\FeatureResource;
+use App\Http\Resources\FeedbackResource;
 use App\Http\Resources\ProjectViewerResource;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
@@ -22,42 +23,55 @@ class ProjectController extends Controller
 
         $isMember = $user?->belongsToOrganization($organization) ?? false;
         $status = $request->status();
+        $type = $request->type();
         $sort = $request->sort();
         $search = $request->search();
 
-        $countsByStatus = $project->features()
+        $countsByType = $project->feedback()
+            ->selectRaw('type, count(*) as aggregate')
+            ->groupBy('type')
+            ->pluck('aggregate', 'type');
+
+        $countsByStatus = $project->feedback()
             ->selectRaw('status, count(*) as aggregate')
             ->groupBy('status')
             ->pluck('aggregate', 'status');
 
-        $features = $project->features()
+        $feedback = $project->feedback()
             ->with($isMember ? ['author', 'issue.project'] : ['author'])
             ->withVoteSummary($user)
             ->withCount(['comments' => fn ($query) => $query->public()])
             ->when($status, fn ($query) => $query->where('status', $status), fn ($query) => $query->active())
+            ->when($type, fn ($query) => $query->where('type', $type))
             ->when($search, fn ($query, string $term) => $query->where('title', 'like', '%'.addcslashes($term, '%_\\').'%'))
             ->when($sort === 'top', fn ($query) => $query->orderByRaw('coalesce(score, 0) desc'))
             ->latest()
             ->orderByDesc('id')
             ->get()
-            ->map(fn (Feature $feature) => FeatureResource::make($feature)->withIssue($isMember)->resolve());
+            ->map(fn (Feedback $feedback) => FeedbackResource::make($feedback)->withIssue($isMember)->resolve());
 
         return Inertia::render('portal/Project', [
             'organization' => ['name' => $organization->name, 'slug' => $organization->slug, 'logoUrl' => $organization->logoUrl()],
             'project' => [
+                'id' => $project->id,
                 'name' => $project->name,
                 'slug' => $project->slug,
                 'description' => $project->description,
                 'visibility' => $project->visibility->value,
             ],
-            'features' => $features,
-            'filters' => ['status' => $status?->value, 'sort' => $sort, 'search' => $search],
-            'statuses' => collect(FeatureStatus::cases())->map(fn (FeatureStatus $status) => [
+            'feedback' => $feedback,
+            'filters' => ['status' => $status?->value, 'type' => $type?->value, 'sort' => $sort, 'search' => $search],
+            'types' => collect(FeedbackType::cases())->map(fn (FeedbackType $type) => [
+                'value' => $type->value,
+                'label' => $type->label(),
+                'count' => (int) ($countsByType[$type->value] ?? 0),
+            ]),
+            'statuses' => collect(FeedbackStatus::cases())->map(fn (FeedbackStatus $status) => [
                 'value' => $status->value,
                 'label' => $status->label(),
                 'count' => (int) ($countsByStatus[$status->value] ?? 0),
             ]),
-            'activeCount' => (int) collect(FeatureStatus::active())->sum(fn (FeatureStatus $status) => $countsByStatus[$status->value] ?? 0),
+            'activeCount' => (int) collect(FeedbackStatus::active())->sum(fn (FeedbackStatus $status) => $countsByStatus[$status->value] ?? 0),
             'viewer' => ProjectViewerResource::make($project)->for($user),
         ]);
     }

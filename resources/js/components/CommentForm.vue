@@ -6,7 +6,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/RichTextEditor.vue';
 import type { CommentCommand, CommentMention, SelectOption } from '@/types';
 
 type Props = {
@@ -40,6 +40,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     posted: [];
     cancel: [];
+    typing: [];
 }>();
 
 const form = useForm({
@@ -49,7 +50,7 @@ const form = useForm({
     mentions: [] as number[],
 });
 
-const textarea = ref<InstanceType<typeof Textarea> | null>(null);
+const editorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
 const highlighted = ref(0);
 
 type Suggestion = {
@@ -111,17 +112,40 @@ const lookUpIssues = useDebounceFn(async (query: string) => {
     }
 }, 200);
 
-const textareaElement = (): HTMLTextAreaElement | null =>
-    (textarea.value?.$el as HTMLTextAreaElement | undefined) ?? null;
+/**
+ * What has been typed in the paragraph the caret sits in. A command or a mention never spans
+ * paragraphs, and inside one the string offsets line up with the editor's own positions, so the
+ * suggestion logic below reads exactly as it did when this was a textarea.
+ */
+const context = () => {
+    const editor = editorRef.value?.editor;
 
-const caretPosition = () =>
-    textareaElement()?.selectionStart ?? form.body.length;
+    if (!editor) {
+        return null;
+    }
+
+    const { $from } = editor.state.selection;
+
+    return {
+        editor,
+        blockStart: $from.start(),
+        caret: $from.pos,
+        text: $from.parent.textBetween(0, $from.parentOffset, '\n', '\n'),
+    };
+};
 
 const updatePrompt = () => {
-    const caret = caretPosition();
-    const beforeCaret = form.body.slice(0, caret);
-    const lineStart = beforeCaret.lastIndexOf('\n') + 1;
-    const line = beforeCaret.slice(lineStart);
+    const here = context();
+
+    if (!here) {
+        prompt.value = null;
+
+        return;
+    }
+
+    const beforeCaret = here.text;
+    const lineStart = 0;
+    const line = beforeCaret;
     const mention = /(?:^|\s)@([^@\n]{0,40})$/.exec(beforeCaret);
     const status = /^\/status\s+([^\n]{0,30})$/i.exec(line);
     const command = /^\/(\w{0,20})$/.exec(line);
@@ -213,13 +237,20 @@ const suggestions = computed<Suggestion[]>(() => {
 });
 
 const applySuggestion = (suggestion: Suggestion) => {
-    const element = textareaElement();
-    const caret = caretPosition();
+    const here = context();
 
-    form.body =
-        form.body.slice(0, suggestion.start) +
-        suggestion.insertion +
-        form.body.slice(caret);
+    if (!here) {
+        return;
+    }
+
+    here.editor
+        .chain()
+        .focus()
+        .insertContentAt(
+            { from: here.blockStart + suggestion.start, to: here.caret },
+            suggestion.insertion,
+        )
+        .run();
 
     if (suggestion.mention) {
         form.mentions = [...form.mentions, suggestion.mention.id];
@@ -228,11 +259,6 @@ const applySuggestion = (suggestion: Suggestion) => {
     prompt.value = null;
 
     void nextTick(() => {
-        const position = suggestion.start + suggestion.insertion.length;
-
-        element?.focus();
-        element?.setSelectionRange(position, position);
-
         if (suggestion.insertion === '/status ') {
             updatePrompt();
         }
@@ -243,30 +269,44 @@ const applySuggestion = (suggestion: Suggestion) => {
  * Enter submits the comment (Shift+Enter for a new line) unless a suggestion list
  * is open, where the arrow keys move and Enter or Tab picks.
  */
-const onKeydown = (event: KeyboardEvent) => {
+const onKeydown = (event: KeyboardEvent): boolean => {
     if (suggestions.value.length === 0) {
         if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-            event.preventDefault();
             submit();
+
+            return true;
         }
 
-        return;
+        return false;
     }
 
     if (event.key === 'ArrowDown') {
-        event.preventDefault();
         highlighted.value = (highlighted.value + 1) % suggestions.value.length;
-    } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
+
+        return true;
+    }
+
+    if (event.key === 'ArrowUp') {
         highlighted.value =
             (highlighted.value - 1 + suggestions.value.length) %
             suggestions.value.length;
-    } else if (event.key === 'Enter' || event.key === 'Tab') {
-        event.preventDefault();
-        applySuggestion(suggestions.value[highlighted.value]);
-    } else if (event.key === 'Escape') {
-        prompt.value = null;
+
+        return true;
     }
+
+    if (event.key === 'Enter' || event.key === 'Tab') {
+        applySuggestion(suggestions.value[highlighted.value]);
+
+        return true;
+    }
+
+    if (event.key === 'Escape') {
+        prompt.value = null;
+
+        return true;
+    }
+
+    return false;
 };
 
 /**
@@ -304,19 +344,19 @@ const submit = () => {
             <Label :for="`comment-${parentId ?? 'new'}`" class="sr-only">
                 Comment
             </Label>
-            <Textarea
-                :id="`comment-${parentId ?? 'new'}`"
-                ref="textarea"
+            <RichTextEditor
+                ref="editorRef"
                 v-model="form.body"
                 data-test="comment-body"
                 :placeholder="placeholder"
                 :autofocus="autofocus"
-                required
-                @input="updatePrompt"
-                @click="updatePrompt"
-                @keyup.left.right="updatePrompt"
-                @keydown="onKeydown"
-                @blur="prompt = null"
+                :on-key="onKeydown"
+                :on-caret-move="
+                    () => {
+                        updatePrompt();
+                        emit('typing');
+                    }
+                "
             />
             <ul
                 v-if="suggestions.length > 0"

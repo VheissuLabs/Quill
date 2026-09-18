@@ -14,10 +14,10 @@ abstract class TestCase extends BaseTestCase
     /** The seeder that runs before each test. */
     protected string $seeder = PermissionsSeeder::class;
 
-    protected function skipUnlessFortifyHas(string $feature, ?string $message = null): void
+    protected function skipUnlessFortifyHas(string $feedback, ?string $message = null): void
     {
-        if (! Features::enabled($feature)) {
-            $this->markTestSkipped($message ?? "Fortify feature [{$feature}] is not enabled.");
+        if (! Features::enabled($feedback)) {
+            $this->markTestSkipped($message ?? "Fortify feedback [{$feedback}] is not enabled.");
         }
     }
 }

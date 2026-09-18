@@ -13,7 +13,7 @@ enum OrganizationCapability: string
     public function module(): OrganizationModule
     {
         return match ($this) {
-            self::Boards, self::Voting => OrganizationModule::FeatureVoting,
+            self::Boards, self::Voting => OrganizationModule::Feedback,
             self::Issues, self::Sprints, self::Workflow => OrganizationModule::Development,
         };
     }

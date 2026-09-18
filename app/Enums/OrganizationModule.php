@@ -4,7 +4,7 @@ namespace App\Enums;
 
 enum OrganizationModule: string
 {
-    case FeatureVoting = 'feature_voting';
+    case Feedback = 'feedback';
 
     case Development = 'development';
 
@@ -13,7 +13,7 @@ enum OrganizationModule: string
     public function key(): string
     {
         return match ($this) {
-            self::FeatureVoting => 'featureVoting',
+            self::Feedback => 'feedback',
             self::Development => 'development',
             self::Teams => 'teams',
         };
@@ -23,7 +23,7 @@ enum OrganizationModule: string
     public function capabilities(): array
     {
         return match ($this) {
-            self::FeatureVoting => [
+            self::Feedback => [
                 OrganizationCapability::Boards,
                 OrganizationCapability::Voting,
             ],

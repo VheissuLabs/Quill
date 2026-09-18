@@ -7,10 +7,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useInitials } from '@/composables/useInitials';
 import { formatDate } from '@/lib/dates';
-import type { CommentMention, FeatureComment } from '@/types';
+import type { CommentMention, FeedbackComment } from '@/types';
 
 type Props = {
-    comment: FeatureComment;
+    comment: FeedbackComment;
     action: string;
     organizationName?: string;
     canComment: boolean;
@@ -24,7 +24,8 @@ withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    delete: [comment: FeatureComment];
+    delete: [comment: FeedbackComment];
+    typing: [];
 }>();
 
 const { getInitials } = useInitials();
@@ -143,6 +144,7 @@ const replying = ref(false);
                     :placeholder="`Reply to ${comment.authorName ?? 'this comment'}`"
                     submit-label="Reply"
                     autofocus
+                    @typing="emit('typing')"
                     @posted="replying = false"
                     @cancel="replying = false"
                 />

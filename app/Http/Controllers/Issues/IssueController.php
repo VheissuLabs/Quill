@@ -12,7 +12,7 @@ use App\Http\Requests\Issues\IssueIndexRequest;
 use App\Http\Requests\Issues\IssueRequest;
 use App\Http\Resources\ActivityResource;
 use App\Http\Resources\CommentResource;
-use App\Http\Resources\FeatureResource;
+use App\Http\Resources\FeedbackResource;
 use App\Http\Resources\IssueActivityResource;
 use App\Http\Resources\IssueDetailResource;
 use App\Http\Resources\IssueFormResource;
@@ -61,7 +61,7 @@ class IssueController extends Controller
         $permissions = $user->toOrganizationPermissions($currentOrganization);
 
         $issue->load(['project.organization', 'team.columns', 'sprint', 'boardColumn.owner', 'assignee', 'creator',
-            'feature' => fn ($query) => $query->withVoteSummary($user)->withCount('comments')->with('author')]);
+            'feedback' => fn ($query) => $query->withVoteSummary($user)->withCount('comments')->with('author')]);
 
         return Inertia::render('issues/Show', [
             'issue' => IssueDetailResource::make($issue, $user)->resolve(),
@@ -71,7 +71,7 @@ class IssueController extends Controller
                 ->map(fn ($comment) => CommentResource::make($comment, $user)->resolve()),
             'commands' => app(IssueCommentCommands::class)->availableTo($user, $issue),
             'mentionables' => $issue->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]),
-            'feature' => $issue->feature ? FeatureResource::make($issue->feature)->resolve() : null,
+            'feedback' => $issue->feedback ? FeedbackResource::make($issue->feedback)->resolve() : null,
             'activity' => $permissions['canViewActivity']
                 ? ActivityResource::collection($issue->activitiesAsSubject()->with('causer')->latest('id')->limit(30)->get())
                 : [],

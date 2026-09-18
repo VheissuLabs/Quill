@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\OrganizationPermission;
 use App\Enums\ProjectVisibility;
 use App\Observers\OrganizationScopedSlugObserver;
+use App\Observers\ProjectObserver;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -27,6 +28,7 @@ use Spatie\Activitylog\Support\LogOptions;
  */
 #[UseFactory(ProjectFactory::class)]
 #[ObservedBy(OrganizationScopedSlugObserver::class)]
+#[ObservedBy(ProjectObserver::class)]
 class Project extends Model
 {
     use HasFactory, LogsActivity;
@@ -52,10 +54,10 @@ class Project extends Model
             ->withTimestamps();
     }
 
-    /** @return HasMany<Feature, $this> */
-    public function features(): HasMany
+    /** @return HasMany<Feedback, $this> */
+    public function feedback(): HasMany
     {
-        return $this->hasMany(Feature::class);
+        return $this->hasMany(Feedback::class);
     }
 
     /** @return HasMany<Issue, $this> */

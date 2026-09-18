@@ -27,7 +27,7 @@ export function navigationCommands(
 ): PaletteCommand[] {
     const slug = organization.slug;
     const modules = organization.modules;
-    const voting = modules.featureVoting.enabled;
+    const voting = modules.feedback.enabled;
     const development = modules.development.enabled;
 
     return [
@@ -37,7 +37,7 @@ export function navigationCommands(
             icon: LayoutGrid,
             url: dashboard(slug).url,
         },
-        ...(voting && modules.featureVoting.capabilities.boards
+        ...(voting && modules.feedback.capabilities.boards
             ? [
                   {
                       id: 'go-projects',
@@ -121,8 +121,7 @@ export function actionCommands(organization: Organization): PaletteCommand[] {
                   },
               ]
             : []),
-        ...(modules.featureVoting.enabled &&
-        modules.featureVoting.capabilities.boards
+        ...(modules.feedback.enabled && modules.feedback.capabilities.boards
             ? [
                   {
                       id: 'new-project',

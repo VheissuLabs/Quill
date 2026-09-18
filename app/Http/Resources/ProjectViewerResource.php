@@ -3,7 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Enums\OrganizationPermission;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -26,8 +26,8 @@ class ProjectViewerResource extends JsonResource
     {
         return [
             'isMember' => $this->viewer?->belongsToOrganization($this->organization) ?? false,
-            'canCreateFeature' => $this->viewer?->can('create', [Feature::class, $this->resource]) ?? false,
-            'canManageFeatures' => $this->viewer?->hasOrganizationPermission($this->organization, OrganizationPermission::ManageFeatures) ?? false,
+            'canCreateFeedback' => $this->viewer?->can('create', [Feedback::class, $this->resource]) ?? false,
+            'canManageFeedback' => $this->viewer?->hasOrganizationPermission($this->organization, OrganizationPermission::ManageFeedback) ?? false,
         ];
     }
 }

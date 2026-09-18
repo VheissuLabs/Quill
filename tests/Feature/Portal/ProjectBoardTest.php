@@ -1,7 +1,7 @@
 <?php
 
-use App\Enums\FeatureStatus;
-use App\Models\Feature;
+use App\Enums\FeedbackStatus;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
@@ -12,7 +12,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 test('public boards can be viewed by guests', function () {
     $project = Project::factory()->public()->create();
-    Feature::factory()->for($project)->create(['title' => 'Dark mode']);
+    Feedback::factory()->for($project)->create(['title' => 'Dark mode']);
 
     $response = $this->get(route('portal.projects.show', [$project->organization, $project]));
 
@@ -20,17 +20,17 @@ test('public boards can be viewed by guests', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('portal/Project')
-            ->has('features', 1)
-            ->where('features.0.title', 'Dark mode')
-            ->where('viewer.canCreateFeature', false),
+            ->has('feedback', 1)
+            ->where('feedback.0.title', 'Dark mode')
+            ->where('viewer.canCreateFeedback', false),
         );
 });
 
-test('public boards cannot be viewed when feature voting is disabled', function () {
+test('public boards cannot be viewed when feedback voting is disabled', function () {
     $project = Project::factory()->public()->create();
     $project->organization->updateModuleSettings([
-        'feature_voting_enabled' => false,
-        'feature_voting_boards_enabled' => true,
+        'feedback_enabled' => false,
+        'feedback_boards_enabled' => true,
     ]);
 
     $this->get(route('portal.projects.show', [$project->organization, $project]))
@@ -69,8 +69,8 @@ test('private boards can be viewed by organization members', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('viewer.isMember', true)
-            ->where('viewer.canCreateFeature', true)
-            ->where('viewer.canManageFeatures', false),
+            ->where('viewer.canCreateFeedback', true)
+            ->where('viewer.canManageFeedback', false),
         );
 });
 
@@ -95,43 +95,43 @@ test('team restricted boards are only visible to members of those teams and admi
     $this->actingAs($admin)->get(route('portal.projects.show', [$organization, $project]))->assertOk();
 });
 
-test('features are ordered by net score and can be filtered by status', function () {
+test('feedback are ordered by net score and can be filtered by status', function () {
     $project = Project::factory()->public()->create();
-    $popular = Feature::factory()->for($project)->create(['title' => 'Popular']);
-    $quiet = Feature::factory()->for($project)->create(['title' => 'Quiet']);
-    $disliked = Feature::factory()->for($project)->create(['title' => 'Disliked']);
+    $popular = Feedback::factory()->for($project)->create(['title' => 'Popular']);
+    $quiet = Feedback::factory()->for($project)->create(['title' => 'Quiet']);
+    $disliked = Feedback::factory()->for($project)->create(['title' => 'Disliked']);
     Vote::factory()->count(2)->for($popular)->create();
     Vote::factory()->count(3)->for($disliked)->create();
     Vote::factory()->count(5)->for($disliked)->down()->create();
 
     $this->get(route('portal.projects.show', [$project->organization, $project]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('features.0.title', 'Popular')
-            ->where('features.0.votesCount', 2)
-            ->where('features.1.title', 'Quiet')
-            ->where('features.2.title', 'Disliked')
-            ->where('features.2.votesCount', 3)
-            ->where('features.2.downvotesCount', 5)
-            ->where('features.2.score', -2),
+            ->where('feedback.0.title', 'Popular')
+            ->where('feedback.0.votesCount', 2)
+            ->where('feedback.1.title', 'Quiet')
+            ->where('feedback.2.title', 'Disliked')
+            ->where('feedback.2.votesCount', 3)
+            ->where('feedback.2.downvotesCount', 5)
+            ->where('feedback.2.score', -2),
         );
 
     $quiet->update(['status' => 'planned']);
 
     $this->get(route('portal.projects.show', [$project->organization, $project, 'status' => 'planned']))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('features', 1)
-            ->where('features.0.title', 'Quiet')
+            ->has('feedback', 1)
+            ->where('feedback.0.title', 'Quiet')
             ->where('filters.status', 'planned'),
         );
 });
 
 test('members see the tracked issue on the board but guests do not', function () {
     $project = Project::factory()->public()->create();
-    $feature = Feature::factory()->for($project)->create();
-    $issue = Issue::factory()->for($project)->for($feature)->create();
+    $feedback = Feedback::factory()->for($project)->create();
+    $issue = Issue::factory()->for($project)->for($feedback)->create();
 
     $this->get(route('portal.projects.show', [$project->organization, $project]))
-        ->assertInertia(fn (Assert $page) => $page->where('features.0.issue', null));
+        ->assertInertia(fn (Assert $page) => $page->where('feedback.0.issue', null));
 
     $member = User::factory()->create();
     $project->organization->addMember($member, 'Member');
@@ -139,28 +139,28 @@ test('members see the tracked issue on the board but guests do not', function ()
     $this->actingAs($member)
         ->get(route('portal.projects.show', [$project->organization, $project]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('features.0.issue.id', $issue->id)
-            ->where('features.0.issue.reference', $issue->reference()),
+            ->where('feedback.0.issue.id', $issue->id)
+            ->where('feedback.0.issue.reference', $issue->reference()),
         );
 });
 
 test('completed and declined requests leave the board but stay under their status filter', function () {
     $project = Project::factory()->public()->create();
-    Feature::factory()->for($project)->create(['title' => 'Still open']);
-    Feature::factory()->for($project)->create(['title' => 'Shipped', 'status' => FeatureStatus::Completed]);
-    Feature::factory()->for($project)->create(['title' => 'Rejected', 'status' => FeatureStatus::Declined]);
+    Feedback::factory()->for($project)->create(['title' => 'Still open']);
+    Feedback::factory()->for($project)->create(['title' => 'Shipped', 'status' => FeedbackStatus::Completed]);
+    Feedback::factory()->for($project)->create(['title' => 'Rejected', 'status' => FeedbackStatus::Declined]);
 
     $this->get(route('portal.projects.show', [$project->organization, $project]))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('features', 1)
-            ->where('features.0.title', 'Still open')
+            ->has('feedback', 1)
+            ->where('feedback.0.title', 'Still open')
             ->where('activeCount', 1),
         );
 
     $this->get(route('portal.projects.show', [$project->organization, $project, 'status' => 'completed']))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('features', 1)
-            ->where('features.0.title', 'Shipped'),
+            ->has('feedback', 1)
+            ->where('feedback.0.title', 'Shipped'),
         );
 });
 
@@ -176,18 +176,18 @@ test('a project cannot be reached through another organization', function () {
 test('signed in users outside the organization are not treated as members on public boards', function () {
     $outsider = User::factory()->create();
     $project = Project::factory()->public()->create();
-    $feature = Feature::factory()->for($project)->create();
+    $feedback = Feedback::factory()->for($project)->create();
 
     $this->actingAs($outsider)
         ->get(route('portal.projects.show', [$project->organization, $project]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('viewer.isMember', false)
-            ->where('viewer.canCreateFeature', true)
-            ->where('viewer.canManageFeatures', false),
+            ->where('viewer.canCreateFeedback', true)
+            ->where('viewer.canManageFeedback', false),
         );
 
     $this->actingAs($outsider)
-        ->get(route('portal.features.show', [$project->organization, $project, $feature]))
+        ->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('viewer.isMember', false)
             ->where('viewer.canConvert', false)
@@ -196,43 +196,43 @@ test('signed in users outside the organization are not treated as members on pub
         );
 });
 
-test('the feature board filters by a search term on the title', function () {
+test('the feedback board filters by a search term on the title', function () {
     $project = Project::factory()->public()->create();
-    Feature::factory()->for($project)->create(['title' => 'Dark mode please']);
-    Feature::factory()->for($project)->create(['title' => 'Unrelated request']);
+    Feedback::factory()->for($project)->create(['title' => 'Dark mode please']);
+    Feedback::factory()->for($project)->create(['title' => 'Unrelated request']);
 
     $this->get(route('portal.projects.show', [$project->organization, $project, 'q' => 'dark']))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('filters.search', 'dark')
-            ->has('features', 1)
-            ->where('features.0.title', 'Dark mode please'));
+            ->has('feedback', 1)
+            ->where('feedback.0.title', 'Dark mode please'));
 });
 
-test('a feature search term narrows within the selected status', function () {
+test('a feedback search term narrows within the selected status', function () {
     $project = Project::factory()->public()->create();
-    Feature::factory()->for($project)->create(['title' => 'Dark mode', 'status' => FeatureStatus::Planned]);
-    Feature::factory()->for($project)->create(['title' => 'Dark theme', 'status' => FeatureStatus::Open]);
+    Feedback::factory()->for($project)->create(['title' => 'Dark mode', 'status' => FeedbackStatus::Planned]);
+    Feedback::factory()->for($project)->create(['title' => 'Dark theme', 'status' => FeedbackStatus::Open]);
 
     $this->get(route('portal.projects.show', [
         $project->organization,
         $project,
         'q' => 'dark',
-        'status' => FeatureStatus::Planned->value,
+        'status' => FeedbackStatus::Planned->value,
     ]))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->has('features', 1)
-            ->where('features.0.title', 'Dark mode'));
+        ->assertInertia(fn (Assert $page) => $page->has('feedback', 1)
+            ->where('feedback.0.title', 'Dark mode'));
 });
 
 test('the status counts ignore the search term so the sidebar stays stable', function () {
     $project = Project::factory()->public()->create();
-    Feature::factory()->for($project)->count(3)->create(['status' => FeatureStatus::Open]);
-    Feature::factory()->for($project)->create(['title' => 'Dark mode', 'status' => FeatureStatus::Open]);
+    Feedback::factory()->for($project)->count(3)->create(['status' => FeedbackStatus::Open]);
+    Feedback::factory()->for($project)->create(['title' => 'Dark mode', 'status' => FeedbackStatus::Open]);
 
     $this->get(route('portal.projects.show', [$project->organization, $project, 'q' => 'dark']))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('features', 1)
+            ->has('feedback', 1)
             ->where('activeCount', 4));
 });

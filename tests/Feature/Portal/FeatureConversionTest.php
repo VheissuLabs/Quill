@@ -1,24 +1,24 @@
 <?php
 
-use App\Enums\FeatureStatus;
+use App\Enums\FeedbackStatus;
 use App\Enums\IssueStatus;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
-test('admins convert a feature into a backlog issue and the feature becomes planned', function () {
+test('admins convert a feedback into a backlog issue and the feedback becomes planned', function () {
     $project = Project::factory()->public()->create();
-    $feature = Feature::factory()->for($project)->create(['title' => 'Dark mode', 'description' => 'Please.']);
+    $feedback = Feedback::factory()->for($project)->create(['title' => 'Dark mode', 'description' => 'Please.']);
     $admin = User::factory()->create();
     $project->organization->addMember($admin, 'Admin');
 
     $response = $this
         ->actingAs($admin)
-        ->post(route('portal.features.issue.store', [$project->organization, $project, $feature]));
+        ->post(route('portal.feedback.issue.store', [$project->organization, $project, $feedback]));
 
-    $issue = Issue::firstWhere('feature_id', $feature->id);
+    $issue = Issue::firstWhere('feedback_id', $feedback->id);
 
     $response->assertRedirect(route('issues.show', ['current_organization' => $project->organization, 'issue' => $issue]));
 
@@ -29,64 +29,64 @@ test('admins convert a feature into a backlog issue and the feature becomes plan
         ->status->toBe(IssueStatus::Backlog)
         ->sprint_id->toBeNull()
         ->created_by->toBe($admin->id);
-    expect($feature->fresh()->status)->toBe(FeatureStatus::Planned);
+    expect($feedback->fresh()->status)->toBe(FeedbackStatus::Planned);
 });
 
-test('a feature can only be converted once', function () {
+test('a feedback can only be converted once', function () {
     $project = Project::factory()->public()->create();
-    $feature = Feature::factory()->for($project)->create();
-    Issue::factory()->for($project)->for($feature)->create();
+    $feedback = Feedback::factory()->for($project)->create();
+    Issue::factory()->for($project)->for($feedback)->create();
     $admin = User::factory()->create();
     $project->organization->addMember($admin, 'Admin');
 
     $this->actingAs($admin)
-        ->post(route('portal.features.issue.store', [$project->organization, $project, $feature]))
+        ->post(route('portal.feedback.issue.store', [$project->organization, $project, $feedback]))
         ->assertStatus(409);
 });
 
-test('members cannot convert features', function () {
+test('members cannot convert feedback', function () {
     $project = Project::factory()->public()->create();
-    $feature = Feature::factory()->for($project)->create();
+    $feedback = Feedback::factory()->for($project)->create();
     $member = User::factory()->create();
     $project->organization->addMember($member, 'Member');
 
     $this->actingAs($member)
-        ->post(route('portal.features.issue.store', [$project->organization, $project, $feature]))
+        ->post(route('portal.feedback.issue.store', [$project->organization, $project, $feedback]))
         ->assertForbidden();
 });
 
-test('members see the linked issue on the feature page but the public does not', function () {
+test('members see the linked issue on the feedback page but the public does not', function () {
     $project = Project::factory()->public()->create();
-    $feature = Feature::factory()->for($project)->create();
-    $issue = Issue::factory()->for($project)->for($feature)->create();
+    $feedback = Feedback::factory()->for($project)->create();
+    $issue = Issue::factory()->for($project)->for($feedback)->create();
     $member = User::factory()->create();
     $project->organization->addMember($member, 'Member');
 
-    $this->get(route('portal.features.show', [$project->organization, $project, $feature]))
+    $this->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
         ->assertInertia(fn (Assert $page) => $page->where('issue', null));
 
     $this->actingAs($member)
-        ->get(route('portal.features.show', [$project->organization, $project, $feature]))
+        ->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('issue.id', $issue->id)
             ->where('issue.reference', $issue->reference()),
         );
 });
 
-test('declined and completed features cannot be converted', function () {
+test('declined and completed feedback cannot be converted', function () {
     $project = Project::factory()->public()->create();
     $admin = User::factory()->create();
     $project->organization->addMember($admin, 'Admin');
 
-    foreach ([FeatureStatus::Declined, FeatureStatus::Completed] as $status) {
-        $feature = Feature::factory()->for($project)->create(['status' => $status]);
+    foreach ([FeedbackStatus::Declined, FeedbackStatus::Completed] as $status) {
+        $feedback = Feedback::factory()->for($project)->create(['status' => $status]);
 
         $this->actingAs($admin)
-            ->post(route('portal.features.issue.store', [$project->organization, $project, $feature]))
+            ->post(route('portal.feedback.issue.store', [$project->organization, $project, $feedback]))
             ->assertForbidden();
 
         $this->actingAs($admin)
-            ->get(route('portal.features.show', [$project->organization, $project, $feature]))
+            ->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
             ->assertInertia(fn (Assert $page) => $page->where('viewer.canConvert', false));
     }
 });

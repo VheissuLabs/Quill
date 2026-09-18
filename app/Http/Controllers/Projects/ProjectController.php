@@ -20,7 +20,7 @@ class ProjectController extends Controller
     public function index(Organization $currentOrganization): Response
     {
         return Inertia::render('projects/Index', [
-            'projects' => ProjectListResource::collection($currentOrganization->projects()->visibleTo(auth()->user())->with('client')->withCount('features')->orderBy('name')->get()),
+            'projects' => ProjectListResource::collection($currentOrganization->projects()->visibleTo(auth()->user())->with('client')->withCount('feedback')->orderBy('name')->get()),
             'clients' => ClientResource::collection($currentOrganization->clients()->orderBy('name')->get()),
             'visibilities' => ProjectVisibility::options(),
         ]);

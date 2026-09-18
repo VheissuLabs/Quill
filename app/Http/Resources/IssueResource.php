@@ -29,7 +29,7 @@ class IssueResource extends JsonResource
             'teamName' => $this->team?->name,
             'assigneeId' => $this->assignee_id,
             'assigneeName' => $this->assignee?->name,
-            'hasFeature' => $this->feature_id !== null,
+            'hasFeedback' => $this->feedback_id !== null,
             'createdAt' => $this->created_at->toISOString(),
         ];
     }

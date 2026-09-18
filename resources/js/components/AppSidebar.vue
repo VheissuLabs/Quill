@@ -37,6 +37,7 @@ import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import { index as sprints } from '@/routes/sprints';
 import { index as teams } from '@/routes/teams';
+import { useLiveModules } from '@/composables/useLiveModules';
 import type { NavItem } from '@/types';
 
 type NavGroup = {
@@ -45,6 +46,8 @@ type NavGroup = {
 };
 
 const page = usePage();
+
+useLiveModules();
 
 const organizationSlug = computed(() => page.props.currentOrganization?.slug);
 
@@ -58,7 +61,7 @@ const teamRunsSprints = computed(
 const modules = computed(
     () =>
         page.props.currentOrganization?.modules ?? {
-            featureVoting: {
+            feedback: {
                 enabled: true,
                 capabilities: { boards: true, voting: true },
             },
@@ -92,23 +95,8 @@ const navGroups = computed<NavGroup[]>(() => {
     const slug = organizationSlug.value;
 
     if (slug) {
-        if (
-            modules.value.featureVoting.enabled &&
-            modules.value.featureVoting.capabilities.boards
-        ) {
-            groups.push({
-                label: 'Feature voting',
-                items: [
-                    {
-                        title: 'Projects',
-                        href: projects(slug),
-                        icon: FolderKanban,
-                    },
-                ],
-            });
-        }
-
         const developmentItems = [
+            { title: 'Projects', href: projects(slug), icon: FolderKanban },
             ...(modules.value.development.enabled &&
             modules.value.development.capabilities.issues
                 ? [{ title: 'Issues', href: issues(slug), icon: ListTodo }]

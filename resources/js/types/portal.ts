@@ -1,7 +1,7 @@
 import type { LinkedIssue } from './issues';
 import type { ProjectVisibility } from './projects';
 
-export type FeatureStatus =
+export type FeedbackStatus =
     | 'open'
     | 'planned'
     | 'in_progress'
@@ -15,6 +15,7 @@ export type PortalOrganization = {
 };
 
 export type PortalProject = {
+    id: number;
     name: string;
     slug: string;
     description?: string | null;
@@ -23,11 +24,17 @@ export type PortalProject = {
 
 export type VoteDirection = 'up' | 'down';
 
-export type FeatureSummary = {
+export type FeedbackType = 'feature' | 'bug';
+
+export type FeedbackSummary = {
+    type: FeedbackType;
+    typeLabel: string;
+    voteLabel: string;
+    acceptsOpposingVotes: boolean;
     id: number;
     title: string;
     description: string | null;
-    status: FeatureStatus;
+    status: FeedbackStatus;
     statusLabel: string;
     acceptsVotes: boolean;
     votesCount: number;
@@ -51,7 +58,7 @@ export type CommentMention = {
     name: string;
 };
 
-export type FeatureComment = {
+export type FeedbackComment = {
     id: number;
     body: string;
     authorName: string | null;
@@ -59,28 +66,35 @@ export type FeatureComment = {
     isInternal: boolean;
     canDelete: boolean;
     mentions: CommentMention[];
-    replies: FeatureComment[];
+    replies: FeedbackComment[];
 };
 
 export type BoardStatusOption = {
-    value: FeatureStatus;
+    value: FeedbackStatus;
+    label: string;
+    count: number;
+};
+
+export type BoardTypeOption = {
+    value: FeedbackType;
     label: string;
     count: number;
 };
 
 export type BoardFilters = {
-    status: FeatureStatus | null;
+    status: FeedbackStatus | null;
+    type: FeedbackType | null;
     sort: 'top' | 'new';
     search: string | null;
 };
 
 export type BoardViewer = {
     isMember: boolean;
-    canCreateFeature: boolean;
-    canManageFeatures: boolean;
+    canCreateFeedback: boolean;
+    canManageFeedback: boolean;
 };
 
-export type FeatureViewer = {
+export type FeedbackViewer = {
     isMember: boolean;
     canUpdate: boolean;
     canUpdateStatus: boolean;

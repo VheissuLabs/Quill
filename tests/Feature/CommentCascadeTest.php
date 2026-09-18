@@ -1,18 +1,18 @@
 <?php
 
 use App\Models\Comment;
-use App\Models\Feature;
+use App\Models\Feedback;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\User;
 
-test('deleting a feature deletes its comments, replies and mentions', function () {
-    $feature = Feature::factory()->create();
-    $parent = Comment::factory()->for($feature, 'commentable')->create();
-    $reply = Comment::factory()->for($feature, 'commentable')->replyTo($parent)->create();
+test('deleting a feedback deletes its comments, replies and mentions', function () {
+    $feedback = Feedback::factory()->create();
+    $parent = Comment::factory()->for($feedback, 'commentable')->create();
+    $reply = Comment::factory()->for($feedback, 'commentable')->replyTo($parent)->create();
     $reply->mentions()->sync([User::factory()->create()->id]);
 
-    $feature->delete();
+    $feedback->delete();
 
     expect(Comment::whereKey([$parent->id, $reply->id])->count())->toBe(0)
         ->and(DB::table('comment_mentions')->where('comment_id', $reply->id)->count())->toBe(0);
@@ -28,10 +28,10 @@ test('deleting an issue deletes its comments', function () {
 });
 
 test('deleting a comment leaves its commentable alone', function () {
-    $feature = Feature::factory()->create();
-    $comment = Comment::factory()->for($feature, 'commentable')->create();
+    $feedback = Feedback::factory()->create();
+    $comment = Comment::factory()->for($feedback, 'commentable')->create();
 
     $comment->delete();
 
-    expect($feature->fresh())->not->toBeNull();
+    expect($feedback->fresh())->not->toBeNull();
 });

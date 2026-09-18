@@ -7,13 +7,13 @@ import { login } from '@/routes';
 import {
     destroy as withdrawVote,
     store as castVote,
-} from '@/routes/portal/features/vote';
-import type { FeatureSummary, VoteDirection } from '@/types';
+} from '@/routes/portal/feedback/vote';
+import type { FeedbackSummary, VoteDirection } from '@/types';
 
 type Props = {
     organization: string;
     project: string;
-    feature: FeatureSummary;
+    feedback: FeedbackSummary;
     canVote: boolean;
     isGuest: boolean;
     size?: 'default' | 'lg';
@@ -45,14 +45,14 @@ const vote = (direction: VoteDirection) => {
     const args: [string, string, number] = [
         props.organization,
         props.project,
-        props.feature.id,
+        props.feedback.id,
     ];
 
     const visit =
-        props.feature.vote === direction ? withdrawVote(args) : castVote(args);
+        props.feedback.vote === direction ? withdrawVote(args) : castVote(args);
 
     router.visit(visit, {
-        data: props.feature.vote === direction ? {} : { direction },
+        data: props.feedback.vote === direction ? {} : { direction },
         preserveScroll: true,
         onStart: () => (processing.value = true),
         onFinish: () => (processing.value = false),
@@ -75,7 +75,7 @@ const vote = (direction: VoteDirection) => {
         aria-label="Log in to vote"
     >
         <span class="py-1"><ChevronUp /></span>
-        <span class="text-foreground">{{ feature.score }}</span>
+        <span class="text-foreground">{{ feedback.score }}</span>
         <span class="py-1"><ChevronDown /></span>
     </Link>
 
@@ -87,18 +87,18 @@ const vote = (direction: VoteDirection) => {
         <button
             type="button"
             data-test="vote-up-button"
-            :aria-pressed="feature.vote === 'up'"
+            :aria-pressed="feedback.vote === 'up'"
             :aria-label="
-                feature.vote === 'up'
+                feedback.vote === 'up'
                     ? 'Withdraw your vote'
-                    : 'Vote for this feature'
+                    : 'Vote for this feedback'
             "
             :disabled="!canVote || processing"
             :class="
                 cn(
                     arrowClass,
                     'rounded-t-[calc(var(--radius-lg)-1px)]',
-                    feature.vote === 'up'
+                    feedback.vote === 'up'
                         ? cn(activeArrowClass, 'text-primary hover:bg-accent')
                         : inactiveArrowClass,
                 )
@@ -109,25 +109,27 @@ const vote = (direction: VoteDirection) => {
         </button>
         <span
             data-test="vote-score"
-            :class="cn('leading-none', feature.score < 0 && 'text-destructive')"
+            :class="
+                cn('leading-none', feedback.score < 0 && 'text-destructive')
+            "
         >
-            {{ feature.score }}
+            {{ feedback.score }}
         </span>
         <button
             type="button"
             data-test="vote-down-button"
-            :aria-pressed="feature.vote === 'down'"
+            :aria-pressed="feedback.vote === 'down'"
             :aria-label="
-                feature.vote === 'down'
+                feedback.vote === 'down'
                     ? 'Withdraw your vote'
-                    : 'Vote against this feature'
+                    : 'Vote against this feedback'
             "
             :disabled="!canVote || processing"
             :class="
                 cn(
                     arrowClass,
                     'rounded-b-[calc(var(--radius-lg)-1px)]',
-                    feature.vote === 'down'
+                    feedback.vote === 'down'
                         ? cn(
                               activeArrowClass,
                               'text-destructive/80 hover:bg-accent',

@@ -12,13 +12,13 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import EmptyState from '@/components/EmptyState.vue';
-import FeatureStatusBadge from '@/components/FeatureStatusBadge.vue';
+import FeedbackStatusBadge from '@/components/FeedbackStatusBadge.vue';
 import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/dates';
 import { dashboard } from '@/routes';
-import { show as showFeature } from '@/routes/portal/features';
+import { show as showFeedback } from '@/routes/portal/feedback';
 import { show as showBoard } from '@/routes/portal/projects';
 import { index as projectsIndex } from '@/routes/projects';
 import type {
@@ -27,23 +27,23 @@ import type {
     DashboardStats,
     Organization,
     OrganizationPermissions,
-    RecentFeature,
+    RecentFeedback,
 } from '@/types';
 
 type Props = {
     currentOrganization: Organization;
     pendingInvitations?: DashboardInvitation[];
     projects: DashboardProject[];
-    recentFeatures: RecentFeature[];
+    recentFeedback: RecentFeedback[];
     stats: DashboardStats;
     permissions: OrganizationPermissions;
 };
 
 const props = defineProps<Props>();
-const featureVotingEnabled = computed(
+const feedbackEnabled = computed(
     () =>
-        props.currentOrganization.modules.featureVoting.enabled &&
-        props.currentOrganization.modules.featureVoting.capabilities.boards,
+        props.currentOrganization.modules.feedback.enabled &&
+        props.currentOrganization.modules.feedback.capabilities.boards,
 );
 
 defineOptions({
@@ -67,7 +67,7 @@ const statCards = computed(() => [
     },
     {
         label: 'Open requests',
-        value: props.stats.openFeaturesCount,
+        value: props.stats.openFeedbackCount,
         icon: Lightbulb,
     },
     {
@@ -93,7 +93,7 @@ const statCards = computed(() => [
                     {{ currentOrganization.name }}
                 </h1>
                 <p class="text-muted-foreground mt-1 text-sm">
-                    <template v-if="featureVotingEnabled">
+                    <template v-if="feedbackEnabled">
                         What people are asking for across your boards.
                     </template>
                     <template v-else>
@@ -102,7 +102,7 @@ const statCards = computed(() => [
                 </p>
             </div>
             <Button
-                v-if="featureVotingEnabled && permissions.canManageProjects"
+                v-if="feedbackEnabled && permissions.canManageProjects"
                 variant="outline"
                 as-child
             >
@@ -112,7 +112,7 @@ const statCards = computed(() => [
             </Button>
         </div>
 
-        <template v-if="featureVotingEnabled && projects.length > 0">
+        <template v-if="feedbackEnabled && projects.length > 0">
             <div
                 class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_440px]"
             >
@@ -206,9 +206,9 @@ const statCards = computed(() => [
                                         <span
                                             class="text-foreground font-medium"
                                         >
-                                            {{ project.openFeaturesCount }} open
+                                            {{ project.openFeedbackCount }} open
                                         </span>
-                                        · {{ project.featuresCount }} total
+                                        · {{ project.feedbackCount }} total
                                     </p>
                                     <span
                                         class="text-foreground flex items-center gap-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
@@ -225,45 +225,45 @@ const statCards = computed(() => [
                 <section class="space-y-4">
                     <h2 class="font-semibold">Recent requests</h2>
                     <ol
-                        v-if="recentFeatures.length > 0"
+                        v-if="recentFeedback.length > 0"
                         class="bg-card divide-y overflow-hidden rounded-xl border shadow-sm"
                     >
                         <li
-                            v-for="feature in recentFeatures"
-                            :key="feature.id"
+                            v-for="feedback in recentFeedback"
+                            :key="feedback.id"
                             class="hover:bg-accent/40 flex items-start gap-3 p-4 transition-colors"
                         >
                             <span
                                 class="bg-muted text-muted-foreground flex w-10 shrink-0 flex-col items-center rounded-md py-1.5 text-xs font-medium tabular-nums"
                             >
                                 <ChevronUp class="size-3.5" />
-                                {{ feature.votesCount }}
+                                {{ feedback.votesCount }}
                             </span>
                             <div class="min-w-0 flex-1 space-y-1">
                                 <Link
                                     :href="
-                                        showFeature([
+                                        showFeedback([
                                             currentOrganization.slug,
-                                            feature.project.slug,
-                                            feature.id,
+                                            feedback.project.slug,
+                                            feedback.id,
                                         ])
                                     "
                                     class="line-clamp-2 text-sm font-medium hover:underline"
                                 >
-                                    {{ feature.title }}
+                                    {{ feedback.title }}
                                 </Link>
                                 <div
                                     class="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs"
                                 >
-                                    <span>{{ feature.project.name }}</span>
+                                    <span>{{ feedback.project.name }}</span>
                                     <span>·</span>
                                     <span>{{
-                                        formatDate(feature.createdAt)
+                                        formatDate(feedback.createdAt)
                                     }}</span>
-                                    <FeatureStatusBadge
-                                        v-if="feature.status !== 'open'"
-                                        :status="feature.status"
-                                        :label="feature.statusLabel"
+                                    <FeedbackStatusBadge
+                                        v-if="feedback.status !== 'open'"
+                                        :status="feedback.status"
+                                        :label="feedback.statusLabel"
                                     />
                                 </div>
                             </div>
@@ -281,10 +281,10 @@ const statCards = computed(() => [
         </template>
 
         <EmptyState
-            v-else-if="!featureVotingEnabled"
+            v-else-if="!feedbackEnabled"
             :icon="FolderKanban"
-            title="Feature voting is turned off"
-            description="An organization owner can enable feature voting from organization settings."
+            title="Feedback is turned off"
+            description="An organization owner can enable feedback from organization settings."
         />
 
         <EmptyState
@@ -293,7 +293,7 @@ const statCards = computed(() => [
             title="No boards yet"
             :description="
                 permissions.canManageProjects
-                    ? 'Create a project to open a feature board. Every project gets a board where people request and vote.'
+                    ? 'Create a project to open a feedback board. Every project gets a board where people submit feedback and vote.'
                     : 'Boards will show up here once an admin creates a project you can see.'
             "
         >
