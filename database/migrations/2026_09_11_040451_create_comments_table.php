@@ -13,6 +13,7 @@ return new class extends Migration
             $table->morphs('commentable');
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->text('body');
+            $table->text('body_text');
             $table->timestamps();
         });
     }

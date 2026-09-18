@@ -29,7 +29,7 @@ class RepliedInThread extends Notification implements ShouldQueue
                 'name' => $this->comment->author->name ?? __('Someone'),
                 'title' => $this->comment->subjectTitle(),
             ]),
-            'body' => Str::limit($this->comment->body, 160),
+            'body' => Str::limit($this->comment->body_text, 160),
             'url' => $this->comment->url(),
         ];
     }

@@ -5,9 +5,23 @@ namespace App\Observers;
 use App\Events\FeedbackCommented;
 use App\Models\Comment;
 use App\Models\Feedback;
+use App\Support\RichText;
 
 class CommentObserver
 {
+    /**
+     * The editor writes HTML and everything else wants words: search matches on the text, an
+     * excerpt reads from it, and the slash commands are read out of it a line at a time. Doing
+     * it on the way in means no caller can save one without the other.
+     */
+    public function saving(Comment $comment): void
+    {
+        if ($comment->isDirty('body')) {
+            $comment->body = RichText::sanitize($comment->body);
+            $comment->body_text = RichText::toText($comment->body);
+        }
+    }
+
     public function created(Comment $comment): void
     {
         $this->announce($comment);
@@ -33,14 +47,14 @@ class CommentObserver
         $comment->loadMissing(['commentable', 'author', 'replies.author']);
 
         $replies = $comment->replies
-            ->map(fn (Comment $reply) => ($reply->author->name ?? __('Someone')).': '.$reply->body)
+            ->map(fn (Comment $reply) => ($reply->author->name ?? __('Someone')).': '.$reply->body_text)
             ->implode("\n\n");
 
         activity('comments')
             ->on($comment->commentable)
             ->event('comment_deleted')
             ->withChanges(['attributes' => array_filter([
-                'comment' => $comment->body,
+                'comment' => $comment->body_text,
                 'author' => $comment->author?->name,
                 'is_internal' => $comment->is_internal,
                 'replies' => $replies === '' ? null : $replies,

@@ -63,6 +63,7 @@ class ActivityResource extends JsonResource
             'role_id' => 'Role',
             'feedback_id' => 'Feedback',
             'parent_id' => 'Reply to',
+            'body_text' => 'Comment',
             'invited_by' => 'Invited by',
             'is_internal' => 'Internal',
             'direction' => 'Vote',

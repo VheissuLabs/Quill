@@ -50,7 +50,7 @@ test('a deleted comment is readable in full rather than trimmed', function () {
     $entry = Activity::query()->where('event', 'comment_deleted')->latest('id')->first();
     $changes = ActivityResource::make($entry)->resolve()['changes'];
 
-    expect(collect($changes)->firstWhere('field', 'Comment')['to'])->toBe($body);
+    expect(collect($changes)->firstWhere('field', 'Comment')['to'])->toBe(trim($body));
 });
 
 test('deleting the whole request does not log each comment leaving with it', function () {

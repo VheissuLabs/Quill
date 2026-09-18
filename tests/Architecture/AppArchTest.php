@@ -32,5 +32,6 @@ test('app keeps the directories it has agreed on', function () {
         'Policies',
         'Providers',
         'Rules',
+        'Support',
     ]);
 });

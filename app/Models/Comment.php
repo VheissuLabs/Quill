@@ -169,7 +169,7 @@ class Comment extends Model
     {
         return LogOptions::defaults()
             ->useLogName('comments')
-            ->logOnly(['commentable_type', 'commentable_id', 'parent_id', 'user_id', 'body', 'is_internal'])
+            ->logOnly(['commentable_type', 'commentable_id', 'parent_id', 'user_id', 'body_text', 'is_internal'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
