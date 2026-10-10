@@ -6,13 +6,13 @@ use App\Actions\Comments\FeedbackCommentCommands;
 use App\Enums\FeedbackStatus;
 use App\Enums\VoteDirection;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Feedback\FeedbackPageRequest;
 use App\Http\Requests\Feedback\FeedbackRequest;
 use App\Http\Resources\ActivityResource;
 use App\Http\Resources\CommentResource;
 use App\Http\Resources\FeedbackResource;
 use App\Http\Resources\FeedbackViewerResource;
 use App\Http\Resources\PortalOrganizationResource;
-use App\Models\Comment;
 use App\Models\Feedback;
 use App\Models\Organization;
 use App\Models\Project;
@@ -23,7 +23,7 @@ use Inertia\Response;
 
 class FeedbackController extends Controller
 {
-    public function show(Organization $organization, Project $project, Feedback $feedback): Response|RedirectResponse
+    public function show(FeedbackPageRequest $request, Organization $organization, Project $project, Feedback $feedback): Response|RedirectResponse
     {
         $user = auth()->user();
 
@@ -37,13 +37,15 @@ class FeedbackController extends Controller
             ->with(['author', 'issue.project'])
             ->firstOrFail();
 
+        $newestFirst = $request->newestFirst();
+
         return Inertia::render('portal/Feedback', [
             'organization' => PortalOrganizationResource::make($organization),
             'project' => ['id' => $project->id, 'name' => $project->name, 'slug' => $project->slug],
             'feedback' => $summary = FeedbackResource::make($feedback)->withIssue($isMember)->resolve(),
             'issue' => $summary['issue'],
-            'comments' => $feedback->comments()->threadsVisibleTo($isMember)->get()
-                ->map(fn (Comment $comment) => CommentResource::make($comment, $user)->resolve()),
+            'comments' => Inertia::scroll(fn () => CommentResource::page($feedback->comments(), $user, $isMember, $newestFirst)),
+            'commentOrder' => $newestFirst ? 'newest' : 'oldest',
             'activity' => $viewer['canViewActivity']
                 ? ActivityResource::collection($feedback->activitiesAsSubject()->with('causer')->latest('id')->limit(20)->get())
                 : [],

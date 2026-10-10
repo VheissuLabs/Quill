@@ -1,3 +1,4 @@
+import type { CommentEmail } from './tickets';
 import type { LinkedIssue } from './issues';
 import type { ProjectVisibility } from './projects';
 
@@ -65,6 +66,7 @@ export type FeedbackComment = {
     createdAt: string;
     isInternal: boolean;
     canDelete: boolean;
+    email?: CommentEmail | null;
     mentions: CommentMention[];
     replies: FeedbackComment[];
 };
@@ -73,6 +75,10 @@ export type BoardStatusOption = {
     value: FeedbackStatus;
     label: string;
     count: number;
+};
+
+export type CommentPage = {
+    data: FeedbackComment[];
 };
 
 export type BoardTypeOption = {

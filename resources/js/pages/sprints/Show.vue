@@ -13,6 +13,7 @@ import { index as issuesIndex } from '@/routes/issues';
 import { complete, destroy, index, show, start } from '@/routes/sprints';
 import { update as updateColumn } from '@/routes/sprints/columns';
 import { edit as editTeam } from '@/routes/teams';
+import { useLiveIssues } from '@/composables/useLiveIssues';
 import type {
     BoardColumn,
     Organization,
@@ -39,6 +40,8 @@ type DragChange = {
 };
 
 const props = defineProps<Props>();
+
+useLiveIssues(['sprint', 'issues', 'columns']);
 
 defineOptions({
     layout: (props: {

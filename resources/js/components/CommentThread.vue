@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Lock, Trash2 } from '@lucide/vue';
+import { Lock, Mail, Paperclip, RotateCw, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import CommentBody from '@/components/CommentBody.vue';
 import CommentForm from '@/components/CommentForm.vue';
@@ -16,15 +16,18 @@ type Props = {
     canComment: boolean;
     canCommentInternally?: boolean;
     mentionable: CommentMention[];
+    attachmentHref?: (id: number) => string;
 };
 
 withDefaults(defineProps<Props>(), {
     organizationName: '',
     canCommentInternally: false,
+    attachmentHref: undefined,
 });
 
 const emit = defineEmits<{
     delete: [comment: FeedbackComment];
+    retry: [comment: FeedbackComment];
     typing: [];
 }>();
 
@@ -61,6 +64,32 @@ const replying = ref(false);
                         >
                             <Lock class="size-3" /> Internal
                         </span>
+                        <span
+                            v-if="comment.email"
+                            class="text-muted-foreground ml-2 inline-flex items-center gap-1 text-xs"
+                            data-test="comment-email"
+                        >
+                            <Mail class="size-3" />
+                            {{
+                                comment.email.direction === 'inbound'
+                                    ? `from ${comment.email.from}`
+                                    : `emailed to ${comment.email.to.join(', ')}`
+                            }}
+                        </span>
+                        <span
+                            v-if="comment.email?.deliveryStatus === 'failed'"
+                            class="text-destructive ml-2 inline-flex items-center gap-1 text-xs font-medium"
+                        >
+                            Not delivered
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1 underline"
+                                data-test="retry-delivery-button"
+                                @click="emit('retry', comment)"
+                            >
+                                <RotateCw class="size-3" /> Retry
+                            </button>
+                        </span>
                     </p>
                     <Button
                         v-if="comment.canDelete"
@@ -78,6 +107,28 @@ const replying = ref(false);
                     :body="comment.body"
                     :mentions="comment.mentions"
                 />
+                <ul
+                    v-if="
+                        comment.email &&
+                        comment.email.attachments.length > 0 &&
+                        attachmentHref
+                    "
+                    class="flex flex-wrap gap-2 pt-1"
+                >
+                    <li
+                        v-for="attachment in comment.email.attachments"
+                        :key="attachment.id"
+                    >
+                        <a
+                            :href="attachmentHref(attachment.id)"
+                            class="hover:bg-muted inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs"
+                            data-test="comment-attachment"
+                        >
+                            <Paperclip class="size-3" />
+                            {{ attachment.filename }}
+                        </a>
+                    </li>
+                </ul>
                 <button
                     v-if="canComment && !replying"
                     type="button"

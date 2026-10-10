@@ -41,10 +41,10 @@ test('the issue page shows its comment thread', function () {
     $this->actingAs($member)
         ->get(route('issues.show', ['current_organization' => $organization, 'issue' => $issue]))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('comments', 1)
-            ->where('comments.0.body', 'Top level')
-            ->has('comments.0.replies', 1)
-            ->where('comments.0.replies.0.body', 'A reply'));
+            ->has('comments.data', 1)
+            ->where('comments.data.0.body', 'Top level')
+            ->has('comments.data.0.replies', 1)
+            ->where('comments.data.0.replies.0.body', 'A reply'));
 });
 
 test('a non member cannot comment on an issue', function () {

@@ -2,24 +2,22 @@
 
 namespace App\Http\Controllers\Issues;
 
+use App\Events\IssuesChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Issues\UpdateIssueOrderRequest;
 use App\Models\Issue;
 use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 
 class IssueOrderController extends Controller
 {
     public function update(UpdateIssueOrderRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        DB::transaction(function () use ($request) {
-            $issues = Issue::whereIn('id', $request->validated('issue_ids'))->get()->keyBy('id');
+        $ids = array_map('intval', array_values($request->validated('issue_ids')));
 
-            foreach (array_values($request->validated('issue_ids')) as $position => $issueId) {
-                $issues[$issueId]->update(['position' => $position]);
-            }
-        });
+        Issue::reorder($ids);
+
+        broadcast(new IssuesChanged($currentOrganization->getKey(), $ids))->toOthers();
 
         return back();
     }

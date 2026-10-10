@@ -117,6 +117,28 @@ class Organization extends Model
         return route($route->getName(), ['current_organization' => $this]).($query ? "?{$query}" : '');
     }
 
+    public static function supportInbox(): ?self
+    {
+        return self::query()->firstWhere('slug', config('services.resend.support_organization'));
+    }
+
+    public function receivesSupportMail(): bool
+    {
+        return $this->slug === config('services.resend.support_organization');
+    }
+
+    /** @return HasMany<ClientContact, $this> */
+    public function clientContacts(): HasMany
+    {
+        return $this->hasMany(ClientContact::class);
+    }
+
+    /** @return HasMany<Ticket, $this> */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
     public function isModuleEnabled(OrganizationModule $module): bool
     {
         return $this->settingEnabled($module->value, '');

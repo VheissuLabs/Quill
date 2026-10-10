@@ -45,6 +45,7 @@ import {
     show as showSprint,
     update as updateSprint,
 } from '@/routes/sprints';
+import { useLiveIssues } from '@/composables/useLiveIssues';
 import type {
     IssueActivityEntry,
     IssueFilters,
@@ -74,6 +75,8 @@ type DragEndEvent = {
 };
 
 const props = defineProps<Props>();
+
+useLiveIssues(['issues', 'sprints', 'activity']);
 
 defineOptions({
     layout: (props: { currentOrganization: Organization }) => ({

@@ -31,37 +31,45 @@ abstract class CommentCommands
         ];
     }
 
-    /**
-     * A command is typed on its own line, which the editor stores as its own paragraph. Each one
-     * is read as text, run, and taken out of the body; everything else is left exactly as written.
-     *
-     * @return array{body: string, internal: bool, messages: array<int, string>}
-     */
+    /** @return array{body: string, internal: bool, messages: array<int, string>} */
     protected function handleRichText(Model $commentable, User $user, string $body): array
     {
-        $messages = [];
-        $internal = false;
+        $blocks = collect($this->blocks($body))
+            ->map(fn (string $block) => $this->runBlock($commentable, $user, $block));
 
-        $remaining = preg_replace_callback(
-            '#<p\b[^>]*>(.*?)</p>#is',
-            function (array $paragraph) use ($commentable, $user, &$messages, &$internal): string {
-                $result = $this->runLine($commentable, $user, RichText::toText($paragraph[0]));
-
-                if ($result['message'] !== null) {
-                    $messages[] = $result['message'];
-                }
-
-                $internal = $internal || $result['internal'];
-
-                return $result['text'] === null ? '' : $paragraph[0];
-            },
-            $body
-        ) ?? $body;
+        $remaining = $blocks->pluck('html')->implode('');
 
         return [
-            'body' => trim(RichText::toText($remaining) === '' ? '' : $remaining),
-            'internal' => $internal,
-            'messages' => $messages,
+            'body' => RichText::toText($remaining) === '' ? '' : trim($remaining),
+            'internal' => $blocks->pluck('internal')->contains(true),
+            'messages' => $blocks->pluck('message')->reject(fn (?string $message) => $message === null)->values()->all(),
+        ];
+    }
+
+    /** @return array<int, string> */
+    protected function blocks(string $body): array
+    {
+        return preg_split(
+            '#(<p\b[^>]*>.*?</p>)#is',
+            $body,
+            -1,
+            PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY
+        ) ?: [$body];
+    }
+
+    /** @return array{html: string, message: ?string, internal: bool} */
+    protected function runBlock(Model $commentable, User $user, string $block): array
+    {
+        if (! str_starts_with($block, '<p')) {
+            return ['html' => $block, 'message' => null, 'internal' => false];
+        }
+
+        $result = $this->runLine($commentable, $user, RichText::toText($block));
+
+        return [
+            'html' => $result['text'] === null ? '' : $block,
+            'message' => $result['message'],
+            'internal' => $result['internal'],
         ];
     }
 

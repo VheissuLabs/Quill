@@ -29,6 +29,7 @@ class UserOrganizationResource extends JsonResource
             'isOwner' => $role !== null && $this->resource->isOwnerRole($role),
             'canUpdate' => $this->viewer->hasOrganizationPermission($this->resource, OrganizationPermission::UpdateOrganization),
             'canManageRoles' => $this->viewer->hasOrganizationPermission($this->resource, OrganizationPermission::ManageRoles),
+            'receivesSupportMail' => $this->resource->receivesSupportMail(),
             'modules' => $this->moduleSettings(),
             'isCurrent' => $this->viewer->isCurrentOrganization($this->resource),
         ];

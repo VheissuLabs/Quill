@@ -3,6 +3,8 @@
 namespace App\Http\Resources;
 
 use App\Models\Client;
+use App\Models\ClientContact;
+use App\Models\ClientDomain;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,6 +19,15 @@ class ClientResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'projectsCount' => $this->whenCounted('projects'),
+            'contacts' => $this->whenLoaded('contacts', fn () => $this->contacts->map(fn (ClientContact $contact) => [
+                'id' => $contact->id,
+                'name' => $contact->name,
+                'email' => $contact->email,
+            ])->all()),
+            'domains' => $this->whenLoaded('domains', fn () => $this->domains->map(fn (ClientDomain $domain) => [
+                'id' => $domain->id,
+                'domain' => $domain->domain,
+            ])->all()),
         ];
     }
 }

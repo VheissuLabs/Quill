@@ -54,9 +54,15 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientContact> $contacts
+ * @property-read int|null $contacts_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientDomain> $domains
+ * @property-read int|null $domains_count
  * @property-read \App\Models\Organization|null $organization
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Project> $projects
  * @property-read int|null $projects_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ticket> $tickets
+ * @property-read int|null $tickets_count
  * @method static \Database\Factories\ClientFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client newQuery()
@@ -76,18 +82,77 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property int $organization_id
+ * @property int $client_id
+ * @property string|null $name
+ * @property string $email
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read \App\Models\Client $client
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ticket> $tickets
+ * @property-read int|null $tickets_count
+ * @method static \Database\Factories\ClientContactFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact matching(string $term)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperClientContact {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $organization_id
+ * @property int $client_id
+ * @property string $domain
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\Client $client
+ * @method static \Database\Factories\ClientDomainFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain whereClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain whereDomain($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperClientDomain {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property string $commentable_type
  * @property int $commentable_id
  * @property int|null $parent_id
  * @property int|null $user_id
  * @property string $body
  * @property bool $is_internal
+ * @property string $body_text
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\User|null $author
  * @property-read \Illuminate\Database\Eloquent\Model $commentable
+ * @property-read \App\Models\EmailMessage|null $emailMessage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $mentions
  * @property-read int|null $mentions_count
  * @property-read Comment|null $parent
@@ -98,9 +163,10 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment public()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment threadsVisibleTo(bool $isMember)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment threadsVisibleTo(bool $isMember, bool $newestFirst = false)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment topLevel()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereBody($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereBodyText($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereCommentableId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereCommentableType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Comment whereCreatedAt($value)
@@ -141,6 +207,80 @@ namespace App\Models{
  */
 	#[\AllowDynamicProperties]
 	class IdeHelperEmailAddress {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $email_message_id
+ * @property string $filename
+ * @property string $content_type
+ * @property int $size
+ * @property string $path
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\EmailMessage $emailMessage
+ * @method static \Database\Factories\EmailAttachmentFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment whereContentType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment whereEmailMessageId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment whereFilename($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment wherePath($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment whereSize($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailAttachment whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperEmailAttachment {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $comment_id
+ * @property \App\Enums\EmailDirection $direction
+ * @property \App\Enums\EmailDeliveryStatus $delivery_status
+ * @property string $from_email
+ * @property string|null $from_name
+ * @property array<array-key, mixed> $to
+ * @property array<array-key, mixed> $cc
+ * @property string $message_id
+ * @property string|null $in_reply_to
+ * @property string|null $references
+ * @property string|null $resend_id
+ * @property string|null $body_html
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmailAttachment> $attachments
+ * @property-read int|null $attachments_count
+ * @property-read \App\Models\Comment $comment
+ * @method static \Database\Factories\EmailMessageFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereBodyHtml($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereCc($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereCommentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereDeliveryStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereDirection($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereFromEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereFromName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereInReplyTo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereMessageId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereReferences($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereResendId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereTo($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailMessage whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperEmailMessage {}
 }
 
 namespace App\Models{
@@ -219,6 +359,8 @@ namespace App\Models{
  * @property-read \App\Models\Project $project
  * @property-read \App\Models\Sprint|null $sprint
  * @property-read \App\Models\Team|null $team
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ticket> $tickets
+ * @property-read int|null $tickets_count
  * @method static \Database\Factories\IssueFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue newQuery()
@@ -288,6 +430,8 @@ namespace App\Models{
  * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrganizationModuleSetting> $capabilitySettings
  * @property-read int|null $capability_settings_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientContact> $clientContacts
+ * @property-read int|null $client_contacts_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Client> $clients
  * @property-read int|null $clients_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\BoardColumn> $columns
@@ -311,6 +455,8 @@ namespace App\Models{
  * @property-read int|null $sprints_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Team> $teams
  * @property-read int|null $teams_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ticket> $tickets
+ * @property-read int|null $tickets_count
  * @method static \Database\Factories\OrganizationFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization newQuery()
@@ -594,6 +740,64 @@ namespace App\Models{
  */
 	#[\AllowDynamicProperties]
 	class IdeHelperTeamModuleSetting {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $organization_id
+ * @property int|null $client_id
+ * @property int|null $client_contact_id
+ * @property int $number
+ * @property string $subject
+ * @property \App\Enums\TicketStatus $status
+ * @property string|null $requester_name
+ * @property string $requester_email
+ * @property int|null $requester_user_id
+ * @property int|null $issue_id
+ * @property int|null $reporter_id
+ * @property int|null $created_by
+ * @property \Carbon\CarbonImmutable|null $issue_resolved_at
+ * @property \Carbon\CarbonImmutable|null $last_message_at
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read \App\Models\Client|null $client
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comment> $comments
+ * @property-read int|null $comments_count
+ * @property-read \App\Models\ClientContact|null $contact
+ * @property-read \App\Models\User|null $creator
+ * @property-read \App\Models\Issue|null $issue
+ * @property-read \App\Models\Organization|null $organization
+ * @property-read \App\Models\User|null $reporter
+ * @property-read \App\Models\User|null $requester
+ * @method static \Database\Factories\TicketFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket inInbox(\App\Models\User $viewer, array $filters)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereClientContactId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereCreatedBy($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereIssueId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereIssueResolvedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereLastMessageAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereReporterId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereRequesterEmail($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereRequesterName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereRequesterUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereSubject($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Ticket whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperTicket {}
 }
 
 namespace App\Models{

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\RunsABoard;
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationCapability;
+use App\Events\IssuesChanged;
 use App\Events\ModulesChanged;
 use App\Observers\OrganizationScopedSlugObserver;
 use App\Observers\TeamObserver;
@@ -187,6 +188,7 @@ class Team extends Model
 
     private function moveIssuesTo(Organization|self $target): void
     {
+        $moving = $this->issues()->pluck('issues.id')->all();
         $teamId = $target instanceof self ? $target->getKey() : null;
         $targetColumns = $target->columns()->get();
 
@@ -209,6 +211,10 @@ class Team extends Model
         }
 
         $this->issues()->update(['team_id' => $teamId]);
+
+        if ($moving !== []) {
+            broadcast(new IssuesChanged($this->organization_id, $moving))->toOthers();
+        }
     }
 
     public function getActivitylogOptions(): LogOptions

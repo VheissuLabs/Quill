@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Clients;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Clients\ClientRequest;
 use App\Http\Resources\ClientResource;
+use App\Http\Resources\LinkedTicketResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Client;
 use App\Models\Organization;
@@ -30,11 +31,21 @@ class ClientController extends Controller
         return to_route('clients.index');
     }
 
+    public function show(Organization $currentOrganization, Client $client): Response
+    {
+        $user = auth()->user();
+
+        return Inertia::render('clients/Show', [
+            'client' => ClientResource::make($client->load(['contacts' => fn ($query) => $query->orderBy('name')])),
+            'projects' => ProjectResource::collection($client->projects()->visibleTo($user)->orderBy('name')->get()),
+            'tickets' => LinkedTicketResource::forClient($client, $user),
+        ]);
+    }
+
     public function edit(Organization $currentOrganization, Client $client): Response
     {
         return Inertia::render('clients/Edit', [
-            'client' => ClientResource::make($client),
-            'projects' => ProjectResource::collection($client->projects()->orderBy('name')->get()),
+            'client' => ClientResource::make($client->load('domains')),
         ]);
     }
 

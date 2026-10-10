@@ -82,9 +82,9 @@ test('the feedback page shows the discussion and the viewer abilities', function
             ->component('portal/Feedback')
             ->where('feedback.id', $feedback->id)
             ->where('feedback.authorName', $author->name)
-            ->has('comments', 1)
-            ->where('comments.0.body', 'Great idea')
-            ->where('comments.0.canDelete', false)
+            ->has('comments.data', 1)
+            ->where('comments.data.0.body', 'Great idea')
+            ->where('comments.data.0.canDelete', false)
             ->where('viewer.canUpdate', true)
             ->where('viewer.canUpdateStatus', false)
             ->where('viewer.canDelete', true),
@@ -253,16 +253,16 @@ test('internal comments are only shown to organization members', function () {
 
     $this->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('comments', 1)
-            ->where('comments.0.body', 'Public note')
+            ->has('comments.data', 1)
+            ->where('comments.data.0.body', 'Public note')
             ->where('feedback.commentsCount', 1),
         );
 
     $this->actingAs($member)
         ->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('comments', 2)
-            ->where('comments.1.isInternal', true)
+            ->has('comments.data', 2)
+            ->where('comments.data.1.isInternal', true)
             ->where('viewer.canCommentInternally', true),
         );
 });
@@ -307,10 +307,10 @@ test('comments can be replied to and replies to internal comments stay internal'
 
     $this->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('comments', 1)
-            ->where('comments.0.body', 'Public thread')
-            ->has('comments.0.replies', 1)
-            ->where('comments.0.replies.0.body', 'Public reply'),
+            ->has('comments.data', 1)
+            ->where('comments.data.0.body', 'Public thread')
+            ->has('comments.data.0.replies', 1)
+            ->where('comments.data.0.replies.0.body', 'Public reply'),
         );
 });
 
@@ -362,7 +362,7 @@ test('mentioned people are stored and notified, and only involved people can be 
     $this->actingAs($commenter)
         ->get(route('portal.feedback.show', [$project->organization, $project, $feedback]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('comments.0.mentions.0.name', 'Ada Lovelace')
+            ->where('comments.data.0.mentions.0.name', 'Ada Lovelace')
             ->has('mentionableUsers', 3),
         );
 });

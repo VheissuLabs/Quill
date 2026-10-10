@@ -1,5 +1,8 @@
 import type { Auth, NotificationsSummary } from '@/types/auth';
-import type { Organization } from '@/types/organizations';
+import type {
+    Organization,
+    OrganizationPermissions,
+} from '@/types/organizations';
 import type { TeamOption } from '@/types/projects';
 
 // Extend ImportMeta interface for Vite...
@@ -23,6 +26,7 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean;
             currentOrganization: Organization | null;
             organizations: Organization[];
+            permissions: Partial<OrganizationPermissions>;
             currentTeam: TeamOption | null;
             availableTeams: TeamOption[];
             notifications: NotificationsSummary;

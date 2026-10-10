@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { Check, ChevronDown, ChevronUp, Lightbulb, Trash2 } from '@lucide/vue';
+import { Head, InfiniteScroll, Link, router, useForm } from '@inertiajs/vue3';
+import {
+    Check,
+    ChevronDown,
+    ChevronUp,
+    CircleCheck,
+    Lightbulb,
+    Mail,
+    Trash2,
+} from '@lucide/vue';
 import { computed, nextTick, ref } from 'vue';
 import ActivityFeed from '@/components/ActivityFeed.vue';
 import CommentForm from '@/components/CommentForm.vue';
@@ -42,9 +50,12 @@ import { lookup as issueLookup } from '@/routes/issues';
 import { show as showFeedback } from '@/routes/portal/feedback';
 import { pointOptions } from '@/lib/points';
 import { show as showSprint } from '@/routes/sprints';
+import { show as showTicket } from '@/routes/tickets';
+import { useLiveIssues } from '@/composables/useLiveIssues';
 import type {
     CommentCommand,
     CommentMention,
+    CommentPage,
     FeedbackComment,
     IssueLink,
     IssueLinkPerspective,
@@ -52,6 +63,7 @@ import type {
     IssueDetail,
     IssueFormOptions,
     IssueOriginFeedback,
+    LinkedTicket,
     Organization,
     OrganizationPermissions,
 } from '@/types';
@@ -61,15 +73,18 @@ type Props = IssueFormOptions & {
     issue: IssueDetail;
     links: IssueLink[];
     linkTypes: IssueLinkPerspective[];
-    comments: FeedbackComment[];
+    comments: CommentPage;
     commands: CommentCommand[];
     mentionables: CommentMention[];
     feedback: IssueOriginFeedback | null;
+    tickets: LinkedTicket[];
     activity: ActivityEntry[];
     permissions: OrganizationPermissions;
 };
 
 const props = defineProps<Props>();
+
+useLiveIssues(['issue', 'links', 'activity']);
 
 defineOptions({
     layout: (props: {
@@ -485,25 +500,63 @@ const currentSprint = computed(() =>
             </section>
 
             <section
+                v-if="tickets.length > 0"
+                class="space-y-4 border-t pt-8"
+                data-test="issue-tickets"
+            >
+                <Heading
+                    variant="small"
+                    :title="`Tickets (${tickets.length})`"
+                    description="Customers waiting on this issue"
+                />
+                <ul class="divide-y rounded-xl border">
+                    <li v-for="ticket in tickets" :key="ticket.id">
+                        <Link
+                            :href="
+                                showTicket([
+                                    currentOrganization.slug,
+                                    ticket.id,
+                                ])
+                            "
+                            class="hover:bg-muted/50 flex items-center gap-3 px-4 py-3 text-sm"
+                        >
+                            <Mail
+                                class="text-muted-foreground size-4 shrink-0"
+                            />
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate font-medium">
+                                    {{ ticket.subject }}
+                                </span>
+                                <span
+                                    class="text-muted-foreground block truncate"
+                                >
+                                    {{ ticket.reference }} ·
+                                    {{ ticket.requester }}
+                                    <template v-if="ticket.clientName">
+                                        · {{ ticket.clientName }}
+                                    </template>
+                                </span>
+                            </span>
+                            <span
+                                v-if="ticket.readyToReply"
+                                class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400"
+                            >
+                                <CircleCheck class="size-4" />
+                                Ready to reply
+                            </span>
+                            <span v-else class="text-muted-foreground">
+                                {{ ticket.statusLabel }}
+                            </span>
+                        </Link>
+                    </li>
+                </ul>
+            </section>
+
+            <section
                 class="space-y-5 border-t pt-8"
                 data-test="issue-discussion"
             >
                 <Heading variant="small" title="Discussion" />
-
-                <ol v-if="comments.length > 0" class="space-y-6">
-                    <CommentThread
-                        v-for="comment in comments"
-                        :key="comment.id"
-                        :comment="comment"
-                        :action="storeComment(routeArgs).url"
-                        :can-comment="true"
-                        :mentionable="mentionables"
-                        @delete="commentToDelete = $event"
-                    />
-                </ol>
-                <p v-else class="text-muted-foreground text-sm italic">
-                    Nothing here yet. Start the conversation.
-                </p>
 
                 <CommentForm
                     :action="storeComment(routeArgs).url"
@@ -516,10 +569,33 @@ const currentSprint = computed(() =>
                     :commands="commands"
                     :statuses="commandStatuses"
                 />
+
+                <InfiniteScroll
+                    v-if="comments.data.length > 0"
+                    data="comments"
+                    as="ol"
+                    class="block space-y-6"
+                    only-next
+                >
+                    <CommentThread
+                        v-for="comment in comments.data"
+                        :key="comment.id"
+                        :comment="comment"
+                        :action="storeComment(routeArgs).url"
+                        :can-comment="true"
+                        :mentionable="mentionables"
+                        @delete="commentToDelete = $event"
+                    />
+                </InfiniteScroll>
+                <p v-else class="text-muted-foreground text-sm italic">
+                    Nothing here yet. Start the conversation.
+                </p>
             </section>
         </div>
 
-        <aside class="space-y-5 lg:sticky lg:top-20 lg:self-start">
+        <aside
+            class="space-y-5 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto lg:pr-1"
+        >
             <dl class="space-y-4 text-sm">
                 <div class="space-y-1.5">
                     <dt
@@ -784,5 +860,19 @@ const currentSprint = computed(() =>
     >
         This permanently deletes <strong>{{ issue.reference }}</strong
         >. The feedback request it came from, if any, is kept.
+    </ConfirmDeleteModal>
+
+    <ConfirmDeleteModal
+        :open="commentToDelete !== null"
+        title="Delete comment"
+        confirm-label="Delete"
+        :href="
+            commentToDelete
+                ? destroyComment([...routeArgs, commentToDelete.id])
+                : null
+        "
+        @update:open="commentToDelete = null"
+    >
+        This comment will be permanently removed.
     </ConfirmDeleteModal>
 </template>
