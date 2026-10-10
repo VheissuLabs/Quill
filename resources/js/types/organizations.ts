@@ -28,6 +28,7 @@ export type Organization = {
     isOwner?: boolean;
     canUpdate?: boolean;
     canManageRoles?: boolean;
+    receivesSupportMail?: boolean;
     modules: OrganizationModules;
     isCurrent?: boolean;
 };
@@ -78,6 +79,7 @@ export type OrganizationPermissions = {
     canManageFeedback: boolean;
     canManageIssues: boolean;
     canManageSprints: boolean;
+    canManageTickets: boolean;
     canViewActivity: boolean;
     canManageRoles: boolean;
 };

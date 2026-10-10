@@ -28,6 +28,24 @@ class Client extends Model
         return $this->belongsTo(Organization::class);
     }
 
+    /** @return HasMany<ClientContact, $this> */
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(ClientContact::class);
+    }
+
+    /** @return HasMany<Ticket, $this> */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    /** @return HasMany<ClientDomain, $this> */
+    public function domains(): HasMany
+    {
+        return $this->hasMany(ClientDomain::class);
+    }
+
     /** @return HasMany<Project, $this> */
     public function projects(): HasMany
     {

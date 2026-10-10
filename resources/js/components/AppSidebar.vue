@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import {
     Briefcase,
     FolderKanban,
+    Inbox,
     LayoutGrid,
     ListTodo,
     Settings,
@@ -37,6 +38,7 @@ import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import { index as sprints } from '@/routes/sprints';
 import { index as teams } from '@/routes/teams';
+import { index as tickets } from '@/routes/tickets';
 import { useLiveModules } from '@/composables/useLiveModules';
 import type { NavItem } from '@/types';
 
@@ -110,6 +112,16 @@ const navGroups = computed<NavGroup[]>(() => {
 
         if (developmentItems.length > 0) {
             groups.push({ label: 'Development', items: developmentItems });
+        }
+
+        if (
+            page.props.currentOrganization?.receivesSupportMail &&
+            page.props.permissions?.canManageTickets
+        ) {
+            groups.push({
+                label: 'Support',
+                items: [{ title: 'Tickets', href: tickets(slug), icon: Inbox }],
+            });
         }
 
         groups.push({

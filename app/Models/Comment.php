@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use RuntimeException;
@@ -52,6 +53,12 @@ class Comment extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /** @return HasOne<EmailMessage, $this> */
+    public function emailMessage(): HasOne
+    {
+        return $this->hasOne(EmailMessage::class);
+    }
+
     public function url(): string
     {
         $commentable = $this->commentable;
@@ -66,6 +73,10 @@ class Comment extends Model
                 'project' => $commentable->project,
                 'feedback' => $commentable,
             ], absolute: false),
+            $commentable instanceof Ticket => route('tickets.show', [
+                'current_organization' => $commentable->organization,
+                'ticket' => $commentable,
+            ], absolute: false),
             default => throw new RuntimeException('Comment on an unsupported subject.'),
         };
     }
@@ -78,6 +89,10 @@ class Comment extends Model
             return $commentable->title;
         }
 
+        if ($commentable instanceof Ticket) {
+            return $commentable->subject;
+        }
+
         throw new RuntimeException('Comment on an unsupported subject.');
     }
 
@@ -87,6 +102,10 @@ class Comment extends Model
 
         if ($commentable instanceof Issue || $commentable instanceof Feedback) {
             return $commentable->project->organization;
+        }
+
+        if ($commentable instanceof Ticket) {
+            return $commentable->organization;
         }
 
         throw new RuntimeException('Comment on an unsupported subject.');
@@ -114,11 +133,13 @@ class Comment extends Model
             ->with([
                 'author',
                 'mentions',
+                'emailMessage.attachments',
                 'commentable' => function (Relation $commentable): void {
                     if ($commentable instanceof MorphTo) {
                         $commentable->morphWith([
                             Feedback::class => ['project.organization'],
                             Issue::class => ['project.organization'],
+                            Ticket::class => ['organization'],
                         ]);
                     }
                 },
@@ -126,11 +147,13 @@ class Comment extends Model
                     ->with([
                         'author',
                         'mentions',
+                        'emailMessage.attachments',
                         'commentable' => function (Relation $commentable): void {
                             if ($commentable instanceof MorphTo) {
                                 $commentable->morphWith([
                                     Feedback::class => ['project.organization'],
                                     Issue::class => ['project.organization'],
+                                    Ticket::class => ['organization'],
                                 ]);
                             }
                         },

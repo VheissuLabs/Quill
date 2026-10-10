@@ -209,6 +209,12 @@ class Issue extends Model
         return $this->belongsTo(Feedback::class);
     }
 
+    /** @return HasMany<Ticket, $this> */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
     /** @return BelongsTo<User, $this> */
     public function assignee(): BelongsTo
     {

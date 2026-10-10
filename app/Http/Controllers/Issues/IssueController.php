@@ -18,6 +18,7 @@ use App\Http\Resources\IssueDetailResource;
 use App\Http\Resources\IssueFormResource;
 use App\Http\Resources\IssueLinkResource;
 use App\Http\Resources\IssueResource;
+use App\Http\Resources\LinkedTicketResource;
 use App\Models\Issue;
 use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
@@ -71,6 +72,7 @@ class IssueController extends Controller
             'commands' => app(IssueCommentCommands::class)->availableTo($user, $issue),
             'mentionables' => $issue->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]),
             'feedback' => $issue->feedback ? FeedbackResource::make($issue->feedback)->resolve() : null,
+            'tickets' => LinkedTicketResource::forIssue($issue, $user),
             'activity' => $permissions['canViewActivity']
                 ? ActivityResource::collection($issue->activitiesAsSubject()->with('causer')->latest('id')->limit(30)->get())
                 : [],

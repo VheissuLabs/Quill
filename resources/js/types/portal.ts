@@ -1,3 +1,4 @@
+import type { CommentEmail } from './tickets';
 import type { LinkedIssue } from './issues';
 import type { ProjectVisibility } from './projects';
 
@@ -65,6 +66,7 @@ export type FeedbackComment = {
     createdAt: string;
     isInternal: boolean;
     canDelete: boolean;
+    email?: CommentEmail | null;
     mentions: CommentMention[];
     replies: FeedbackComment[];
 };

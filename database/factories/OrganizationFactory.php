@@ -34,6 +34,7 @@ class OrganizationFactory extends Factory
                 OrganizationPermission::ManageFeedback->value,
                 OrganizationPermission::ManageIssues->value,
                 OrganizationPermission::ManageSprints->value,
+                OrganizationPermission::ManageTickets->value,
                 OrganizationPermission::ViewActivity->value,
             ]);
             $organization->roles()->create(['name' => 'Member', 'guard_name' => 'web']);

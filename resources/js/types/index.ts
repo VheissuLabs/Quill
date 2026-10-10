@@ -8,4 +8,5 @@ export * from './palette';
 export * from './portal';
 export * from './projects';
 export * from './teams';
+export * from './tickets';
 export * from './ui';

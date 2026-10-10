@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { Head, InfiniteScroll, Link, router, useForm } from '@inertiajs/vue3';
-import { Check, ChevronDown, ChevronUp, Lightbulb, Trash2 } from '@lucide/vue';
+import {
+    Check,
+    ChevronDown,
+    ChevronUp,
+    CircleCheck,
+    Lightbulb,
+    Mail,
+    Trash2,
+} from '@lucide/vue';
 import { computed, nextTick, ref } from 'vue';
 import ActivityFeed from '@/components/ActivityFeed.vue';
 import CommentForm from '@/components/CommentForm.vue';
@@ -42,6 +50,7 @@ import { lookup as issueLookup } from '@/routes/issues';
 import { show as showFeedback } from '@/routes/portal/feedback';
 import { pointOptions } from '@/lib/points';
 import { show as showSprint } from '@/routes/sprints';
+import { show as showTicket } from '@/routes/tickets';
 import { useLiveIssues } from '@/composables/useLiveIssues';
 import type {
     CommentCommand,
@@ -54,6 +63,7 @@ import type {
     IssueDetail,
     IssueFormOptions,
     IssueOriginFeedback,
+    LinkedTicket,
     Organization,
     OrganizationPermissions,
 } from '@/types';
@@ -67,6 +77,7 @@ type Props = IssueFormOptions & {
     commands: CommentCommand[];
     mentionables: CommentMention[];
     feedback: IssueOriginFeedback | null;
+    tickets: LinkedTicket[];
     activity: ActivityEntry[];
     permissions: OrganizationPermissions;
 };
@@ -486,6 +497,59 @@ const currentSprint = computed(() =>
                         </div>
                     </div>
                 </div>
+            </section>
+
+            <section
+                v-if="tickets.length > 0"
+                class="space-y-4 border-t pt-8"
+                data-test="issue-tickets"
+            >
+                <Heading
+                    variant="small"
+                    :title="`Tickets (${tickets.length})`"
+                    description="Customers waiting on this issue"
+                />
+                <ul class="divide-y rounded-xl border">
+                    <li v-for="ticket in tickets" :key="ticket.id">
+                        <Link
+                            :href="
+                                showTicket([
+                                    currentOrganization.slug,
+                                    ticket.id,
+                                ])
+                            "
+                            class="hover:bg-muted/50 flex items-center gap-3 px-4 py-3 text-sm"
+                        >
+                            <Mail
+                                class="text-muted-foreground size-4 shrink-0"
+                            />
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate font-medium">
+                                    {{ ticket.subject }}
+                                </span>
+                                <span
+                                    class="text-muted-foreground block truncate"
+                                >
+                                    {{ ticket.reference }} ·
+                                    {{ ticket.requester }}
+                                    <template v-if="ticket.clientName">
+                                        · {{ ticket.clientName }}
+                                    </template>
+                                </span>
+                            </span>
+                            <span
+                                v-if="ticket.readyToReply"
+                                class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400"
+                            >
+                                <CircleCheck class="size-4" />
+                                Ready to reply
+                            </span>
+                            <span v-else class="text-muted-foreground">
+                                {{ ticket.statusLabel }}
+                            </span>
+                        </Link>
+                    </li>
+                </ul>
             </section>
 
             <section

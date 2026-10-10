@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\ClearNotificationsController;
+use App\Http\Controllers\Clients\ClientContactController;
 use App\Http\Controllers\Clients\ClientController;
+use App\Http\Controllers\Clients\ClientDomainController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Issues\CommentController as IssueCommentController;
@@ -38,9 +40,16 @@ use App\Http\Controllers\Teams\CurrentTeamController;
 use App\Http\Controllers\Teams\TeamController;
 use App\Http\Controllers\Teams\TeamMemberController;
 use App\Http\Controllers\Teams\TeamModuleController;
+use App\Http\Controllers\Tickets\TicketAttachmentController;
+use App\Http\Controllers\Tickets\TicketController;
+use App\Http\Controllers\Tickets\TicketIssueController;
+use App\Http\Controllers\Tickets\TicketReplyController;
+use App\Http\Controllers\Tickets\TicketReplyDeliveryController;
+use App\Http\Controllers\Webhooks\ResendWebhookController;
 use App\Http\Middleware\EnsureOrganizationMembership;
 use App\Http\Middleware\RedirectGuestsFromPrivateProject;
 use App\Http\Middleware\RememberPortalPage;
+use App\Http\Middleware\VerifyResendSignature;
 use App\Models\BoardColumn;
 use App\Models\Client;
 use App\Models\Feedback;
@@ -49,10 +58,17 @@ use App\Models\OrganizationInvitation;
 use App\Models\Project;
 use App\Models\Sprint;
 use App\Models\Team;
+use App\Models\Ticket;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 
 Route::get('/', HomeController::class)->name('home');
+
+Route::post('webhooks/resend', ResendWebhookController::class)
+    ->middleware(VerifyResendSignature::class)
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('webhooks.resend');
 
 Route::prefix('portal/{organization}/{project}')
     ->scopeBindings()
@@ -89,12 +105,18 @@ Route::prefix('{current_organization}')
             ->middlewareFor('store', 'can:create,'.Project::class.',current_organization')
             ->middlewareFor(['edit', 'update'], 'can:update,project')
             ->middlewareFor('destroy', 'can:delete,project');
-        Route::resource('clients', ClientController::class)->except(['create', 'show'])
+        Route::resource('clients', ClientController::class)->except(['create'])
             ->middlewareFor('index', 'can:viewAny,'.Client::class.',current_organization')
             ->middlewareFor('store', 'can:create,'.Client::class.',current_organization')
-            ->middlewareFor('edit', 'can:view,client')
+            ->middlewareFor(['show', 'edit'], 'can:view,client')
             ->middlewareFor('update', 'can:update,client')
             ->middlewareFor('destroy', 'can:delete,client');
+        Route::get('client-contacts', [ClientContactController::class, 'index'])->can('create', [Ticket::class, 'current_organization'])->name('client-contacts.index');
+        Route::post('clients/{client}/contacts', [ClientContactController::class, 'store'])->can('update', 'client')->name('clients.contacts.store');
+        Route::patch('clients/{client}/contacts/{contact}', [ClientContactController::class, 'update'])->can('update', 'client')->name('clients.contacts.update');
+        Route::delete('clients/{client}/contacts/{contact}', [ClientContactController::class, 'destroy'])->can('update', 'client')->name('clients.contacts.destroy');
+        Route::post('clients/{client}/domains', [ClientDomainController::class, 'store'])->can('update', 'client')->name('clients.domains.store');
+        Route::delete('clients/{client}/domains/{domain}', [ClientDomainController::class, 'destroy'])->can('update', 'client')->name('clients.domains.destroy');
         Route::resource('teams', TeamController::class)->except(['create', 'show'])
             ->middlewareFor('index', 'can:viewAny,'.Team::class.',current_organization')
             ->middlewareFor('store', 'can:create,'.Team::class.',current_organization')
@@ -115,6 +137,18 @@ Route::prefix('{current_organization}')
         Route::delete('issues/{issue}/links/{link}', [IssueLinkController::class, 'destroy'])->withoutScopedBindings()->can('update', 'issue')->name('issues.links.destroy');
         Route::post('issues/{issue}/comments', [IssueCommentController::class, 'store'])->can('comment', 'issue')->name('issues.comments.store');
         Route::delete('issues/{issue}/comments/{comment}', [IssueCommentController::class, 'destroy'])->can('delete', 'comment')->name('issues.comments.destroy');
+
+        Route::resource('tickets', TicketController::class)->only(['index', 'store', 'show', 'update'])
+            ->middlewareFor('index', 'can:viewAny,'.Ticket::class.',current_organization')
+            ->middlewareFor('store', 'can:create,'.Ticket::class.',current_organization')
+            ->middlewareFor('show', 'can:view,ticket')
+            ->middlewareFor('update', 'can:update,ticket');
+        Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->can('reply', 'ticket')->name('tickets.replies.store');
+        Route::delete('tickets/{ticket}/replies/{comment}', [TicketReplyController::class, 'destroy'])->can('delete', 'comment')->name('tickets.replies.destroy');
+        Route::post('tickets/{ticket}/replies/{comment}/delivery', [TicketReplyDeliveryController::class, 'store'])->can('reply', 'ticket')->name('tickets.replies.delivery.store');
+        Route::post('tickets/{ticket}/issue', [TicketIssueController::class, 'store'])->can('convert', 'ticket')->name('tickets.issue.store');
+        Route::delete('tickets/{ticket}/issue', [TicketIssueController::class, 'destroy'])->can('update', 'ticket')->name('tickets.issue.destroy');
+        Route::get('ticket-attachments/{attachment}', [TicketAttachmentController::class, 'show'])->withoutScopedBindings()->can('view', 'attachment')->name('tickets.attachments.show');
 
         Route::resource('sprints', SprintController::class)->except(['create', 'edit'])
             ->middlewareFor('index', 'can:viewAny,'.Sprint::class.',current_organization')

@@ -1,26 +1,24 @@
 <script setup lang="ts">
-import { Form, Head, Link } from '@inertiajs/vue3';
+import { Form, Head } from '@inertiajs/vue3';
+import { X } from '@lucide/vue';
 import { ref } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { destroy, edit, index, update } from '@/routes/clients';
-import { show as showBoard } from '@/routes/portal/projects';
-import type {
-    Client,
-    ClientProject,
-    Organization,
-    OrganizationPermissions,
-} from '@/types';
+import { destroy, edit, index, show, update } from '@/routes/clients';
+import {
+    destroy as destroyDomain,
+    store as storeDomain,
+} from '@/routes/clients/domains';
+import { mutate } from '@/lib/optimistic';
+import type { Client, Organization, OrganizationPermissions } from '@/types';
 
 type Props = {
     currentOrganization: Organization;
     client: Client;
-    projects: ClientProject[];
     permissions: OrganizationPermissions;
 };
 
@@ -35,6 +33,10 @@ defineOptions({
             },
             {
                 title: props.client.name,
+                href: show([props.currentOrganization.slug, props.client.slug]),
+            },
+            {
+                title: 'Settings',
                 href: edit([props.currentOrganization.slug, props.client.slug]),
             },
         ],
@@ -83,32 +85,70 @@ const deleteDialogOpen = ref(false);
         <div class="max-w-xl space-y-6">
             <Heading
                 variant="small"
-                title="Projects"
-                description="Projects run for this client"
+                title="Support domains"
+                description="Mail to support from these domains is filed under this client"
             />
-            <div class="space-y-3">
-                <div
-                    v-for="project in projects"
-                    :key="project.id"
-                    class="flex items-center justify-between gap-4 rounded-lg border p-4"
+            <ul v-if="client.domains?.length" class="flex flex-wrap gap-2">
+                <li
+                    v-for="domain in client.domains"
+                    :key="domain.id"
+                    class="inline-flex items-center gap-1 rounded-md border py-1 pr-1 pl-2.5 text-sm"
+                    data-test="client-domain"
                 >
-                    <Link
-                        :href="
-                            showBoard([currentOrganization.slug, project.slug])
+                    {{ domain.domain }}
+                    <Button
+                        v-if="permissions.canManageClients"
+                        variant="ghost"
+                        size="icon-sm"
+                        :aria-label="`Remove ${domain.domain}`"
+                        @click="
+                            mutate(
+                                destroyDomain([
+                                    currentOrganization.slug,
+                                    client.slug,
+                                    domain.id,
+                                ]),
+                                {
+                                    errorMessage:
+                                        'The domain could not be removed.',
+                                },
+                            )
                         "
-                        class="font-medium hover:underline"
                     >
-                        {{ project.name }}
-                    </Link>
-                    <Badge variant="secondary">{{ project.visibility }}</Badge>
+                        <X />
+                    </Button>
+                </li>
+            </ul>
+            <p v-else class="text-muted-foreground text-sm">
+                No domains yet. Mail from this client waits unassigned.
+            </p>
+            <Form
+                v-if="permissions.canManageClients"
+                v-bind="
+                    storeDomain.form([currentOrganization.slug, client.slug])
+                "
+                class="flex items-start gap-2"
+                reset-on-success
+                v-slot="{ errors, processing }"
+            >
+                <div class="grid flex-1 gap-2">
+                    <Input
+                        name="domain"
+                        placeholder="acme.com"
+                        aria-label="Domain"
+                        data-test="client-domain-input"
+                    />
+                    <InputError :message="errors.domain" />
                 </div>
-                <p
-                    v-if="projects.length === 0"
-                    class="text-muted-foreground text-sm"
+                <Button
+                    type="submit"
+                    variant="secondary"
+                    data-test="client-domain-add"
+                    :disabled="processing"
                 >
-                    No projects are assigned to this client.
-                </p>
-            </div>
+                    Add domain
+                </Button>
+            </Form>
         </div>
 
         <div v-if="permissions.canManageClients" class="max-w-xl space-y-6">

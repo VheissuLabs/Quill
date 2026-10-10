@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { Briefcase, Pencil, Plus } from '@lucide/vue';
+import { Briefcase, Plus, Settings } from '@lucide/vue';
 import CreateClientModal from '@/components/CreateClientModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
@@ -11,7 +11,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { edit, index } from '@/routes/clients';
+import { edit, index, show } from '@/routes/clients';
 import type {
     ClientListItem,
     Organization,
@@ -66,15 +66,21 @@ defineOptions({
                 data-test="client-row"
                 class="flex items-center justify-between gap-4 rounded-lg border p-4"
             >
-                <div>
-                    <div class="font-medium">{{ client.name }}</div>
+                <Link
+                    :href="show([currentOrganization.slug, client.slug])"
+                    class="group min-w-0 flex-1"
+                    data-test="client-link"
+                >
+                    <div class="font-medium group-hover:underline">
+                        {{ client.name }}
+                    </div>
                     <span class="text-muted-foreground text-sm">
                         {{ client.projectsCount }}
                         {{
                             client.projectsCount === 1 ? 'project' : 'projects'
                         }}
                     </span>
-                </div>
+                </Link>
 
                 <TooltipProvider v-if="permissions.canManageClients">
                     <Tooltip>
@@ -93,12 +99,12 @@ defineOptions({
                                         ])
                                     "
                                 >
-                                    <Pencil class="h-4 w-4" />
+                                    <Settings class="h-4 w-4" />
                                 </Link>
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Edit client</p>
+                            <p>Client settings</p>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
