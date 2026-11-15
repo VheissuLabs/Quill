@@ -5,6 +5,7 @@ import { ref } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import InvoiceLines from '@/components/InvoiceLines.vue';
 import InvoiceStatusBadge from '@/components/InvoiceStatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -375,51 +376,10 @@ const money = (value: string) =>
             </div>
         </form>
 
-        <section class="space-y-3" data-test="invoice-lines">
-            <Heading variant="small" title="Lines" />
-            <div
-                v-if="invoice.lines.length > 0"
-                class="overflow-x-auto rounded-lg border"
-            >
-                <table class="w-full text-sm">
-                    <thead class="text-muted-foreground border-b text-left">
-                        <tr>
-                            <th class="px-4 py-3 font-medium">Description</th>
-                            <th class="px-4 py-3 text-right font-medium">
-                                Qty
-                            </th>
-                            <th class="px-4 py-3 font-medium">Unit</th>
-                            <th class="px-4 py-3 text-right font-medium">
-                                Rate
-                            </th>
-                            <th class="px-4 py-3 text-right font-medium">
-                                Amount
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr
-                            v-for="line in invoice.lines"
-                            :key="line.id"
-                            class="border-b last:border-0"
-                        >
-                            <td class="px-4 py-3">{{ line.description }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                {{ line.quantity }}
-                            </td>
-                            <td class="px-4 py-3">{{ line.unit }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                {{ money(line.rate) }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                {{ money(line.amount) }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <p v-else class="text-muted-foreground text-sm">No lines yet.</p>
-        </section>
+        <InvoiceLines
+            :organization="currentOrganization.slug"
+            :invoice="invoice"
+        />
 
         <section class="max-w-sm space-y-1 text-sm" data-test="invoice-totals">
             <div class="flex justify-between">

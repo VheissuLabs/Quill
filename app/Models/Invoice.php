@@ -119,6 +119,13 @@ class Invoice extends Model
         return number_format(max(0, (float) $this->total - (float) $this->amount_paid), 2, '.', '');
     }
 
+    public function defaultLineRate(): ?string
+    {
+        return $this->project?->billingRate()
+            ?? $this->client->billing_rate
+            ?? $this->organization->billingSettings()->default_rate;
+    }
+
     public function isEditable(): bool
     {
         return $this->sent_at === null

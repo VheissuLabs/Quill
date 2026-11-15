@@ -14,7 +14,7 @@ class IssueLookupController extends Controller
     public function index(IssueLookupRequest $request, Organization $currentOrganization): AnonymousResourceCollection
     {
         return IssueLookupResource::collection(
-            Issue::matching($currentOrganization, $request->user(), $request->term(), $request->integer('except'))
+            Issue::matching($currentOrganization, $request->user(), $request->term(), $request->integer('except'), $request->billableClientIds())
         );
     }
 }

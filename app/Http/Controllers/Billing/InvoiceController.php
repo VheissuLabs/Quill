@@ -54,7 +54,7 @@ class InvoiceController extends Controller
     public function show(Organization $currentOrganization, Invoice $invoice): Response
     {
         return Inertia::render('invoices/Show', [
-            'invoice' => InvoiceResource::make($invoice->load(['client', 'organization', 'lines', 'payments'])),
+            'invoice' => InvoiceResource::make($invoice->load(['client', 'organization', 'lines.issue.project', 'payments'])),
         ]);
     }
 

@@ -53,6 +53,7 @@ class InvoiceResource extends InvoiceListResource
                 'amount' => $line->amount,
                 'workTypeId' => $line->work_type_id,
                 'issueId' => $line->issue_id,
+                'issueReference' => $line->issue?->reference(),
                 'referenceUrl' => $line->reference_url,
             ])->all(),
             'payments' => $this->payments->map(fn (InvoicePayment $payment) => [

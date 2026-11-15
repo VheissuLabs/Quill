@@ -32,6 +32,11 @@ class InvoicePolicy
             && $invoice->status !== InvoiceStatus::Void;
     }
 
+    public function editLines(User $user, Invoice $invoice): bool
+    {
+        return $this->manages($user, $invoice->organization) && $invoice->isEditable();
+    }
+
     public function delete(User $user, Invoice $invoice): bool
     {
         return $this->manages($user, $invoice->organization)

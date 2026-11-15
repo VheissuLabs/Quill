@@ -30,6 +30,7 @@ export type InvoiceLine = {
     amount: string;
     workTypeId: number | null;
     issueId: number | null;
+    issueReference: string | null;
     referenceUrl: string | null;
 };
 

@@ -41,7 +41,7 @@ class Issue extends Model
      *
      * @return EloquentCollection<int, self>
      */
-    public static function matching(Organization $organization, User $user, string $term, ?int $except = null): EloquentCollection
+    public static function matching(Organization $organization, User $user, string $term, ?int $except = null, ?Collection $clientIds = null): EloquentCollection
     {
         if (mb_strlen($term) < 2) {
             return new EloquentCollection;
@@ -51,6 +51,7 @@ class Issue extends Model
 
         return self::query()
             ->whereIn('project_id', $organization->projects()->visibleTo($user)->select('projects.id'))
+            ->when($clientIds, fn (Builder $query, Collection $ids) => $query->whereIn('project_id', Project::query()->whereIn('client_id', $ids)->select('id')))
             ->when($except, fn (Builder $query, int $id) => $query->whereKeyNot($id))
             ->where(fn (Builder $query) => $query
                 ->where('title', 'like', $like)
