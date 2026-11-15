@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -125,6 +126,26 @@ class Organization extends Model
     public function receivesSupportMail(): bool
     {
         return $this->slug === config('services.resend.support_organization');
+    }
+
+    public function billingSettings(): BillingSetting
+    {
+        return $this->billingSettingsRecord()->firstOrCreate([], [
+            'invoice_prefix' => 'INV',
+            'payment_terms_days' => 30,
+        ]);
+    }
+
+    /** @return HasOne<BillingSetting, $this> */
+    public function billingSettingsRecord(): HasOne
+    {
+        return $this->hasOne(BillingSetting::class);
+    }
+
+    /** @return HasMany<WorkType, $this> */
+    public function workTypes(): HasMany
+    {
+        return $this->hasMany(WorkType::class);
     }
 
     /** @return HasMany<ClientContact, $this> */

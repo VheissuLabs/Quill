@@ -6,6 +6,7 @@ import {
     Inbox,
     LayoutGrid,
     ListTodo,
+    Receipt,
     Settings,
     ShieldCheck,
     Timer,
@@ -34,6 +35,7 @@ import {
     edit as organizationSettings,
     index as organizations,
 } from '@/routes/organizations';
+import { edit as billingSettings } from '@/routes/organizations/billing';
 import { index as projects } from '@/routes/projects';
 import { index as roles } from '@/routes/roles';
 import { index as sprints } from '@/routes/sprints';
@@ -138,6 +140,16 @@ const navGroups = computed<NavGroup[]>(() => {
                               title: 'Roles',
                               href: roles(slug),
                               icon: ShieldCheck,
+                          },
+                      ]
+                    : []),
+                ...(modules.value.billing.enabled &&
+                page.props.permissions?.canManageInvoices
+                    ? [
+                          {
+                              title: 'Billing',
+                              href: billingSettings(slug),
+                              icon: Receipt,
                           },
                       ]
                     : []),

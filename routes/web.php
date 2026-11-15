@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Billing\BillingSettingController;
+use App\Http\Controllers\Billing\WorkTypeController;
 use App\Http\Controllers\ClearNotificationsController;
 use App\Http\Controllers\Clients\ClientContactController;
 use App\Http\Controllers\Clients\ClientController;
@@ -50,6 +52,7 @@ use App\Http\Middleware\EnsureOrganizationMembership;
 use App\Http\Middleware\RedirectGuestsFromPrivateProject;
 use App\Http\Middleware\RememberPortalPage;
 use App\Http\Middleware\VerifyResendSignature;
+use App\Models\BillingSetting;
 use App\Models\BoardColumn;
 use App\Models\Client;
 use App\Models\Feedback;
@@ -59,6 +62,7 @@ use App\Models\Project;
 use App\Models\Sprint;
 use App\Models\Team;
 use App\Models\Ticket;
+use App\Models\WorkType;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
@@ -189,6 +193,15 @@ Route::prefix('{current_organization}/settings')
             Route::post('roles', [OrganizationRoleController::class, 'store'])->can('create', [Role::class, 'current_organization'])->name('roles.store');
             Route::patch('roles/{role}', [OrganizationRoleController::class, 'update'])->can('update', 'role')->name('roles.update');
             Route::delete('roles/{role}', [OrganizationRoleController::class, 'destroy'])->can('delete', 'role')->name('roles.destroy');
+        });
+
+        Route::get('billing', [BillingSettingController::class, 'edit'])->can('viewAny', [BillingSetting::class, 'current_organization'])->name('billing.edit');
+        Route::patch('billing', [BillingSettingController::class, 'update'])->can('update', [BillingSetting::class, 'current_organization'])->name('billing.update');
+
+        Route::post('work-types', [WorkTypeController::class, 'store'])->can('create', [WorkType::class, 'current_organization'])->name('work-types.store');
+        Route::scopeBindings()->group(function () {
+            Route::patch('work-types/{workType}', [WorkTypeController::class, 'update'])->can('update', 'workType')->name('work-types.update');
+            Route::delete('work-types/{workType}', [WorkTypeController::class, 'destroy'])->can('delete', 'workType')->name('work-types.destroy');
         });
 
         Route::post('invitations', [OrganizationInvitationController::class, 'store'])->can('create', [OrganizationInvitation::class, 'current_organization'])->name('invitations.store');
