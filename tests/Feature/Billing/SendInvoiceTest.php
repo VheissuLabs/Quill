@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Billing\SendInvoice;
 use App\Enums\InvoiceStatus;
 use App\Enums\LineUnit;
 use App\Models\Client;
@@ -83,4 +84,38 @@ test('members without invoice permission cannot send', function () {
     $invoice->organization->addMember($member, 'Member');
 
     $this->actingAs($member)->post(route('invoices.send.store', [$invoice->organization, $invoice]))->assertForbidden();
+});
+
+test('sending an already sent invoice through the action notifies only once', function () {
+    Notification::fake();
+    [$invoice] = sendableInvoice();
+
+    app(SendInvoice::class)->handle($invoice);
+    app(SendInvoice::class)->handle($invoice->fresh());
+
+    Notification::assertSentOnDemandTimes(InvoiceSent::class, 1);
+});
+
+test('the action refuses an invoice with no contact or no lines and leaves it unsent', function () {
+    Notification::fake();
+    [$noContact] = sendableInvoice(contact: false);
+    [$noLines] = sendableInvoice(lines: false);
+
+    expect(fn () => app(SendInvoice::class)->handle($noContact))->toThrow(DomainException::class)
+        ->and(fn () => app(SendInvoice::class)->handle($noLines))->toThrow(DomainException::class)
+        ->and($noContact->fresh())->sent_at->toBeNull()
+        ->and($noLines->fresh())->sent_at->toBeNull();
+
+    Notification::assertNothingSent();
+});
+
+test('sent_at and status are persisted together with the sent notification', function () {
+    [$invoice] = sendableInvoice();
+    Notification::fake();
+
+    app(SendInvoice::class)->handle($invoice);
+
+    $fresh = $invoice->fresh();
+    expect($fresh->sent_at)->not->toBeNull()->and($fresh->status)->toBe(InvoiceStatus::Sent);
+    Notification::assertSentOnDemandTimes(InvoiceSent::class, 1);
 });
