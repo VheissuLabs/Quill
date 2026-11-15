@@ -69,6 +69,9 @@ export type Invoice = InvoiceListItem & {
     isEditable: boolean;
     canUpdate: boolean;
     canDelete: boolean;
+    canSend: boolean;
+    canVoid: boolean;
+    canDuplicate: boolean;
     lines: InvoiceLine[];
     payments: InvoicePayment[];
     options: {

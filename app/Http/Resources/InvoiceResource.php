@@ -46,6 +46,9 @@ class InvoiceResource extends InvoiceListResource
             'isEditable' => $this->isEditable(),
             'canUpdate' => $user?->can('update', $this->resource) ?? false,
             'canDelete' => $user?->can('delete', $this->resource) ?? false,
+            'canSend' => $user?->can('send', $this->resource) ?? false,
+            'canVoid' => $user?->can('void', $this->resource) ?? false,
+            'canDuplicate' => $user?->can('duplicate', $this->resource) ?? false,
             'lines' => $this->lines->map(fn (InvoiceLine $line) => [
                 'id' => $line->id,
                 'description' => $line->description,

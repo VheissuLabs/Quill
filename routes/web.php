@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\Billing\BillingSettingController;
 use App\Http\Controllers\Billing\InvoiceController;
+use App\Http\Controllers\Billing\InvoiceDuplicateController;
 use App\Http\Controllers\Billing\InvoiceLineController;
 use App\Http\Controllers\Billing\InvoiceLineOrderController;
 use App\Http\Controllers\Billing\InvoicePaymentController;
+use App\Http\Controllers\Billing\InvoiceSendController;
+use App\Http\Controllers\Billing\InvoiceVoidController;
 use App\Http\Controllers\Billing\PublicInvoiceController;
 use App\Http\Controllers\Billing\WorkTypeController;
 use App\Http\Controllers\ClearNotificationsController;
@@ -129,6 +132,9 @@ Route::prefix('{current_organization}')
             ->middlewareFor('show', 'can:view,invoice')
             ->middlewareFor('update', 'can:update,invoice')
             ->middlewareFor('destroy', 'can:delete,invoice');
+        Route::post('invoices/{invoice}/send', [InvoiceSendController::class, 'store'])->can('send', 'invoice')->name('invoices.send.store');
+        Route::post('invoices/{invoice}/void', [InvoiceVoidController::class, 'store'])->can('void', 'invoice')->name('invoices.void.store');
+        Route::post('invoices/{invoice}/duplicate', [InvoiceDuplicateController::class, 'store'])->can('duplicate', 'invoice')->name('invoices.duplicate.store');
         Route::put('invoices/{invoice}/lines/order', [InvoiceLineOrderController::class, 'update'])->can('editLines', 'invoice')->name('invoices.lines.order.update');
         Route::resource('invoices.lines', InvoiceLineController::class)->only(['store', 'update', 'destroy'])
             ->middlewareFor(['store', 'destroy'], 'can:editLines,invoice')

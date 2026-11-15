@@ -44,6 +44,27 @@ class InvoicePolicy
             && ! $invoice->payments()->exists();
     }
 
+    public function send(User $user, Invoice $invoice): bool
+    {
+        return $this->manages($user, $invoice->organization)
+            && $invoice->sent_at === null
+            && $invoice->status !== InvoiceStatus::Void
+            && $invoice->contact_id !== null
+            && $invoice->lines()->exists();
+    }
+
+    public function void(User $user, Invoice $invoice): bool
+    {
+        return $this->manages($user, $invoice->organization)
+            && $invoice->sent_at !== null
+            && ! in_array($invoice->status, [InvoiceStatus::Paid, InvoiceStatus::Void], true);
+    }
+
+    public function duplicate(User $user, Invoice $invoice): bool
+    {
+        return $this->view($user, $invoice);
+    }
+
     private function manages(User $user, Organization $organization): bool
     {
         return $organization->canUse(OrganizationCapability::Invoices)

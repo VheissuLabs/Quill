@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
-import { Link2, Trash2 } from '@lucide/vue';
-import { ref } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import { Copy, Link2, Send, Trash2, Ban } from '@lucide/vue';
+import { computed, ref } from 'vue';
+import ConfirmActionModal from '@/components/ConfirmActionModal.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -20,6 +21,9 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { destroy, index, show, update } from '@/routes/invoices';
+import { store as duplicate } from '@/routes/invoices/duplicate';
+import { store as send } from '@/routes/invoices/send';
+import { store as voidInvoice } from '@/routes/invoices/void';
 import type { Invoice, Organization } from '@/types';
 
 type Props = {
@@ -49,7 +53,21 @@ defineOptions({
 
 const none = 'none';
 const deleteDialogOpen = ref(false);
+const sendDialogOpen = ref(false);
+const voidDialogOpen = ref(false);
 const linkCopied = ref(false);
+
+const recipient = computed(() => {
+    const contact = props.invoice.options.contacts.find(
+        (option) => option.id === props.invoice.contactId,
+    );
+
+    return contact?.name
+        ? `${contact.name} <${contact.email}>`
+        : (contact?.email ?? '');
+});
+
+const ccList = computed(() => props.invoice.ccEmails.join(', '));
 
 const copyPublicLink = async () => {
     await navigator.clipboard.writeText(props.invoice.publicUrl ?? '');
@@ -141,6 +159,33 @@ const money = (value: string) =>
                     <Link2 /> {{ linkCopied ? 'Copied' : 'Copy public link' }}
                 </Button>
                 <Button
+                    v-if="invoice.canSend"
+                    data-test="invoice-send-button"
+                    @click="sendDialogOpen = true"
+                >
+                    <Send /> Send
+                </Button>
+                <Button
+                    v-if="invoice.canVoid"
+                    variant="outline"
+                    data-test="invoice-void-button"
+                    @click="voidDialogOpen = true"
+                >
+                    <Ban /> Void
+                </Button>
+                <Button
+                    v-if="invoice.canDuplicate"
+                    variant="outline"
+                    data-test="invoice-duplicate-button"
+                    @click="
+                        router.post(
+                            duplicate.url([currentOrganization.slug, invoice.id]),
+                        )
+                    "
+                >
+                    <Copy /> Duplicate
+                </Button>
+                <Button
                     v-if="invoice.canDelete"
                     variant="outline"
                     data-test="invoice-delete-button"
@@ -150,6 +195,27 @@ const money = (value: string) =>
                 </Button>
             </div>
         </div>
+
+        <ConfirmActionModal
+            v-model:open="sendDialogOpen"
+            title="Send this invoice?"
+            confirm-label="Send invoice"
+            :href="send([currentOrganization.slug, invoice.id])"
+        >
+            This emails the invoice to {{ recipient }}
+            <template v-if="ccList"> and copies {{ ccList }}</template
+            >.
+        </ConfirmActionModal>
+
+        <ConfirmActionModal
+            v-model:open="voidDialogOpen"
+            title="Void this invoice?"
+            confirm-label="Void invoice"
+            destructive
+            :href="voidInvoice([currentOrganization.slug, invoice.id])"
+        >
+            A voided invoice can no longer be edited or paid.
+        </ConfirmActionModal>
 
         <ConfirmDeleteModal
             v-model:open="deleteDialogOpen"
