@@ -160,6 +160,8 @@ test('organization owners can update product modules', function () {
             'development_sprints_enabled' => false,
             'development_workflow_enabled' => true,
             'teams_enabled' => true,
+            'billing_enabled' => true,
+            'billing_invoices_enabled' => true,
         ]);
 
     $response->assertRedirect(route('organizations.edit', $organization));
@@ -195,6 +197,8 @@ test('enabling a module turns every capability inside it back on', function () {
         'development_sprints_enabled' => false,
         'development_workflow_enabled' => false,
         'teams_enabled' => true,
+        'billing_enabled' => true,
+        'billing_invoices_enabled' => true,
     ]);
 
     $response = $this
@@ -208,6 +212,8 @@ test('enabling a module turns every capability inside it back on', function () {
             'development_sprints_enabled' => false,
             'development_workflow_enabled' => false,
             'teams_enabled' => true,
+            'billing_enabled' => true,
+            'billing_invoices_enabled' => true,
         ]);
 
     $response->assertRedirect(route('organizations.edit', $organization));
@@ -222,6 +228,7 @@ test('enabling a module turns every capability inside it back on', function () {
             'capabilities' => ['issues' => false, 'sprints' => false, 'workflow' => false],
         ],
         'teams' => ['enabled' => true, 'capabilities' => []],
+        'billing' => ['enabled' => true, 'capabilities' => ['invoices' => true]],
     ]);
 });
 
@@ -241,6 +248,8 @@ test('an enabled module keeps the capabilities an owner turned off', function ()
             'development_sprints_enabled' => true,
             'development_workflow_enabled' => true,
             'teams_enabled' => true,
+            'billing_enabled' => true,
+            'billing_invoices_enabled' => true,
         ]);
 
     $response->assertRedirect(route('organizations.edit', $organization));
@@ -267,6 +276,8 @@ test('organization members cannot update product modules', function () {
             'development_sprints_enabled' => false,
             'development_workflow_enabled' => false,
             'teams_enabled' => true,
+            'billing_enabled' => true,
+            'billing_invoices_enabled' => true,
         ]);
 
     $response->assertForbidden();
@@ -620,6 +631,8 @@ test('switching the teams module off flattens every team back into the organizat
             'development_sprints_enabled' => true,
             'development_workflow_enabled' => true,
             'teams_enabled' => false,
+            'billing_enabled' => true,
+            'billing_invoices_enabled' => true,
         ])
         ->assertRedirect(route('organizations.edit', $organization));
 

@@ -72,6 +72,7 @@ const modules = computed(
                 capabilities: { issues: true, sprints: true, workflow: true },
             },
             teams: { enabled: true },
+            billing: { enabled: true, capabilities: { invoices: true } },
         },
 );
 

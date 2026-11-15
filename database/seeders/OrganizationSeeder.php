@@ -29,6 +29,7 @@ class OrganizationSeeder extends Seeder
                 OrganizationPermission::ManageIssues->value,
                 OrganizationPermission::ManageSprints->value,
                 OrganizationPermission::ManageTickets->value,
+                OrganizationPermission::ManageInvoices->value,
                 OrganizationPermission::ViewActivity->value,
             ]);
 

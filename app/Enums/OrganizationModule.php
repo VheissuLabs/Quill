@@ -10,12 +10,15 @@ enum OrganizationModule: string
 
     case Teams = 'teams';
 
+    case Billing = 'billing';
+
     public function key(): string
     {
         return match ($this) {
             self::Feedback => 'feedback',
             self::Development => 'development',
             self::Teams => 'teams',
+            self::Billing => 'billing',
         };
     }
 
@@ -33,6 +36,9 @@ enum OrganizationModule: string
                 OrganizationCapability::Workflow,
             ],
             self::Teams => [],
+            self::Billing => [
+                OrganizationCapability::Invoices,
+            ],
         };
     }
 }

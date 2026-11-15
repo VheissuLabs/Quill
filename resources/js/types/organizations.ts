@@ -17,6 +17,12 @@ export type OrganizationModules = {
     teams: {
         enabled: boolean;
     };
+    billing: {
+        enabled: boolean;
+        capabilities: {
+            invoices: boolean;
+        };
+    };
 };
 
 export type Organization = {
@@ -80,6 +86,7 @@ export type OrganizationPermissions = {
     canManageIssues: boolean;
     canManageSprints: boolean;
     canManageTickets: boolean;
+    canManageInvoices: boolean;
     canViewActivity: boolean;
     canManageRoles: boolean;
 };

@@ -105,6 +105,8 @@ const moduleValues = (modules: Organization['modules']) => ({
     development_sprints_enabled: modules.development.capabilities.sprints,
     development_workflow_enabled: modules.development.capabilities.workflow,
     teams_enabled: modules.teams.enabled,
+    billing_enabled: modules.billing.enabled,
+    billing_invoices_enabled: modules.billing.capabilities.invoices,
 });
 
 const modulesForm = useForm(moduleValues(props.organization.modules));
@@ -172,7 +174,9 @@ type ModuleField =
     | 'development_issues_enabled'
     | 'development_sprints_enabled'
     | 'development_workflow_enabled'
-    | 'teams_enabled';
+    | 'teams_enabled'
+    | 'billing_enabled'
+    | 'billing_invoices_enabled';
 
 const updateModule = (field: ModuleField, value: boolean) => {
     const previousValue = modulesForm[field];
@@ -626,6 +630,73 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                         "
                                     />
                                 </label>
+                            </div>
+
+                            <div class="space-y-3 border-t pt-6">
+                                <label
+                                    class="flex cursor-pointer items-start justify-between gap-4"
+                                >
+                                    <span class="min-w-0">
+                                        <span class="block font-medium">
+                                            Billing
+                                        </span>
+                                        <span
+                                            class="text-muted-foreground mt-1 block text-sm"
+                                        >
+                                            Invoices and payments.
+                                        </span>
+                                    </span>
+                                    <Switch
+                                        id="billing-enabled"
+                                        data-test="module-billing"
+                                        class="mt-1 shrink-0"
+                                        :model-value="
+                                            modulesForm.billing_enabled
+                                        "
+                                        :disabled="modulesForm.processing"
+                                        @update:model-value="
+                                            updateModule(
+                                                'billing_enabled',
+                                                $event === true,
+                                            )
+                                        "
+                                    />
+                                </label>
+                                <div class="ml-4 space-y-3 border-l pl-4">
+                                    <label
+                                        class="flex cursor-pointer items-start justify-between gap-4"
+                                    >
+                                        <span class="min-w-0">
+                                            <span class="block font-medium"
+                                                >Invoices</span
+                                            >
+                                            <span
+                                                class="text-muted-foreground mt-1 block text-sm"
+                                            >
+                                                Bill clients for completed
+                                                work.
+                                            </span>
+                                        </span>
+                                        <Switch
+                                            id="billing-invoices-enabled"
+                                            data-test="module-billing-invoices"
+                                            class="mt-1 shrink-0"
+                                            :model-value="
+                                                modulesForm.billing_invoices_enabled
+                                            "
+                                            :disabled="
+                                                modulesForm.processing ||
+                                                !modulesForm.billing_enabled
+                                            "
+                                            @update:model-value="
+                                                updateModule(
+                                                    'billing_invoices_enabled',
+                                                    $event === true,
+                                                )
+                                            "
+                                        />
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>

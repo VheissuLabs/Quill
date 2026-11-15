@@ -19,6 +19,8 @@ class UpdateOrganizationModulesRequest extends FormRequest
             'development_sprints_enabled' => ['required', 'boolean'],
             'development_workflow_enabled' => ['required', 'boolean'],
             'teams_enabled' => ['required', 'boolean'],
+            'billing_enabled' => ['required', 'boolean'],
+            'billing_invoices_enabled' => ['required', 'boolean'],
         ];
     }
 }

@@ -185,6 +185,8 @@ test('projects survive feedback voting being switched off', function () {
         'development_sprints_enabled' => true,
         'development_workflow_enabled' => true,
         'teams_enabled' => true,
+        'billing_enabled' => true,
+        'billing_invoices_enabled' => true,
     ]);
 
     $project = Project::factory()->for($organization)->create(['name' => 'Internal work']);
@@ -221,6 +223,8 @@ test('the public feedback board still goes away when feedback voting is switched
         'development_sprints_enabled' => true,
         'development_workflow_enabled' => true,
         'teams_enabled' => true,
+        'billing_enabled' => true,
+        'billing_invoices_enabled' => true,
     ]);
 
     $project = Project::factory()->for($organization)->create([

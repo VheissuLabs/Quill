@@ -21,6 +21,7 @@ enum OrganizationPermission: string
     case ManageIssues = 'issue:manage';
     case ManageSprints = 'sprint:manage';
     case ManageTickets = 'ticket:manage';
+    case ManageInvoices = 'invoice:manage';
 
     case ViewActivity = 'activity:view';
 
@@ -43,6 +44,7 @@ enum OrganizationPermission: string
             self::ManageIssues => __('Manage issues'),
             self::ManageSprints => __('Manage sprints'),
             self::ManageTickets => __('Manage support tickets'),
+            self::ManageInvoices => __('Manage invoices'),
             self::ViewActivity => __('View activity history'),
             self::ManageRoles => __('Manage roles and permissions'),
         };
@@ -59,6 +61,7 @@ enum OrganizationPermission: string
             self::UpdateOrganization, self::DeleteOrganization, self::ManageRoles => __('Organization'),
             self::AddMember, self::UpdateMember, self::RemoveMember, self::CreateInvitation, self::CancelInvitation => __('People'),
             self::ManageTeams, self::ManageClients, self::ManageProjects, self::ManageFeedback, self::ManageIssues, self::ManageSprints, self::ManageTickets => __('Work'),
+            self::ManageInvoices => __('Billing'),
             self::ViewActivity => __('Insights'),
         };
     }

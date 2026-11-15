@@ -53,6 +53,8 @@ test('changing the organization modules announces it to the organization', funct
         'development_sprints_enabled' => true,
         'development_workflow_enabled' => true,
         'teams_enabled' => true,
+        'billing_enabled' => true,
+        'billing_invoices_enabled' => true,
     ]);
 
     Event::assertDispatched(
