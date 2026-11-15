@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Models\Organization;
 use App\Models\Project;
+use App\Models\Sprint;
 use App\Models\User;
 
 function invoiceManager(): array
@@ -208,4 +209,85 @@ test('members without invoice management get 403', function () {
     $this->actingAs($member)->get(invoiceRoute('invoices.show', $organization, $invoice))->assertForbidden();
     $this->actingAs($member)->patch(invoiceRoute('invoices.update', $organization, $invoice), ['notes' => 'x'])->assertForbidden();
     $this->actingAs($member)->delete(invoiceRoute('invoices.destroy', $organization, $invoice))->assertForbidden();
+});
+
+test('rejected money edits leave the stored amounts untouched', function (array $payload) {
+    [$organization, $admin, $client] = invoiceManager();
+    $invoice = Invoice::factory()->sent()->for($organization)->for($client)->create(['tax_rate' => '5.00']);
+
+    $this->actingAs($admin)
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), $payload)
+        ->assertSessionHasErrors(array_key_first($payload));
+
+    expect($invoice->fresh())
+        ->tax_rate->toBe('5.00')
+        ->discount_type->toBeNull()
+        ->discount_value->toBeNull()
+        ->deposit_type->toBeNull()
+        ->deposit_value->toBeNull();
+})->with([
+    'tax' => [['tax_rate' => '10']],
+    'discount type' => [['discount_type' => 'percentage', 'discount_value' => '10']],
+    'discount value' => [['discount_value' => '10']],
+    'deposit type' => [['deposit_type' => 'fixed', 'deposit_value' => '50']],
+    'deposit value' => [['deposit_value' => '50']],
+]);
+
+test('money fields cannot change on a paid invoice that was never sent', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $invoice = Invoice::factory()->for($organization)->for($client)->create(['status' => InvoiceStatus::Paid, 'tax_rate' => '5.00']);
+
+    $this->actingAs($admin)
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['tax_rate' => '10', 'discount_type' => 'fixed', 'discount_value' => '5'])
+        ->assertSessionHasErrors(['tax_rate', 'discount_type', 'discount_value']);
+
+    expect($invoice->fresh())->tax_rate->toBe('5.00')->discount_type->toBeNull();
+});
+
+test('another workspace\'s client cannot be invoiced', function () {
+    [$organization, $admin] = invoiceManager();
+    $foreign = Client::factory()->create();
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['client_id' => $foreign->id])
+        ->assertSessionHasErrors('client_id');
+
+    expect($organization->invoices()->count())->toBe(0);
+});
+
+test('another workspace\'s project and sprint cannot be attached', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $foreignProject = Project::factory()->create(['client_id' => Client::factory()]);
+    $foreignSprint = Sprint::factory()->create();
+    $invoice = Invoice::factory()->for($organization)->for($client)->create();
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['client_id' => $client->id, 'project_id' => $foreignProject->id])
+        ->assertSessionHasErrors('project_id');
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['client_id' => $client->id, 'sprint_id' => $foreignSprint->id])
+        ->assertSessionHasErrors('sprint_id');
+
+    $this->actingAs($admin)
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['project_id' => $foreignProject->id])
+        ->assertSessionHasErrors('project_id');
+
+    $this->actingAs($admin)
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['sprint_id' => $foreignSprint->id])
+        ->assertSessionHasErrors('sprint_id');
+
+    expect($invoice->fresh())->project_id->toBeNull()->sprint_id->toBeNull();
+});
+
+test('a contact from another client cannot be set on update', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $stranger = ClientContact::factory()->for(Client::factory()->for($organization))->create();
+    $invoice = Invoice::factory()->for($organization)->for($client)->create();
+
+    $this->actingAs($admin)
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['contact_id' => $stranger->id])
+        ->assertSessionHasErrors('contact_id');
+
+    expect($invoice->fresh()->contact_id)->toBeNull();
 });
