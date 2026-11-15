@@ -394,6 +394,12 @@ class Organization extends Model
         return $this->hasMany(Client::class);
     }
 
+    /** @return HasMany<Invoice, $this> */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     /** @return HasMany<Project, $this> */
     public function projects(): HasMany
     {

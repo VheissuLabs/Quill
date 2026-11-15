@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as clients } from '@/routes/clients';
+import { index as invoices } from '@/routes/invoices';
 import { index as issues } from '@/routes/issues';
 import {
     edit as organizationSettings,
@@ -124,6 +125,18 @@ const navGroups = computed<NavGroup[]>(() => {
             groups.push({
                 label: 'Support',
                 items: [{ title: 'Tickets', href: tickets(slug), icon: Inbox }],
+            });
+        }
+
+        if (
+            modules.value.billing.enabled &&
+            page.props.permissions?.canManageInvoices
+        ) {
+            groups.push({
+                label: 'Billing',
+                items: [
+                    { title: 'Invoices', href: invoices(slug), icon: Receipt },
+                ],
             });
         }
 

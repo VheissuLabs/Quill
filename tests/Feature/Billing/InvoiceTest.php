@@ -1,0 +1,211 @@
+<?php
+
+use App\Enums\InvoiceStatus;
+use App\Models\Client;
+use App\Models\ClientContact;
+use App\Models\Invoice;
+use App\Models\InvoicePayment;
+use App\Models\Organization;
+use App\Models\Project;
+use App\Models\User;
+
+function invoiceManager(): array
+{
+    $organization = Organization::factory()->create();
+    $admin = User::factory()->create();
+    $organization->addMember($admin, 'Admin');
+
+    return [$organization, $admin, Client::factory()->for($organization)->create()];
+}
+
+function invoiceRoute(string $name, Organization $organization, ?Invoice $invoice = null): string
+{
+    return route($name, array_filter(['current_organization' => $organization, 'invoice' => $invoice]));
+}
+
+test('a manager sees the workspace\'s invoices only', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $mine = Invoice::factory()->for($organization)->for($client)->create();
+    Invoice::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(invoiceRoute('invoices.index', $organization))
+        ->assertInertia(fn ($page) => $page
+            ->component('invoices/Index')
+            ->has('invoices', 1)
+            ->where('invoices.0.id', $mine->id)
+            ->where('invoices.0.number', $mine->number));
+});
+
+test('the index filters by status and client', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $other = Client::factory()->for($organization)->create();
+    $draft = Invoice::factory()->for($organization)->for($client)->create();
+    Invoice::factory()->sent()->for($organization)->for($client)->create();
+    Invoice::factory()->for($organization)->for($other)->create();
+
+    $this->actingAs($admin)
+        ->get(invoiceRoute('invoices.index', $organization).'?status=draft&client='.$client->id)
+        ->assertInertia(fn ($page) => $page
+            ->has('invoices', 1)
+            ->where('invoices.0.id', $draft->id));
+});
+
+test('a manager creates an invoice for a client', function () {
+    [$organization, $admin, $client] = invoiceManager();
+
+    $response = $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['client_id' => $client->id]);
+
+    $invoice = $organization->invoices()->sole();
+
+    $response->assertRedirect(invoiceRoute('invoices.show', $organization, $invoice));
+    expect($invoice)->status->toBe(InvoiceStatus::Draft)->client_id->toBe($client->id);
+});
+
+test('starting from a project bills its billed-through client', function () {
+    [$organization, $admin, $payer] = invoiceManager();
+    $kms = Client::factory()->for($organization)->create(['billed_through_client_id' => $payer->id]);
+    $project = Project::factory()->for($organization)->create(['client_id' => $kms->id]);
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['project_id' => $project->id])
+        ->assertSessionHasNoErrors();
+
+    expect($organization->invoices()->sole())->client_id->toBe($payer->id)->project_id->toBe($project->id);
+});
+
+test('a project without a client needs a client chosen', function () {
+    [$organization, $admin] = invoiceManager();
+    $project = Project::factory()->for($organization)->create();
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['project_id' => $project->id])
+        ->assertSessionHasErrors('client_id');
+});
+
+test('project must be billable to the invoice\'s client', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $stranger = Project::factory()->for($organization)->create([
+        'client_id' => Client::factory()->for($organization),
+    ]);
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['client_id' => $client->id, 'project_id' => $stranger->id])
+        ->assertSessionHasErrors('project_id');
+});
+
+test('contact must belong to the invoice\'s client', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $stranger = ClientContact::factory()->for(Client::factory()->for($organization))->create();
+    $contact = ClientContact::factory()->for($client)->create();
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['client_id' => $client->id, 'contact_id' => $stranger->id])
+        ->assertSessionHasErrors('contact_id');
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['client_id' => $client->id, 'contact_id' => $contact->id])
+        ->assertSessionHasNoErrors();
+});
+
+test('cc emails must each be an email', function () {
+    [$organization, $admin, $client] = invoiceManager();
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['client_id' => $client->id, 'cc_emails' => ['ok@example.com', 'nope']])
+        ->assertSessionHasErrors('cc_emails.1');
+});
+
+test('a draft\'s header and amounts update and totals are recalculated', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $invoice = Invoice::factory()->for($organization)->for($client)->create();
+    $invoice->lines()->create(['description' => 'Dev', 'quantity' => '10', 'unit' => 'hours', 'rate' => '100.00']);
+
+    $this->actingAs($admin)
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['tax_rate' => '10', 'notes' => 'Thanks'])
+        ->assertSessionHasNoErrors();
+
+    expect($invoice->fresh())->notes->toBe('Thanks')->tax_amount->toBe('100.00')->total->toBe('1100.00');
+});
+
+test('money fields cannot change once sent', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $invoice = Invoice::factory()->sent()->for($organization)->for($client)->create();
+
+    $this->actingAs($admin)
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['tax_rate' => '10'])
+        ->assertSessionHasErrors('tax_rate');
+
+    $this->actingAs($admin)
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['notes' => 'Updated'])
+        ->assertSessionHasNoErrors();
+
+    expect($invoice->fresh())->notes->toBe('Updated');
+});
+
+test('void invoices cannot be edited', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $invoice = Invoice::factory()->void()->for($organization)->for($client)->create();
+
+    $this->actingAs($admin)
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['notes' => 'Nope'])
+        ->assertForbidden();
+});
+
+test('drafts can be deleted, sent invoices cannot', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $draft = Invoice::factory()->for($organization)->for($client)->create();
+    $sent = Invoice::factory()->sent()->for($organization)->for($client)->create();
+
+    $this->actingAs($admin)->delete(invoiceRoute('invoices.destroy', $organization, $sent))->assertForbidden();
+    $this->actingAs($admin)->delete(invoiceRoute('invoices.destroy', $organization, $draft))->assertRedirect(invoiceRoute('invoices.index', $organization));
+
+    expect(Invoice::find($draft->id))->toBeNull()->and(Invoice::find($sent->id))->not->toBeNull();
+});
+
+test('a draft with payments cannot be deleted', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $draft = Invoice::factory()->for($organization)->for($client)->create();
+    InvoicePayment::factory()->for($draft)->create();
+
+    $this->actingAs($admin)->delete(invoiceRoute('invoices.destroy', $organization, $draft))->assertForbidden();
+});
+
+test('the invoice page carries its resource and options', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $contact = ClientContact::factory()->for($client)->create();
+    $invoice = Invoice::factory()->for($organization)->for($client)->create();
+
+    $this->actingAs($admin)
+        ->get(invoiceRoute('invoices.show', $organization, $invoice))
+        ->assertInertia(fn ($page) => $page
+            ->component('invoices/Show')
+            ->where('invoice.id', $invoice->id)
+            ->where('invoice.isEditable', true)
+            ->where('invoice.amountDue', '0.00')
+            ->where('invoice.options.contacts.0.id', $contact->id)
+            ->missing('invoice.publicUrl'));
+});
+
+test('invoices from another workspace are 404', function () {
+    [$organization, $admin] = invoiceManager();
+    $foreign = Invoice::factory()->create();
+
+    $this->actingAs($admin)->get(invoiceRoute('invoices.show', $organization, $foreign))->assertNotFound();
+    $this->actingAs($admin)->patch(invoiceRoute('invoices.update', $organization, $foreign), ['notes' => 'x'])->assertNotFound();
+    $this->actingAs($admin)->delete(invoiceRoute('invoices.destroy', $organization, $foreign))->assertNotFound();
+});
+
+test('members without invoice management get 403', function () {
+    [$organization, , $client] = invoiceManager();
+    $member = User::factory()->create();
+    $organization->addMember($member, 'Member');
+    $invoice = Invoice::factory()->for($organization)->for($client)->create();
+
+    $this->actingAs($member)->get(invoiceRoute('invoices.index', $organization))->assertForbidden();
+    $this->actingAs($member)->post(invoiceRoute('invoices.store', $organization), ['client_id' => $client->id])->assertForbidden();
+    $this->actingAs($member)->get(invoiceRoute('invoices.show', $organization, $invoice))->assertForbidden();
+    $this->actingAs($member)->patch(invoiceRoute('invoices.update', $organization, $invoice), ['notes' => 'x'])->assertForbidden();
+    $this->actingAs($member)->delete(invoiceRoute('invoices.destroy', $organization, $invoice))->assertForbidden();
+});
