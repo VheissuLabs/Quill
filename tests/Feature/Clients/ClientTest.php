@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Client;
+use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
@@ -71,4 +72,19 @@ test('deleting a client keeps its projects', function () {
 
     $this->assertModelMissing($client);
     expect($project->fresh()->client_id)->toBeNull();
+});
+
+test('a client with invoices cannot be deleted', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($admin, 'Admin');
+    $client = Client::factory()->for($organization)->create();
+    $invoice = Invoice::factory()->for($organization)->for($client)->create();
+
+    $this->actingAs($admin)
+        ->delete(route('clients.destroy', ['current_organization' => $organization, 'client' => $client]))
+        ->assertForbidden();
+
+    $this->assertModelExists($client);
+    $this->assertModelExists($invoice);
 });

@@ -31,6 +31,7 @@ class ClientPolicy
 
     public function delete(User $user, Client $client): bool
     {
-        return $user->hasOrganizationPermission($client->organization, OrganizationPermission::ManageClients);
+        return $user->hasOrganizationPermission($client->organization, OrganizationPermission::ManageClients)
+            && ! $client->invoices()->exists();
     }
 }

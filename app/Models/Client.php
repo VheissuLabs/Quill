@@ -53,6 +53,12 @@ class Client extends Model
         return $this->hasMany(Project::class);
     }
 
+    /** @return HasMany<Invoice, $this> */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     /** @return BelongsTo<ClientContact, $this> */
     public function billingContact(): BelongsTo
     {
