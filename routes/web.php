@@ -4,6 +4,7 @@ use App\Http\Controllers\Billing\BillingSettingController;
 use App\Http\Controllers\Billing\InvoiceController;
 use App\Http\Controllers\Billing\InvoiceLineController;
 use App\Http\Controllers\Billing\InvoiceLineOrderController;
+use App\Http\Controllers\Billing\InvoicePaymentController;
 use App\Http\Controllers\Billing\WorkTypeController;
 use App\Http\Controllers\ClearNotificationsController;
 use App\Http\Controllers\Clients\ClientContactController;
@@ -129,6 +130,8 @@ Route::prefix('{current_organization}')
         Route::resource('invoices.lines', InvoiceLineController::class)->only(['store', 'update', 'destroy'])
             ->middlewareFor(['store', 'destroy'], 'can:editLines,invoice')
             ->middlewareFor('update', 'can:update,invoice');
+        Route::resource('invoices.payments', InvoicePaymentController::class)->only(['store', 'update', 'destroy'])
+            ->middlewareFor(['store', 'update', 'destroy'], 'can:update,invoice');
         Route::get('client-contacts', [ClientContactController::class, 'index'])->can('create', [Ticket::class, 'current_organization'])->name('client-contacts.index');
         Route::post('clients/{client}/contacts', [ClientContactController::class, 'store'])->can('update', 'client')->name('clients.contacts.store');
         Route::patch('clients/{client}/contacts/{contact}', [ClientContactController::class, 'update'])->can('update', 'client')->name('clients.contacts.update');

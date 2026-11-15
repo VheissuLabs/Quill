@@ -1,25 +1,26 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
-import { Trash2 } from '@lucide/vue';
-import { ref } from 'vue';
-import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
-import Heading from '@/components/Heading.vue';
-import InputError from '@/components/InputError.vue';
-import InvoiceLines from '@/components/InvoiceLines.vue';
-import InvoiceStatusBadge from '@/components/InvoiceStatusBadge.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Head, useForm } from "@inertiajs/vue3";
+import { Trash2 } from "@lucide/vue";
+import { ref } from "vue";
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal.vue";
+import Heading from "@/components/Heading.vue";
+import InputError from "@/components/InputError.vue";
+import InvoiceLines from "@/components/InvoiceLines.vue";
+import InvoicePayments from "@/components/InvoicePayments.vue";
+import InvoiceStatusBadge from "@/components/InvoiceStatusBadge.vue";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { destroy, index, show, update } from '@/routes/invoices';
-import type { Invoice, Organization } from '@/types';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { destroy, index, show, update } from "@/routes/invoices";
+import type { Invoice, Organization } from "@/types";
 
 type Props = {
     currentOrganization: Organization;
@@ -35,7 +36,7 @@ defineOptions({
     }) => ({
         breadcrumbs: [
             {
-                title: 'Invoices',
+                title: "Invoices",
                 href: index(props.currentOrganization.slug),
             },
             {
@@ -46,7 +47,7 @@ defineOptions({
     }),
 });
 
-const none = 'none';
+const none = "none";
 const deleteDialogOpen = ref(false);
 
 const select = (value: number | string | null) =>
@@ -54,20 +55,20 @@ const select = (value: number | string | null) =>
 
 const form = useForm({
     contact_id: select(props.invoice.contactId),
-    cc_emails: props.invoice.ccEmails.join(', '),
+    cc_emails: props.invoice.ccEmails.join(", "),
     issue_date: props.invoice.issueDate,
     due_date: props.invoice.dueDate,
-    service_period_start: props.invoice.servicePeriodStart ?? '',
-    service_period_end: props.invoice.servicePeriodEnd ?? '',
+    service_period_start: props.invoice.servicePeriodStart ?? "",
+    service_period_end: props.invoice.servicePeriodEnd ?? "",
     project_id: select(props.invoice.projectId),
     sprint_id: select(props.invoice.sprintId),
-    notes: props.invoice.notes ?? '',
-    terms: props.invoice.terms ?? '',
-    tax_rate: props.invoice.taxRate ?? '',
+    notes: props.invoice.notes ?? "",
+    terms: props.invoice.terms ?? "",
+    tax_rate: props.invoice.taxRate ?? "",
     discount_type: select(props.invoice.discountType),
-    discount_value: props.invoice.discountValue ?? '',
+    discount_value: props.invoice.discountValue ?? "",
     deposit_type: select(props.invoice.depositType),
-    deposit_value: props.invoice.depositValue ?? '',
+    deposit_value: props.invoice.depositValue ?? "",
 });
 
 const orNull = (value: string) => (value === none ? null : Number(value));
@@ -76,9 +77,9 @@ const submit = () => {
     form.transform((data) => ({
         contact_id: orNull(data.contact_id),
         cc_emails: data.cc_emails
-            .split(',')
+            .split(",")
             .map((email) => email.trim())
-            .filter((email) => email !== ''),
+            .filter((email) => email !== ""),
         issue_date: data.issue_date,
         due_date: data.due_date,
         service_period_start: data.service_period_start || null,
@@ -105,8 +106,8 @@ const submit = () => {
 
 const money = (value: string) =>
     new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: 'USD',
+        style: "currency",
+        currency: "USD",
     }).format(Number(value));
 </script>
 
@@ -412,23 +413,9 @@ const money = (value: string) =>
             </div>
         </section>
 
-        <section class="space-y-3" data-test="invoice-payments">
-            <Heading variant="small" title="Payments" />
-            <ul v-if="invoice.payments.length > 0" class="space-y-2 text-sm">
-                <li
-                    v-for="payment in invoice.payments"
-                    :key="payment.id"
-                    class="flex justify-between rounded-lg border p-3"
-                >
-                    <span
-                        >{{ payment.paidOn }} · {{ payment.methodLabel }}</span
-                    >
-                    <span class="tabular-nums">{{
-                        money(payment.amount)
-                    }}</span>
-                </li>
-            </ul>
-            <p v-else class="text-muted-foreground text-sm">No payments yet.</p>
-        </section>
+        <InvoicePayments
+            :organization="currentOrganization.slug"
+            :invoice="invoice"
+        />
     </div>
 </template>

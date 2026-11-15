@@ -75,6 +75,7 @@ export type Invoice = InvoiceListItem & {
         projects: { id: number; name: string }[];
         sprints: { id: number; name: string }[];
         workTypes: { id: number; name: string }[];
+        paymentMethods: { value: string; label: string }[];
     };
 };
 

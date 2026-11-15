@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\PaymentMethod;
 use App\Models\ClientContact;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
@@ -66,6 +67,7 @@ class InvoiceResource extends InvoiceListResource
                 'notes' => $payment->notes,
             ])->all(),
             'options' => [
+                'paymentMethods' => array_map(fn (PaymentMethod $method) => ['value' => $method->value, 'label' => $method->label()], PaymentMethod::cases()),
                 'contacts' => $this->client->contacts()->orderBy('name')->get(['id', 'name', 'email'])
                     ->map(fn (ClientContact $contact) => ['id' => $contact->id, 'name' => $contact->name, 'email' => $contact->email])->all(),
                 'projects' => Project::whereIn('client_id', $this->client->billableClientIds())->orderBy('name')->get(['id', 'name'])
