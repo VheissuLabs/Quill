@@ -66,6 +66,15 @@ class Project extends Model
         return $this->hasMany(Issue::class);
     }
 
+    public function billingRate(): ?string
+    {
+        $this->loadMissing(['client', 'organization']);
+
+        return $this->billing_rate
+            ?? $this->client?->billing_rate
+            ?? $this->organization->billingSettings()->default_rate;
+    }
+
     public function isPublic(): bool
     {
         return $this->visibility === ProjectVisibility::Public;
@@ -118,7 +127,7 @@ class Project extends Model
     {
         return LogOptions::defaults()
             ->useLogName('projects')
-            ->logOnly(['name', 'description', 'visibility', 'client_id'])
+            ->logOnly(['name', 'description', 'visibility', 'client_id', 'billing_rate'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
@@ -128,6 +137,7 @@ class Project extends Model
     {
         return [
             'visibility' => ProjectVisibility::class,
+            'billing_rate' => 'decimal:2',
         ];
     }
 

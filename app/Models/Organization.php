@@ -128,6 +128,12 @@ class Organization extends Model
         return $this->slug === config('services.resend.support_organization');
     }
 
+    public function allowsInvoiceManagementBy(User $user): bool
+    {
+        return $this->canUse(OrganizationCapability::Invoices)
+            && $user->hasOrganizationPermission($this, OrganizationPermission::ManageInvoices);
+    }
+
     public function billingSettings(): BillingSetting
     {
         return $this->billingSettingsRecord()->firstOrCreate([], [

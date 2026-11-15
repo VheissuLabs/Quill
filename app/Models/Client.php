@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -52,13 +53,45 @@ class Client extends Model
         return $this->hasMany(Project::class);
     }
 
+    /** @return BelongsTo<ClientContact, $this> */
+    public function billingContact(): BelongsTo
+    {
+        return $this->belongsTo(ClientContact::class, 'billing_contact_id');
+    }
+
+    /** @return BelongsTo<Client, $this> */
+    public function billedThrough(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'billed_through_client_id');
+    }
+
+    /** @return HasMany<Client, $this> */
+    public function billedClients(): HasMany
+    {
+        return $this->hasMany(self::class, 'billed_through_client_id');
+    }
+
+    /** @return Collection<int, int> */
+    public function billableClientIds(): Collection
+    {
+        return collect([$this->id])->merge($this->billedClients()->orderBy('id')->pluck('id'));
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
             ->useLogName('clients')
-            ->logOnly(['name'])
+            ->logOnly(['name', 'billing_rate', 'billing_contact_id', 'billed_through_client_id'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'billing_rate' => 'decimal:2',
+        ];
     }
 
     public function getRouteKeyName(): string

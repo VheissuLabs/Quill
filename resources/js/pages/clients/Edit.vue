@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, useForm } from '@inertiajs/vue3';
 import { X } from '@lucide/vue';
 import { ref } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
@@ -8,21 +8,34 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { destroy, edit, index, show, update } from '@/routes/clients';
 import {
     destroy as destroyDomain,
     store as storeDomain,
 } from '@/routes/clients/domains';
 import { mutate } from '@/lib/optimistic';
-import type { Client, Organization, OrganizationPermissions } from '@/types';
+import type {
+    Client,
+    ClientBilling,
+    Organization,
+    OrganizationPermissions,
+} from '@/types';
 
 type Props = {
     currentOrganization: Organization;
     client: Client;
+    billing: ClientBilling | null;
     permissions: OrganizationPermissions;
 };
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 defineOptions({
     layout: (props: { currentOrganization: Organization; client: Client }) => ({
@@ -44,6 +57,40 @@ defineOptions({
 });
 
 const deleteDialogOpen = ref(false);
+
+const none = 'none';
+
+const form = useForm({
+    name: props.client.name,
+    billing_rate: props.billing?.rate ?? '',
+    billing_contact_id: props.billing?.contactId
+        ? String(props.billing.contactId)
+        : none,
+    billed_through_client_id: props.billing?.billedThroughClientId
+        ? String(props.billing.billedThroughClientId)
+        : none,
+});
+
+const submit = () => {
+    form.transform((data) => ({
+        name: data.name,
+        ...(props.billing
+            ? {
+                  billing_rate: data.billing_rate,
+                  billing_contact_id:
+                      data.billing_contact_id === none
+                          ? null
+                          : Number(data.billing_contact_id),
+                  billed_through_client_id:
+                      data.billed_through_client_id === none
+                          ? null
+                          : Number(data.billed_through_client_id),
+              }
+            : {}),
+    })).submit(update([props.currentOrganization.slug, props.client.slug]), {
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
@@ -53,32 +100,95 @@ const deleteDialogOpen = ref(false);
         <div class="max-w-xl space-y-6">
             <Heading variant="small" title="Client settings" />
 
-            <Form
+            <form
                 v-if="permissions.canManageClients"
-                v-bind="update.form([currentOrganization.slug, client.slug])"
                 class="space-y-6"
-                v-slot="{ errors, processing }"
+                @submit.prevent="submit"
             >
                 <div class="grid gap-2">
                     <Label for="name">Client name</Label>
                     <Input
                         id="name"
-                        name="name"
+                        v-model="form.name"
                         data-test="client-name-input"
-                        :default-value="client.name"
                         required
                     />
-                    <InputError :message="errors.name" />
+                    <InputError :message="form.errors.name" />
                 </div>
+
+                <template v-if="billing">
+                    <Heading variant="small" title="Billing" />
+
+                    <div class="grid gap-2">
+                        <Label for="billing-rate">Hourly rate</Label>
+                        <Input
+                            id="billing-rate"
+                            v-model="form.billing_rate"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            data-test="client-billing-rate-input"
+                        />
+                        <InputError :message="form.errors.billing_rate" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="billing-contact">Billing contact</Label>
+                        <Select
+                            v-model="form.billing_contact_id"
+                            data-test="client-billing-contact-select"
+                        >
+                            <SelectTrigger id="billing-contact" class="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem :value="none">None</SelectItem>
+                                <SelectItem
+                                    v-for="contact in billing.contacts"
+                                    :key="contact.id"
+                                    :value="String(contact.id)"
+                                >
+                                    {{ contact.name ?? contact.email }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <InputError :message="form.errors.billing_contact_id" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="billed-through">Billed through</Label>
+                        <Select
+                            v-model="form.billed_through_client_id"
+                            data-test="client-billed-through-select"
+                        >
+                            <SelectTrigger id="billed-through" class="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem :value="none">Nobody</SelectItem>
+                                <SelectItem
+                                    v-for="option in billing.billedThroughOptions"
+                                    :key="option.id"
+                                    :value="String(option.id)"
+                                >
+                                    {{ option.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <InputError
+                            :message="form.errors.billed_through_client_id"
+                        />
+                    </div>
+                </template>
 
                 <Button
                     type="submit"
                     data-test="client-save-button"
-                    :disabled="processing"
+                    :disabled="form.processing"
                 >
                     Save
                 </Button>
-            </Form>
+            </form>
             <p v-else class="font-medium">{{ client.name }}</p>
         </div>
 

@@ -22,6 +22,7 @@ import { destroy, edit, index, update } from '@/routes/projects';
 import type {
     ClientOption,
     Organization,
+    ProjectBilling,
     ProjectSettings,
     SelectOption,
     TeamOption,
@@ -33,6 +34,7 @@ type Props = {
     clients: ClientOption[];
     teams: TeamOption[];
     visibilities: SelectOption[];
+    billing: ProjectBilling | null;
 };
 
 const props = defineProps<Props>();
@@ -68,6 +70,7 @@ const form = useForm({
         ? String(props.project.clientId)
         : noClient,
     team_ids: props.project.teamIds,
+    billing_rate: props.billing?.rate ?? '',
 });
 
 const deleteDialogOpen = ref(false);
@@ -84,8 +87,9 @@ const toggleTeam = (teamId: number, checked: boolean) => {
 };
 
 const submit = () => {
-    form.transform((data) => ({
+    form.transform(({ billing_rate, ...data }) => ({
         ...data,
+        ...(props.billing ? { billing_rate } : {}),
         client_id: data.client_id === noClient ? null : Number(data.client_id),
     })).submit(update([props.currentOrganization.slug, props.project.slug]), {
         preserveScroll: true,
@@ -176,6 +180,19 @@ const submit = () => {
                         }}
                     </p>
                     <InputError :message="form.errors.visibility" />
+                </div>
+
+                <div v-if="billing" class="grid gap-2">
+                    <Label for="billing-rate">Hourly rate</Label>
+                    <Input
+                        id="billing-rate"
+                        v-model="form.billing_rate"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        data-test="project-billing-rate-input"
+                    />
+                    <InputError :message="form.errors.billing_rate" />
                 </div>
 
                 <div v-if="form.visibility === 'private'" class="grid gap-3">

@@ -17,7 +17,7 @@ class ProjectRequest extends FormRequest
 
         abort_if(! $organization instanceof Organization, 404);
 
-        return [
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'visibility' => ['required', 'string', Rule::enum(ProjectVisibility::class)],
@@ -32,5 +32,11 @@ class ProjectRequest extends FormRequest
                 Rule::exists('teams', 'id')->where('organization_id', $organization->id),
             ],
         ];
+
+        if ($this->user() && $organization->allowsInvoiceManagementBy($this->user())) {
+            $rules['billing_rate'] = ['nullable', 'numeric', 'min:0', 'max:9999999999.99'];
+        }
+
+        return $rules;
     }
 }

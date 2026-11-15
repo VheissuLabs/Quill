@@ -37,3 +37,7 @@ export type TeamOption = {
     slug: string;
     runsSprints?: boolean;
 };
+
+export type ProjectBilling = {
+    rate: string | null;
+};

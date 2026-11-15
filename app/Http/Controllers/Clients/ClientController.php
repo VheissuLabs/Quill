@@ -46,6 +46,13 @@ class ClientController extends Controller
     {
         return Inertia::render('clients/Edit', [
             'client' => ClientResource::make($client->load('domains')),
+            'billing' => $currentOrganization->allowsInvoiceManagementBy(auth()->user()) ? [
+                'rate' => $client->billing_rate,
+                'contactId' => $client->billing_contact_id,
+                'billedThroughClientId' => $client->billed_through_client_id,
+                'contacts' => $client->contacts()->orderBy('name')->get(['id', 'name', 'email']),
+                'billedThroughOptions' => $currentOrganization->clients()->whereKeyNot($client->id)->orderBy('name')->get(['id', 'name']),
+            ] : null,
         ]);
     }
 

@@ -19,3 +19,11 @@ export type ClientProject = {
     slug: string;
     visibility: 'public' | 'private';
 };
+
+export type ClientBilling = {
+    rate: string | null;
+    contactId: number | null;
+    billedThroughClientId: number | null;
+    contacts: { id: number; name: string | null; email: string }[];
+    billedThroughOptions: { id: number; name: string }[];
+};

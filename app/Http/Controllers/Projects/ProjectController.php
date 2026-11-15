@@ -43,6 +43,7 @@ class ProjectController extends Controller
             'clients' => ClientResource::collection($currentOrganization->clients()->orderBy('name')->get()),
             'teams' => TeamResource::collection($currentOrganization->teams()->orderBy('name')->get()),
             'visibilities' => ProjectVisibility::options(),
+            'billing' => $currentOrganization->allowsInvoiceManagementBy(auth()->user()) ? ['rate' => $project->billing_rate] : null,
         ]);
     }
 
