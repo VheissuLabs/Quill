@@ -4,6 +4,7 @@ namespace App\Http\Requests\Clients;
 
 use App\Models\Client;
 use App\Models\Organization;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -37,6 +38,10 @@ class ClientRequest extends FormRequest
                 'integer',
                 Rule::exists('clients', 'id')->where('organization_id', $organization->id),
                 Rule::notIn($client instanceof Client ? [$client->id] : []),
+                Rule::exists('clients', 'id')->whereNull('billed_through_client_id'),
+                fn (string $attribute, mixed $value, Closure $fail) => $client instanceof Client && $value !== null && $client->billedClients()->exists()
+                    ? $fail(__('This client already bills other clients.'))
+                    : null,
             ],
         ];
     }

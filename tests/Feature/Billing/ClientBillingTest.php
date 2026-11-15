@@ -136,3 +136,39 @@ test('a manager sets a project billing rate', function () {
 
     expect($project->fresh()->billing_rate)->toBe('175.00');
 });
+
+test('a client cannot be billed through a client that is billed through it', function () {
+    [$organization, $admin, $a] = clientBillingManager();
+    $b = Client::factory()->for($organization)->create(['billed_through_client_id' => $a->id]);
+
+    $this->actingAs($admin)
+        ->patch(route('clients.update', ['current_organization' => $organization, 'client' => $a]), [
+            'name' => $a->name,
+            'billed_through_client_id' => $b->id,
+        ])
+        ->assertSessionHasErrors('billed_through_client_id');
+});
+
+test('billed-through chains are rejected in both directions', function () {
+    [$organization, $admin, $a] = clientBillingManager();
+    $b = Client::factory()->for($organization)->create();
+    $c = Client::factory()->for($organization)->create();
+    $b->update(['billed_through_client_id' => $c->id]);
+
+    $this->actingAs($admin)
+        ->patch(route('clients.update', ['current_organization' => $organization, 'client' => $a]), [
+            'name' => $a->name,
+            'billed_through_client_id' => $b->id,
+        ])
+        ->assertSessionHasErrors('billed_through_client_id');
+
+    $this->actingAs($admin)
+        ->patch(route('clients.update', ['current_organization' => $organization, 'client' => $c]), [
+            'name' => $c->name,
+            'billed_through_client_id' => $a->id,
+        ])
+        ->assertSessionHasErrors('billed_through_client_id');
+
+    expect($a->fresh()->billed_through_client_id)->toBeNull()
+        ->and($c->fresh()->billed_through_client_id)->toBeNull();
+});
