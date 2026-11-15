@@ -5,6 +5,7 @@ use App\Http\Controllers\Billing\InvoiceController;
 use App\Http\Controllers\Billing\InvoiceLineController;
 use App\Http\Controllers\Billing\InvoiceLineOrderController;
 use App\Http\Controllers\Billing\InvoicePaymentController;
+use App\Http\Controllers\Billing\PublicInvoiceController;
 use App\Http\Controllers\Billing\WorkTypeController;
 use App\Http\Controllers\ClearNotificationsController;
 use App\Http\Controllers\Clients\ClientContactController;
@@ -73,6 +74,8 @@ use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 
 Route::get('/', HomeController::class)->name('home');
+
+Route::get('invoice/{invoice:public_token}', [PublicInvoiceController::class, 'show'])->name('invoices.public');
 
 Route::post('webhooks/resend', ResendWebhookController::class)
     ->middleware(VerifyResendSignature::class)

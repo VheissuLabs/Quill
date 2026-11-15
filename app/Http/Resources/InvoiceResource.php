@@ -42,6 +42,7 @@ class InvoiceResource extends InvoiceListResource
             'terms' => $this->terms,
             'sentAt' => $this->sent_at?->toIso8601String(),
             'voidedAt' => $this->voided_at?->toIso8601String(),
+            'publicUrl' => $this->when($this->sent_at !== null, fn () => $this->publicUrl()),
             'isEditable' => $this->isEditable(),
             'canUpdate' => $user?->can('update', $this->resource) ?? false,
             'canDelete' => $user?->can('delete', $this->resource) ?? false,

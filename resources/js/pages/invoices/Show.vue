@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { Trash2 } from '@lucide/vue';
+import { Link2, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import Heading from '@/components/Heading.vue';
@@ -49,6 +49,13 @@ defineOptions({
 
 const none = 'none';
 const deleteDialogOpen = ref(false);
+const linkCopied = ref(false);
+
+const copyPublicLink = async () => {
+    await navigator.clipboard.writeText(props.invoice.publicUrl ?? '');
+    linkCopied.value = true;
+    setTimeout(() => (linkCopied.value = false), 2000);
+};
 
 const select = (value: number | string | null) =>
     value === null ? none : String(value);
@@ -125,6 +132,14 @@ const money = (value: string) =>
             </div>
 
             <div class="flex items-center gap-2" data-test="invoice-actions">
+                <Button
+                    v-if="invoice.sentAt"
+                    variant="outline"
+                    data-test="invoice-copy-link-button"
+                    @click="copyPublicLink"
+                >
+                    <Link2 /> {{ linkCopied ? 'Copied' : 'Copy public link' }}
+                </Button>
                 <Button
                     v-if="invoice.canDelete"
                     variant="outline"

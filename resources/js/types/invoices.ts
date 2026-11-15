@@ -63,6 +63,7 @@ export type Invoice = InvoiceListItem & {
     amountPaid: string;
     notes: string | null;
     terms: string | null;
+    publicUrl?: string;
     sentAt: string | null;
     voidedAt: string | null;
     isEditable: boolean;
@@ -83,4 +84,41 @@ export type InvoiceProjectOption = {
     id: number;
     name: string;
     clientId: number | null;
+};
+
+export type PublicInvoice = {
+    number: string;
+    isVoid: boolean;
+    status: InvoiceStatus;
+    statusLabel: string;
+    organizationName: string;
+    organizationLogoUrl: string | null;
+    fromAddress: string | null;
+    clientName: string;
+    contactName: string | null;
+    contactEmail: string | null;
+    issueDate: string;
+    dueDate: string;
+    servicePeriodStart: string | null;
+    servicePeriodEnd: string | null;
+    lines: {
+        description: string;
+        issueReference: string | null;
+        referenceUrl: string | null;
+        quantity: string;
+        unit: 'hours' | 'units';
+        rate: string;
+        amount: string;
+    }[];
+    subtotal: string;
+    taxRate: string | null;
+    taxAmount: string;
+    discountAmount: string;
+    total: string;
+    depositAmount: string;
+    payments: { amount: string; paidOn: string; methodLabel: string }[];
+    amountPaid: string;
+    amountDue: string;
+    notes: string | null;
+    terms: string | null;
 };
