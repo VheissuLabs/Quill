@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useForm } from "@inertiajs/vue3";
-import { Pencil, Plus, Trash2 } from "@lucide/vue";
-import { ref } from "vue";
-import ConfirmDeleteModal from "@/components/ConfirmDeleteModal.vue";
-import Heading from "@/components/Heading.vue";
-import InputError from "@/components/InputError.vue";
-import { Button } from "@/components/ui/button";
+import { useForm } from '@inertiajs/vue3';
+import { Pencil, Plus, Trash2 } from '@lucide/vue';
+import { ref } from 'vue';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import Heading from '@/components/Heading.vue';
+import InputError from '@/components/InputError.vue';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogClose,
@@ -13,26 +13,26 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { destroy, store, update } from "@/routes/invoices/payments";
-import type { Invoice, InvoicePayment } from "@/types";
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { destroy, store, update } from '@/routes/invoices/payments';
+import type { Invoice, InvoicePayment } from '@/types';
 
 const props = defineProps<{
     organization: string;
     invoice: Invoice;
 }>();
 
-const today = () => new Date().toLocaleDateString("en-CA");
+const today = () => new Date().toLocaleDateString('en-CA');
 
 const dialogOpen = ref(false);
 const editing = ref<InvoicePayment | null>(null);
@@ -40,17 +40,17 @@ const deleting = ref<InvoicePayment | null>(null);
 const deleteOpen = ref(false);
 
 const form = useForm({
-    amount: "",
+    amount: '',
     paid_on: today(),
-    method: "check",
-    reference: "",
-    notes: "",
+    method: 'check',
+    reference: '',
+    notes: '',
 });
 
 const money = (value: string) =>
     new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: "USD",
+        style: 'currency',
+        currency: 'USD',
     }).format(Number(value));
 
 const openCreate = () => {
@@ -67,8 +67,8 @@ const openEdit = (payment: InvoicePayment) => {
     form.amount = payment.amount;
     form.paid_on = payment.paidOn;
     form.method = payment.method;
-    form.reference = payment.reference ?? "";
-    form.notes = payment.notes ?? "";
+    form.reference = payment.reference ?? '';
+    form.notes = payment.notes ?? '';
     dialogOpen.value = true;
 };
 
@@ -170,7 +170,7 @@ const submit = () => {
                 <form class="space-y-6" @submit.prevent="submit">
                     <DialogHeader>
                         <DialogTitle>
-                            {{ editing ? "Edit payment" : "Record payment" }}
+                            {{ editing ? 'Edit payment' : 'Record payment' }}
                         </DialogTitle>
                     </DialogHeader>
 
