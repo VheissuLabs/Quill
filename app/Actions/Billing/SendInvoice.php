@@ -5,12 +5,15 @@ namespace App\Actions\Billing;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Notifications\InvoiceSent;
+use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 class SendInvoice
 {
+    public function __construct(private RestartBillingCycle $restartBillingCycle) {}
+
     public function handle(Invoice $invoice): void
     {
         DB::transaction(function () use ($invoice): void {
@@ -28,6 +31,8 @@ class SendInvoice
 
             $locked->forceFill(['sent_at' => now()])->save();
             $locked->recalculate();
+
+            $this->restartBillingCycle->handle($locked, CarbonImmutable::now($locked->organization->billingTimezone())->startOfDay());
 
             Notification::route('mail', [$contact->email => $contact->name])->notify(new InvoiceSent($locked));
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Billing\DuplicateInvoice;
 use App\Enums\AdjustmentType;
 use App\Enums\InvoiceStatus;
 use App\Enums\LineUnit;
@@ -80,4 +81,13 @@ test('members without invoice permission cannot duplicate', function () {
     $invoice->organization->addMember($member, 'Member');
 
     $this->actingAs($member)->post(route('invoices.duplicate.store', [$invoice->organization, $invoice]))->assertForbidden();
+});
+
+test('duplicates are never cycle invoices', function () {
+    [$invoice, $admin] = duplicableInvoice();
+    $invoice->forceFill(['closes_at' => now()->addDay(), 'reminded_at' => now()])->save();
+
+    $copy = app(DuplicateInvoice::class)->handle($invoice->fresh());
+
+    expect($copy->fresh())->closes_at->toBeNull()->reminded_at->toBeNull();
 });

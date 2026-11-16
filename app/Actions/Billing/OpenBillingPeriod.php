@@ -43,26 +43,31 @@ class OpenBillingPeriod
                 return null;
             }
 
-            $start = $openedThrough?->addDay() ?? $periodStart;
-            $organization = $locked->organization;
-            $terms = $locked->payment_terms_days ?? $organization->billingSettings()->payment_terms_days;
-
-            $invoice = $this->createInvoice->handle($organization, $locked, [
-                'service_period_start' => $start->toDateString(),
-                'service_period_end' => $end->toDateString(),
-                'issue_date' => $end->toDateString(),
-                'due_date' => $end->addDays($terms)->toDateString(),
-                'contact_id' => $locked->billing_contact_id,
-                'cc_emails' => $locked->billing_cc_emails,
-                'closes_at' => CarbonImmutable::parse($end->toDateString().' 23:59:00', $organization->billingTimezone())->utc(),
-                'sprint_id' => $this->matchingSprintId($locked, $start, $end),
-            ]);
-
-            $locked->update(['billing_opened_through' => $end->toDateString()]);
-            $client->setRawAttributes($locked->getAttributes(), true);
-
-            return $invoice;
+            return $this->openRange($locked, $openedThrough?->addDay() ?? $periodStart, $end, $client);
         });
+    }
+
+    /** Opens a cycle Draft for an explicit range on an already locked client and records its end. */
+    public function openRange(Client $locked, CarbonImmutable $start, CarbonImmutable $end, ?Client $sync = null): Invoice
+    {
+        $organization = $locked->organization;
+        $terms = $locked->payment_terms_days ?? $organization->billingSettings()->payment_terms_days;
+
+        $invoice = $this->createInvoice->handle($organization, $locked, [
+            'service_period_start' => $start->toDateString(),
+            'service_period_end' => $end->toDateString(),
+            'issue_date' => $end->toDateString(),
+            'due_date' => $end->addDays($terms)->toDateString(),
+            'contact_id' => $locked->billing_contact_id,
+            'cc_emails' => $locked->billing_cc_emails,
+            'closes_at' => CarbonImmutable::parse($end->toDateString().' 23:59:00', $organization->billingTimezone())->utc(),
+            'sprint_id' => $this->matchingSprintId($locked, $start, $end),
+        ]);
+
+        $locked->update(['billing_opened_through' => $end->toDateString()]);
+        $sync?->setRawAttributes($locked->getAttributes(), true);
+
+        return $invoice;
     }
 
     private function matchingSprintId(Client $client, CarbonImmutable $start, CarbonImmutable $end): ?int

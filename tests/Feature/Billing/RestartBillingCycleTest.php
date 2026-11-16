@@ -1,0 +1,114 @@
+<?php
+
+use App\Enums\BillingCycle;
+use App\Enums\LineUnit;
+use App\Models\Client;
+use App\Models\ClientContact;
+use App\Models\Invoice;
+use App\Models\Organization;
+use App\Models\User;
+use Carbon\CarbonImmutable;
+
+function restartingCycle(BillingCycle $cycle = BillingCycle::Biweekly, string $start = '2026-11-14', string $end = '2026-11-27', bool $lines = true): array
+{
+    $organization = Organization::factory()->create();
+    $owner = User::factory()->create(['timezone' => 'America/Chicago']);
+    $organization->addMember($owner, 'Owner');
+    $client = Client::factory()->for($organization)->create([
+        'billing_cycle' => $cycle,
+        'billing_cycle_starts_on' => $cycle === BillingCycle::Monthly ? null : $start,
+        'billing_opened_through' => $end,
+        'payment_terms_days' => 7,
+    ]);
+    $contact = ClientContact::factory()->for($client)->create();
+    $invoice = Invoice::factory()->for($organization)->for($client)->cycle(CarbonImmutable::parse($start), CarbonImmutable::parse($end))->create([
+        'contact_id' => $contact->id,
+        'closes_at' => CarbonImmutable::parse($end.' 23:59:00', 'America/Chicago')->utc(),
+    ]);
+
+    if ($lines) {
+        $invoice->lines()->create(['description' => 'Development', 'quantity' => '2', 'unit' => LineUnit::Hours, 'rate' => '100.00']);
+    }
+
+    return [$invoice->fresh(), $client, $owner];
+}
+
+test('sending a biweekly draft early restarts the schedule', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$invoice, $client, $owner] = restartingCycle();
+
+    $this->actingAs($owner)->post(route('invoices.send.store', [$invoice->organization, $invoice]))->assertRedirect();
+
+    $next = $client->fresh()->openCycleInvoice();
+
+    expect($invoice->fresh())->service_period_end->toDateString()->toBe('2026-11-25')->closes_at->toBeNull()
+        ->and($client->fresh()->billing_cycle_starts_on->toDateString())->toBe('2026-11-26')
+        ->and($client->fresh()->billing_opened_through->toDateString())->toBe('2026-12-09')
+        ->and($next->id)->not->toBe($invoice->id)
+        ->and($next->service_period_start->toDateString())->toBe('2026-11-26')
+        ->and($next->service_period_end->toDateString())->toBe('2026-12-09')
+        ->and($next->closes_at->utc()->toDateTimeString())->toBe('2026-12-10 05:59:00');
+});
+
+test('sending a monthly draft early runs the next draft to the end of next month', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$invoice, $client, $owner] = restartingCycle(BillingCycle::Monthly, '2026-11-01', '2026-11-30');
+
+    $this->actingAs($owner)->post(route('invoices.send.store', [$invoice->organization, $invoice]))->assertRedirect();
+
+    $next = $client->fresh()->openCycleInvoice();
+
+    expect($invoice->fresh()->service_period_end->toDateString())->toBe('2026-11-25')
+        ->and($next->service_period_start->toDateString())->toBe('2026-11-26')
+        ->and($next->service_period_end->toDateString())->toBe('2026-12-31')
+        ->and($client->fresh()->billing_cycle_starts_on)->toBeNull()
+        ->and($client->fresh()->billing_opened_through->toDateString())->toBe('2026-12-31');
+});
+
+test('deleting the open cycle draft restarts the same way', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$invoice, $client, $owner] = restartingCycle(lines: false);
+
+    $this->actingAs($owner)->delete(route('invoices.destroy', [$invoice->organization, $invoice]))->assertRedirect();
+
+    $next = $client->fresh()->openCycleInvoice();
+
+    expect(Invoice::find($invoice->id))->toBeNull()
+        ->and($next->service_period_start->toDateString())->toBe('2026-11-26')
+        ->and($next->service_period_end->toDateString())->toBe('2026-12-09')
+        ->and($client->fresh()->billing_cycle_starts_on->toDateString())->toBe('2026-11-26');
+});
+
+test('time logged after an early send lands on the new draft', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$invoice, $client, $owner] = restartingCycle();
+
+    $this->actingAs($owner)->post(route('invoices.send.store', [$invoice->organization, $invoice]));
+
+    expect($client->fresh()->openCycleInvoice())->not->toBeNull()->id->not->toBe($invoice->id);
+});
+
+test('the job close at period end does not restart', function () {
+    $this->travelTo('2026-11-28 06:00:00');
+    [$invoice, $client, $owner] = restartingCycle();
+
+    $this->actingAs($owner)->post(route('invoices.send.store', [$invoice->organization, $invoice]))->assertRedirect();
+
+    expect($invoice->fresh())->sent_at->not->toBeNull()->service_period_end->toDateString()->toBe('2026-11-27')
+        ->and($client->fresh()->billing_cycle_starts_on->toDateString())->toBe('2026-11-14')
+        ->and($client->fresh()->billing_opened_through->toDateString())->toBe('2026-11-27')
+        ->and($client->fresh()->openCycleInvoice())->toBeNull();
+});
+
+test('sending a manual invoice never restarts anything', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$cycle, $client, $owner] = restartingCycle();
+    $manual = Invoice::factory()->for($client->organization)->for($client)->create(['contact_id' => $cycle->contact_id]);
+    $manual->lines()->create(['description' => 'Dev', 'quantity' => '1', 'unit' => LineUnit::Hours, 'rate' => '100.00']);
+
+    $this->actingAs($owner)->post(route('invoices.send.store', [$manual->organization, $manual]))->assertRedirect();
+
+    expect($client->fresh()->billing_cycle_starts_on->toDateString())->toBe('2026-11-14')
+        ->and($client->fresh()->billing_opened_through->toDateString())->toBe('2026-11-27')
+        ->and($client->fresh()->openCycleInvoice()->id)->toBe($cycle->id);
+});

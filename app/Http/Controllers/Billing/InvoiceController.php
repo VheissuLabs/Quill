@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Billing;
 
 use App\Actions\Billing\CreateInvoice;
+use App\Actions\Billing\RestartBillingCycle;
 use App\Enums\InvoiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Billing\InvoiceIndexRequest;
@@ -12,6 +13,7 @@ use App\Http\Resources\InvoiceListResource;
 use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\Organization;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -68,8 +70,10 @@ class InvoiceController extends Controller
         return to_route('invoices.show', ['invoice' => $invoice->id]);
     }
 
-    public function destroy(Organization $currentOrganization, Invoice $invoice): RedirectResponse
+    public function destroy(Organization $currentOrganization, Invoice $invoice, RestartBillingCycle $restartBillingCycle): RedirectResponse
     {
+        $restartBillingCycle->handle($invoice, CarbonImmutable::now($currentOrganization->billingTimezone())->startOfDay(), deleting: true);
+
         $invoice->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Invoice deleted.')]);
