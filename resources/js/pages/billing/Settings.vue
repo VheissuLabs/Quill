@@ -8,6 +8,13 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { edit as editSettings } from '@/routes/organizations';
 import { edit, update } from '@/routes/organizations/billing';
@@ -187,16 +194,24 @@ const confirmDelete = (workType: WorkType) => {
 
                     <div class="grid gap-2">
                         <Label for="square_environment">Environment</Label>
-                        <select
-                            id="square_environment"
+                        <Select
                             name="square_environment"
+                            :default-value="square.environment"
                             data-test="square-environment-select"
-                            :class="selectClass"
-                            :value="square.environment"
                         >
-                            <option value="sandbox">Sandbox</option>
-                            <option value="production">Production</option>
-                        </select>
+                            <SelectTrigger
+                                id="square_environment"
+                                class="w-full"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="sandbox">Sandbox</SelectItem>
+                                <SelectItem value="production">
+                                    Production
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
                         <p class="text-muted-foreground text-sm">
                             Sandbox and production each need their own webhook
                             and signature key in Square.
