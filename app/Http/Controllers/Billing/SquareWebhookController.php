@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Billing\SquareWebhookRequest;
 use App\Models\BillingSetting;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class SquareWebhookController extends Controller
@@ -18,11 +17,9 @@ class SquareWebhookController extends Controller
             try {
                 $recordPayment->handle($billingSetting->organization, $request->payment());
             } catch (Throwable $exception) {
-                Log::warning('Square webhook payment could not be recorded.', [
-                    'organization_id' => $billingSetting->organization_id,
-                    'payment_id' => $request->payment()['id'] ?? null,
-                    'error' => $exception->getMessage(),
-                ]);
+                report($exception);
+
+                return response('', 500);
             }
         }
 

@@ -135,9 +135,8 @@ Called by the webhook and the return visit with a Square Payment object.
 The notification URL in the signature is built from `config('app.url')` plus the route path, so
 proxies can't change it; it is the same URL the settings page shows. Bad signature → 403.
 Sandbox and production need their own webhook subscription and signature key in Square; the
-settings page says so next to the environment switch. Handles `payment.created` and `payment.updated`; everything else → 200 and
-ignored. Always answers 200 quickly once verified; recording errors are logged, not retried by
-returning 5xx. The settings page shows the exact webhook URL to paste into Square's dashboard.
+settings page says so next to the environment switch. Handles `payment.created` and `payment.updated`. Unknown token → 404; ignored event types → 200. If recording throws, the error is reported
+and the webhook answers 500 so Square retries; recording is idempotent, so a retry is safe. The settings page shows the exact webhook URL to paste into Square's dashboard.
 
 ## Screens
 

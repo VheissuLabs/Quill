@@ -8,8 +8,8 @@ use App\Models\SquareCheckout;
 use App\Models\User;
 use App\Notifications\InvoicePaymentReceived;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
 
@@ -90,15 +90,15 @@ test('other event types are acknowledged and ignored', function () {
     expect($settings->organization->invoices()->sole()->payments()->count())->toBe(0);
 });
 
-test('a recording error still answers 200 and is logged', function () {
+test('a recording error answers 500 so Square retries, and is reported', function () {
+    Exceptions::fake();
     $settings = webhookSettings();
     $body = webhookBody();
     $this->mock(RecordSquarePayment::class)->shouldReceive('handle')->andThrow(new RuntimeException('database went away'));
-    Log::spy();
 
-    postWebhook($settings, $body, squareSignature($settings, $body))->assertOk();
+    postWebhook($settings, $body, squareSignature($settings, $body))->assertServerError();
 
-    Log::shouldHaveReceived('warning')->once();
+    Exceptions::assertReported(RuntimeException::class);
 });
 
 test('the payment notice still goes out when Square cannot be reached afterwards', function () {
