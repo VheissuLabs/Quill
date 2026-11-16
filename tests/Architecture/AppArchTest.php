@@ -1,8 +1,11 @@
 <?php
 
+use App\Support\SquareException;
+
 arch()
     ->preset()
-    ->laravel();
+    ->laravel()
+    ->ignoring(SquareException::class);
 
 arch()
     ->preset()
