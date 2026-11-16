@@ -48,21 +48,37 @@ const lookupUrl = lookup(props.organization, {
     query: { invoice: props.invoice.id },
 }).url;
 
-const toRows = (): Row[] =>
-    props.invoice.lines.map((line) => ({
-        ...line,
-        draftDescription: line.description,
-        draftQuantity: line.quantity,
-        draftRate: line.rate,
-        draftReferenceUrl: line.referenceUrl ?? '',
-    }));
+const toRows = (previous: Row[] = []): Row[] =>
+    props.invoice.lines.map((line) => {
+        const before = previous.find((row) => row.id === line.id);
+
+        return {
+            ...line,
+            draftDescription:
+                before && before.description === line.description
+                    ? before.draftDescription
+                    : line.description,
+            draftQuantity:
+                before && before.quantity === line.quantity
+                    ? before.draftQuantity
+                    : line.quantity,
+            draftRate:
+                before && before.rate === line.rate
+                    ? before.draftRate
+                    : line.rate,
+            draftReferenceUrl:
+                before && before.referenceUrl === line.referenceUrl
+                    ? before.draftReferenceUrl
+                    : (line.referenceUrl ?? ''),
+        };
+    });
 
 const rows = ref<Row[]>(toRows());
 const errors = ref<Record<number, Record<string, string>>>({});
 
 watch(
     () => props.invoice.lines,
-    () => (rows.value = toRows()),
+    () => (rows.value = toRows(rows.value)),
 );
 
 const money = (value: string) =>
@@ -75,6 +91,7 @@ const patch = (row: Row, data: Record<string, string | number | null>) => {
     router.visit(update([props.organization, props.invoice.id, row.id]), {
         data,
         preserveScroll: true,
+        preserveState: true,
         onError: (bag) => (errors.value = { ...errors.value, [row.id]: bag }),
         onSuccess: () => delete errors.value[row.id],
     });
@@ -345,13 +362,9 @@ const add = () => {
                                 v-if="canEditDetails()"
                                 class="col-span-5 col-start-2 mt-2 grid gap-1"
                             >
-                                <div
-                                    class="flex flex-wrap items-center gap-2"
-                                >
+                                <div class="flex flex-wrap items-center gap-2">
                                     <InvoiceIssuePicker
-                                        v-if="
-                                            editable() || row.issueReference
-                                        "
+                                        v-if="editable() || row.issueReference"
                                         :lookup="lookupUrl"
                                         :reference="row.issueReference"
                                         :disabled="!editable()"
