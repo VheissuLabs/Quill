@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 class SquareClient
 {
-    public const VERSION = '2026-10-15';
+    public const VERSION = '2026-09-16';
 
     public function __construct(
         private readonly string $baseUrl,
