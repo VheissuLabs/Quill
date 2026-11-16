@@ -747,9 +747,9 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                         class="flex cursor-pointer items-start justify-between gap-4"
                                     >
                                         <span class="min-w-0">
-                                            <span class="block font-medium"
-                                                >Billing cycles</span
-                                            >
+                                            <span class="block font-medium">
+                                                Automated billing
+                                            </span>
                                             <span
                                                 class="text-muted-foreground mt-1 block text-sm"
                                             >
@@ -1087,10 +1087,10 @@ const updateModule = (field: ModuleField, value: boolean) => {
     <Dialog v-model:open="removeAutomaticBillingOpen">
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Remove automatic billing?</DialogTitle>
+                <DialogTitle>Remove automated billing?</DialogTitle>
                 <DialogDescription>
-                    Turning this off removes automatic billing from every
-                    client. Open automatic drafts with no time on them are
+                    Turning this off removes automated billing from every
+                    client. Open automated drafts with no time on them are
                     deleted; drafts with time become ordinary drafts.
                 </DialogDescription>
             </DialogHeader>
@@ -1105,7 +1105,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
                     variant="destructive"
                     @click="confirmRemoveAutomaticBilling"
                 >
-                    Remove automatic billing
+                    Remove automated billing
                 </Button>
             </DialogFooter>
         </DialogContent>
