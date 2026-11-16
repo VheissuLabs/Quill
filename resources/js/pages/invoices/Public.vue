@@ -1,11 +1,27 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import { Button } from '@/components/ui/button';
+import { Toaster } from '@/components/ui/sonner';
 import { formatDate } from '@/lib/dates';
 import type { PublicInvoice } from '@/types';
 
-defineProps<{
+const props = defineProps<{
     invoice: PublicInvoice;
 }>();
+
+const paying = ref(false);
+
+const pay = () => {
+    router.post(
+        props.invoice.payUrl,
+        {},
+        {
+            onFinish: () => (paying.value = false),
+            onStart: () => (paying.value = true),
+        },
+    );
+};
 
 const money = (value: string) =>
     new Intl.NumberFormat(undefined, {
@@ -139,6 +155,32 @@ const money = (value: string) =>
             </table>
 
             <section
+                v-if="invoice.status === 'paid'"
+                class="rounded-md border border-green-300 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 print:border-black print:bg-white print:text-black"
+                data-test="public-invoice-paid"
+            >
+                Paid — thank you
+            </section>
+
+            <section
+                v-if="invoice.paymentProcessing"
+                class="rounded-md border px-4 py-3 text-sm font-medium print:hidden"
+                data-test="public-invoice-processing"
+            >
+                Your payment is processing
+            </section>
+
+            <section
+                v-if="invoice.canPayOnline"
+                class="print:hidden"
+                data-test="public-invoice-pay"
+            >
+                <Button :disabled="paying" @click="pay">
+                    Pay {{ money(invoice.amountDue) }}
+                </Button>
+            </section>
+
+            <section
                 class="ml-auto w-full max-w-xs space-y-1 text-sm"
                 data-test="public-invoice-totals"
             >
@@ -200,6 +242,17 @@ const money = (value: string) =>
                 </div>
             </section>
 
+            <section
+                v-if="invoice.paymentInstructions"
+                class="text-sm"
+                data-test="public-invoice-instructions"
+            >
+                <h2 class="font-medium">Other ways to pay</h2>
+                <p class="whitespace-pre-line">
+                    {{ invoice.paymentInstructions }}
+                </p>
+            </section>
+
             <section v-if="invoice.notes" class="text-sm">
                 <h2 class="font-medium">Notes</h2>
                 <p class="whitespace-pre-line">{{ invoice.notes }}</p>
@@ -210,5 +263,7 @@ const money = (value: string) =>
                 <p class="whitespace-pre-line">{{ invoice.terms }}</p>
             </section>
         </article>
+
+        <Toaster />
     </main>
 </template>

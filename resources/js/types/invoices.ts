@@ -126,6 +126,10 @@ export type PublicInvoice = {
     payments: { amount: string; paidOn: string; methodLabel: string }[];
     amountPaid: string;
     amountDue: string;
+    payUrl: string;
+    canPayOnline: boolean;
+    paymentProcessing: boolean;
+    paymentInstructions: string | null;
     notes: string | null;
     terms: string | null;
 };

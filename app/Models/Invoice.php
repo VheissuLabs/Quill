@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AdjustmentType;
 use App\Enums\InvoiceStatus;
+use App\Enums\SquareCheckoutStatus;
 use App\Observers\InvoiceObserver;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -137,6 +138,20 @@ class Invoice extends Model
     public function amountDue(): string
     {
         return number_format(max(0, (float) $this->total - (float) $this->amount_paid), 2, '.', '');
+    }
+
+    public function hasPendingSquareCheckout(): bool
+    {
+        return $this->squareCheckouts()->where('status', SquareCheckoutStatus::Pending)->exists();
+    }
+
+    public function canPayOnline(): bool
+    {
+        return $this->organization->billingSettings()->squareConfigured()
+            && $this->sent_at !== null
+            && ! in_array($this->status, [InvoiceStatus::Draft, InvoiceStatus::Void, InvoiceStatus::Paid], true)
+            && (float) $this->amountDue() > 0
+            && ! $this->hasPendingSquareCheckout();
     }
 
     public function defaultLineRate(): float|int|string|null

@@ -9,6 +9,7 @@ use App\Http\Controllers\Billing\InvoicePaymentController;
 use App\Http\Controllers\Billing\InvoiceSendController;
 use App\Http\Controllers\Billing\InvoiceVoidController;
 use App\Http\Controllers\Billing\PublicInvoiceController;
+use App\Http\Controllers\Billing\PublicInvoicePaymentController;
 use App\Http\Controllers\Billing\WorkTypeController;
 use App\Http\Controllers\ClearNotificationsController;
 use App\Http\Controllers\Clients\ClientContactController;
@@ -80,6 +81,7 @@ use Spatie\Permission\Models\Role;
 Route::get('/', HomeController::class)->name('home');
 
 Route::get('invoice/{invoice:public_token}', [PublicInvoiceController::class, 'show'])->middleware(DiscourageIndexing::class)->name('invoices.public');
+Route::post('invoice/{invoice:public_token}/pay', [PublicInvoicePaymentController::class, 'store'])->middleware('throttle:10,1')->name('invoices.public.pay');
 
 Route::post('webhooks/resend', ResendWebhookController::class)
     ->middleware(VerifyResendSignature::class)

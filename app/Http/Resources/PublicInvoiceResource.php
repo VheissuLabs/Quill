@@ -52,6 +52,10 @@ class PublicInvoiceResource extends JsonResource
             ])->all(),
             'amountPaid' => $this->amount_paid,
             'amountDue' => $this->amountDue(),
+            'payUrl' => route('invoices.public.pay', $this->public_token),
+            'canPayOnline' => $this->canPayOnline(),
+            'paymentProcessing' => $this->hasPendingSquareCheckout(),
+            'paymentInstructions' => $this->status === InvoiceStatus::Paid ? null : $this->organization->billingSettings()->payment_instructions,
             'notes' => $this->notes,
             'terms' => $this->terms,
         ];
