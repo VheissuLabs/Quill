@@ -4,7 +4,7 @@ Quill takes over invoicing from Atlas so that Atlas, and Filament with it, can b
 Clients, projects, issues and sprints already live in Quill; billing is the last thing that
 keeps Atlas alive.
 
-This is the first of five sub-projects. It builds the invoice itself. The rest build on it:
+This is the first of four sub-projects. It builds the invoice itself. The rest build on it:
 
 1. **Invoices** (this design)
 2. **Billing cycles** — a Draft opens per client per sprint or calendar month and is closed and
@@ -12,7 +12,6 @@ This is the first of five sub-projects. It builds the invoice itself. The rest b
 3. **Payments** — Square checkout from the public invoice page, recorded as a payment.
 4. **MCP tools** — `search-clients`, `create-task`, `get-sprint`, `log-time`,
    `create-draft-invoice`, `get-invoice`, `update-invoice` rebuilt against Quill.
-5. **Atlas import** — a one-time copy of invoices, lines and payments.
 
 Each ships as a layer of a PR stack, in that order.
 
@@ -33,14 +32,14 @@ Each ships as a layer of a PR stack, in that order.
 - Record payments by hand (check, wire, …); status follows the money.
 - A public, tokenized invoice page the client can open from the email without signing in, and
   print.
-- Totals computed exactly as Atlas computes them, so imported invoices reconcile to the cent.
+- Totals computed exactly as Atlas computes them.
 
 ### Non-goals (this layer)
 
 - Expense reports. Never used in production; not ported.
 - A separate time tracker, timers, or time entries.
 - Automatic billing, recurring invoices, overdue marking, reminders (layer 2).
-- Card payments / Square (layer 3). MCP tools (layer 4). Data import (layer 5).
+- Card payments / Square (layer 3). MCP tools (layer 4).
 - Generated PDF files. Atlas has none either; the public page is print-friendly. Adding a PDF
   library would be a new dependency and needs approval separately.
 
@@ -62,8 +61,8 @@ Each ships as a layer of a PR stack, in that order.
    in a multi-workspace app, and redone the moment a second workspace wants billing. Rejected.
 
 Reshaping Atlas first (dropping its time entries) was also considered and rejected: Atlas is
-being scrapped, so effort spent there is thrown away. Data shape differences are absorbed by
-the import in layer 5.
+being scrapped, so effort spent there is thrown away. No Atlas data is imported; Quill starts with
+an empty invoice history.
 
 ## Domain mapping from Atlas
 
@@ -122,9 +121,7 @@ with defaults). Layers 2 and 3 add cadence and encrypted Square credentials here
   `{prefix}-{year}-{0001}` as Atlas does (`INV-2026-0012`), year of creation. Assigned at
   creation as the highest existing `{prefix}-{year}-` number in the organization + 1, inside a
   transaction that locks the organization's `billing_settings` row so concurrent creates can't
-  collide. Taking max + 1 (not a stored counter) means imported Atlas numbers are respected
-  automatically. Rollout rule: the layer 5 import runs before anyone creates an invoice in
-  Quill. *(Builder-check call.)*
+  collide. *(Builder-check call.)*
 - `public_token` — unique random string, generated at creation
 - `status` — `InvoiceStatus` enum
 - `contact_id` nullable FK `client_contacts` (who it's addressed to), `cc_emails` json array
@@ -138,8 +135,7 @@ with defaults). Layers 2 and 3 add cadence and encrypted Square credentials here
 
 Atlas stores discount as `discount_percentage` + `discount_amount` and overloads
 `discount_amount` as the input for fixed discounts. Quill separates input (`*_value`, either a
-percentage or a dollar figure depending on `*_type`) from result (`*_amount`). The import maps
-between them.
+percentage or a dollar figure depending on `*_type`) from result (`*_amount`).
 
 ### `invoice_lines`
 
@@ -192,7 +188,6 @@ line or payment change and after editing tax/discount/deposit. One place, one fo
 - **Void** from any non-Draft, non-Paid status. Sets `voided_at`. Voided invoices are read-only
   and skipped by recalculation.
 - Drafts can be deleted; nothing else can.
-- Atlas's `cancelled` status is not ported; the import maps it to `Void`.
 
 ## Module, permission, settings
 
