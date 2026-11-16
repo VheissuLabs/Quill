@@ -284,12 +284,7 @@ const submit = () => {
                         />
                     </div>
 
-                    <div
-                        v-if="
-                            form.billed_through_client_id === none && hasCycle
-                        "
-                        class="grid gap-2"
-                    >
+                    <div class="grid gap-2">
                         <Label for="billing-cc">CC</Label>
                         <Input
                             id="billing-cc"
@@ -299,12 +294,7 @@ const submit = () => {
                         <InputError :message="form.errors.billing_cc_emails" />
                     </div>
 
-                    <div
-                        v-if="
-                            form.billed_through_client_id === none && hasCycle
-                        "
-                        class="grid gap-2"
-                    >
+                    <div class="grid gap-2">
                         <Label for="payment-terms">Payment terms (days)</Label>
                         <Input
                             id="payment-terms"

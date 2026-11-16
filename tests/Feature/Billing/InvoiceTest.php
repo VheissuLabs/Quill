@@ -346,3 +346,17 @@ test('a cycle draft does not say it sends while billing cycles are off', functio
         ->get(invoiceRoute('invoices.show', $organization, $cycle))
         ->assertInertia(fn ($page) => $page->where('invoice.closesAt', null));
 });
+
+test('a new invoice takes the client\'s payment terms and CC', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $client->update(['payment_terms_days' => 7, 'billing_cc_emails' => ['ap@example.com']]);
+    $this->travelTo('2026-11-16 10:00');
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['client_id' => $client->id])
+        ->assertSessionHasNoErrors();
+
+    expect($organization->invoices()->sole())
+        ->due_date->toDateString()->toBe('2026-11-23')
+        ->cc_emails->toBe(['ap@example.com']);
+});

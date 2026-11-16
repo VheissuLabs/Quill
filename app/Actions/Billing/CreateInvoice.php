@@ -23,8 +23,9 @@ class CreateInvoice
 
             return Invoice::create([
                 'issue_date' => $issueDate->toDateString(),
-                'due_date' => $issueDate->copy()->addDays($settings->payment_terms_days)->toDateString(),
+                'due_date' => $issueDate->copy()->addDays($client->payment_terms_days ?? $settings->payment_terms_days)->toDateString(),
                 'contact_id' => $client->billing_contact_id,
+                'cc_emails' => $client->billing_cc_emails,
                 'tax_rate' => $settings->tax_rate,
                 'notes' => $settings->default_notes,
                 'terms' => $settings->default_terms,
