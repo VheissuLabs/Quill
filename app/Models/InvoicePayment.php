@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
+/** @mixin IdeHelperInvoicePayment */
 #[UseFactory(InvoicePaymentFactory::class)]
 #[ObservedBy(InvoicePaymentObserver::class)]
 class InvoicePayment extends Model

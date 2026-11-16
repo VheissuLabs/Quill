@@ -14,6 +14,43 @@
 namespace App\Models{
 /**
  * @property int $id
+ * @property int $organization_id
+ * @property string $invoice_prefix
+ * @property numeric|null $default_rate
+ * @property int $payment_terms_days
+ * @property numeric|null $tax_rate
+ * @property string|null $default_notes
+ * @property string|null $default_terms
+ * @property string|null $from_address
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read \App\Models\Organization|null $organization
+ * @method static \Database\Factories\BillingSettingFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereDefaultNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereDefaultRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereDefaultTerms($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereFromAddress($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereInvoicePrefix($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting wherePaymentTermsDays($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereTaxRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperBillingSetting {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property string $name
  * @property \App\Enums\IssueStatus $status
  * @property int $position
@@ -52,12 +89,21 @@ namespace App\Models{
  * @property string $slug
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property numeric|null $billing_rate
+ * @property int|null $billing_contact_id
+ * @property int|null $billed_through_client_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Client> $billedClients
+ * @property-read int|null $billed_clients_count
+ * @property-read Client|null $billedThrough
+ * @property-read \App\Models\ClientContact|null $billingContact
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientContact> $contacts
  * @property-read int|null $contacts_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientDomain> $domains
  * @property-read int|null $domains_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Invoice> $invoices
+ * @property-read int|null $invoices_count
  * @property-read \App\Models\Organization|null $organization
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Project> $projects
  * @property-read int|null $projects_count
@@ -67,6 +113,9 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBilledThroughClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingContactId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingRate($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereName($value)
@@ -327,6 +376,167 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property int $organization_id
+ * @property int $client_id
+ * @property int|null $project_id
+ * @property int|null $sprint_id
+ * @property string $number
+ * @property string $public_token
+ * @property \App\Enums\InvoiceStatus $status
+ * @property int|null $contact_id
+ * @property array<array-key, mixed>|null $cc_emails
+ * @property \Carbon\CarbonImmutable|null $issue_date
+ * @property \Carbon\CarbonImmutable|null $due_date
+ * @property \Carbon\CarbonImmutable|null $service_period_start
+ * @property \Carbon\CarbonImmutable|null $service_period_end
+ * @property numeric $subtotal
+ * @property numeric|null $tax_rate
+ * @property numeric $tax_amount
+ * @property \App\Enums\AdjustmentType|null $discount_type
+ * @property numeric|null $discount_value
+ * @property numeric $discount_amount
+ * @property \App\Enums\AdjustmentType|null $deposit_type
+ * @property numeric|null $deposit_value
+ * @property numeric $deposit_amount
+ * @property numeric $total
+ * @property numeric $amount_paid
+ * @property string|null $notes
+ * @property string|null $terms
+ * @property \Carbon\CarbonImmutable|null $sent_at
+ * @property \Carbon\CarbonImmutable|null $voided_at
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read \App\Models\Client $client
+ * @property-read \App\Models\ClientContact|null $contact
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\InvoiceLine> $lines
+ * @property-read int|null $lines_count
+ * @property-read \App\Models\Organization|null $organization
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\InvoicePayment> $payments
+ * @property-read int|null $payments_count
+ * @property-read \App\Models\Project|null $project
+ * @property-read \App\Models\Sprint|null $sprint
+ * @method static \Database\Factories\InvoiceFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereAmountPaid($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereCcEmails($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereContactId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereDepositAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereDepositType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereDepositValue($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereDiscountAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereDiscountType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereDiscountValue($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereDueDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereIssueDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereProjectId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice wherePublicToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereSentAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereServicePeriodEnd($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereServicePeriodStart($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereSprintId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereSubtotal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereTaxAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereTaxRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereTerms($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereTotal($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereVoidedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperInvoice {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $invoice_id
+ * @property string $description
+ * @property numeric $quantity
+ * @property \App\Enums\LineUnit $unit
+ * @property numeric $rate
+ * @property numeric $amount
+ * @property int|null $work_type_id
+ * @property int|null $issue_id
+ * @property string|null $reference_url
+ * @property int $sort_order
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read \App\Models\Invoice $invoice
+ * @property-read \App\Models\Issue|null $issue
+ * @property-read \App\Models\WorkType|null $workType
+ * @method static \Database\Factories\InvoiceLineFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereInvoiceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereIssueId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereQuantity($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereRate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereReferenceUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereSortOrder($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereUnit($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereWorkTypeId($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperInvoiceLine {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $invoice_id
+ * @property numeric $amount
+ * @property \Carbon\CarbonImmutable $paid_on
+ * @property \App\Enums\PaymentMethod $method
+ * @property string|null $reference
+ * @property string|null $notes
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read \App\Models\Invoice $invoice
+ * @method static \Database\Factories\InvoicePaymentFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereInvoiceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereMethod($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment wherePaidOn($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereReference($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperInvoicePayment {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property int $project_id
  * @property int|null $team_id
  * @property int|null $sprint_id
@@ -428,6 +638,7 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
+ * @property-read \App\Models\BillingSetting|null $billingSettingsRecord
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrganizationModuleSetting> $capabilitySettings
  * @property-read int|null $capability_settings_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ClientContact> $clientContacts
@@ -438,6 +649,8 @@ namespace App\Models{
  * @property-read int|null $columns_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrganizationInvitation> $invitations
  * @property-read int|null $invitations_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Invoice> $invoices
+ * @property-read int|null $invoices_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $issues
  * @property-read int|null $issues_count
  * @property-read \App\Models\OrganizationMembership|null $pivot
@@ -457,6 +670,8 @@ namespace App\Models{
  * @property-read int|null $teams_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ticket> $tickets
  * @property-read int|null $tickets_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\WorkType> $workTypes
+ * @property-read int|null $work_types_count
  * @method static \Database\Factories\OrganizationFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization newQuery()
@@ -579,6 +794,7 @@ namespace App\Models{
  * @property \App\Enums\ProjectVisibility $visibility
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property numeric|null $billing_rate
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Client|null $client
@@ -594,6 +810,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project visibleTo(?\App\Models\User $user)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Project whereBillingRate($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project whereClientId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project whereDescription($value)
@@ -900,5 +1117,36 @@ namespace App\Models{
  */
 	#[\AllowDynamicProperties]
 	class IdeHelperVote {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $organization_id
+ * @property string $name
+ * @property string $color
+ * @property bool $is_active
+ * @property int $sort_order
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read \App\Models\Organization|null $organization
+ * @method static \Database\Factories\WorkTypeFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType whereColor($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType whereSortOrder($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|WorkType whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperWorkType {}
 }
 

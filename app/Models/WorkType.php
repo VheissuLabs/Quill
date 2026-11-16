@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
+/** @mixin IdeHelperWorkType */
 #[UseFactory(WorkTypeFactory::class)]
 #[ObservedBy(WorkTypeObserver::class)]
 class WorkType extends Model

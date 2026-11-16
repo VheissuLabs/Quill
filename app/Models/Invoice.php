@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
+/** @mixin IdeHelperInvoice */
 #[UseFactory(InvoiceFactory::class)]
 #[ObservedBy(InvoiceObserver::class)]
 class Invoice extends Model

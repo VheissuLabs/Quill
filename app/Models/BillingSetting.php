@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
+/** @mixin IdeHelperBillingSetting */
 #[UseFactory(BillingSettingFactory::class)]
 #[ObservedBy(BillingSettingObserver::class)]
 class BillingSetting extends Model
