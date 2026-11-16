@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Organization;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<Invoice> */
@@ -22,6 +23,16 @@ class InvoiceFactory extends Factory
             'issue_date' => now()->toDateString(),
             'due_date' => now()->addDays(30)->toDateString(),
         ];
+    }
+
+    public function cycle(CarbonImmutable $start, CarbonImmutable $end): static
+    {
+        return $this->state(fn () => [
+            'service_period_start' => $start->toDateString(),
+            'service_period_end' => $end->toDateString(),
+            'issue_date' => $end->toDateString(),
+            'closes_at' => CarbonImmutable::parse($end->toDateString().' 23:59:00')->utc(),
+        ]);
     }
 
     public function sent(): static

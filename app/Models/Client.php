@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BillingCycle;
+use App\Enums\InvoiceStatus;
 use App\Observers\OrganizationScopedSlugObserver;
 use Carbon\CarbonImmutable;
 use Database\Factories\ClientFactory;
@@ -83,6 +84,15 @@ class Client extends Model
     public function billableClientIds(): Collection
     {
         return collect([$this->id])->merge($this->billedClients()->orderBy('id')->pluck('id'));
+    }
+
+    public function openCycleInvoice(): ?Invoice
+    {
+        return $this->invoices()
+            ->whereNotNull('closes_at')
+            ->whereNull('sent_at')
+            ->where('status', '!=', InvoiceStatus::Void)
+            ->first();
     }
 
     /** @return array{start: string, end: string}|null */
