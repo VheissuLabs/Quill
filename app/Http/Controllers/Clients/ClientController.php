@@ -74,7 +74,13 @@ class ClientController extends Controller
     {
         $hadCycle = $client->billing_cycle !== null;
 
-        $client->update($request->validated());
+        $client->fill($request->validated());
+
+        if (! $hadCycle && $client->billing_cycle !== null) {
+            $client->billing_opened_through = null;
+        }
+
+        $client->save();
 
         if ($hadCycle && $request->validated('billing_cycle', false) === null) {
             $stopBillingCycle->handle($client);
