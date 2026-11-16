@@ -365,3 +365,17 @@ test('cycle fields are hidden and ignored while billing cycles are off', functio
             ->missing('billing.cycles')
             ->missing('billing.currentPeriod'));
 });
+
+test('a cycle client can switch to billed-through in one save when the cycle is cleared', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+    $payer = Client::factory()->for($organization)->create();
+    $client->update(['billing_cycle' => BillingCycle::Monthly]);
+    $invoice = Invoice::factory()->for($organization)->for($client)->create(['closes_at' => now()->addDays(3)]);
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billing_cycle' => null, 'billed_through_client_id' => $payer->id])
+        ->assertSessionHasNoErrors();
+
+    expect($client->fresh())->billing_cycle->toBeNull()->billed_through_client_id->toBe($payer->id)
+        ->and($invoice->fresh()->closes_at)->toBeNull();
+});

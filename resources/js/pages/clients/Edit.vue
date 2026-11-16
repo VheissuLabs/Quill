@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, useForm } from '@inertiajs/vue3';
 import { X } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -79,6 +79,15 @@ const cyclesEnabled = computed(() => props.billing?.cycles !== undefined);
 const hasCycle = computed(() => form.billing_cycle !== none);
 const needsStart = computed(
     () => hasCycle.value && form.billing_cycle !== 'monthly',
+);
+
+watch(
+    () => form.billed_through_client_id,
+    (billedThrough) => {
+        if (billedThrough !== none) {
+            form.billing_cycle = none;
+        }
+    },
 );
 
 const formatDay = (day: string) =>
