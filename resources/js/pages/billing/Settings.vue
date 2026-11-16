@@ -36,11 +36,19 @@ type Props = {
         default_terms: string | null;
         from_address: string | null;
     };
+    square: {
+        environment: 'sandbox' | 'production';
+        hasAccessToken: boolean;
+        locationId: string | null;
+        hasSignatureKey: boolean;
+        webhookUrl: string;
+    };
+    paymentInstructions: string | null;
     workTypes: WorkType[];
     colors: string[];
 };
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 defineOptions({
     layout: (props: { currentOrganization: Organization }) => ({
@@ -59,6 +67,10 @@ defineOptions({
 
 const selectClass =
     'border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs';
+
+const copyWebhookUrl = async () => {
+    await navigator.clipboard.writeText(props.square.webhookUrl);
+};
 
 const deleteDialogOpen = ref(false);
 const workTypeToDelete = ref<WorkType | null>(null);
@@ -168,6 +180,112 @@ const confirmDelete = (workType: WorkType) => {
                         :default-value="settings.default_terms ?? ''"
                     />
                     <InputError :message="errors.default_terms" />
+                </div>
+
+                <div class="space-y-6 border-t pt-6">
+                    <Heading variant="small" title="Online payments (Square)" />
+
+                    <div class="grid gap-2">
+                        <Label for="square_environment">Environment</Label>
+                        <select
+                            id="square_environment"
+                            name="square_environment"
+                            data-test="square-environment-select"
+                            :class="selectClass"
+                            :value="square.environment"
+                        >
+                            <option value="sandbox">Sandbox</option>
+                            <option value="production">Production</option>
+                        </select>
+                        <p class="text-muted-foreground text-sm">
+                            Sandbox and production each need their own webhook
+                            and signature key in Square.
+                        </p>
+                        <InputError :message="errors.square_environment" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="square_access_token">Access token</Label>
+                        <Input
+                            id="square_access_token"
+                            name="square_access_token"
+                            type="password"
+                            autocomplete="off"
+                            data-test="square-token-input"
+                        />
+                        <p
+                            v-if="square.hasAccessToken"
+                            class="text-muted-foreground text-sm"
+                        >
+                            Saved
+                        </p>
+                        <InputError :message="errors.square_access_token" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="square_location_id">Location ID</Label>
+                        <Input
+                            id="square_location_id"
+                            name="square_location_id"
+                            data-test="square-location-input"
+                            :default-value="square.locationId ?? ''"
+                        />
+                        <InputError :message="errors.square_location_id" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="square_webhook_signature_key">
+                            Webhook signature key
+                        </Label>
+                        <Input
+                            id="square_webhook_signature_key"
+                            name="square_webhook_signature_key"
+                            type="password"
+                            autocomplete="off"
+                            data-test="square-signature-input"
+                        />
+                        <p
+                            v-if="square.hasSignatureKey"
+                            class="text-muted-foreground text-sm"
+                        >
+                            Saved
+                        </p>
+                        <InputError
+                            :message="errors.square_webhook_signature_key"
+                        />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="square_webhook_url">Webhook URL</Label>
+                        <div class="flex gap-2">
+                            <Input
+                                id="square_webhook_url"
+                                data-test="square-webhook-url"
+                                :model-value="square.webhookUrl"
+                                readonly
+                            />
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                @click="copyWebhookUrl"
+                            >
+                                Copy
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="payment_instructions">
+                            Other ways to pay
+                        </Label>
+                        <Textarea
+                            id="payment_instructions"
+                            name="payment_instructions"
+                            rows="3"
+                            :default-value="paymentInstructions ?? ''"
+                        />
+                        <InputError :message="errors.payment_instructions" />
+                    </div>
                 </div>
 
                 <Button

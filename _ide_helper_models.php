@@ -429,6 +429,8 @@ namespace App\Models{
  * @property-read int|null $payments_count
  * @property-read \App\Models\Project|null $project
  * @property-read \App\Models\Sprint|null $sprint
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SquareCheckout> $squareCheckouts
+ * @property-read int|null $square_checkouts_count
  * @method static \Database\Factories\InvoiceFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice newQuery()
@@ -876,6 +878,20 @@ namespace App\Models{
  */
 	#[\AllowDynamicProperties]
 	class IdeHelperSprint {}
+}
+
+namespace App\Models{
+/**
+ * @property \App\Enums\SquareCheckoutStatus $status
+ * @property-read \App\Models\Invoice|null $invoice
+ * @method static \Database\Factories\SquareCheckoutFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout query()
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperSquareCheckout {}
 }
 
 namespace App\Models{

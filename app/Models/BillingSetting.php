@@ -28,6 +28,8 @@ class BillingSetting extends Model
             'default_rate' => 'decimal:2',
             'tax_rate' => 'decimal:2',
             'payment_terms_days' => 'integer',
+            'square_access_token' => 'encrypted',
+            'square_webhook_signature_key' => 'encrypted',
         ];
     }
 
@@ -35,6 +37,20 @@ class BillingSetting extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function squareConfigured(): bool
+    {
+        return filled($this->square_access_token) && filled($this->square_location_id);
+    }
+
+    public function webhookUrl(): string
+    {
+        if (blank($this->square_webhook_token)) {
+            $this->save();
+        }
+
+        return rtrim(config('app.url'), '/').'/webhooks/square/'.$this->square_webhook_token;
     }
 
     public function getActivitylogOptions(): LogOptions

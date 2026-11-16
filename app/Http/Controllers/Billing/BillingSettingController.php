@@ -14,8 +14,18 @@ class BillingSettingController extends Controller
 {
     public function edit(Organization $currentOrganization): Response
     {
+        $settings = $currentOrganization->billingSettings();
+
         return Inertia::render('billing/Settings', [
-            'settings' => $currentOrganization->billingSettings()->only([
+            'square' => [
+                'environment' => $settings->square_environment,
+                'hasAccessToken' => filled($settings->square_access_token),
+                'locationId' => $settings->square_location_id,
+                'hasSignatureKey' => filled($settings->square_webhook_signature_key),
+                'webhookUrl' => $settings->webhookUrl(),
+            ],
+            'paymentInstructions' => $settings->payment_instructions,
+            'settings' => $settings->only([
                 'invoice_prefix',
                 'default_rate',
                 'payment_terms_days',

@@ -7,6 +7,16 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class BillingSettingRequest extends FormRequest
 {
+    /** @return array<string, mixed> */
+    public function validated($key = null, $default = null): array
+    {
+        return array_filter(
+            parent::validated(),
+            fn (mixed $value, string $field): bool => filled($value) || ! in_array($field, ['square_access_token', 'square_webhook_signature_key'], true),
+            ARRAY_FILTER_USE_BOTH,
+        );
+    }
+
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
@@ -18,6 +28,11 @@ class BillingSettingRequest extends FormRequest
             'default_notes' => ['nullable', 'string', 'max:5000'],
             'default_terms' => ['nullable', 'string', 'max:5000'],
             'from_address' => ['nullable', 'string', 'max:1000'],
+            'square_environment' => ['sometimes', 'required', 'in:sandbox,production'],
+            'square_access_token' => ['nullable', 'string', 'max:500'],
+            'square_location_id' => ['nullable', 'string', 'max:100'],
+            'square_webhook_signature_key' => ['nullable', 'string', 'max:500'],
+            'payment_instructions' => ['nullable', 'string', 'max:5000'],
         ];
     }
 }

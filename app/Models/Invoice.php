@@ -88,6 +88,12 @@ class Invoice extends Model
         return $this->hasMany(InvoiceLine::class)->orderBy('sort_order')->orderBy('id');
     }
 
+    /** @return HasMany<SquareCheckout, $this> */
+    public function squareCheckouts(): HasMany
+    {
+        return $this->hasMany(SquareCheckout::class);
+    }
+
     /** @return HasMany<InvoicePayment, $this> */
     public function payments(): HasMany
     {
