@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,14 +35,29 @@ const formKey = ref(0);
 
 const form = useForm({ client_id: none, project_id: none });
 
-const selectedProject = computed(() =>
-    props.projects.find((project) => String(project.id) === form.project_id),
+const availableProjects = computed(() =>
+    form.client_id === none
+        ? props.projects
+        : props.projects.filter(
+              (project) => String(project.billToClientId) === form.client_id,
+          ),
+);
+
+watch(
+    () => form.client_id,
+    () => {
+        if (
+            !availableProjects.value.some(
+                (project) => String(project.id) === form.project_id,
+            )
+        ) {
+            form.project_id = none;
+        }
+    },
 );
 
 const needsClient = computed(
-    () =>
-        form.client_id === none &&
-        (form.project_id === none || selectedProject.value?.clientId === null),
+    () => form.client_id === none && form.project_id === none,
 );
 
 function handleOpenChange(value: boolean) {
@@ -113,7 +128,7 @@ const submit = () => {
                         <SelectContent>
                             <SelectItem :value="none">None</SelectItem>
                             <SelectItem
-                                v-for="project in projects"
+                                v-for="project in availableProjects"
                                 :key="project.id"
                                 :value="String(project.id)"
                             >

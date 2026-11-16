@@ -86,7 +86,7 @@ export type Invoice = InvoiceListItem & {
 export type InvoiceProjectOption = {
     id: number;
     name: string;
-    clientId: number | null;
+    billToClientId: number;
 };
 
 export type PublicInvoice = {

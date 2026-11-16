@@ -52,6 +52,21 @@ test('the index filters by status and client', function () {
             ->where('invoices.0.id', $draft->id));
 });
 
+test('the new invoice form offers only billable projects with who they bill to', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $subcontract = Client::factory()->for($organization)->create(['billed_through_client_id' => $client->id]);
+    $own = Project::factory()->for($organization)->create(['client_id' => $client->id, 'name' => 'A']);
+    $billedThrough = Project::factory()->for($organization)->create(['client_id' => $subcontract->id, 'name' => 'B']);
+    Project::factory()->for($organization)->create(['client_id' => null, 'name' => 'C']);
+
+    $this->actingAs($admin)
+        ->get(invoiceRoute('invoices.index', $organization))
+        ->assertInertia(fn ($page) => $page
+            ->has('projects', 2)
+            ->where('projects.0', ['id' => $own->id, 'name' => 'A', 'billToClientId' => $client->id])
+            ->where('projects.1', ['id' => $billedThrough->id, 'name' => 'B', 'billToClientId' => $client->id]));
+});
+
 test('a manager creates an invoice for a client', function () {
     [$organization, $admin, $client] = invoiceManager();
 

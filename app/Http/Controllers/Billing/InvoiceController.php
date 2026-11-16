@@ -35,8 +35,8 @@ class InvoiceController extends Controller
             'filters' => $filters,
             'statuses' => collect(InvoiceStatus::cases())->map(fn (InvoiceStatus $status) => ['value' => $status->value, 'label' => $status->label()])->all(),
             'clients' => $currentOrganization->clients()->orderBy('name')->get(['id', 'name']),
-            'projects' => $currentOrganization->projects()->with('client:id,name')->orderBy('name')->get()
-                ->map(fn ($project) => ['id' => $project->id, 'name' => $project->name, 'clientId' => $project->client_id])->all(),
+            'projects' => $currentOrganization->projects()->whereNotNull('client_id')->with('client:id,billed_through_client_id')->orderBy('name')->get()
+                ->map(fn ($project) => ['id' => $project->id, 'name' => $project->name, 'billToClientId' => $project->client->billed_through_client_id ?? $project->client_id])->all(),
         ]);
     }
 
