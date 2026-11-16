@@ -61,3 +61,15 @@ test('the billing timezone falls back to the app timezone', function () {
 
     expect($organization->billingTimezone())->toBe(config('app.timezone'));
 });
+
+test('periods count calendar days in the billing timezone', function (string $timezone) {
+    $startsOn = CarbonImmutable::parse('2026-11-14');
+
+    [$start, $end] = BillingCycle::Biweekly->periodContaining(CarbonImmutable::parse('2026-11-28', $timezone), $startsOn);
+    expect($start->toDateString())->toBe('2026-11-28')
+        ->and($end->toDateString())->toBe('2026-12-11');
+
+    [$start, $end] = BillingCycle::Biweekly->periodContaining(CarbonImmutable::parse('2026-11-14', $timezone), $startsOn);
+    expect($start->toDateString())->toBe('2026-11-14')
+        ->and($end->toDateString())->toBe('2026-11-27');
+})->with(['Europe/Paris', 'Asia/Tokyo']);

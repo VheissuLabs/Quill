@@ -22,7 +22,8 @@ enum BillingCycle: string
     /** @return array{0: CarbonImmutable, 1: CarbonImmutable}|null */
     public function periodContaining(CarbonImmutable $day, ?CarbonImmutable $startsOn): ?array
     {
-        $day = $day->startOfDay();
+        $timezone = $day->getTimezone();
+        $day = CarbonImmutable::parse($day->toDateString(), $timezone);
 
         if ($this === self::Monthly) {
             return [$day->startOfMonth(), $day->endOfMonth()->startOfDay()];
@@ -32,14 +33,14 @@ enum BillingCycle: string
             return null;
         }
 
-        $startsOn = $startsOn->startOfDay();
+        $startsOn = CarbonImmutable::parse($startsOn->toDateString(), $timezone);
 
         if ($day->lt($startsOn)) {
             return null;
         }
 
         $length = $this === self::Weekly ? 7 : 14;
-        $start = $startsOn->addDays(intdiv((int) $startsOn->diffInDays($day), $length) * $length);
+        $start = $startsOn->addDays(intdiv((int) round($startsOn->diffInDays($day)), $length) * $length);
 
         return [$start, $start->addDays($length - 1)];
     }

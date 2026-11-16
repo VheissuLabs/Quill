@@ -25,9 +25,10 @@ class OpenBillingPeriod
                 return $open;
             }
 
+            $timezone = $today->getTimezone();
             $period = $locked->billing_cycle?->periodContaining(
                 $today,
-                $locked->billing_cycle_starts_on ? CarbonImmutable::parse($locked->billing_cycle_starts_on->toDateString()) : null,
+                $locked->billing_cycle_starts_on ? CarbonImmutable::parse($locked->billing_cycle_starts_on->toDateString(), $timezone) : null,
             );
 
             if ($period === null) {
@@ -36,10 +37,10 @@ class OpenBillingPeriod
 
             [$periodStart, $end] = $period;
             $openedThrough = $locked->billing_opened_through
-                ? CarbonImmutable::parse($locked->billing_opened_through->toDateString())
+                ? CarbonImmutable::parse($locked->billing_opened_through->toDateString(), $timezone)
                 : null;
 
-            if ($openedThrough !== null && $end->lessThanOrEqualTo($openedThrough)) {
+            if ($openedThrough !== null && $end->toDateString() <= $openedThrough->toDateString()) {
                 return null;
             }
 

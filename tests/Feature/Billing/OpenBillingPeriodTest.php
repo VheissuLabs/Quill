@@ -137,3 +137,40 @@ test('it opens without a billing contact', function () {
 
     expect(openOn($client, '2026-11-16')->contact_id)->toBeNull();
 });
+
+dataset('eastern timezones', ['Europe/Paris', 'Asia/Tokyo']);
+
+test('a draft opens on the first day of a period east of UTC', function (string $timezone) {
+    $this->travelTo(CarbonImmutable::parse('2026-11-28 09:00:00', $timezone));
+    $client = openingClient(['billing_opened_through' => '2026-11-27']);
+    $client->organization->members()->first()->update(['timezone' => $timezone]);
+
+    $invoice = app(OpenBillingPeriod::class)->handle($client, CarbonImmutable::parse('2026-11-28', $timezone));
+
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->service_period_start->toDateString())->toBe('2026-11-28')
+        ->and($invoice->service_period_end->toDateString())->toBe('2026-12-11')
+        ->and($invoice->closes_at->utc()->toDateTimeString())->toBe(CarbonImmutable::parse('2026-12-11 23:59:00', $timezone)->utc()->toDateTimeString());
+})->with('eastern timezones');
+
+test('a draft opens on the start date itself east of UTC', function (string $timezone) {
+    $this->travelTo(CarbonImmutable::parse('2026-11-14 09:00:00', $timezone));
+    $client = openingClient();
+    $client->organization->members()->first()->update(['timezone' => $timezone]);
+
+    $invoice = app(OpenBillingPeriod::class)->handle($client, CarbonImmutable::parse('2026-11-14', $timezone));
+
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->service_period_start->toDateString())->toBe('2026-11-14')
+        ->and($invoice->service_period_end->toDateString())->toBe('2026-11-27');
+})->with('eastern timezones');
+
+test('the billing run opens the next period just after local midnight east of UTC', function (string $timezone) {
+    $client = openingClient(['billing_opened_through' => '2026-11-27']);
+    $client->organization->members()->first()->update(['timezone' => $timezone]);
+    $this->travelTo(CarbonImmutable::parse('2026-11-28 00:01:00', $timezone)->utc());
+
+    $this->artisan('billing:run')->assertSuccessful();
+
+    expect($client->fresh()->openCycleInvoice()?->service_period_start->toDateString())->toBe('2026-11-28');
+})->with('eastern timezones');
