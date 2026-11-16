@@ -117,6 +117,17 @@ class Invoice extends Model
         ])->save();
     }
 
+    public function takeMissingRecipientsFromClient(): void
+    {
+        $this->contact_id ??= $this->client->billing_contact_id;
+
+        if (blank($this->cc_emails)) {
+            $this->cc_emails = $this->client->billing_cc_emails;
+        }
+
+        $this->save();
+    }
+
     public function amountDue(): string
     {
         return number_format(max(0, (float) $this->total - (float) $this->amount_paid), 2, '.', '');

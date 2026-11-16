@@ -202,3 +202,54 @@ test('nothing opens while billing cycles are off', function () {
     expect(app(OpenBillingPeriod::class)->handle($client->fresh(), CarbonImmutable::parse('2026-11-30', 'America/Chicago')))->toBeNull()
         ->and(Invoice::count())->toBe(0);
 });
+
+test('a draft opened before the client had a contact sends to the contact added later', function () {
+    Notification::fake();
+    [$draft, , $client] = cycleWorkspace(contact: false);
+    addLine($draft);
+    $contact = ClientContact::factory()->for($client)->create();
+    $client->update(['billing_contact_id' => $contact->id, 'billing_cc_emails' => ['ap@example.com']]);
+
+    runBilling('2026-11-28 05:59:00');
+
+    expect($draft->fresh())
+        ->sent_at->not->toBeNull()
+        ->contact_id->toBe($contact->id)
+        ->cc_emails->toBe(['ap@example.com']);
+});
+
+test('the reminder picks up a contact added after the draft opened', function () {
+    Notification::fake();
+    [$draft, $owner, $client] = cycleWorkspace(contact: false);
+    addLine($draft);
+    $contact = ClientContact::factory()->for($client)->create();
+    $client->update(['billing_contact_id' => $contact->id, 'billing_cc_emails' => ['ap@example.com']]);
+
+    runBilling('2026-11-27 21:00:00');
+
+    expect($draft->fresh())->contact_id->toBe($contact->id)->cc_emails->toBe(['ap@example.com']);
+    Notification::assertSentTo($owner, InvoiceClosingSoon::class, fn (InvoiceClosingSoon $notification) => str_contains($notification->toArray($owner)['title'], 'sends tonight'));
+});
+
+test('a draft keeps its own contact and CC at close', function () {
+    Notification::fake();
+    [$draft, , $client] = cycleWorkspace(invoice: ['cc_emails' => ['mine@example.com']]);
+    addLine($draft);
+    $other = ClientContact::factory()->for($client)->create();
+    $client->update(['billing_contact_id' => $other->id, 'billing_cc_emails' => ['ap@example.com']]);
+    $contactId = $draft->contact_id;
+
+    runBilling('2026-11-28 05:59:00');
+
+    expect($draft->fresh())->contact_id->toBe($contactId)->cc_emails->toBe(['mine@example.com']);
+});
+
+test('the reminder says when there is still no contact', function () {
+    Notification::fake();
+    [$draft, $owner] = cycleWorkspace(contact: false);
+    addLine($draft);
+
+    runBilling('2026-11-27 21:00:00');
+
+    Notification::assertSentTo($owner, InvoiceClosingSoon::class, fn (InvoiceClosingSoon $notification) => str_contains($notification->toArray($owner)['title'], 'has no contact'));
+});

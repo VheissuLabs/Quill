@@ -21,7 +21,7 @@ class CloseBillingPeriods
             ->whereNull('sent_at')
             ->where('status', '!=', InvoiceStatus::Void)
             ->where('closes_at', '<=', $now)
-            ->with('organization')
+            ->with(['organization', 'client'])
             ->get()
             ->filter(fn (Invoice $invoice): bool => $this->managers->isEligible($invoice->organization))
             ->each(fn (Invoice $invoice) => $this->close($invoice));
@@ -34,6 +34,8 @@ class CloseBillingPeriods
 
             return;
         }
+
+        $invoice->takeMissingRecipientsFromClient();
 
         try {
             $this->sendInvoice->handle($invoice);

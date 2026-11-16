@@ -39,6 +39,7 @@ class RemindClosingInvoices
                     return;
                 }
 
+                $invoice->takeMissingRecipientsFromClient();
                 $invoice->forceFill(['reminded_at' => $now])->save();
                 Notification::send($this->managers->for($organization), new InvoiceClosingSoon($invoice));
             });

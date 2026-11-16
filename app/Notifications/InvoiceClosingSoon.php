@@ -40,7 +40,11 @@ class InvoiceClosingSoon extends Notification implements ShouldQueue
 
     private function title(): string
     {
-        return __(':number for :client sends tonight at 11:59 PM', [
+        $message = $this->invoice->contact_id === null
+            ? ':number for :client has no contact and cannot send tonight at 11:59 PM'
+            : ':number for :client sends tonight at 11:59 PM';
+
+        return __($message, [
             'number' => $this->invoice->number,
             'client' => $this->invoice->client->name,
         ]);
