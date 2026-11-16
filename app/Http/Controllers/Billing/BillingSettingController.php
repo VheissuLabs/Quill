@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Billing;
 
+use App\Actions\Billing\CancelSquareCheckouts;
+use App\Enums\SquareCheckoutStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Billing\BillingSettingRequest;
 use App\Http\Requests\Billing\WorkTypeRequest;
+use App\Models\Invoice;
 use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -42,9 +45,22 @@ class BillingSettingController extends Controller
         ]);
     }
 
-    public function update(BillingSettingRequest $request, Organization $currentOrganization): RedirectResponse
+    public function update(BillingSettingRequest $request, Organization $currentOrganization, CancelSquareCheckouts $cancelCheckouts): RedirectResponse
     {
-        $currentOrganization->billingSettings()->update($request->validated());
+        $settings = $currentOrganization->billingSettings();
+        $environment = $request->validated()['square_environment'] ?? $settings->square_environment;
+
+        if ($environment !== $settings->square_environment) {
+            $currentOrganization->invoices()
+                ->whereHas('squareCheckouts', fn ($query) => $query->where('status', SquareCheckoutStatus::Open))
+                ->get()
+                ->each(function (Invoice $invoice) use ($currentOrganization, $cancelCheckouts): void {
+                    $invoice->setRelation('organization', $currentOrganization);
+                    $cancelCheckouts->handle($invoice);
+                });
+        }
+
+        $settings->update($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Billing settings saved.')]);
 
