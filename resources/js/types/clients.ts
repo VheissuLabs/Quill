@@ -24,6 +24,12 @@ export type ClientBilling = {
     rate: string | null;
     contactId: number | null;
     billedThroughClientId: number | null;
+    cycle: string | null;
+    cycleStartsOn: string | null;
+    ccEmails: string[];
+    paymentTermsDays: number | null;
+    currentPeriod: { start: string; end: string } | null;
+    cycles: { value: string; label: string }[];
     contacts: { id: number; name: string | null; email: string }[];
     billedThroughOptions: { id: number; name: string }[];
 };

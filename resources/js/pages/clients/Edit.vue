@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, useForm } from '@inertiajs/vue3';
 import { X } from '@lucide/vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -69,7 +69,22 @@ const form = useForm({
     billed_through_client_id: props.billing?.billedThroughClientId
         ? String(props.billing.billedThroughClientId)
         : none,
+    billing_cycle: props.billing?.cycle ?? none,
+    billing_cycle_starts_on: props.billing?.cycleStartsOn ?? '',
+    billing_cc_emails: (props.billing?.ccEmails ?? []).join(', '),
+    payment_terms_days: props.billing?.paymentTermsDays ?? '',
 });
+
+const hasCycle = computed(() => form.billing_cycle !== none);
+const needsStart = computed(
+    () => hasCycle.value && form.billing_cycle !== 'monthly',
+);
+
+const formatDay = (day: string) =>
+    new Date(`${day}T00:00:00`).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+    });
 
 const submit = () => {
     form.transform((data) => ({
@@ -85,6 +100,19 @@ const submit = () => {
                       data.billed_through_client_id === none
                           ? null
                           : Number(data.billed_through_client_id),
+                  billing_cycle:
+                      data.billing_cycle === none ? null : data.billing_cycle,
+                  billing_cycle_starts_on: needsStart.value
+                      ? data.billing_cycle_starts_on || null
+                      : null,
+                  billing_cc_emails: data.billing_cc_emails
+                      .split(',')
+                      .map((email) => email.trim())
+                      .filter((email) => email !== ''),
+                  payment_terms_days:
+                      data.payment_terms_days === ''
+                          ? null
+                          : Number(data.payment_terms_days),
               }
             : {}),
     })).submit(update([props.currentOrganization.slug, props.client.slug]), {
@@ -178,6 +206,94 @@ const submit = () => {
                         <InputError
                             :message="form.errors.billed_through_client_id"
                         />
+                    </div>
+
+                    <div
+                        v-if="form.billed_through_client_id === none"
+                        class="grid gap-2"
+                    >
+                        <Label for="billing-cycle">Billing cycle</Label>
+                        <Select
+                            v-model="form.billing_cycle"
+                            data-test="client-billing-cycle-select"
+                        >
+                            <SelectTrigger id="billing-cycle" class="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem :value="none">None</SelectItem>
+                                <SelectItem
+                                    v-for="cycle in billing.cycles"
+                                    :key="cycle.value"
+                                    :value="cycle.value"
+                                >
+                                    {{ cycle.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <InputError :message="form.errors.billing_cycle" />
+                        <p
+                            v-if="hasCycle && billing.currentPeriod"
+                            class="text-muted-foreground text-sm"
+                            data-test="client-current-period"
+                        >
+                            Current period:
+                            {{ formatDay(billing.currentPeriod.start) }} –
+                            {{ formatDay(billing.currentPeriod.end) }}
+                        </p>
+                    </div>
+
+                    <div
+                        v-if="
+                            form.billed_through_client_id === none && needsStart
+                        "
+                        class="grid gap-2"
+                    >
+                        <Label for="billing-cycle-starts-on">
+                            Period starts on
+                        </Label>
+                        <Input
+                            id="billing-cycle-starts-on"
+                            v-model="form.billing_cycle_starts_on"
+                            type="date"
+                            data-test="client-billing-cycle-starts-on-input"
+                        />
+                        <InputError
+                            :message="form.errors.billing_cycle_starts_on"
+                        />
+                    </div>
+
+                    <div
+                        v-if="
+                            form.billed_through_client_id === none && hasCycle
+                        "
+                        class="grid gap-2"
+                    >
+                        <Label for="billing-cc">CC</Label>
+                        <Input
+                            id="billing-cc"
+                            v-model="form.billing_cc_emails"
+                            data-test="client-billing-cc-input"
+                        />
+                        <InputError :message="form.errors.billing_cc_emails" />
+                    </div>
+
+                    <div
+                        v-if="
+                            form.billed_through_client_id === none && hasCycle
+                        "
+                        class="grid gap-2"
+                    >
+                        <Label for="payment-terms">Payment terms (days)</Label>
+                        <Input
+                            id="payment-terms"
+                            v-model="form.payment_terms_days"
+                            type="number"
+                            min="0"
+                            max="365"
+                            data-test="client-payment-terms-input"
+                        />
+                        <InputError :message="form.errors.payment_terms_days" />
                     </div>
                 </template>
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\BillingCycle;
 use App\Observers\OrganizationScopedSlugObserver;
+use Carbon\CarbonImmutable;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -82,6 +83,17 @@ class Client extends Model
     public function billableClientIds(): Collection
     {
         return collect([$this->id])->merge($this->billedClients()->orderBy('id')->pluck('id'));
+    }
+
+    /** @return array{start: string, end: string}|null */
+    public function currentBillingPeriod(): ?array
+    {
+        $period = $this->billing_cycle?->periodContaining(
+            CarbonImmutable::now($this->organization->billingTimezone())->startOfDay(),
+            $this->billing_cycle_starts_on ? CarbonImmutable::parse($this->billing_cycle_starts_on->toDateString()) : null,
+        );
+
+        return $period === null ? null : ['start' => $period[0]->toDateString(), 'end' => $period[1]->toDateString()];
     }
 
     public function getActivitylogOptions(): LogOptions

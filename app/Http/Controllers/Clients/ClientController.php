@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Clients;
 
+use App\Actions\Billing\StopBillingCycle;
+use App\Enums\BillingCycle;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Clients\ClientRequest;
 use App\Http\Resources\ClientResource;
@@ -54,15 +56,27 @@ class ClientController extends Controller
                 'rate' => $client->billing_rate,
                 'contactId' => $client->billing_contact_id,
                 'billedThroughClientId' => $client->billed_through_client_id,
+                'cycle' => $client->billing_cycle?->value,
+                'cycleStartsOn' => $client->billing_cycle_starts_on?->toDateString(),
+                'ccEmails' => $client->billing_cc_emails ?? [],
+                'paymentTermsDays' => $client->payment_terms_days,
+                'currentPeriod' => $client->currentBillingPeriod(),
+                'cycles' => array_map(fn (BillingCycle $cycle) => ['value' => $cycle->value, 'label' => $cycle->label()], BillingCycle::cases()),
                 'contacts' => $client->contacts()->orderBy('name')->get(['id', 'name', 'email']),
                 'billedThroughOptions' => $currentOrganization->clients()->whereKeyNot($client->id)->orderBy('name')->get(['id', 'name']),
             ] : null,
         ]);
     }
 
-    public function update(ClientRequest $request, Organization $currentOrganization, Client $client): RedirectResponse
+    public function update(ClientRequest $request, Organization $currentOrganization, Client $client, StopBillingCycle $stopBillingCycle): RedirectResponse
     {
+        $hadCycle = $client->billing_cycle !== null;
+
         $client->update($request->validated());
+
+        if ($hadCycle && $request->validated('billing_cycle', false) === null) {
+            $stopBillingCycle->handle($client);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client updated.')]);
 

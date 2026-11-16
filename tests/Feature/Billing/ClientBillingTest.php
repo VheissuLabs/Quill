@@ -1,8 +1,11 @@
 <?php
 
+use App\Enums\BillingCycle;
+use App\Enums\InvoiceStatus;
 use App\Enums\OrganizationPermission;
 use App\Models\Client;
 use App\Models\ClientContact;
+use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
@@ -171,4 +174,140 @@ test('billed-through chains are rejected in both directions', function () {
 
     expect($a->fresh()->billed_through_client_id)->toBeNull()
         ->and($c->fresh()->billed_through_client_id)->toBeNull();
+});
+
+function clientBillingRoute(Organization $organization, Client $client): string
+{
+    return route('clients.update', ['current_organization' => $organization, 'client' => $client]);
+}
+
+test('a manager sets a biweekly cycle', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), [
+            'name' => $client->name,
+            'billing_cycle' => 'biweekly',
+            'billing_cycle_starts_on' => '2026-11-14',
+            'billing_cc_emails' => ['a@x.test'],
+            'payment_terms_days' => 7,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($client->fresh())
+        ->billing_cycle->toBe(BillingCycle::Biweekly)
+        ->billing_cycle_starts_on->toDateString()->toBe('2026-11-14')
+        ->billing_cc_emails->toBe(['a@x.test'])
+        ->payment_terms_days->toBe(7);
+});
+
+test('turning a cycle on defaults the start to today', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+    $this->travelTo('2026-11-16 10:00');
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billing_cycle' => 'weekly'])
+        ->assertSessionHasNoErrors();
+
+    expect($client->fresh()->billing_cycle_starts_on->toDateString())->toBe('2026-11-16');
+});
+
+test('monthly needs no start date', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billing_cycle' => 'monthly'])
+        ->assertSessionHasNoErrors();
+
+    expect($client->fresh())->billing_cycle->toBe(BillingCycle::Monthly)->billing_cycle_starts_on->toBeNull();
+});
+
+test('a client billed through another cannot have a cycle', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+    $payer = Client::factory()->for($organization)->create();
+    $client->update(['billed_through_client_id' => $payer->id]);
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billing_cycle' => 'monthly'])
+        ->assertSessionHasErrors('billing_cycle');
+});
+
+test('a cycle client cannot be set billed through', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+    $payer = Client::factory()->for($organization)->create();
+    $client->update(['billing_cycle' => BillingCycle::Monthly]);
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billed_through_client_id' => $payer->id])
+        ->assertSessionHasErrors('billed_through_client_id');
+});
+
+test('turning the cycle off makes the open cycle draft manual', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+    $client->update(['billing_cycle' => BillingCycle::Monthly]);
+    $invoice = Invoice::factory()->for($organization)->for($client)->create(['closes_at' => now()->addDays(3)]);
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billing_cycle' => null])
+        ->assertSessionHasNoErrors();
+
+    expect($invoice->fresh())->closes_at->toBeNull()->status->toBe(InvoiceStatus::Draft)
+        ->and($client->fresh()->billing_cycle)->toBeNull();
+});
+
+test('changing the cycle leaves the open draft alone', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+    $client->update(['billing_cycle' => BillingCycle::Biweekly, 'billing_cycle_starts_on' => '2026-11-14']);
+    $closesAt = now()->addDays(3)->startOfMinute();
+    $invoice = Invoice::factory()->for($organization)->for($client)->create(['closes_at' => $closesAt]);
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billing_cycle' => 'monthly'])
+        ->assertSessionHasNoErrors();
+
+    expect($invoice->fresh()->closes_at->equalTo($closesAt))->toBeTrue();
+});
+
+test('cycle fields are refused without invoice management', function () {
+    $organization = Organization::factory()->create();
+    $role = $organization->roles()->create(['name' => 'Account lead', 'guard_name' => 'web']);
+    $role->syncPermissions([OrganizationPermission::ManageClients->value]);
+    $lead = User::factory()->create();
+    $organization->addMember($lead, $role);
+    $client = Client::factory()->for($organization)->create();
+
+    $this->actingAs($lead)
+        ->patch(clientBillingRoute($organization, $client), [
+            'name' => 'Renamed',
+            'billing_cycle' => 'monthly',
+            'payment_terms_days' => 9,
+            'billing_cc_emails' => ['a@x.test'],
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($client->fresh())->name->toBe('Renamed')->billing_cycle->toBeNull()->payment_terms_days->toBeNull()->billing_cc_emails->toBeNull();
+});
+
+test('cc emails must be emails', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billing_cc_emails' => ['nope']])
+        ->assertSessionHasErrors('billing_cc_emails.0');
+});
+
+test('the edit page exposes the cycle settings and current period', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+    $client->update(['billing_cycle' => BillingCycle::Biweekly, 'billing_cycle_starts_on' => '2026-11-14', 'payment_terms_days' => 7, 'billing_cc_emails' => ['a@x.test']]);
+    $this->travelTo('2026-11-16 10:00');
+
+    $this->actingAs($admin)
+        ->get(route('clients.edit', ['current_organization' => $organization, 'client' => $client]))
+        ->assertInertia(fn ($page) => $page
+            ->where('billing.cycle', 'biweekly')
+            ->where('billing.cycleStartsOn', '2026-11-14')
+            ->where('billing.ccEmails', ['a@x.test'])
+            ->where('billing.paymentTermsDays', 7)
+            ->where('billing.currentPeriod', ['start' => '2026-11-14', 'end' => '2026-11-27'])
+            ->where('billing.cycles.0', ['value' => 'weekly', 'label' => 'Weekly']));
 });
