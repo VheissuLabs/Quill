@@ -25,8 +25,8 @@ period, sends it at the end of the period, and marks unpaid invoices overdue.
 ### Non-goals
 
 - **Recurring invoices** (copy an invoice on a schedule). Atlas's last recurring invoice was
-  replaced by the 92 Labs monthly cycle. *(My call: Karl didn't name any fixed recurring billing
-  left. Easy to add later on top of Duplicate.)*
+  replaced by the 92 Labs monthly cycle. _(My call: Karl didn't name any fixed recurring billing
+  left. Easy to add later on top of Duplicate.)_
 - Payment reminder emails to clients. Overdue is a status in Quill, not an email.
 - Card payments (layer 3), MCP tools (layer 4).
 - Driving periods from sprints. Considered and dropped: one board's sprints are shared by every
@@ -91,8 +91,8 @@ always goes to that Draft.
 ### Timezone
 
 All "day" and "time" decisions use the timezone of the workspace's first owner (earliest member
-with the Owner role), falling back to `config('app.timezone')`. *(My call: Quill has no workspace timezone; Karl is the owner of every
-workspace that bills.)*
+with the Owner role), falling back to `config('app.timezone')`. _(My call: Quill has no workspace timezone; Karl is the owner of every
+workspace that bills.)_
 
 ## The job — `billing:run`, every minute, `withoutOverlapping`
 
@@ -126,7 +126,7 @@ Sending a cycle Draft by hand before its `closes_at`, or deleting it, restarts t
 - Weekly/biweekly: `billing_cycle_starts_on` = the next day. NotaryDash sent on a Wednesday →
   the next period is Thursday plus two weeks, and the rhythm becomes Thursday–Wednesday until
   the start date is edited.
-- Monthly: the next Draft runs from the next day to the end of the *following* calendar month,
+- Monthly: the next Draft runs from the next day to the end of the _following_ calendar month,
   so the 1st-of-the-month rhythm holds.
 - `billing_opened_through` = the send date, and the next Draft is opened immediately (not at
   the next job run), so time logged later the same day lands on it.
@@ -171,7 +171,7 @@ Invoices with status Sent whose `due_date` is before today become Overdue. Parti
   status; it disappears once sent or once `closes_at` is cleared.
 - **Invoices index**: no change beyond the Overdue status showing up.
 
-## Changing settings mid-period *(my calls)*
+## Changing settings mid-period _(my calls)_
 
 - Cycle turned off → the open cycle Draft's `closes_at` is cleared; it becomes a manual invoice.
 - Cycle, start date or terms changed → the open Draft keeps its dates and `closes_at`; the new
