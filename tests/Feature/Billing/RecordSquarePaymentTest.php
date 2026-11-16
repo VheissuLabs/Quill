@@ -11,6 +11,7 @@ use App\Models\Organization;
 use App\Models\SquareCheckout;
 use App\Models\User;
 use App\Notifications\InvoicePaymentReceived;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -207,6 +208,15 @@ test('an orderId for another invoice is ignored', function () {
 
 test('a Square error on return still shows the invoice', function () {
     Http::fake(['*' => Http::response(['errors' => [['code' => 'INTERNAL_SERVER_ERROR']]], 500)]);
+    [$invoice] = recorderWorkspace();
+
+    $this->get($invoice->publicUrl().'?orderId=O1')->assertOk();
+
+    expect($invoice->payments()->count())->toBe(0);
+});
+
+test('a connection failure on return still shows the invoice', function () {
+    Http::fake(fn () => throw new ConnectionException('timed out'));
     [$invoice] = recorderWorkspace();
 
     $this->get($invoice->publicUrl().'?orderId=O1')->assertOk();

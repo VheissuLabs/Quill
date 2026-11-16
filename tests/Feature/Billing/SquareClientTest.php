@@ -3,6 +3,7 @@
 use App\Models\BillingSetting;
 use App\Support\SquareClient;
 use App\Support\SquareException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -95,4 +96,18 @@ test('signatures verify', function () {
     expect(SquareClient::verifySignature('key', $url, $body, $signature))->toBeTrue()
         ->and(SquareClient::verifySignature('key', $url, $body.'x', $signature))->toBeFalse()
         ->and(SquareClient::verifySignature('key', $url, $body, null))->toBeFalse();
+});
+
+test('a connection failure becomes a Square exception without secrets', function () {
+    Http::fake(fn () => throw new ConnectionException('cURL error 28 with Bearer secret-token'));
+
+    $call = fn () => SquareClient::for(squareSettings())->retrievePayment('PAY1');
+
+    expect($call)->toThrow(SquareException::class, 'Square could not be reached.');
+
+    try {
+        $call();
+    } catch (SquareException $exception) {
+        expect($exception->getMessage())->not->toContain('secret-token');
+    }
 });

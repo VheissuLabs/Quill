@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\SquareCheckout;
 use App\Models\User;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -108,4 +109,13 @@ test('saving the same environment keeps open checkouts', function () {
         ->patch(route('organizations.billing.update', $invoice->organization), ['invoice_prefix' => 'INV', 'payment_terms_days' => 30, 'square_environment' => $environment]);
 
     expect($checkout->refresh()->status)->toBe(SquareCheckoutStatus::Open);
+});
+
+test('an unreachable Square never breaks a cancelling save', function () {
+    Http::fake(fn () => throw new ConnectionException('timed out'));
+    [$invoice, $checkout] = staleInvoice();
+
+    $invoice->payments()->create(['amount' => '100.00', 'paid_on' => '2026-11-16', 'method' => 'check']);
+
+    expect($checkout->refresh()->status)->toBe(SquareCheckoutStatus::Cancelled);
 });

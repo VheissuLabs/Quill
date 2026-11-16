@@ -4,6 +4,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\SquareCheckoutStatus;
 use App\Models\Invoice;
 use App\Models\SquareCheckout;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -160,4 +161,15 @@ test('payment instructions show on unpaid invoices', function () {
 
     $this->get($invoice->publicUrl())
         ->assertInertia(fn (Assert $page) => $page->where('invoice.paymentInstructions', null));
+});
+
+test('a connection failure sends the client back with a message', function () {
+    Http::fake(fn () => throw new ConnectionException('timed out'));
+    $invoice = payableInvoice();
+
+    $this->post(route('invoices.public.pay', $invoice->public_token))
+        ->assertRedirect($invoice->publicUrl())
+        ->assertInertiaFlash('toast', ['type' => 'error', 'message' => "Online payment isn't available right now. Please try again or use another way to pay."]);
+
+    expect($invoice->squareCheckouts()->count())->toBe(0);
 });

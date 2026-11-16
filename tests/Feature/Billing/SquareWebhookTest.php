@@ -5,6 +5,10 @@ use App\Enums\LineUnit;
 use App\Models\BillingSetting;
 use App\Models\Invoice;
 use App\Models\SquareCheckout;
+use App\Models\User;
+use App\Notifications\InvoicePaymentReceived;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
@@ -95,4 +99,19 @@ test('a recording error still answers 200 and is logged', function () {
     postWebhook($settings, $body, squareSignature($settings, $body))->assertOk();
 
     Log::shouldHaveReceived('warning')->once();
+});
+
+test('the payment notice still goes out when Square cannot be reached afterwards', function () {
+    Http::fake(fn () => throw new ConnectionException('timed out'));
+    $settings = webhookSettings();
+    $invoice = $settings->organization->invoices()->sole();
+    SquareCheckout::factory()->for($invoice)->create(['order_id' => 'O2']);
+    $owner = User::factory()->create();
+    $settings->organization->addMember($owner, 'Owner');
+    $body = webhookBody();
+
+    postWebhook($settings, $body, squareSignature($settings, $body))->assertOk();
+
+    expect($invoice->payments()->sole()->square_payment_id)->toBe('PAY1');
+    Notification::assertSentTo($owner, InvoicePaymentReceived::class);
 });

@@ -3,7 +3,10 @@
 namespace App\Support;
 
 use App\Models\BillingSetting;
+use Closure;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -30,7 +33,7 @@ class SquareClient
     /** @return array{id: string, url: string, order_id: string} */
     public function createPaymentLink(string $name, int $amountCents, string $redirectUrl, string $note): array
     {
-        $response = $this->client()->post('/v2/online-checkout/payment-links', [
+        $response = $this->send(fn (): Response => $this->client()->post('/v2/online-checkout/payment-links', [
             'idempotency_key' => (string) Str::uuid(),
             'quick_pay' => [
                 'name' => $name,
@@ -42,7 +45,7 @@ class SquareClient
                 'accepted_payment_methods' => ['apple_pay' => true, 'google_pay' => true, 'cash_app_pay' => true],
             ],
             'payment_note' => $note,
-        ]);
+        ]));
 
         $link = $this->checked($response)->json('payment_link');
 
@@ -55,7 +58,7 @@ class SquareClient
 
     public function deletePaymentLink(string $id): void
     {
-        $response = $this->client()->delete("/v2/online-checkout/payment-links/{$id}");
+        $response = $this->send(fn (): Response => $this->client()->delete("/v2/online-checkout/payment-links/{$id}"));
 
         if ($response->status() === 404) {
             return;
@@ -67,13 +70,13 @@ class SquareClient
     /** @return array<string, mixed> */
     public function retrieveOrder(string $orderId): array
     {
-        return $this->checked($this->client()->get("/v2/orders/{$orderId}"))->json('order') ?? [];
+        return $this->checked($this->send(fn (): Response => $this->client()->get("/v2/orders/{$orderId}")))->json('order') ?? [];
     }
 
     /** @return array<string, mixed> */
     public function retrievePayment(string $paymentId): array
     {
-        return $this->checked($this->client()->get("/v2/payments/{$paymentId}"))->json('payment') ?? [];
+        return $this->checked($this->send(fn (): Response => $this->client()->get("/v2/payments/{$paymentId}")))->json('payment') ?? [];
     }
 
     public static function verifySignature(string $signatureKey, string $notificationUrl, string $body, ?string $signature): bool
@@ -92,8 +95,20 @@ class SquareClient
         return Http::baseUrl($this->baseUrl)
             ->withToken($this->accessToken)
             ->withHeaders(['Square-Version' => self::VERSION])
+            ->connectTimeout(5)
+            ->timeout(15)
             ->acceptJson()
             ->asJson();
+    }
+
+    /** @param Closure(): Response $request */
+    private function send(Closure $request): Response
+    {
+        try {
+            return $request();
+        } catch (ConnectionException|RequestException $exception) {
+            throw new SquareException('Square could not be reached.', previous: $exception);
+        }
     }
 
     private function checked(Response $response): Response
