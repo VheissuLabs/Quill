@@ -3,6 +3,7 @@
 namespace App\Actions\Billing;
 
 use App\Enums\BillingCycle;
+use App\Enums\InvoiceStatus;
 use App\Models\Client;
 use App\Models\Invoice;
 use Carbon\CarbonImmutable;
@@ -12,37 +13,42 @@ class RestartBillingCycle
 {
     public function __construct(private OpenBillingPeriod $openBillingPeriod) {}
 
-    /**
-     * Restarts the client's schedule after a cycle invoice is sent or deleted before it closes.
-     * Returns the next Draft, or null when the invoice is not an early cycle invoice.
-     */
     public function handle(Invoice $invoice, CarbonImmutable $on, bool $deleting = false): ?Invoice
     {
-        if ($invoice->closes_at === null || now()->greaterThanOrEqualTo($invoice->closes_at)) {
-            return null;
-        }
-
         return DB::transaction(function () use ($invoice, $on, $deleting): ?Invoice {
-            $client = Client::whereKey($invoice->client_id)->lockForUpdate()->firstOrFail();
+            $locked = Invoice::whereKey($invoice->id)->lockForUpdate()->first();
+
+            if ($locked === null
+                || $locked->status === InvoiceStatus::Void
+                || $locked->closes_at === null
+                || now()->greaterThanOrEqualTo($locked->closes_at)
+                || ($deleting && $locked->sent_at !== null)) {
+                return null;
+            }
+
+            $client = Client::whereKey($locked->client_id)->lockForUpdate()->firstOrFail();
 
             if ($client->billing_cycle === null) {
                 return null;
             }
 
-            if (! $deleting) {
-                $invoice->forceFill(['service_period_end' => $on->toDateString(), 'closes_at' => null])->save();
-            }
+            $locked->forceFill($deleting ? ['closes_at' => null] : [
+                'service_period_end' => $on->toDateString(),
+                'closes_at' => null,
+            ])->save();
 
-            $start = $on->addDay();
+            $invoice->setRawAttributes($locked->getAttributes(), true);
+
+            $start = CarbonImmutable::parse($on->addDay()->toDateString(), $on->getTimezone());
 
             if ($client->billing_cycle === BillingCycle::Monthly) {
                 $end = $start->day === 1 ? $start->endOfMonth() : $start->addMonthNoOverflow()->endOfMonth();
             } else {
-                $client->billing_cycle_starts_on = $start;
+                $client->billing_cycle_starts_on = $start->toDateString();
                 [, $end] = $client->billing_cycle->periodContaining($start, $start);
             }
 
-            return $this->openBillingPeriod->openRange($client, $start->startOfDay(), $end->startOfDay());
+            return $this->openBillingPeriod->openRange($client, $start, $end->startOfDay());
         });
     }
 }

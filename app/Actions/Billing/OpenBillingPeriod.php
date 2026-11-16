@@ -48,9 +48,12 @@ class OpenBillingPeriod
         });
     }
 
-    /** Opens a cycle Draft for an explicit range on an already locked client and records its end. */
     public function openRange(Client $locked, CarbonImmutable $start, CarbonImmutable $end, ?Client $sync = null): Invoice
     {
+        if ($open = $locked->openCycleInvoice()) {
+            return $open;
+        }
+
         $organization = $locked->organization;
         $terms = $locked->payment_terms_days ?? $organization->billingSettings()->payment_terms_days;
 

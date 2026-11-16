@@ -1,5 +1,8 @@
 <?php
 
+use App\Actions\Billing\DeleteInvoice;
+use App\Actions\Billing\RestartBillingCycle;
+use App\Actions\Billing\SendInvoice;
 use App\Enums\BillingCycle;
 use App\Enums\LineUnit;
 use App\Models\Client;
@@ -111,4 +114,48 @@ test('sending a manual invoice never restarts anything', function () {
     expect($client->fresh()->billing_cycle_starts_on->toDateString())->toBe('2026-11-14')
         ->and($client->fresh()->billing_opened_through->toDateString())->toBe('2026-11-27')
         ->and($client->fresh()->openCycleInvoice()->id)->toBe($cycle->id);
+});
+
+test('deleting a draft that was sent from another tab is refused and opens nothing', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$invoice, $client] = restartingCycle();
+    $stale = $invoice->fresh();
+
+    app(SendInvoice::class)->handle($invoice);
+
+    expect(fn () => app(DeleteInvoice::class)->handle($stale))->toThrow(DomainException::class);
+
+    expect($invoice->fresh())->not->toBeNull()->sent_at->not->toBeNull()
+        ->and($client->invoices()->whereNotNull('closes_at')->whereNull('sent_at')->count())->toBe(1)
+        ->and(Invoice::count())->toBe(2);
+});
+
+test('deleting the same draft twice opens one next draft', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$invoice, $client] = restartingCycle(lines: false);
+    $first = $invoice->fresh();
+    $second = $invoice->fresh();
+
+    app(DeleteInvoice::class)->handle($first);
+    app(DeleteInvoice::class)->handle($second);
+
+    $open = $client->invoices()->whereNotNull('closes_at')->whereNull('sent_at')->get();
+
+    expect(Invoice::find($invoice->id))->toBeNull()
+        ->and($open)->toHaveCount(1)
+        ->and($open->first()->service_period_start->toDateString())->toBe('2026-11-26')
+        ->and(Invoice::count())->toBe(1);
+});
+
+test('an existing open draft is reused instead of opening a second one', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$invoice, $client] = restartingCycle();
+    $other = Invoice::factory()->for($client->organization)->for($client)->cycle(CarbonImmutable::parse('2026-11-26'), CarbonImmutable::parse('2026-12-09'))->create([
+        'closes_at' => CarbonImmutable::parse('2026-12-09 23:59:00', 'America/Chicago')->utc(),
+    ]);
+
+    $next = app(RestartBillingCycle::class)->handle($invoice, CarbonImmutable::parse('2026-11-25', 'America/Chicago'));
+
+    expect($next->id)->toBe($other->id)
+        ->and(Invoice::count())->toBe(2);
 });
