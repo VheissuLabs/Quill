@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
-import { GripVertical, Trash2 } from '@lucide/vue';
+import { ExternalLink, GripVertical, Plus, Trash2 } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import draggable from 'vuedraggable';
 import Heading from '@/components/Heading.vue';
@@ -37,6 +37,13 @@ const props = defineProps<Props>();
 
 const none = 'none';
 const editable = () => props.invoice.isEditable;
+const canEditDetails = () => props.invoice.canUpdate;
+const columns =
+    'grid grid-cols-[1.25rem_minmax(0,1fr)_6rem_6.5rem_7rem_7rem_2.25rem] items-start gap-x-3';
+
+const workTypeName = (id: number | null) =>
+    props.invoice.options.workTypes.find((workType) => workType.id === id)
+        ?.name ?? null;
 const lookupUrl = lookup(props.organization, {
     query: { invoice: props.invoice.id },
 }).url;
@@ -157,107 +164,301 @@ const add = () => {
     <section class="space-y-3" data-test="invoice-lines">
         <Heading variant="small" title="Lines" />
 
-        <draggable
-            v-if="rows.length > 0"
-            :list="rows"
-            item-key="id"
-            handle="[data-handle]"
-            :disabled="!invoice.isEditable"
-            :animation="150"
-            class="divide-y rounded-lg border"
-            @change="onReorder"
-        >
-            <template #item="{ element: row }">
+        <div class="overflow-x-auto rounded-lg border">
+            <div class="min-w-[44rem]">
                 <div
-                    class="flex flex-wrap items-start gap-2 p-3"
-                    data-test="invoice-line-row"
+                    :class="columns"
+                    class="text-muted-foreground border-b px-3 py-2 text-xs font-medium"
                 >
-                    <button
-                        v-if="editable()"
-                        type="button"
-                        data-handle
-                        class="text-muted-foreground hover:text-foreground mt-2 cursor-grab"
-                        aria-label="Drag to reorder"
-                    >
-                        <GripVertical class="size-4" />
-                    </button>
+                    <span />
+                    <span>Description</span>
+                    <span class="text-right">Qty</span>
+                    <span>Unit</span>
+                    <span class="text-right">Rate</span>
+                    <span class="text-right">Amount</span>
+                    <span />
+                </div>
 
-                    <div class="grid min-w-48 flex-1 gap-1">
-                        <Input
-                            v-model="row.draftDescription"
-                            aria-label="Description"
-                            data-test="invoice-line-description"
-                            @blur="saveDescription(row)"
-                        />
-                        <InputError :message="errors[row.id]?.description" />
-                    </div>
-
-                    <InvoiceIssuePicker
-                        :lookup="lookupUrl"
-                        :reference="row.issueReference"
-                        :disabled="!editable()"
-                        @select="pickIssue(row, $event)"
-                    />
-
-                    <div class="grid w-44 gap-1">
-                        <Input
-                            v-model="row.draftReferenceUrl"
-                            type="url"
-                            aria-label="Reference link"
-                            data-test="invoice-line-reference"
-                            @blur="saveReference(row)"
-                        />
-                        <InputError :message="errors[row.id]?.reference_url" />
-                    </div>
-
-                    <Select
-                        :model-value="
-                            row.workTypeId === null
-                                ? none
-                                : String(row.workTypeId)
-                        "
-                        @update:model-value="
-                            patch(row, {
-                                work_type_id:
-                                    $event === none ? null : Number($event),
-                            })
-                        "
-                    >
-                        <SelectTrigger class="w-36" aria-label="Work type">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem :value="none">None</SelectItem>
-                            <SelectItem
-                                v-for="workType in invoice.options.workTypes"
-                                :key="workType.id"
-                                :value="String(workType.id)"
+                <draggable
+                    v-if="rows.length > 0"
+                    :list="rows"
+                    item-key="id"
+                    handle="[data-handle]"
+                    :disabled="!editable()"
+                    :animation="150"
+                    class="divide-y"
+                    @change="onReorder"
+                >
+                    <template #item="{ element: row }">
+                        <div
+                            :class="columns"
+                            class="px-3 py-3"
+                            data-test="invoice-line-row"
+                        >
+                            <button
+                                v-if="editable()"
+                                type="button"
+                                data-handle
+                                class="text-muted-foreground hover:text-foreground mt-2.5 cursor-grab"
+                                aria-label="Drag to reorder"
                             >
-                                {{ workType.name }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
+                                <GripVertical class="size-4" />
+                            </button>
+                            <span v-else />
 
-                    <div class="grid w-24 gap-1">
+                            <div class="grid gap-2">
+                                <template v-if="canEditDetails()">
+                                    <Input
+                                        v-model="row.draftDescription"
+                                        aria-label="Description"
+                                        data-test="invoice-line-description"
+                                        @blur="saveDescription(row)"
+                                    />
+                                    <InputError
+                                        :message="errors[row.id]?.description"
+                                    />
+                                </template>
+                                <template v-else>
+                                    <p class="pt-2 text-sm">
+                                        {{ row.description }}
+                                    </p>
+                                    <p
+                                        v-if="
+                                            row.issueReference ||
+                                            row.workTypeId ||
+                                            row.referenceUrl
+                                        "
+                                        class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs"
+                                    >
+                                        <span v-if="row.issueReference">
+                                            {{ row.issueReference }}
+                                        </span>
+                                        <span
+                                            v-if="workTypeName(row.workTypeId)"
+                                        >
+                                            {{ workTypeName(row.workTypeId) }}
+                                        </span>
+                                        <a
+                                            v-if="row.referenceUrl"
+                                            :href="row.referenceUrl"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="hover:text-foreground inline-flex items-center gap-1 underline-offset-2 hover:underline"
+                                        >
+                                            Reference
+                                            <ExternalLink class="size-3" />
+                                        </a>
+                                    </p>
+                                </template>
+                            </div>
+
+                            <template v-if="editable()">
+                                <div class="grid gap-1">
+                                    <Input
+                                        v-model="row.draftQuantity"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        aria-label="Quantity"
+                                        class="text-right"
+                                        data-test="invoice-line-quantity"
+                                        @blur="saveQuantity(row)"
+                                    />
+                                    <InputError
+                                        :message="errors[row.id]?.quantity"
+                                    />
+                                </div>
+                                <Select
+                                    :model-value="row.unit"
+                                    @update:model-value="
+                                        patch(row, { unit: String($event) })
+                                    "
+                                >
+                                    <SelectTrigger
+                                        class="w-full"
+                                        aria-label="Unit"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="hours">
+                                            Hours
+                                        </SelectItem>
+                                        <SelectItem value="units">
+                                            Units
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <div class="grid gap-1">
+                                    <Input
+                                        v-model="row.draftRate"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        aria-label="Rate"
+                                        class="text-right"
+                                        data-test="invoice-line-rate"
+                                        @blur="saveRate(row)"
+                                    />
+                                    <InputError
+                                        :message="errors[row.id]?.rate"
+                                    />
+                                </div>
+                            </template>
+                            <template v-else>
+                                <span
+                                    class="pt-2 text-right text-sm tabular-nums"
+                                >
+                                    {{ row.quantity }}
+                                </span>
+                                <span class="pt-2 text-sm">
+                                    {{
+                                        row.unit === 'hours' ? 'Hours' : 'Units'
+                                    }}
+                                </span>
+                                <span
+                                    class="pt-2 text-right text-sm tabular-nums"
+                                >
+                                    {{ money(row.rate) }}
+                                </span>
+                            </template>
+
+                            <span
+                                class="pt-2 text-right text-sm font-medium tabular-nums"
+                                data-test="invoice-line-amount"
+                            >
+                                {{ money(row.amount) }}
+                            </span>
+
+                            <Button
+                                v-if="editable()"
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Remove line"
+                                data-test="invoice-line-delete"
+                                @click="remove(row)"
+                            >
+                                <Trash2 />
+                            </Button>
+
+                            <div
+                                v-if="canEditDetails()"
+                                class="col-span-5 col-start-2 mt-2 grid gap-1"
+                            >
+                                <div
+                                    class="flex flex-wrap items-center gap-2"
+                                >
+                                    <InvoiceIssuePicker
+                                        v-if="
+                                            editable() || row.issueReference
+                                        "
+                                        :lookup="lookupUrl"
+                                        :reference="row.issueReference"
+                                        :disabled="!editable()"
+                                        @select="pickIssue(row, $event)"
+                                    />
+                                    <Input
+                                        v-model="row.draftReferenceUrl"
+                                        type="url"
+                                        placeholder="Reference link"
+                                        aria-label="Reference link"
+                                        class="min-w-48 flex-1"
+                                        data-test="invoice-line-reference"
+                                        @blur="saveReference(row)"
+                                    />
+                                    <Select
+                                        :model-value="
+                                            row.workTypeId === null
+                                                ? none
+                                                : String(row.workTypeId)
+                                        "
+                                        @update:model-value="
+                                            patch(row, {
+                                                work_type_id:
+                                                    $event === none
+                                                        ? null
+                                                        : Number($event),
+                                            })
+                                        "
+                                    >
+                                        <SelectTrigger
+                                            class="w-40"
+                                            aria-label="Work type"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem :value="none">
+                                                No work type
+                                            </SelectItem>
+                                            <SelectItem
+                                                v-for="workType in invoice
+                                                    .options.workTypes"
+                                                :key="workType.id"
+                                                :value="String(workType.id)"
+                                            >
+                                                {{ workType.name }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <InputError
+                                    :message="errors[row.id]?.reference_url"
+                                />
+                            </div>
+                        </div>
+                    </template>
+                </draggable>
+                <p
+                    v-else
+                    class="text-muted-foreground px-3 py-6 text-center text-sm"
+                >
+                    No lines yet.
+                </p>
+
+                <form
+                    v-if="editable()"
+                    :class="columns"
+                    class="bg-muted/40 border-t px-3 py-3"
+                    data-test="invoice-line-form"
+                    @submit.prevent="add"
+                >
+                    <Plus class="text-muted-foreground mt-2.5 size-4" />
+                    <div class="grid gap-2">
                         <Input
-                            v-model="row.draftQuantity"
+                            v-model="form.description"
+                            placeholder="Description"
+                            aria-label="New line description"
+                            data-test="new-line-description"
+                        />
+                        <InvoiceIssuePicker
+                            :lookup="lookupUrl"
+                            :reference="form.issueReference"
+                            @select="pickNewIssue"
+                        />
+                        <InputError
+                            :message="
+                                form.errors.description || form.errors.issue_id
+                            "
+                        />
+                    </div>
+                    <div class="grid gap-1">
+                        <Input
+                            v-model="form.quantity"
                             type="number"
                             min="0"
                             step="0.01"
-                            aria-label="Quantity"
-                            :disabled="!editable()"
-                            data-test="invoice-line-quantity"
-                            @blur="saveQuantity(row)"
+                            aria-label="New line quantity"
+                            class="text-right"
+                            data-test="new-line-quantity"
                         />
-                        <InputError :message="errors[row.id]?.quantity" />
+                        <InputError :message="form.errors.quantity" />
                     </div>
-
-                    <Select
-                        :model-value="row.unit"
-                        :disabled="!editable()"
-                        @update:model-value="patch(row, { unit: String($event) })"
-                    >
-                        <SelectTrigger class="w-28" aria-label="Unit">
+                    <Select v-model="form.unit">
+                        <SelectTrigger
+                            class="w-full"
+                            aria-label="New line unit"
+                        >
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -265,102 +466,28 @@ const add = () => {
                             <SelectItem value="units">Units</SelectItem>
                         </SelectContent>
                     </Select>
-
-                    <div class="grid w-28 gap-1">
+                    <div class="grid gap-1">
                         <Input
-                            v-model="row.draftRate"
+                            v-model="form.rate"
                             type="number"
                             min="0"
                             step="0.01"
-                            aria-label="Rate"
-                            :disabled="!editable()"
-                            data-test="invoice-line-rate"
-                            @blur="saveRate(row)"
+                            aria-label="New line rate"
+                            class="text-right"
+                            data-test="new-line-rate"
                         />
-                        <InputError :message="errors[row.id]?.rate" />
+                        <InputError :message="form.errors.rate" />
                     </div>
-
-                    <span
-                        class="w-28 pt-2 text-right text-sm tabular-nums"
-                        data-test="invoice-line-amount"
-                    >
-                        {{ money(row.amount) }}
-                    </span>
-
                     <Button
-                        v-if="editable()"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Remove line"
-                        data-test="invoice-line-delete"
-                        @click="remove(row)"
+                        type="submit"
+                        class="col-span-2"
+                        data-test="new-line-add"
+                        :disabled="form.processing"
                     >
-                        <Trash2 />
+                        Add line
                     </Button>
-                </div>
-            </template>
-        </draggable>
-        <p v-else class="text-muted-foreground text-sm">No lines yet.</p>
-
-        <form
-            v-if="editable()"
-            class="flex flex-wrap items-start gap-2"
-            data-test="invoice-line-form"
-            @submit.prevent="add"
-        >
-            <div class="grid min-w-48 flex-1 gap-1">
-                <Input
-                    v-model="form.description"
-                    aria-label="New line description"
-                    data-test="new-line-description"
-                />
-                <InputError
-                    :message="form.errors.description || form.errors.issue_id"
-                />
+                </form>
             </div>
-            <InvoiceIssuePicker
-                :lookup="lookupUrl"
-                :reference="form.issueReference"
-                @select="pickNewIssue"
-            />
-            <div class="grid w-24 gap-1">
-                <Input
-                    v-model="form.quantity"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    aria-label="New line quantity"
-                    data-test="new-line-quantity"
-                />
-                <InputError :message="form.errors.quantity" />
-            </div>
-            <Select v-model="form.unit">
-                <SelectTrigger class="w-28" aria-label="New line unit">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="hours">Hours</SelectItem>
-                    <SelectItem value="units">Units</SelectItem>
-                </SelectContent>
-            </Select>
-            <div class="grid w-28 gap-1">
-                <Input
-                    v-model="form.rate"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    aria-label="New line rate"
-                    data-test="new-line-rate"
-                />
-                <InputError :message="form.errors.rate" />
-            </div>
-            <Button
-                type="submit"
-                data-test="new-line-add"
-                :disabled="form.processing"
-            >
-                Add line
-            </Button>
-        </form>
+        </div>
     </section>
 </template>

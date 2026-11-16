@@ -80,6 +80,7 @@ const pick = (issue: IssueSuggestion) => {
             v-if="!reference || query !== ''"
             :model-value="query"
             :disabled="disabled"
+            placeholder="Issue"
             aria-label="Issue"
             data-test="invoice-line-issue-input"
             @update:model-value="onInput"

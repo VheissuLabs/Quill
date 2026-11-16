@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { Copy, Link2, Send, Trash2, Ban } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import ConfirmActionModal from '@/components/ConfirmActionModal.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import Heading from '@/components/Heading.vue';
@@ -24,6 +24,7 @@ import { destroy, index, show, update } from '@/routes/invoices';
 import { store as duplicate } from '@/routes/invoices/duplicate';
 import { store as send } from '@/routes/invoices/send';
 import { store as voidInvoice } from '@/routes/invoices/void';
+import { formatDate } from '@/lib/dates';
 import type { Invoice, Organization } from '@/types';
 
 type Props = {
@@ -67,6 +68,36 @@ const recipient = computed(() => {
         : (contact?.email ?? '');
 });
 
+const contact = computed(() =>
+    props.invoice.options.contacts.find(
+        (option) => option.id === props.invoice.contactId,
+    ),
+);
+
+const projectName = computed(
+    () =>
+        props.invoice.options.projects.find(
+            (project) => project.id === props.invoice.projectId,
+        )?.name ?? null,
+);
+
+const sprintName = computed(
+    () =>
+        props.invoice.options.sprints.find(
+            (sprint) => sprint.id === props.invoice.sprintId,
+        )?.name ?? null,
+);
+
+const servicePeriod = computed(() => {
+    const { servicePeriodStart: start, servicePeriodEnd: end } = props.invoice;
+
+    if (start && end) {
+        return `${formatDate(start)} – ${formatDate(end)}`;
+    }
+
+    return start ? formatDate(start) : end ? formatDate(end) : null;
+});
+
 const ccList = computed(() => props.invoice.ccEmails.join(', '));
 
 const copyPublicLink = async () => {
@@ -78,7 +109,7 @@ const copyPublicLink = async () => {
 const select = (value: number | string | null) =>
     value === null ? none : String(value);
 
-const form = useForm({
+const headerFields = () => ({
     contact_id: select(props.invoice.contactId),
     cc_emails: props.invoice.ccEmails.join(', '),
     issue_date: props.invoice.issueDate,
@@ -95,6 +126,17 @@ const form = useForm({
     deposit_type: select(props.invoice.depositType),
     deposit_value: props.invoice.depositValue ?? '',
 });
+
+const form = useForm(headerFields());
+
+watch(
+    () => props.invoice.id,
+    () => {
+        form.defaults(headerFields());
+        form.reset();
+        form.clearErrors();
+    },
+);
 
 const orNull = (value: string) => (value === none ? null : Number(value));
 
@@ -126,6 +168,7 @@ const submit = () => {
             : {}),
     })).patch(update.url([props.currentOrganization.slug, props.invoice.id]), {
         preserveScroll: true,
+        onSuccess: () => form.defaults(),
     });
 };
 
@@ -139,17 +182,29 @@ const money = (value: string) =>
 <template>
     <Head :title="invoice.number" />
 
-    <div class="flex flex-col gap-10 p-6">
-        <div class="flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <Heading variant="small" :title="invoice.number" />
-                <InvoiceStatusBadge
-                    :status="invoice.status"
-                    :label="invoice.statusLabel"
-                />
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 p-6">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="space-y-1">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-xl font-semibold tracking-tight">
+                        {{ invoice.number }}
+                    </h1>
+                    <InvoiceStatusBadge
+                        :status="invoice.status"
+                        :label="invoice.statusLabel"
+                    />
+                </div>
+                <p class="text-muted-foreground text-sm">
+                    {{ invoice.clientName }} · Issued
+                    {{ formatDate(invoice.issueDate) }} · Due
+                    {{ formatDate(invoice.dueDate) }}
+                </p>
             </div>
 
-            <div class="flex items-center gap-2" data-test="invoice-actions">
+            <div
+                class="flex flex-wrap items-center gap-2"
+                data-test="invoice-actions"
+            >
                 <Button
                     v-if="invoice.sentAt"
                     variant="outline"
@@ -159,11 +214,19 @@ const money = (value: string) =>
                     <Link2 /> {{ linkCopied ? 'Copied' : 'Copy public link' }}
                 </Button>
                 <Button
-                    v-if="invoice.canSend"
-                    data-test="invoice-send-button"
-                    @click="sendDialogOpen = true"
+                    v-if="invoice.canDuplicate"
+                    variant="outline"
+                    data-test="invoice-duplicate-button"
+                    @click="
+                        router.post(
+                            duplicate.url([
+                                currentOrganization.slug,
+                                invoice.id,
+                            ]),
+                        )
+                    "
                 >
-                    <Send /> Send
+                    <Copy /> Duplicate
                 </Button>
                 <Button
                     v-if="invoice.canVoid"
@@ -174,18 +237,6 @@ const money = (value: string) =>
                     <Ban /> Void
                 </Button>
                 <Button
-                    v-if="invoice.canDuplicate"
-                    variant="outline"
-                    data-test="invoice-duplicate-button"
-                    @click="
-                        router.post(
-                            duplicate.url([currentOrganization.slug, invoice.id]),
-                        )
-                    "
-                >
-                    <Copy /> Duplicate
-                </Button>
-                <Button
                     v-if="invoice.canDelete"
                     variant="outline"
                     data-test="invoice-delete-button"
@@ -193,7 +244,23 @@ const money = (value: string) =>
                 >
                     <Trash2 /> Delete
                 </Button>
+                <Button
+                    v-if="invoice.canSend"
+                    data-test="invoice-send-button"
+                    @click="sendDialogOpen = true"
+                >
+                    <Send /> Send
+                </Button>
             </div>
+        </div>
+
+        <div
+            v-if="invoice.voidedAt"
+            class="border-destructive/40 bg-destructive/10 text-destructive rounded-lg border px-4 py-3 text-sm"
+            data-test="invoice-void-notice"
+        >
+            Voided {{ formatDate(invoice.voidedAt) }}. This invoice can no
+            longer be edited or paid.
         </div>
 
         <ConfirmActionModal
@@ -202,9 +269,8 @@ const money = (value: string) =>
             confirm-label="Send invoice"
             :href="send([currentOrganization.slug, invoice.id])"
         >
-            This emails the invoice to {{ recipient }}
-            <template v-if="ccList"> and copies {{ ccList }}</template
-            >.
+            This emails the invoice to
+            {{ recipient }}{{ ccList ? ` and copies ${ccList}` : '' }}.
         </ConfirmActionModal>
 
         <ConfirmActionModal
@@ -224,279 +290,429 @@ const money = (value: string) =>
             :href="destroy([currentOrganization.slug, invoice.id])"
         />
 
-        <form
-            v-if="invoice.canUpdate"
-            class="grid max-w-3xl gap-6"
-            data-test="invoice-header-form"
-            @submit.prevent="submit"
-        >
-            <p class="text-sm">
-                <span class="text-muted-foreground">Client</span>
-                {{ invoice.clientName }}
-            </p>
+        <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div class="flex min-w-0 flex-col gap-10">
+                <InvoiceLines
+                    :organization="currentOrganization.slug"
+                    :invoice="invoice"
+                />
 
-            <div class="grid gap-6 sm:grid-cols-2">
-                <div class="grid gap-2">
-                    <Label for="invoice-contact">Contact</Label>
-                    <Select v-model="form.contact_id">
-                        <SelectTrigger id="invoice-contact" class="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem :value="none">None</SelectItem>
-                            <SelectItem
-                                v-for="contact in invoice.options.contacts"
-                                :key="contact.id"
-                                :value="String(contact.id)"
-                            >
-                                {{ contact.name ?? contact.email }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="form.errors.contact_id" />
-                </div>
+                <section class="space-y-3">
+                    <Heading variant="small" title="Details" />
 
-                <div class="grid gap-2">
-                    <Label for="invoice-cc">CC</Label>
-                    <Input
-                        id="invoice-cc"
-                        v-model="form.cc_emails"
-                        data-test="invoice-cc-input"
-                    />
-                    <InputError :message="form.errors.cc_emails" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="invoice-issue-date">Issue date</Label>
-                    <Input
-                        id="invoice-issue-date"
-                        v-model="form.issue_date"
-                        type="date"
-                    />
-                    <InputError :message="form.errors.issue_date" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="invoice-due-date">Due date</Label>
-                    <Input
-                        id="invoice-due-date"
-                        v-model="form.due_date"
-                        type="date"
-                    />
-                    <InputError :message="form.errors.due_date" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="invoice-period-start"
-                        >Service period start</Label
+                    <form
+                        v-if="invoice.canUpdate"
+                        class="grid gap-6 rounded-lg border p-5"
+                        data-test="invoice-header-form"
+                        @submit.prevent="submit"
                     >
-                    <Input
-                        id="invoice-period-start"
-                        v-model="form.service_period_start"
-                        type="date"
-                    />
-                    <InputError :message="form.errors.service_period_start" />
-                </div>
+                        <div class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="invoice-contact">Contact</Label>
+                                <Select v-model="form.contact_id">
+                                    <SelectTrigger
+                                        id="invoice-contact"
+                                        class="w-full"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem :value="none">
+                                            None
+                                        </SelectItem>
+                                        <SelectItem
+                                            v-for="option in invoice.options
+                                                .contacts"
+                                            :key="option.id"
+                                            :value="String(option.id)"
+                                        >
+                                            {{ option.name ?? option.email }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError :message="form.errors.contact_id" />
+                            </div>
 
-                <div class="grid gap-2">
-                    <Label for="invoice-period-end">Service period end</Label>
-                    <Input
-                        id="invoice-period-end"
-                        v-model="form.service_period_end"
-                        type="date"
-                    />
-                    <InputError :message="form.errors.service_period_end" />
-                </div>
+                            <div class="grid gap-2">
+                                <Label for="invoice-cc">CC</Label>
+                                <Input
+                                    id="invoice-cc"
+                                    v-model="form.cc_emails"
+                                    data-test="invoice-cc-input"
+                                />
+                                <InputError :message="form.errors.cc_emails" />
+                            </div>
 
-                <div class="grid gap-2">
-                    <Label for="invoice-project">Project</Label>
-                    <Select v-model="form.project_id">
-                        <SelectTrigger id="invoice-project" class="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem :value="none">None</SelectItem>
-                            <SelectItem
-                                v-for="project in invoice.options.projects"
-                                :key="project.id"
-                                :value="String(project.id)"
-                            >
-                                {{ project.name }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="form.errors.project_id" />
-                </div>
+                            <div class="grid gap-2">
+                                <Label for="invoice-issue-date">
+                                    Issue date
+                                </Label>
+                                <Input
+                                    id="invoice-issue-date"
+                                    v-model="form.issue_date"
+                                    type="date"
+                                />
+                                <InputError :message="form.errors.issue_date" />
+                            </div>
 
-                <div class="grid gap-2">
-                    <Label for="invoice-sprint">Sprint</Label>
-                    <Select v-model="form.sprint_id">
-                        <SelectTrigger id="invoice-sprint" class="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem :value="none">None</SelectItem>
-                            <SelectItem
-                                v-for="sprint in invoice.options.sprints"
-                                :key="sprint.id"
-                                :value="String(sprint.id)"
-                            >
-                                {{ sprint.name }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="form.errors.sprint_id" />
-                </div>
-            </div>
+                            <div class="grid gap-2">
+                                <Label for="invoice-due-date">Due date</Label>
+                                <Input
+                                    id="invoice-due-date"
+                                    v-model="form.due_date"
+                                    type="date"
+                                />
+                                <InputError :message="form.errors.due_date" />
+                            </div>
 
-            <div class="grid gap-6 sm:grid-cols-3">
-                <div class="grid gap-2">
-                    <Label for="invoice-tax-rate">Tax rate (%)</Label>
-                    <Input
-                        id="invoice-tax-rate"
-                        v-model="form.tax_rate"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        :disabled="!invoice.isEditable"
-                        data-test="invoice-tax-rate-input"
-                    />
-                    <InputError :message="form.errors.tax_rate" />
-                </div>
+                            <div class="grid gap-2">
+                                <Label for="invoice-period-start">
+                                    Service period start
+                                </Label>
+                                <Input
+                                    id="invoice-period-start"
+                                    v-model="form.service_period_start"
+                                    type="date"
+                                />
+                                <InputError
+                                    :message="form.errors.service_period_start"
+                                />
+                            </div>
 
-                <div class="grid gap-2">
-                    <Label for="invoice-discount-type">Discount</Label>
-                    <Select
-                        v-model="form.discount_type"
-                        :disabled="!invoice.isEditable"
-                    >
-                        <SelectTrigger
-                            id="invoice-discount-type"
-                            class="w-full"
+                            <div class="grid gap-2">
+                                <Label for="invoice-period-end">
+                                    Service period end
+                                </Label>
+                                <Input
+                                    id="invoice-period-end"
+                                    v-model="form.service_period_end"
+                                    type="date"
+                                />
+                                <InputError
+                                    :message="form.errors.service_period_end"
+                                />
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label for="invoice-project">Project</Label>
+                                <Select v-model="form.project_id">
+                                    <SelectTrigger
+                                        id="invoice-project"
+                                        class="w-full"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem :value="none">
+                                            None
+                                        </SelectItem>
+                                        <SelectItem
+                                            v-for="project in invoice.options
+                                                .projects"
+                                            :key="project.id"
+                                            :value="String(project.id)"
+                                        >
+                                            {{ project.name }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError :message="form.errors.project_id" />
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label for="invoice-sprint">Sprint</Label>
+                                <Select v-model="form.sprint_id">
+                                    <SelectTrigger
+                                        id="invoice-sprint"
+                                        class="w-full"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem :value="none">
+                                            None
+                                        </SelectItem>
+                                        <SelectItem
+                                            v-for="sprint in invoice.options
+                                                .sprints"
+                                            :key="sprint.id"
+                                            :value="String(sprint.id)"
+                                        >
+                                            {{ sprint.name }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError :message="form.errors.sprint_id" />
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="invoice.isEditable"
+                            class="grid gap-x-6 gap-y-5 border-t pt-5 sm:grid-cols-3"
                         >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem :value="none">None</SelectItem>
-                            <SelectItem value="percentage"
-                                >Percentage</SelectItem
-                            >
-                            <SelectItem value="fixed">Fixed</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Input
-                        v-model="form.discount_value"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        aria-label="Discount value"
-                        :disabled="!invoice.isEditable"
-                    />
-                    <InputError
-                        :message="
-                            form.errors.discount_type ||
-                            form.errors.discount_value
-                        "
-                    />
-                </div>
+                            <div class="grid content-start gap-2">
+                                <Label for="invoice-tax-rate">
+                                    Tax rate (%)
+                                </Label>
+                                <Input
+                                    id="invoice-tax-rate"
+                                    v-model="form.tax_rate"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    data-test="invoice-tax-rate-input"
+                                />
+                                <InputError :message="form.errors.tax_rate" />
+                            </div>
 
-                <div class="grid gap-2">
-                    <Label for="invoice-deposit-type">Deposit</Label>
-                    <Select
-                        v-model="form.deposit_type"
-                        :disabled="!invoice.isEditable"
+                            <div class="grid content-start gap-2">
+                                <Label for="invoice-discount-type">
+                                    Discount
+                                </Label>
+                                <div class="flex gap-2">
+                                    <Select v-model="form.discount_type">
+                                        <SelectTrigger
+                                            id="invoice-discount-type"
+                                            class="w-32"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem :value="none">
+                                                None
+                                            </SelectItem>
+                                            <SelectItem value="percentage">
+                                                %
+                                            </SelectItem>
+                                            <SelectItem value="fixed">
+                                                Fixed
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Input
+                                        v-model="form.discount_value"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        aria-label="Discount value"
+                                        :disabled="form.discount_type === none"
+                                    />
+                                </div>
+                                <InputError
+                                    :message="
+                                        form.errors.discount_type ||
+                                        form.errors.discount_value
+                                    "
+                                />
+                            </div>
+
+                            <div class="grid content-start gap-2">
+                                <Label for="invoice-deposit-type">
+                                    Deposit
+                                </Label>
+                                <div class="flex gap-2">
+                                    <Select v-model="form.deposit_type">
+                                        <SelectTrigger
+                                            id="invoice-deposit-type"
+                                            class="w-32"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem :value="none">
+                                                None
+                                            </SelectItem>
+                                            <SelectItem value="percentage">
+                                                %
+                                            </SelectItem>
+                                            <SelectItem value="fixed">
+                                                Fixed
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Input
+                                        v-model="form.deposit_value"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        aria-label="Deposit value"
+                                        :disabled="form.deposit_type === none"
+                                    />
+                                </div>
+                                <InputError
+                                    :message="
+                                        form.errors.deposit_type ||
+                                        form.errors.deposit_value
+                                    "
+                                />
+                            </div>
+                        </div>
+
+                        <div
+                            class="grid gap-x-6 gap-y-5 border-t pt-5 sm:grid-cols-2"
+                        >
+                            <div class="grid gap-2">
+                                <Label for="invoice-notes">Notes</Label>
+                                <Textarea
+                                    id="invoice-notes"
+                                    v-model="form.notes"
+                                    rows="4"
+                                />
+                                <InputError :message="form.errors.notes" />
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label for="invoice-terms">Terms</Label>
+                                <Textarea
+                                    id="invoice-terms"
+                                    v-model="form.terms"
+                                    rows="4"
+                                />
+                                <InputError :message="form.errors.terms" />
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <Button
+                                type="submit"
+                                data-test="invoice-save-button"
+                                :disabled="form.processing || !form.isDirty"
+                            >
+                                Save details
+                            </Button>
+                        </div>
+                    </form>
+
+                    <div
+                        v-else
+                        class="grid gap-6 rounded-lg border p-5 text-sm"
+                        data-test="invoice-details"
                     >
-                        <SelectTrigger id="invoice-deposit-type" class="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem :value="none">None</SelectItem>
-                            <SelectItem value="percentage"
-                                >Percentage</SelectItem
-                            >
-                            <SelectItem value="fixed">Fixed</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Input
-                        v-model="form.deposit_value"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        aria-label="Deposit value"
-                        :disabled="!invoice.isEditable"
-                    />
-                    <InputError
-                        :message="
-                            form.errors.deposit_type ||
-                            form.errors.deposit_value
-                        "
-                    />
-                </div>
+                        <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                            <div>
+                                <dt class="text-muted-foreground">Bill to</dt>
+                                <dd class="font-medium">
+                                    {{ invoice.clientName }}
+                                </dd>
+                                <dd v-if="contact">
+                                    {{
+                                        contact.name
+                                            ? `${contact.name} · ${contact.email}`
+                                            : contact.email
+                                    }}
+                                </dd>
+                                <dd v-if="ccList" class="text-muted-foreground">
+                                    CC {{ ccList }}
+                                </dd>
+                            </div>
+                            <div v-if="servicePeriod">
+                                <dt class="text-muted-foreground">
+                                    Service period
+                                </dt>
+                                <dd>{{ servicePeriod }}</dd>
+                            </div>
+                            <div v-if="projectName">
+                                <dt class="text-muted-foreground">Project</dt>
+                                <dd>{{ projectName }}</dd>
+                            </div>
+                            <div v-if="sprintName">
+                                <dt class="text-muted-foreground">Sprint</dt>
+                                <dd>{{ sprintName }}</dd>
+                            </div>
+                        </dl>
+                        <div
+                            v-if="invoice.notes || invoice.terms"
+                            class="grid gap-x-6 gap-y-4 border-t pt-5 sm:grid-cols-2"
+                        >
+                            <div v-if="invoice.notes">
+                                <p class="text-muted-foreground">Notes</p>
+                                <p class="whitespace-pre-line">
+                                    {{ invoice.notes }}
+                                </p>
+                            </div>
+                            <div v-if="invoice.terms">
+                                <p class="text-muted-foreground">Terms</p>
+                                <p class="whitespace-pre-line">
+                                    {{ invoice.terms }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
 
-            <div class="grid gap-2">
-                <Label for="invoice-notes">Notes</Label>
-                <Textarea id="invoice-notes" v-model="form.notes" rows="3" />
-                <InputError :message="form.errors.notes" />
-            </div>
-
-            <div class="grid gap-2">
-                <Label for="invoice-terms">Terms</Label>
-                <Textarea id="invoice-terms" v-model="form.terms" rows="3" />
-                <InputError :message="form.errors.terms" />
-            </div>
-
-            <div>
-                <Button
-                    type="submit"
-                    data-test="invoice-save-button"
-                    :disabled="form.processing"
+            <aside class="flex flex-col gap-8 lg:sticky lg:top-6">
+                <section
+                    class="bg-muted/30 rounded-lg border p-5 text-sm"
+                    data-test="invoice-totals"
                 >
-                    Save
-                </Button>
-            </div>
-        </form>
+                    <p class="text-muted-foreground">Amount due</p>
+                    <p
+                        class="mt-1 text-3xl font-semibold tracking-tight tabular-nums"
+                    >
+                        {{ money(invoice.amountDue) }}
+                    </p>
 
-        <InvoiceLines
-            :organization="currentOrganization.slug"
-            :invoice="invoice"
-        />
+                    <dl class="mt-5 space-y-2 border-t pt-4">
+                        <div class="flex justify-between">
+                            <dt class="text-muted-foreground">Subtotal</dt>
+                            <dd class="tabular-nums">
+                                {{ money(invoice.subtotal) }}
+                            </dd>
+                        </div>
+                        <div
+                            v-if="Number(invoice.taxAmount) > 0"
+                            class="flex justify-between"
+                        >
+                            <dt class="text-muted-foreground">
+                                Tax ({{ Number(invoice.taxRate) }}%)
+                            </dt>
+                            <dd class="tabular-nums">
+                                {{ money(invoice.taxAmount) }}
+                            </dd>
+                        </div>
+                        <div
+                            v-if="Number(invoice.discountAmount) > 0"
+                            class="flex justify-between"
+                        >
+                            <dt class="text-muted-foreground">Discount</dt>
+                            <dd class="tabular-nums">
+                                −{{ money(invoice.discountAmount) }}
+                            </dd>
+                        </div>
+                        <div class="flex justify-between font-medium">
+                            <dt>Total</dt>
+                            <dd class="tabular-nums">
+                                {{ money(invoice.total) }}
+                            </dd>
+                        </div>
+                        <div
+                            v-if="Number(invoice.depositAmount) > 0"
+                            class="flex justify-between"
+                        >
+                            <dt class="text-muted-foreground">Deposit</dt>
+                            <dd class="tabular-nums">
+                                {{ money(invoice.depositAmount) }}
+                            </dd>
+                        </div>
+                        <div
+                            v-if="Number(invoice.amountPaid) > 0"
+                            class="flex justify-between"
+                            >
+                            <dt class="text-muted-foreground">Paid</dt>
+                            <dd class="tabular-nums">
+                                −{{ money(invoice.amountPaid) }}
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
 
-        <section class="max-w-sm space-y-1 text-sm" data-test="invoice-totals">
-            <div class="flex justify-between">
-                <span>Subtotal</span>
-                <span class="tabular-nums">{{ money(invoice.subtotal) }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span>Tax</span>
-                <span class="tabular-nums">{{ money(invoice.taxAmount) }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span>Discount</span>
-                <span class="tabular-nums">
-                    {{ money(invoice.discountAmount) }}
-                </span>
-            </div>
-            <div class="flex justify-between font-medium">
-                <span>Total</span>
-                <span class="tabular-nums">{{ money(invoice.total) }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span>Paid</span>
-                <span class="tabular-nums">{{
-                    money(invoice.amountPaid)
-                }}</span>
-            </div>
-            <div class="flex justify-between font-medium">
-                <span>Amount due</span>
-                <span class="tabular-nums">{{ money(invoice.amountDue) }}</span>
-            </div>
-        </section>
-
-        <InvoicePayments
-            :organization="currentOrganization.slug"
-            :invoice="invoice"
-        />
+                <InvoicePayments
+                    :organization="currentOrganization.slug"
+                    :invoice="invoice"
+                />
+            </aside>
+        </div>
     </div>
 </template>
