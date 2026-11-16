@@ -306,3 +306,13 @@ test('a contact from another client cannot be set on update', function () {
 
     expect($invoice->fresh()->contact_id)->toBeNull();
 });
+
+test('an array of client ids is rejected instead of reaching the lookup', function () {
+    [$organization, $admin, $client] = invoiceManager();
+
+    $this->actingAs($admin)
+        ->post(invoiceRoute('invoices.store', $organization), ['client_id' => [$client->id]])
+        ->assertSessionHasErrors('client_id');
+
+    expect($organization->invoices()->count())->toBe(0);
+});
