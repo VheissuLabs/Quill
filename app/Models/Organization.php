@@ -285,6 +285,25 @@ class Organization extends Model
         return $this->roles()->where('name', $name)->first();
     }
 
+    public function billingTimezone(): string
+    {
+        $ownerRoleId = $this->roles()->where('name', 'Owner')->value('id');
+
+        $timezone = DB::table('organization_members')
+            ->join('users', 'users.id', '=', 'organization_members.user_id')
+            ->join('model_has_roles', function ($join) use ($ownerRoleId) {
+                $join->on('model_has_roles.model_id', '=', 'users.id')
+                    ->where('model_has_roles.model_type', (new User)->getMorphClass())
+                    ->where('model_has_roles.role_id', $ownerRoleId);
+            })
+            ->where('organization_members.organization_id', $this->id)
+            ->orderBy('organization_members.created_at')
+            ->orderBy('organization_members.id')
+            ->value('users.timezone');
+
+        return $timezone ?? config('app.timezone');
+    }
+
     public function ownerRole(): Role
     {
         return $this->roles()->where('name', 'Owner')->firstOrFail();

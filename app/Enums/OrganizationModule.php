@@ -38,6 +38,7 @@ enum OrganizationModule: string
             self::Teams => [],
             self::Billing => [
                 OrganizationCapability::Invoices,
+                OrganizationCapability::BillingCycles,
             ],
         };
     }

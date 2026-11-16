@@ -107,6 +107,7 @@ const moduleValues = (modules: Organization['modules']) => ({
     teams_enabled: modules.teams.enabled,
     billing_enabled: modules.billing.enabled,
     billing_invoices_enabled: modules.billing.capabilities.invoices,
+    billing_billing_cycles_enabled: modules.billing.capabilities.billing_cycles,
 });
 
 const modulesForm = useForm(moduleValues(props.organization.modules));
@@ -176,7 +177,8 @@ type ModuleField =
     | 'development_workflow_enabled'
     | 'teams_enabled'
     | 'billing_enabled'
-    | 'billing_invoices_enabled';
+    | 'billing_invoices_enabled'
+    | 'billing_billing_cycles_enabled';
 
 const updateModule = (field: ModuleField, value: boolean) => {
     const previousValue = modulesForm[field];
@@ -690,6 +692,39 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                             @update:model-value="
                                                 updateModule(
                                                     'billing_invoices_enabled',
+                                                    $event === true,
+                                                )
+                                            "
+                                        />
+                                    </label>
+                                    <label
+                                        class="flex cursor-pointer items-start justify-between gap-4"
+                                    >
+                                        <span class="min-w-0">
+                                            <span class="block font-medium"
+                                                >Billing cycles</span
+                                            >
+                                            <span
+                                                class="text-muted-foreground mt-1 block text-sm"
+                                            >
+                                                Invoice clients automatically
+                                                each period.
+                                            </span>
+                                        </span>
+                                        <Switch
+                                            id="billing-billing-cycles-enabled"
+                                            data-test="module-billing-billing-cycles"
+                                            class="mt-1 shrink-0"
+                                            :model-value="
+                                                modulesForm.billing_billing_cycles_enabled
+                                            "
+                                            :disabled="
+                                                modulesForm.processing ||
+                                                !modulesForm.billing_enabled
+                                            "
+                                            @update:model-value="
+                                                updateModule(
+                                                    'billing_billing_cycles_enabled',
                                                     $event === true,
                                                 )
                                             "

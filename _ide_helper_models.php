@@ -92,6 +92,11 @@ namespace App\Models{
  * @property numeric|null $billing_rate
  * @property int|null $billing_contact_id
  * @property int|null $billed_through_client_id
+ * @property \App\Enums\BillingCycle|null $billing_cycle
+ * @property \Carbon\CarbonImmutable|null $billing_cycle_starts_on
+ * @property array<array-key, mixed>|null $billing_cc_emails
+ * @property int|null $payment_terms_days
+ * @property \Carbon\CarbonImmutable|null $billing_opened_through
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Client> $billedClients
@@ -114,12 +119,17 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBilledThroughClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingCcEmails($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingContactId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingCycle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingCycleStartsOn($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingOpenedThrough($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingRate($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client wherePaymentTermsDays($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereUpdatedAt($value)
  * @mixin \Eloquent
@@ -406,6 +416,8 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $voided_at
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property \Carbon\CarbonImmutable|null $closes_at
+ * @property \Carbon\CarbonImmutable|null $reminded_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Client $client
@@ -424,6 +436,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereAmountPaid($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereCcEmails($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereClosesAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereContactId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereDepositAmount($value)
@@ -440,6 +453,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereOrganizationId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereProjectId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice wherePublicToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereRemindedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereSentAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereServicePeriodEnd($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereServicePeriodStart($value)

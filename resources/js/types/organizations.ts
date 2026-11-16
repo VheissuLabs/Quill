@@ -21,6 +21,7 @@ export type OrganizationModules = {
         enabled: boolean;
         capabilities: {
             invoices: boolean;
+            billing_cycles: boolean;
         };
     };
 };

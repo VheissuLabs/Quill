@@ -55,6 +55,7 @@ test('changing the organization modules announces it to the organization', funct
         'teams_enabled' => true,
         'billing_enabled' => true,
         'billing_invoices_enabled' => true,
+        'billing_billing_cycles_enabled' => true,
     ]);
 
     Event::assertDispatched(

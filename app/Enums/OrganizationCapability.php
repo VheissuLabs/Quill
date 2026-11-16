@@ -10,13 +10,14 @@ enum OrganizationCapability: string
     case Sprints = 'sprints';
     case Workflow = 'workflow';
     case Invoices = 'invoices';
+    case BillingCycles = 'billing_cycles';
 
     public function module(): OrganizationModule
     {
         return match ($this) {
             self::Boards, self::Voting => OrganizationModule::Feedback,
             self::Issues, self::Sprints, self::Workflow => OrganizationModule::Development,
-            self::Invoices => OrganizationModule::Billing,
+            self::Invoices, self::BillingCycles => OrganizationModule::Billing,
         };
     }
 }

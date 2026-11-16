@@ -21,6 +21,7 @@ class UpdateOrganizationModulesRequest extends FormRequest
             'teams_enabled' => ['required', 'boolean'],
             'billing_enabled' => ['required', 'boolean'],
             'billing_invoices_enabled' => ['required', 'boolean'],
+            'billing_billing_cycles_enabled' => ['required', 'boolean'],
         ];
     }
 }

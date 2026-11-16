@@ -47,6 +47,8 @@ class Invoice extends Model
             'amount_paid' => 'decimal:2',
             'sent_at' => 'datetime',
             'voided_at' => 'datetime',
+            'closes_at' => 'datetime',
+            'reminded_at' => 'datetime',
         ];
     }
 

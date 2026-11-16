@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BillingCycle;
 use App\Observers\OrganizationScopedSlugObserver;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -97,6 +98,11 @@ class Client extends Model
     {
         return [
             'billing_rate' => 'decimal:2',
+            'billing_cycle' => BillingCycle::class,
+            'billing_cycle_starts_on' => 'date',
+            'billing_cc_emails' => 'array',
+            'payment_terms_days' => 'integer',
+            'billing_opened_through' => 'date',
         ];
     }
 
