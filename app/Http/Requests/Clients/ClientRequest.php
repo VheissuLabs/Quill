@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Clients;
 
 use App\Enums\BillingCycle;
+use App\Enums\OrganizationCapability;
 use App\Models\Client;
 use App\Models\Organization;
 use Closure;
@@ -17,7 +18,7 @@ class ClientRequest extends FormRequest
     {
         $organization = $this->route('current_organization');
 
-        if (! $organization instanceof Organization || ! $this->user() || ! $organization->allowsInvoiceManagementBy($this->user()) || ! $this->has('billing_cycle')) {
+        if (! $organization instanceof Organization || ! $this->managesBilling($organization) || ! $organization->canUse(OrganizationCapability::BillingCycles) || ! $this->has('billing_cycle')) {
             return;
         }
 
@@ -42,9 +43,14 @@ class ClientRequest extends FormRequest
         $organization = $this->route('current_organization');
         $client = $this->route('client');
 
-        if (! $organization instanceof Organization || ! $this->user() || ! $organization->allowsInvoiceManagementBy($this->user())) {
+        if (! $organization instanceof Organization || ! $this->managesBilling($organization)) {
             return $rules;
         }
+
+        $cyclesUsable = $organization->canUse(OrganizationCapability::BillingCycles);
+        $cycle = $cyclesUsable && $this->has('billing_cycle')
+            ? $this->input('billing_cycle')
+            : ($client instanceof Client ? $client->billing_cycle : null);
 
         return [
             ...$rules,
@@ -54,21 +60,23 @@ class ClientRequest extends FormRequest
                 'integer',
                 Rule::exists('client_contacts', 'id')->where('client_id', $client instanceof Client ? $client->id : 0),
             ],
-            'billing_cycle' => [
-                'nullable',
-                Rule::enum(BillingCycle::class),
-                fn (string $attribute, mixed $value, Closure $fail) => $value !== null && ($this->has('billed_through_client_id') ? $this->input('billed_through_client_id') : ($client instanceof Client ? $client->billed_through_client_id : null)) !== null
-                    ? $fail(__('A client billed through another cannot have its own billing cycle.'))
-                    : null,
-            ],
-            'billing_cycle_starts_on' => ['nullable', 'date'],
+            ...($cyclesUsable ? [
+                'billing_cycle' => [
+                    'nullable',
+                    Rule::enum(BillingCycle::class),
+                    fn (string $attribute, mixed $value, Closure $fail) => $value !== null && ($this->has('billed_through_client_id') ? $this->input('billed_through_client_id') : ($client instanceof Client ? $client->billed_through_client_id : null)) !== null
+                        ? $fail(__('A client billed through another cannot have its own billing cycle.'))
+                        : null,
+                ],
+                'billing_cycle_starts_on' => ['nullable', 'date'],
+            ] : []),
             'billing_cc_emails' => ['nullable', 'array'],
             'billing_cc_emails.*' => ['email:rfc'],
             'payment_terms_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'billed_through_client_id' => [
                 'nullable',
                 'integer',
-                fn (string $attribute, mixed $value, Closure $fail) => $value !== null && ($this->has('billing_cycle') ? $this->input('billing_cycle') : ($client instanceof Client ? $client->billing_cycle : null)) !== null
+                fn (string $attribute, mixed $value, Closure $fail) => $value !== null && $cycle !== null
                     ? $fail(__('A client with a billing cycle cannot be billed through another.'))
                     : null,
                 Rule::exists('clients', 'id')->where('organization_id', $organization->id),
@@ -79,5 +87,10 @@ class ClientRequest extends FormRequest
                     : null,
             ],
         ];
+    }
+
+    private function managesBilling(Organization $organization): bool
+    {
+        return $this->user() !== null && $organization->allowsInvoiceManagementBy($this->user());
     }
 }

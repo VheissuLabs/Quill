@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Billing\OpenBillingPeriod;
 use App\Enums\BillingCycle;
 use App\Enums\InvoiceStatus;
 use App\Enums\LineUnit;
@@ -174,4 +175,30 @@ test('the command is scheduled every minute', function () {
     $event = collect(app(Schedule::class)->events())->first(fn ($event) => str_contains($event->command, 'billing:run'));
 
     expect($event)->not->toBeNull()->and($event->expression)->toBe('* * * * *');
+});
+
+test('turning billing cycles off makes open cycle drafts manual so nothing sends when they come back', function () {
+    Notification::fake();
+    [$draft, , $client] = cycleWorkspace();
+    addLine($draft);
+    $organization = $client->organization;
+
+    $organization->updateModuleSettings(['billing_enabled' => true, 'billing_invoices_enabled' => true, 'billing_billing_cycles_enabled' => false]);
+
+    expect($draft->fresh()->closes_at)->toBeNull();
+
+    $organization->updateModuleSettings(['billing_enabled' => true, 'billing_invoices_enabled' => true, 'billing_billing_cycles_enabled' => true]);
+    runBilling('2026-12-05 12:00:00');
+
+    expect($draft->fresh()->sent_at)->toBeNull();
+    Notification::assertNotSentTo($draft->contact, InvoiceSent::class);
+});
+
+test('nothing opens while billing cycles are off', function () {
+    [$draft, , $client] = cycleWorkspace();
+    $draft->delete();
+    $client->organization->updateModuleSettings(['billing_enabled' => true, 'billing_invoices_enabled' => true, 'billing_billing_cycles_enabled' => false]);
+
+    expect(app(OpenBillingPeriod::class)->handle($client->fresh(), CarbonImmutable::parse('2026-11-30', 'America/Chicago')))->toBeNull()
+        ->and(Invoice::count())->toBe(0);
 });

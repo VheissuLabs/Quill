@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\RunsABoard;
+use App\Enums\InvoiceStatus;
 use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationModule;
 use App\Enums\OrganizationPermission;
@@ -211,6 +212,7 @@ class Organization extends Model
     public function updateModuleSettings(array $settings): void
     {
         $now = now();
+        $cyclesWereUsable = $this->canUse(OrganizationCapability::BillingCycles);
 
         $this->capabilitySettings()->upsert(
             collect(OrganizationModule::cases())
@@ -238,6 +240,15 @@ class Organization extends Model
         );
 
         $this->unsetRelation('capabilitySettings');
+
+        if ($cyclesWereUsable && ! $this->canUse(OrganizationCapability::BillingCycles)) {
+            $this->invoices()
+                ->whereNotNull('closes_at')
+                ->whereNull('sent_at')
+                ->where('status', '!=', InvoiceStatus::Void)
+                ->get()
+                ->each(fn (Invoice $invoice) => $invoice->update(['closes_at' => null]));
+        }
 
         broadcast(new ModulesChanged($this->getKey()))->toOthers();
     }

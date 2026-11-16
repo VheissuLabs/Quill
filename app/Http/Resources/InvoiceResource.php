@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\OrganizationCapability;
 use App\Enums\PaymentMethod;
 use App\Models\ClientContact;
 use App\Models\Invoice;
@@ -41,7 +42,7 @@ class InvoiceResource extends InvoiceListResource
             'notes' => $this->notes,
             'terms' => $this->terms,
             'sentAt' => $this->sent_at?->toIso8601String(),
-            'closesAt' => $this->closes_at?->toIso8601String(),
+            'closesAt' => $this->organization->canUse(OrganizationCapability::BillingCycles) ? $this->closes_at?->toIso8601String() : null,
             'voidedAt' => $this->voided_at?->toIso8601String(),
             'publicUrl' => $this->when($this->sent_at !== null, fn () => $this->publicUrl()),
             'isEditable' => $this->isEditable(),

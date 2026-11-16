@@ -4,6 +4,7 @@ namespace App\Actions\Billing;
 
 use App\Enums\BillingCycle;
 use App\Enums\InvoiceStatus;
+use App\Enums\OrganizationCapability;
 use App\Models\Client;
 use App\Models\Invoice;
 use Carbon\CarbonImmutable;
@@ -15,6 +16,10 @@ class RestartBillingCycle
 
     public function handle(Invoice $invoice, CarbonImmutable $on, bool $deleting = false): ?Invoice
     {
+        if (! $invoice->organization->canUse(OrganizationCapability::BillingCycles)) {
+            return null;
+        }
+
         return DB::transaction(function () use ($invoice, $on, $deleting): ?Invoice {
             $locked = Invoice::whereKey($invoice->id)->lockForUpdate()->first();
 
@@ -48,7 +53,7 @@ class RestartBillingCycle
             if ($client->billing_cycle === BillingCycle::Monthly) {
                 $end = $start->day === 1 ? $start->endOfMonth() : $start->addMonthNoOverflow()->endOfMonth();
             } else {
-                $client->billing_cycle_starts_on = $start->toDateString();
+                $client->billing_cycle_starts_on = $start;
                 [, $end] = $client->billing_cycle->periodContaining($start, $start);
             }
 

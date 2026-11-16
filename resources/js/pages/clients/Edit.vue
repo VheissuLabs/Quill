@@ -75,6 +75,7 @@ const form = useForm({
     payment_terms_days: props.billing?.paymentTermsDays ?? '',
 });
 
+const cyclesEnabled = computed(() => props.billing?.cycles !== undefined);
 const hasCycle = computed(() => form.billing_cycle !== none);
 const needsStart = computed(
     () => hasCycle.value && form.billing_cycle !== 'monthly',
@@ -100,11 +101,17 @@ const submit = () => {
                       data.billed_through_client_id === none
                           ? null
                           : Number(data.billed_through_client_id),
-                  billing_cycle:
-                      data.billing_cycle === none ? null : data.billing_cycle,
-                  billing_cycle_starts_on: needsStart.value
-                      ? data.billing_cycle_starts_on || null
-                      : null,
+                  ...(cyclesEnabled.value
+                      ? {
+                            billing_cycle:
+                                data.billing_cycle === none
+                                    ? null
+                                    : data.billing_cycle,
+                            billing_cycle_starts_on: needsStart.value
+                                ? data.billing_cycle_starts_on || null
+                                : null,
+                        }
+                      : {}),
                   billing_cc_emails: data.billing_cc_emails
                       .split(',')
                       .map((email) => email.trim())
@@ -209,7 +216,10 @@ const submit = () => {
                     </div>
 
                     <div
-                        v-if="form.billed_through_client_id === none"
+                        v-if="
+                            billing.cycles &&
+                            form.billed_through_client_id === none
+                        "
                         class="grid gap-2"
                     >
                         <Label for="billing-cycle">Billing cycle</Label>
@@ -245,7 +255,9 @@ const submit = () => {
 
                     <div
                         v-if="
-                            form.billed_through_client_id === none && needsStart
+                            billing.cycles &&
+                            form.billed_through_client_id === none &&
+                            needsStart
                         "
                         class="grid gap-2"
                     >

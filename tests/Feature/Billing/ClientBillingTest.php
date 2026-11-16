@@ -341,3 +341,27 @@ test('changing an existing cycle keeps what was already opened', function () {
 
     expect($client->fresh()->billing_opened_through->toDateString())->toBe('2026-11-27');
 });
+
+test('cycle fields are hidden and ignored while billing cycles are off', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+    $organization->updateModuleSettings(['billing_enabled' => true, 'billing_invoices_enabled' => true, 'billing_billing_cycles_enabled' => false]);
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), [
+            'name' => $client->name,
+            'billing_cycle' => 'weekly',
+            'billing_cycle_starts_on' => '2026-11-14',
+            'payment_terms_days' => 7,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($client->fresh())->billing_cycle->toBeNull()->billing_cycle_starts_on->toBeNull()->payment_terms_days->toBe(7);
+
+    $this->actingAs($admin)
+        ->get(route('clients.edit', ['current_organization' => $organization, 'client' => $client]))
+        ->assertInertia(fn ($page) => $page
+            ->where('billing.paymentTermsDays', 7)
+            ->missing('billing.cycle')
+            ->missing('billing.cycles')
+            ->missing('billing.currentPeriod'));
+});

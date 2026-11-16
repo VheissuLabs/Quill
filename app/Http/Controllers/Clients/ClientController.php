@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Clients;
 
 use App\Actions\Billing\StopBillingCycle;
-use App\Enums\BillingCycle;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Clients\ClientRequest;
+use App\Http\Resources\ClientBillingResource;
 use App\Http\Resources\ClientResource;
 use App\Http\Resources\InvoiceListResource;
 use App\Http\Resources\LinkedTicketResource;
@@ -54,19 +54,7 @@ class ClientController extends Controller
     {
         return Inertia::render('clients/Edit', [
             'client' => ClientResource::make($client->load('domains')),
-            'billing' => $currentOrganization->allowsInvoiceManagementBy(auth()->user()) ? [
-                'rate' => $client->billing_rate,
-                'contactId' => $client->billing_contact_id,
-                'billedThroughClientId' => $client->billed_through_client_id,
-                'cycle' => $client->billing_cycle?->value,
-                'cycleStartsOn' => $client->billing_cycle_starts_on?->toDateString(),
-                'ccEmails' => $client->billing_cc_emails ?? [],
-                'paymentTermsDays' => $client->payment_terms_days,
-                'currentPeriod' => $client->currentBillingPeriod(),
-                'cycles' => array_map(fn (BillingCycle $cycle) => ['value' => $cycle->value, 'label' => $cycle->label()], BillingCycle::cases()),
-                'contacts' => $client->contacts()->orderBy('name')->get(['id', 'name', 'email']),
-                'billedThroughOptions' => $currentOrganization->clients()->whereKeyNot($client->id)->orderBy('name')->get(['id', 'name']),
-            ] : null,
+            'billing' => $currentOrganization->allowsInvoiceManagementBy(auth()->user()) ? ClientBillingResource::make($client)->resolve() : null,
         ]);
     }
 

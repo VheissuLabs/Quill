@@ -334,3 +334,15 @@ test('a cycle draft carries when it sends', function () {
         ->get(invoiceRoute('invoices.show', $organization, $manual))
         ->assertInertia(fn ($page) => $page->where('invoice.closesAt', null));
 });
+
+test('a cycle draft does not say it sends while billing cycles are off', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $organization->updateModuleSettings(['billing_enabled' => true, 'billing_invoices_enabled' => true, 'billing_billing_cycles_enabled' => false]);
+    $cycle = Invoice::factory()->for($organization)->for($client)
+        ->cycle(CarbonImmutable::parse('2026-11-14'), CarbonImmutable::parse('2026-11-27'))
+        ->create(['closes_at' => '2026-11-28 05:59:00']);
+
+    $this->actingAs($admin)
+        ->get(invoiceRoute('invoices.show', $organization, $cycle))
+        ->assertInertia(fn ($page) => $page->where('invoice.closesAt', null));
+});

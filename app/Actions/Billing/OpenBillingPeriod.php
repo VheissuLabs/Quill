@@ -2,6 +2,7 @@
 
 namespace App\Actions\Billing;
 
+use App\Enums\OrganizationCapability;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Sprint;
@@ -23,6 +24,10 @@ class OpenBillingPeriod
 
             if ($open = $locked->openCycleInvoice()) {
                 return $open;
+            }
+
+            if (! $locked->organization->canUse(OrganizationCapability::BillingCycles)) {
+                return null;
             }
 
             $timezone = $today->getTimezone();
