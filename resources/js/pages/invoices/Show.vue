@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { Copy, Link2, Send, Trash2, Ban } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ConfirmActionModal from '@/components/ConfirmActionModal.vue';
@@ -20,10 +20,13 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { show as showClient } from '@/routes/clients';
 import { destroy, index, show, update } from '@/routes/invoices';
 import { store as duplicate } from '@/routes/invoices/duplicate';
 import { store as send } from '@/routes/invoices/send';
 import { store as voidInvoice } from '@/routes/invoices/void';
+import { edit as editProject } from '@/routes/projects';
+import { show as showSprint } from '@/routes/sprints';
 import { formatDate } from '@/lib/dates';
 import type { Invoice, Organization } from '@/types';
 
@@ -91,18 +94,18 @@ const contact = computed(() =>
     ),
 );
 
-const projectName = computed(
-    () =>
-        props.invoice.options.projects.find(
-            (project) => project.id === props.invoice.projectId,
-        )?.name ?? null,
-);
+const projectFor = (id: number | string | null) =>
+    props.invoice.options.projects.find(
+        (project) => String(project.id) === String(id),
+    ) ?? null;
 
-const sprintName = computed(
-    () =>
-        props.invoice.options.sprints.find(
-            (sprint) => sprint.id === props.invoice.sprintId,
-        )?.name ?? null,
+const sprintFor = (id: number | string | null) =>
+    props.invoice.options.sprints.find(
+        (sprint) => String(sprint.id) === String(id),
+    ) ?? null;
+
+const clientHref = computed(() =>
+    showClient([props.currentOrganization.slug, props.invoice.clientSlug]),
 );
 
 const servicePeriod = computed(() => {
@@ -212,7 +215,14 @@ const money = (value: string) =>
                     />
                 </div>
                 <p class="text-muted-foreground text-sm">
-                    {{ invoice.clientName }} · Issued
+                    <Link
+                        :href="clientHref"
+                        class="text-foreground hover:underline"
+                        data-test="invoice-client-link"
+                    >
+                        {{ invoice.clientName }}
+                    </Link>
+                    · Issued
                     {{ formatDate(invoice.issueDate) }} · Due
                     {{ formatDate(invoice.dueDate) }}
                 </p>
@@ -405,7 +415,24 @@ const money = (value: string) =>
                             </div>
 
                             <div class="grid gap-2">
-                                <Label for="invoice-project">Project</Label>
+                                <div
+                                    class="flex items-center justify-between gap-2"
+                                >
+                                    <Label for="invoice-project">Project</Label>
+                                    <Link
+                                        v-if="projectFor(form.project_id)"
+                                        :href="
+                                            editProject([
+                                                currentOrganization.slug,
+                                                projectFor(form.project_id)!
+                                                    .slug,
+                                            ])
+                                        "
+                                        class="text-muted-foreground hover:text-foreground text-xs hover:underline"
+                                    >
+                                        Open project
+                                    </Link>
+                                </div>
                                 <Select v-model="form.project_id">
                                     <SelectTrigger
                                         id="invoice-project"
@@ -431,7 +458,23 @@ const money = (value: string) =>
                             </div>
 
                             <div class="grid gap-2">
-                                <Label for="invoice-sprint">Sprint</Label>
+                                <div
+                                    class="flex items-center justify-between gap-2"
+                                >
+                                    <Label for="invoice-sprint">Sprint</Label>
+                                    <Link
+                                        v-if="sprintFor(form.sprint_id)"
+                                        :href="
+                                            showSprint([
+                                                currentOrganization.slug,
+                                                Number(form.sprint_id),
+                                            ])
+                                        "
+                                        class="text-muted-foreground hover:text-foreground text-xs hover:underline"
+                                    >
+                                        Open sprint
+                                    </Link>
+                                </div>
                                 <Select v-model="form.sprint_id">
                                     <SelectTrigger
                                         id="invoice-sprint"
@@ -604,14 +647,26 @@ const money = (value: string) =>
                             <div>
                                 <dt class="text-muted-foreground">Bill to</dt>
                                 <dd class="font-medium">
-                                    {{ invoice.clientName }}
+                                    <Link
+                                        :href="clientHref"
+                                        class="hover:underline"
+                                    >
+                                        {{ invoice.clientName }}
+                                    </Link>
                                 </dd>
                                 <dd v-if="contact">
-                                    {{
-                                        contact.name
-                                            ? `${contact.name} · ${contact.email}`
-                                            : contact.email
-                                    }}
+                                    <Link
+                                        :href="clientHref"
+                                        class="hover:underline"
+                                    >
+                                        {{ contact.name ?? contact.email }}
+                                    </Link>
+                                    <span
+                                        v-if="contact.name"
+                                        class="text-muted-foreground"
+                                    >
+                                        · {{ contact.email }}
+                                    </span>
                                 </dd>
                                 <dd v-if="ccList" class="text-muted-foreground">
                                     CC {{ ccList }}
@@ -623,13 +678,40 @@ const money = (value: string) =>
                                 </dt>
                                 <dd>{{ servicePeriod }}</dd>
                             </div>
-                            <div v-if="projectName">
+                            <div v-if="projectFor(invoice.projectId)">
                                 <dt class="text-muted-foreground">Project</dt>
-                                <dd>{{ projectName }}</dd>
+                                <dd>
+                                    <Link
+                                        :href="
+                                            editProject([
+                                                currentOrganization.slug,
+                                                projectFor(invoice.projectId)!
+                                                    .slug,
+                                            ])
+                                        "
+                                        class="hover:underline"
+                                    >
+                                        {{
+                                            projectFor(invoice.projectId)!.name
+                                        }}
+                                    </Link>
+                                </dd>
                             </div>
-                            <div v-if="sprintName">
+                            <div v-if="sprintFor(invoice.sprintId)">
                                 <dt class="text-muted-foreground">Sprint</dt>
-                                <dd>{{ sprintName }}</dd>
+                                <dd>
+                                    <Link
+                                        :href="
+                                            showSprint([
+                                                currentOrganization.slug,
+                                                invoice.sprintId!,
+                                            ])
+                                        "
+                                        class="hover:underline"
+                                    >
+                                        {{ sprintFor(invoice.sprintId)!.name }}
+                                    </Link>
+                                </dd>
                             </div>
                         </dl>
                         <div

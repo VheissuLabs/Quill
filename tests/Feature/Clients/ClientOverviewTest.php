@@ -3,6 +3,7 @@
 use App\Enums\ProjectVisibility;
 use App\Models\Client;
 use App\Models\ClientContact;
+use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Team;
@@ -32,7 +33,23 @@ test('a client overview lists its contacts, projects and recent tickets', functi
             ->component('clients/Show')
             ->where('client.contacts.0.name', 'Jane Doe')
             ->where('projects.0.name', 'Website')
-            ->has('tickets', 1));
+            ->has('tickets', 1)
+            ->where('invoices', []));
+});
+
+test('invoice managers see the client\'s invoices on its overview', function () {
+    [$organization, $client] = overviewClient();
+    $admin = User::factory()->create();
+    $organization->addMember($admin, 'Admin');
+    $invoice = Invoice::factory()->for($organization)->for($client)->create();
+    Invoice::factory()->for($organization)->create();
+
+    $this->actingAs($admin)
+        ->get(route('clients.show', ['current_organization' => $organization, 'client' => $client]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('invoices', 1)
+            ->where('invoices.0.id', $invoice->id)
+            ->where('invoices.0.number', $invoice->number));
 });
 
 test('members see the overview without tickets or private projects of teams they are not on', function () {
@@ -47,7 +64,8 @@ test('members see the overview without tickets or private projects of teams they
         ->get(route('clients.show', ['current_organization' => $organization, 'client' => $client]))
         ->assertInertia(fn (Assert $page) => $page
             ->has('projects', 0)
-            ->has('tickets', 0));
+            ->has('tickets', 0)
+            ->where('invoices', null));
 });
 
 test('a client from another organization is not found', function () {

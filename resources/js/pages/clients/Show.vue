@@ -3,14 +3,18 @@ import { Head, Link } from '@inertiajs/vue3';
 import { CircleCheck, Mail, Settings } from '@lucide/vue';
 import ClientContacts from '@/components/ClientContacts.vue';
 import Heading from '@/components/Heading.vue';
+import InvoiceStatusBadge from '@/components/InvoiceStatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { edit, index, show } from '@/routes/clients';
+import { show as showInvoice } from '@/routes/invoices';
+import { formatDate } from '@/lib/dates';
 import { show as showBoard } from '@/routes/portal/projects';
 import { show as showTicket } from '@/routes/tickets';
 import type {
     Client,
     ClientProject,
+    InvoiceListItem,
     LinkedTicket,
     Organization,
     OrganizationPermissions,
@@ -21,10 +25,17 @@ type Props = {
     client: Client;
     projects: ClientProject[];
     tickets: LinkedTicket[];
+    invoices: InvoiceListItem[] | null;
     permissions: OrganizationPermissions;
 };
 
 defineProps<Props>();
+
+const money = (value: string) =>
+    new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: 'USD',
+    }).format(Number(value));
 
 defineOptions({
     layout: (props: { currentOrganization: Organization; client: Client }) => ({
@@ -151,6 +162,48 @@ defineOptions({
                     </Link>
                 </li>
             </ul>
+        </section>
+        <section v-if="invoices !== null" class="space-y-6">
+            <Heading variant="small" title="Invoices" />
+            <ul v-if="invoices.length > 0" class="divide-y rounded-lg border">
+                <li v-for="invoice in invoices" :key="invoice.id">
+                    <Link
+                        :href="
+                            showInvoice([currentOrganization.slug, invoice.id])
+                        "
+                        class="hover:bg-muted/50 flex items-center gap-4 px-4 py-3 text-sm"
+                        data-test="client-invoice"
+                    >
+                        <span class="min-w-0 flex-1">
+                            <span class="block font-medium">
+                                {{ invoice.number }}
+                            </span>
+                            <span class="text-muted-foreground block">
+                                Issued {{ formatDate(invoice.issueDate) }} · Due
+                                {{ formatDate(invoice.dueDate) }}
+                            </span>
+                        </span>
+                        <span class="text-right tabular-nums">
+                            <span class="block">{{
+                                money(invoice.total)
+                            }}</span>
+                            <span
+                                v-if="Number(invoice.amountDue) > 0"
+                                class="text-muted-foreground block"
+                            >
+                                {{ money(invoice.amountDue) }} due
+                            </span>
+                        </span>
+                        <InvoiceStatusBadge
+                            :status="invoice.status"
+                            :label="invoice.statusLabel"
+                        />
+                    </Link>
+                </li>
+            </ul>
+            <p v-else class="text-muted-foreground text-sm">
+                No invoices for this client yet.
+            </p>
         </section>
     </div>
 </template>

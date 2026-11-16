@@ -17,6 +17,7 @@ class InvoiceListResource extends JsonResource
             'number' => $this->number,
             'clientId' => $this->client_id,
             'clientName' => $this->client->name,
+            'clientSlug' => $this->client->slug,
             'issueDate' => $this->issue_date->toDateString(),
             'dueDate' => $this->due_date->toDateString(),
             'total' => $this->total,

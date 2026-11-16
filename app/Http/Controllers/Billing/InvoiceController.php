@@ -23,7 +23,7 @@ class InvoiceController extends Controller
         $filters = $request->filters();
 
         $invoices = $currentOrganization->invoices()
-            ->with('client:id,name')
+            ->with('client:id,name,slug')
             ->when($filters['status'], fn ($query, string $status) => $query->where('status', $status))
             ->when($filters['client'], fn ($query, int $client) => $query->where('client_id', $client))
             ->orderByDesc('issue_date')

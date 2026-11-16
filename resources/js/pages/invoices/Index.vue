@@ -13,6 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { show as showClient } from '@/routes/clients';
 import { index, show } from '@/routes/invoices';
 import type {
     InvoiceListItem,
@@ -161,7 +162,20 @@ const money = (value: string) =>
                                 {{ invoice.number }}
                             </Link>
                         </td>
-                        <td class="px-4 py-3">{{ invoice.clientName }}</td>
+                        <td class="px-4 py-3">
+                            <Link
+                                :href="
+                                    showClient([
+                                        currentOrganization.slug,
+                                        invoice.clientSlug,
+                                    ])
+                                "
+                                class="hover:underline"
+                                data-test="invoice-client-link"
+                            >
+                                {{ invoice.clientName }}
+                            </Link>
+                        </td>
                         <td class="px-4 py-3">{{ invoice.issueDate }}</td>
                         <td class="px-4 py-3">{{ invoice.dueDate }}</td>
                         <td class="px-4 py-3 text-right tabular-nums">

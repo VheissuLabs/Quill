@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useHttp } from '@inertiajs/vue3';
+import { Link, useHttp } from '@inertiajs/vue3';
 import { useDebounceFn } from '@vueuse/core';
 import { ref } from 'vue';
 import { Input } from '@/components/ui/input';
@@ -14,11 +14,13 @@ export type IssueSuggestion = {
 type Props = {
     lookup: string;
     reference?: string | null;
+    href?: string | null;
     disabled?: boolean;
 };
 
 const props = withDefaults(defineProps<Props>(), {
     reference: null,
+    href: null,
     disabled: false,
 });
 
@@ -65,7 +67,10 @@ const pick = (issue: IssueSuggestion) => {
 <template>
     <div class="relative min-w-40">
         <p v-if="reference && query === ''" class="flex items-center gap-1">
-            <span class="text-sm">{{ reference }}</span>
+            <Link v-if="href" :href="href" class="text-sm hover:underline">
+                {{ reference }}
+            </Link>
+            <span v-else class="text-sm">{{ reference }}</span>
             <button
                 v-if="!disabled"
                 type="button"

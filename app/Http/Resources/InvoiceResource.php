@@ -74,8 +74,8 @@ class InvoiceResource extends InvoiceListResource
                 'paymentMethods' => array_map(fn (PaymentMethod $method) => ['value' => $method->value, 'label' => $method->label()], PaymentMethod::cases()),
                 'contacts' => $this->client->contacts()->orderBy('name')->get(['id', 'name', 'email'])
                     ->map(fn (ClientContact $contact) => ['id' => $contact->id, 'name' => $contact->name, 'email' => $contact->email])->all(),
-                'projects' => Project::whereIn('client_id', $this->client->billableClientIds())->orderBy('name')->get(['id', 'name'])
-                    ->map(fn (Project $project) => ['id' => $project->id, 'name' => $project->name])->all(),
+                'projects' => Project::whereIn('client_id', $this->client->billableClientIds())->orderBy('name')->get(['id', 'name', 'slug'])
+                    ->map(fn (Project $project) => ['id' => $project->id, 'name' => $project->name, 'slug' => $project->slug])->all(),
                 'sprints' => $this->organization->allSprints()->orderByDesc('starts_at')->get(['id', 'name'])
                     ->map(fn (Sprint $sprint) => ['id' => $sprint->id, 'name' => $sprint->name])->all(),
                 'workTypes' => $this->organization->workTypes()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name'])

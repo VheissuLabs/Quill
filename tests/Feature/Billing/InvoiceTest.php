@@ -35,7 +35,8 @@ test('a manager sees the workspace\'s invoices only', function () {
             ->component('invoices/Index')
             ->has('invoices', 1)
             ->where('invoices.0.id', $mine->id)
-            ->where('invoices.0.number', $mine->number));
+            ->where('invoices.0.number', $mine->number)
+            ->where('invoices.0.clientSlug', $client->slug));
 });
 
 test('the index filters by status and client', function () {

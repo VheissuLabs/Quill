@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { router, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { ExternalLink, GripVertical, Plus, Trash2 } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import draggable from 'vuedraggable';
@@ -16,7 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { lookup } from '@/routes/issues';
+import { lookup, show as showIssue } from '@/routes/issues';
 import { destroy, store, update } from '@/routes/invoices/lines';
 import { update as updateOrder } from '@/routes/invoices/lines/order';
 import type { Invoice, InvoiceLine } from '@/types';
@@ -40,6 +40,9 @@ const editable = () => props.invoice.isEditable;
 const canEditDetails = () => props.invoice.canUpdate;
 const columns =
     'grid grid-cols-[1.25rem_minmax(0,1fr)_6rem_6.5rem_7rem_7rem_2.25rem] items-start gap-x-3';
+
+const issueHref = (issueId: number | null) =>
+    issueId === null ? null : showIssue([props.organization, issueId]).url;
 
 const workTypeName = (id: number | null) =>
     props.invoice.options.workTypes.find((workType) => workType.id === id)
@@ -247,9 +250,13 @@ const add = () => {
                                         "
                                         class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs"
                                     >
-                                        <span v-if="row.issueReference">
+                                        <Link
+                                            v-if="row.issueReference"
+                                            :href="issueHref(row.issueId)!"
+                                            class="hover:text-foreground hover:underline"
+                                        >
                                             {{ row.issueReference }}
-                                        </span>
+                                        </Link>
                                         <span
                                             v-if="workTypeName(row.workTypeId)"
                                         >
@@ -367,6 +374,7 @@ const add = () => {
                                         v-if="editable() || row.issueReference"
                                         :lookup="lookupUrl"
                                         :reference="row.issueReference"
+                                        :href="issueHref(row.issueId)"
                                         :disabled="!editable()"
                                         @select="pickIssue(row, $event)"
                                     />

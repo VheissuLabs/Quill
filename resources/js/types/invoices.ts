@@ -13,6 +13,7 @@ export type InvoiceListItem = {
     number: string;
     clientId: number;
     clientName: string;
+    clientSlug: string;
     issueDate: string;
     dueDate: string;
     total: string;
@@ -76,7 +77,7 @@ export type Invoice = InvoiceListItem & {
     payments: InvoicePayment[];
     options: {
         contacts: { id: number; name: string | null; email: string }[];
-        projects: { id: number; name: string }[];
+        projects: { id: number; name: string; slug: string }[];
         sprints: { id: number; name: string }[];
         workTypes: { id: number; name: string }[];
         paymentMethods: { value: string; label: string }[];

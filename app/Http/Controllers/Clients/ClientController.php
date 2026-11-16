@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Clients;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Clients\ClientRequest;
 use App\Http\Resources\ClientResource;
+use App\Http\Resources\InvoiceListResource;
 use App\Http\Resources\LinkedTicketResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Client;
@@ -39,6 +40,9 @@ class ClientController extends Controller
             'client' => ClientResource::make($client->load(['contacts' => fn ($query) => $query->orderBy('name')])),
             'projects' => ProjectResource::collection($client->projects()->visibleTo($user)->orderBy('name')->get()),
             'tickets' => LinkedTicketResource::forClient($client, $user),
+            'invoices' => $currentOrganization->allowsInvoiceManagementBy($user)
+                ? InvoiceListResource::collection($client->invoices()->with('client:id,name,slug')->orderByDesc('issue_date')->orderByDesc('id')->get())->resolve()
+                : null,
         ]);
     }
 
