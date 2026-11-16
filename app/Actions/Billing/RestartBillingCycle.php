@@ -32,8 +32,12 @@ class RestartBillingCycle
                 return null;
             }
 
+            $terms = $client->payment_terms_days ?? $client->organization->billingSettings()->payment_terms_days;
+
             $locked->forceFill($deleting ? ['closes_at' => null] : [
                 'service_period_end' => $on->toDateString(),
+                'issue_date' => $on->toDateString(),
+                'due_date' => $on->addDays($terms)->toDateString(),
                 'closes_at' => null,
             ])->save();
 

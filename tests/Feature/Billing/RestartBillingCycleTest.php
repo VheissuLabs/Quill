@@ -116,6 +116,31 @@ test('sending a manual invoice never restarts anything', function () {
         ->and($client->fresh()->openCycleInvoice()->id)->toBe($cycle->id);
 });
 
+test('an early send is issued that day and due by the client terms', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$invoice, , $owner] = restartingCycle();
+
+    $this->actingAs($owner)->post(route('invoices.send.store', [$invoice->organization, $invoice]))->assertRedirect();
+
+    expect($invoice->fresh())
+        ->service_period_end->toDateString()->toBe('2026-11-25')
+        ->issue_date->toDateString()->toBe('2026-11-25')
+        ->due_date->toDateString()->toBe('2026-12-02');
+});
+
+test('an early send falls back to workspace terms', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$invoice, $client, $owner] = restartingCycle();
+    $client->update(['payment_terms_days' => null]);
+    $client->organization->billingSettings()->update(['payment_terms_days' => 30]);
+
+    $this->actingAs($owner)->post(route('invoices.send.store', [$invoice->organization, $invoice]))->assertRedirect();
+
+    expect($invoice->fresh())
+        ->issue_date->toDateString()->toBe('2026-11-25')
+        ->due_date->toDateString()->toBe('2026-12-25');
+});
+
 test('deleting a draft that was sent from another tab is refused and opens nothing', function () {
     $this->travelTo('2026-11-25 12:00:00');
     [$invoice, $client] = restartingCycle();
