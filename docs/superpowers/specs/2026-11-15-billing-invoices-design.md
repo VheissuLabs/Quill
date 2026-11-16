@@ -18,7 +18,7 @@ Each ships as a layer of a PR stack, in that order.
 ## Intent
 
 - One app for running client work and billing it.
-- **Time is tracked on the invoice.** There is no time entries table. An invoice line *is* the
+- **Time is tracked on the invoice.** There is no time entries table. An invoice line _is_ the
   record of time worked: hours × rate, with an optional link to the Issue it was for. This is
   the deliberate simplification over Atlas, where time entries and lines had to be kept in
   sync. Logging time (later, via `log-time`) means adding a line to the client's open Draft.
@@ -66,18 +66,18 @@ an empty invoice history.
 
 ## Domain mapping from Atlas
 
-| Atlas | Quill |
-|---|---|
-| Organization (client company) | `Client` |
-| Contact | `ClientContact` |
-| Task | `Issue` (`Issue::reference()` gives "Project #12") |
-| Organization.billing_rate | `Client.billing_rate` |
-| Organization.billing_contact | `Client.billing_contact_id` → `ClientContact` |
-| Organization.billed_through_id | `Client.billed_through_client_id` → `Client` |
-| Project.billing_rate | `Project.billing_rate` |
-| InvoiceSettings (global) | `billing_settings` row per organization |
-| WorkType (global) | `WorkType` per organization |
-| Status model (invoice) | `InvoiceStatus` enum |
+| Atlas                          | Quill                                              |
+| ------------------------------ | -------------------------------------------------- |
+| Organization (client company)  | `Client`                                           |
+| Contact                        | `ClientContact`                                    |
+| Task                           | `Issue` (`Issue::reference()` gives "Project #12") |
+| Organization.billing_rate      | `Client.billing_rate`                              |
+| Organization.billing_contact   | `Client.billing_contact_id` → `ClientContact`      |
+| Organization.billed_through_id | `Client.billed_through_client_id` → `Client`       |
+| Project.billing_rate           | `Project.billing_rate`                             |
+| InvoiceSettings (global)       | `billing_settings` row per organization            |
+| WorkType (global)              | `WorkType` per organization                        |
+| Status model (invoice)         | `InvoiceStatus` enum                               |
 
 `billed_through_client_id` exists because some clients' work is billed to another client (the
 92 Labs subcontract: KMS Tools work is invoiced to 92 Labs). An invoice's `client_id` is always
@@ -86,8 +86,8 @@ client **plus every client billed through it** (one level, as Atlas's `projectsB
 does). So a 92 Labs invoice can carry KMS Tools projects and issues. `project_id` and each
 line's `issue_id` are validated against that set, and the issue picker is scoped to it. In this
 layer the relationship also picks the default bill-to client when starting an invoice from a
-project; layer 2 uses the same set to group projects onto one cycle invoice. *(Builder-check
-call: matches Atlas.)*
+project; layer 2 uses the same set to group projects onto one cycle invoice. _(Builder-check
+call: matches Atlas.)_
 
 ## Data
 
@@ -121,7 +121,7 @@ with defaults). Layers 2 and 3 add cadence and encrypted Square credentials here
   `{prefix}-{year}-{0001}` as Atlas does (`INV-2026-0012`), year of creation. Assigned at
   creation as the highest existing `{prefix}-{year}-` number in the organization + 1, inside a
   transaction that locks the organization's `billing_settings` row so concurrent creates can't
-  collide. *(Builder-check call.)*
+  collide. _(Builder-check call.)_
 - `public_token` — unique random string, generated at creation
 - `status` — `InvoiceStatus` enum
 - `contact_id` nullable FK `client_contacts` (who it's addressed to), `cc_emails` json array
@@ -184,7 +184,7 @@ line or payment change and after editing tax/discount/deposit. One place, one fo
   otherwise `Draft` if `sent_at` is null, else `Sent` (or `Overdue`, which layer 2 sets). So
   removing the only payment from an unsent invoice returns it to Draft, and a $0 invoice is
   never auto-Paid. Lines and money fields are editable only while `sent_at` is null and the
-  status isn't Paid. *(Builder-check calls: match Atlas.)*
+  status isn't Paid. _(Builder-check calls: match Atlas.)_
 - **Void** from any non-Draft, non-Paid status. Sets `voided_at`. Voided invoices are read-only
   and skipped by recalculation.
 - Drafts can be deleted; nothing else can.

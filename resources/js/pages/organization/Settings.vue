@@ -673,8 +673,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                             <span
                                                 class="text-muted-foreground mt-1 block text-sm"
                                             >
-                                                Bill clients for completed
-                                                work.
+                                                Bill clients for completed work.
                                             </span>
                                         </span>
                                         <Switch
