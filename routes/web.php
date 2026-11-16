@@ -10,6 +10,7 @@ use App\Http\Controllers\Billing\InvoiceSendController;
 use App\Http\Controllers\Billing\InvoiceVoidController;
 use App\Http\Controllers\Billing\PublicInvoiceController;
 use App\Http\Controllers\Billing\PublicInvoicePaymentController;
+use App\Http\Controllers\Billing\SquareWebhookController;
 use App\Http\Controllers\Billing\WorkTypeController;
 use App\Http\Controllers\ClearNotificationsController;
 use App\Http\Controllers\Clients\ClientContactController;
@@ -87,6 +88,8 @@ Route::post('webhooks/resend', ResendWebhookController::class)
     ->middleware(VerifyResendSignature::class)
     ->withoutMiddleware(ValidateCsrfToken::class)
     ->name('webhooks.resend');
+
+Route::post('webhooks/square/{billingSetting:square_webhook_token}', SquareWebhookController::class)->name('webhooks.square');
 
 Route::prefix('portal/{organization}/{project}')
     ->scopeBindings()
