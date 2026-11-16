@@ -177,6 +177,14 @@ defineOptions({
                         <span class="min-w-0 flex-1">
                             <span class="block font-medium">
                                 {{ invoice.number }}
+                                <Badge
+                                    v-if="invoice.isCurrentPeriod"
+                                    variant="secondary"
+                                    class="ml-2"
+                                    data-test="current-period-badge"
+                                >
+                                    Current period
+                                </Badge>
                             </span>
                             <span class="text-muted-foreground block">
                                 Issued {{ formatDate(invoice.issueDate) }} · Due

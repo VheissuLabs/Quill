@@ -11,6 +11,7 @@ use App\Http\Resources\InvoiceListResource;
 use App\Http\Resources\LinkedTicketResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Client;
+use App\Models\Invoice;
 use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -37,13 +38,14 @@ class ClientController extends Controller
     public function show(Organization $currentOrganization, Client $client): Response
     {
         $user = auth()->user();
+        $openCycleInvoiceId = $client->openCycleInvoice()?->id;
 
         return Inertia::render('clients/Show', [
             'client' => ClientResource::make($client->load(['contacts' => fn ($query) => $query->orderBy('name')])),
             'projects' => ProjectResource::collection($client->projects()->visibleTo($user)->orderBy('name')->get()),
             'tickets' => LinkedTicketResource::forClient($client, $user),
             'invoices' => $currentOrganization->allowsInvoiceManagementBy($user)
-                ? InvoiceListResource::collection($client->invoices()->with('client:id,name,slug')->orderByDesc('issue_date')->orderByDesc('id')->get())->resolve()
+                ? InvoiceListResource::collection($client->invoices()->with('client:id,name,slug')->orderByDesc('issue_date')->orderByDesc('id')->get()->sortBy(fn (Invoice $invoice) => $invoice->id === $openCycleInvoiceId ? 0 : 1)->values())->resolve()
                 : null,
         ]);
     }

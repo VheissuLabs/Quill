@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function overviewClient(): array
@@ -76,4 +77,22 @@ test('a client from another organization is not found', function () {
     $this->actingAs($member)
         ->get(route('clients.show', ['current_organization' => $organization, 'client' => Client::factory()->create()]))
         ->assertNotFound();
+});
+
+test('the current period\'s invoice is listed first and marked', function () {
+    [$organization, $client] = overviewClient();
+    $admin = User::factory()->create();
+    $organization->addMember($admin, 'Admin');
+    $sent = Invoice::factory()->sent()->for($organization)->for($client)->create(['issue_date' => '2026-11-27']);
+    $draft = Invoice::factory()->for($organization)->for($client)
+        ->cycle(CarbonImmutable::parse('2026-11-01'), CarbonImmutable::parse('2026-11-13'))
+        ->create();
+
+    $this->actingAs($admin)
+        ->get(route('clients.show', ['current_organization' => $organization, 'client' => $client]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('invoices.0.id', $draft->id)
+            ->where('invoices.0.isCurrentPeriod', true)
+            ->where('invoices.1.id', $sent->id)
+            ->where('invoices.1.isCurrentPeriod', false));
 });

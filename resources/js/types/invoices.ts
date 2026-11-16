@@ -20,6 +20,7 @@ export type InvoiceListItem = {
     amountDue: string;
     status: InvoiceStatus;
     statusLabel: string;
+    isCurrentPeriod: boolean;
 };
 
 export type InvoiceLine = {
@@ -66,6 +67,7 @@ export type Invoice = InvoiceListItem & {
     terms: string | null;
     publicUrl?: string;
     sentAt: string | null;
+    closesAt: string | null;
     voidedAt: string | null;
     isEditable: boolean;
     canUpdate: boolean;
@@ -95,6 +97,7 @@ export type PublicInvoice = {
     isVoid: boolean;
     status: InvoiceStatus;
     statusLabel: string;
+    isCurrentPeriod: boolean;
     organizationName: string;
     organizationLogoUrl: string | null;
     fromAddress: string | null;

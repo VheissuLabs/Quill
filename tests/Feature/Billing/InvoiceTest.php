@@ -9,6 +9,7 @@ use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Sprint;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 
 function invoiceManager(): array
 {
@@ -316,4 +317,20 @@ test('an array of client ids is rejected instead of reaching the lookup', functi
         ->assertSessionHasErrors('client_id');
 
     expect($organization->invoices()->count())->toBe(0);
+});
+
+test('a cycle draft carries when it sends', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $cycle = Invoice::factory()->for($organization)->for($client)
+        ->cycle(CarbonImmutable::parse('2026-11-14'), CarbonImmutable::parse('2026-11-27'))
+        ->create(['closes_at' => '2026-11-28 05:59:00']);
+    $manual = Invoice::factory()->for($organization)->for($client)->create();
+
+    $this->actingAs($admin)
+        ->get(invoiceRoute('invoices.show', $organization, $cycle))
+        ->assertInertia(fn ($page) => $page->where('invoice.closesAt', '2026-11-28T05:59:00+00:00'));
+
+    $this->actingAs($admin)
+        ->get(invoiceRoute('invoices.show', $organization, $manual))
+        ->assertInertia(fn ($page) => $page->where('invoice.closesAt', null));
 });

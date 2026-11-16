@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,6 +25,7 @@ class InvoiceListResource extends JsonResource
             'amountDue' => $this->amountDue(),
             'status' => $this->status->value,
             'statusLabel' => $this->status->label(),
+            'isCurrentPeriod' => $this->closes_at !== null && $this->sent_at === null && $this->status !== InvoiceStatus::Void,
         ];
     }
 }

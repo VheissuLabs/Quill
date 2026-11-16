@@ -108,6 +108,24 @@ const clientHref = computed(() =>
     showClient([props.currentOrganization.slug, props.invoice.clientSlug]),
 );
 
+const sendsOn = computed(() =>
+    props.invoice.closesAt
+        ? new Date(props.invoice.closesAt).toLocaleString(undefined, {
+              month: 'short',
+              day: 'numeric',
+          })
+        : '',
+);
+
+const sendsAt = computed(() =>
+    props.invoice.closesAt
+        ? new Date(props.invoice.closesAt).toLocaleTimeString(undefined, {
+              hour: 'numeric',
+              minute: '2-digit',
+          })
+        : '',
+);
+
 const servicePeriod = computed(() => {
     const { servicePeriodStart: start, servicePeriodEnd: end } = props.invoice;
 
@@ -225,6 +243,13 @@ const money = (value: string) =>
                     · Issued
                     {{ formatDate(invoice.issueDate) }} · Due
                     {{ formatDate(invoice.dueDate) }}
+                </p>
+                <p
+                    v-if="invoice.closesAt && !invoice.sentAt"
+                    class="text-muted-foreground text-sm"
+                    data-test="invoice-sends-at"
+                >
+                    Sends automatically {{ sendsOn }} at {{ sendsAt }}
                 </p>
             </div>
 
