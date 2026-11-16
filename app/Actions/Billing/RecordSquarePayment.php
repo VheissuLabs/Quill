@@ -73,7 +73,9 @@ class RecordSquarePayment
         }
 
         if ($status !== 'COMPLETED') {
-            if (in_array($status, ['FAILED', 'CANCELED'], true) && $checkout->status === SquareCheckoutStatus::Pending) {
+            if (in_array($status, ['FAILED', 'CANCELED'], true)
+                && $checkout->status === SquareCheckoutStatus::Pending
+                && $checkout->square_payment_id === $paymentId) {
                 $checkout->update(['status' => SquareCheckoutStatus::Open]);
             }
 

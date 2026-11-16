@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Observers\BillingSettingObserver;
 use Database\Factories\BillingSettingFactory;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /** @mixin IdeHelperBillingSetting */
+#[Hidden(['square_access_token', 'square_webhook_signature_key'])]
 #[UseFactory(BillingSettingFactory::class)]
 #[ObservedBy(BillingSettingObserver::class)]
 class BillingSetting extends Model

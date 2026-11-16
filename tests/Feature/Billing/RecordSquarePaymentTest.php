@@ -223,3 +223,12 @@ test('a connection failure on return still shows the invoice', function () {
 
     expect($invoice->payments()->count())->toBe(0);
 });
+
+test('a failed attempt for a different payment does not reopen a pending checkout', function () {
+    [$invoice, $checkout] = recorderWorkspace();
+
+    recordSquare($invoice, ['status' => 'PENDING', 'source_type' => 'BANK_ACCOUNT']);
+    recordSquare($invoice, ['id' => 'PAY2', 'status' => 'FAILED']);
+
+    expect($checkout->fresh()->status)->toBe(SquareCheckoutStatus::Pending);
+});

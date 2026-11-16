@@ -190,3 +190,10 @@ test('payment methods include Zelle and Cash App', function () {
         ->and(PaymentMethod::CashApp->label())->toBe('Cash App')
         ->and(PaymentMethod::CashApp->value)->toBe('cash_app');
 });
+
+test('square secrets are hidden when the settings are serialized', function () {
+    $settings = Organization::factory()->create()->billingSettings();
+    $settings->update(['square_access_token' => 'token', 'square_webhook_signature_key' => 'key']);
+
+    expect($settings->fresh()->toArray())->not->toHaveKeys(['square_access_token', 'square_webhook_signature_key']);
+});
