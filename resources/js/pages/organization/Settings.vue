@@ -24,6 +24,15 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -179,6 +188,43 @@ type ModuleField =
     | 'billing_enabled'
     | 'billing_invoices_enabled'
     | 'billing_billing_cycles_enabled';
+
+const removeAutomaticBillingField = ref<ModuleField | null>(null);
+
+const removeAutomaticBillingOpen = computed({
+    get: () => removeAutomaticBillingField.value !== null,
+    set: (open: boolean) => {
+        if (!open) {
+            removeAutomaticBillingField.value = null;
+        }
+    },
+});
+
+const requestModuleUpdate = (field: ModuleField, value: boolean) => {
+    const removesAutomaticBilling =
+        !value &&
+        modulesForm.billing_billing_cycles_enabled &&
+        (field === 'billing_billing_cycles_enabled' ||
+            (field === 'billing_enabled' && modulesForm.billing_enabled));
+
+    if (removesAutomaticBilling) {
+        removeAutomaticBillingField.value = field;
+
+        return;
+    }
+
+    updateModule(field, value);
+};
+
+const confirmRemoveAutomaticBilling = () => {
+    const field = removeAutomaticBillingField.value;
+
+    removeAutomaticBillingField.value = null;
+
+    if (field !== null) {
+        updateModule(field, false);
+    }
+};
 
 const updateModule = (field: ModuleField, value: boolean) => {
     const previousValue = modulesForm[field];
@@ -657,7 +703,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                         "
                                         :disabled="modulesForm.processing"
                                         @update:model-value="
-                                            updateModule(
+                                            requestModuleUpdate(
                                                 'billing_enabled',
                                                 $event === true,
                                             )
@@ -723,7 +769,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                                 !modulesForm.billing_enabled
                                             "
                                             @update:model-value="
-                                                updateModule(
+                                                requestModuleUpdate(
                                                     'billing_billing_cycles_enabled',
                                                     $event === true,
                                                 )
@@ -1037,4 +1083,31 @@ const updateModule = (field: ModuleField, value: boolean) => {
         :open="deleteDialogOpen"
         @update:open="deleteDialogOpen = $event"
     />
+
+    <Dialog v-model:open="removeAutomaticBillingOpen">
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Remove automatic billing?</DialogTitle>
+                <DialogDescription>
+                    Turning this off removes automatic billing from every
+                    client. Open automatic drafts with no time on them are
+                    deleted; drafts with time become ordinary drafts.
+                </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter class="gap-2">
+                <DialogClose as-child>
+                    <Button variant="secondary"> Cancel </Button>
+                </DialogClose>
+
+                <Button
+                    data-test="confirm-remove-automatic-billing"
+                    variant="destructive"
+                    @click="confirmRemoveAutomaticBilling"
+                >
+                    Remove automatic billing
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>

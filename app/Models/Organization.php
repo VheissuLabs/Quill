@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Actions\Billing\RemoveAutomaticBilling;
 use App\Concerns\RunsABoard;
-use App\Enums\InvoiceStatus;
 use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationModule;
 use App\Enums\OrganizationPermission;
@@ -242,12 +242,7 @@ class Organization extends Model
         $this->unsetRelation('capabilitySettings');
 
         if ($cyclesWereUsable && ! $this->canUse(OrganizationCapability::BillingCycles)) {
-            $this->invoices()
-                ->whereNotNull('closes_at')
-                ->whereNull('sent_at')
-                ->where('status', '!=', InvoiceStatus::Void)
-                ->get()
-                ->each(fn (Invoice $invoice) => $invoice->update(['closes_at' => null]));
+            app(RemoveAutomaticBilling::class)->handle($this);
         }
 
         broadcast(new ModulesChanged($this->getKey()))->toOthers();

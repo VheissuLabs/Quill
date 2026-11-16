@@ -187,11 +187,11 @@ test('an existing open draft is reused instead of opening a second one', functio
 
 test('nothing restarts when billing cycles are off', function () {
     $this->travelTo('2026-11-25 12:00:00');
-    [$invoice, $client, $owner] = restartingCycle(lines: false);
+    [$invoice, $client, $owner] = restartingCycle();
     $client->organization->updateModuleSettings(['billing_enabled' => true, 'billing_invoices_enabled' => true, 'billing_billing_cycles_enabled' => false]);
 
     $this->actingAs($owner)->delete(route('invoices.destroy', [$invoice->organization, $invoice]))->assertRedirect();
 
     expect(Invoice::count())->toBe(0)
-        ->and($client->fresh()->billing_opened_through->toDateString())->toBe('2026-11-27');
+        ->and($client->fresh()->billing_opened_through)->toBeNull();
 });
