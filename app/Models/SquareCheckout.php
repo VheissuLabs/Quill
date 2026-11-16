@@ -25,6 +25,7 @@ class SquareCheckout extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'checked_at' => 'datetime',
             'status' => SquareCheckoutStatus::class,
         ];
     }

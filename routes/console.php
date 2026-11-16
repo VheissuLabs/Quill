@@ -3,6 +3,7 @@
 use App\Actions\Billing\CloseBillingPeriods;
 use App\Actions\Billing\MarkOverdueInvoices;
 use App\Actions\Billing\OpenBillingPeriod;
+use App\Actions\Billing\ReconcilePendingSquareCheckouts;
 use App\Actions\Billing\RemindClosingInvoices;
 use App\Models\Client;
 use App\Models\OrganizationInvitation;
@@ -24,6 +25,7 @@ Artisan::command('billing:run', function (
     RemindClosingInvoices $remind,
     CloseBillingPeriods $close,
     MarkOverdueInvoices $overdue,
+    ReconcilePendingSquareCheckouts $reconcileSquare,
     BillingEligibility $eligibility,
 ): int {
     $now = CarbonImmutable::now('UTC');
@@ -49,8 +51,9 @@ Artisan::command('billing:run', function (
     $remind->handle($now);
     $close->handle($now);
     $overdue->handle($now);
+    $reconcileSquare->handle($now);
 
     return 0;
-})->purpose('Open, remind, close and age billing cycle invoices');
+})->purpose('Open, remind, close and age billing cycle invoices and reconcile pending Square payments');
 
 Schedule::command('billing:run')->everyMinute()->withoutOverlapping()->description('Run billing cycles');

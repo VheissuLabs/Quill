@@ -15,12 +15,12 @@ class ReconcileSquareOrder
 
     public function handle(Invoice $invoice, string $orderId): void
     {
-        $isOpenCheckout = $invoice->squareCheckouts()
+        $isUnsettledCheckout = $invoice->squareCheckouts()
             ->where('order_id', $orderId)
-            ->where('status', SquareCheckoutStatus::Open)
+            ->whereIn('status', [SquareCheckoutStatus::Open, SquareCheckoutStatus::Pending])
             ->exists();
 
-        if (! $isOpenCheckout) {
+        if (! $isUnsettledCheckout) {
             return;
         }
 

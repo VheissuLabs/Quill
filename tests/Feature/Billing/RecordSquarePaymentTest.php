@@ -8,12 +8,14 @@ use App\Enums\SquareCheckoutStatus;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\Organization;
+use App\Models\OrganizationModuleSetting;
 use App\Models\SquareCheckout;
 use App\Models\User;
 use App\Notifications\InvoicePaymentReceived;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -231,4 +233,110 @@ test('a failed attempt for a different payment does not reopen a pending checkou
     recordSquare($invoice, ['id' => 'PAY2', 'status' => 'FAILED']);
 
     expect($checkout->fresh()->status)->toBe(SquareCheckoutStatus::Pending);
+});
+
+function pendingWorkspace(string $orderId = 'O1', string $paymentId = 'PAY1'): array
+{
+    [$invoice, $checkout] = recorderWorkspace(orderId: $orderId);
+    $checkout->update(['status' => SquareCheckoutStatus::Pending, 'square_payment_id' => $paymentId]);
+
+    return [$invoice, $checkout->fresh()];
+}
+
+function fakeSquarePayment(string $status, string $paymentId = 'PAY1', string $orderId = 'O1'): void
+{
+    Http::fake(["*/v2/payments/{$paymentId}" => Http::response(['payment' => squarePaymentObject(['id' => $paymentId, 'order_id' => $orderId, 'status' => $status])])]);
+}
+
+test('billing:run records a pending payment that has since completed', function () {
+    fakeSquarePayment('COMPLETED');
+    [$invoice, $checkout] = pendingWorkspace();
+
+    $this->artisan('billing:run')->assertSuccessful();
+
+    expect($checkout->fresh()->status)->toBe(SquareCheckoutStatus::Paid)
+        ->and($checkout->fresh()->checked_at)->not->toBeNull()
+        ->and($invoice->payments()->sole()->square_payment_id)->toBe('PAY1');
+});
+
+test('billing:run reopens a pending checkout whose payment failed', function () {
+    fakeSquarePayment('FAILED');
+    [, $checkout] = pendingWorkspace();
+
+    $this->artisan('billing:run')->assertSuccessful();
+
+    expect($checkout->fresh()->status)->toBe(SquareCheckoutStatus::Open);
+});
+
+test('a checkout checked within the last hour is left alone', function () {
+    Http::fake();
+    [, $checkout] = pendingWorkspace();
+    $checkout->update(['checked_at' => now()->subMinutes(30)]);
+
+    $this->artisan('billing:run')->assertSuccessful();
+
+    Http::assertNothingSent();
+    expect($checkout->fresh()->status)->toBe(SquareCheckoutStatus::Pending);
+});
+
+test('a checkout last checked over an hour ago is checked again', function () {
+    fakeSquarePayment('COMPLETED');
+    [, $checkout] = pendingWorkspace();
+    $checkout->update(['checked_at' => now()->subMinutes(61)]);
+
+    $this->artisan('billing:run')->assertSuccessful();
+
+    expect($checkout->fresh()->status)->toBe(SquareCheckoutStatus::Paid);
+});
+
+test('a Square error is logged and the other checkouts are still checked', function () {
+    Log::spy();
+    Http::fake([
+        '*/v2/payments/PAY1' => Http::response(['errors' => [['code' => 'INTERNAL_SERVER_ERROR']]], 500),
+        '*/v2/payments/PAY2' => Http::response(['payment' => squarePaymentObject(['id' => 'PAY2', 'order_id' => 'O2'])]),
+    ]);
+    [, $failing] = pendingWorkspace('O1', 'PAY1');
+    [, $working] = pendingWorkspace('O2', 'PAY2');
+
+    $this->artisan('billing:run')->assertSuccessful();
+
+    expect($failing->fresh()->status)->toBe(SquareCheckoutStatus::Pending)
+        ->and($working->fresh()->status)->toBe(SquareCheckoutStatus::Paid);
+    Log::shouldHaveReceived('warning')->once();
+});
+
+test('an unreachable Square leaves the checkout pending', function () {
+    Http::fake(fn () => throw new ConnectionException('timed out'));
+    [, $checkout] = pendingWorkspace();
+
+    $this->artisan('billing:run')->assertSuccessful();
+
+    expect($checkout->fresh()->status)->toBe(SquareCheckoutStatus::Pending);
+});
+
+test('workspaces without invoices or Square set up are skipped', function (Closure $arrange) {
+    Http::fake();
+    [$invoice] = pendingWorkspace();
+    $arrange($invoice->organization);
+
+    $this->artisan('billing:run')->assertSuccessful();
+
+    Http::assertNothingSent();
+})->with([
+    'invoices off' => [fn ($organization) => OrganizationModuleSetting::factory()->create(['organization_id' => $organization->id, 'module' => 'billing', 'capability' => 'invoices', 'enabled' => false])],
+    'square not configured' => [fn ($organization) => $organization->billingSettings()->update(['square_access_token' => null])],
+]);
+
+test('returning to a pending checkout re-reads the payment', function () {
+    Http::fake([
+        '*/v2/orders/O1' => Http::response(['order' => ['id' => 'O1', 'tenders' => [['id' => 'PAY1']]]]),
+        '*/v2/payments/PAY1' => Http::response(['payment' => squarePaymentObject()]),
+    ]);
+    [$invoice, $checkout] = pendingWorkspace();
+
+    $this->get($invoice->publicUrl().'?orderId=O1')
+        ->assertInertia(fn (Assert $page) => $page->where('invoice.amountDue', '0.00'));
+
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), '/v2/payments/PAY1'));
+    expect($checkout->fresh()->status)->toBe(SquareCheckoutStatus::Paid);
 });

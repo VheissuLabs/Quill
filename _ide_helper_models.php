@@ -24,6 +24,12 @@ namespace App\Models{
  * @property string|null $from_address
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property string $square_environment
+ * @property string|null $square_access_token
+ * @property string|null $square_location_id
+ * @property string|null $square_webhook_signature_key
+ * @property string|null $square_webhook_token
+ * @property string|null $payment_instructions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Organization|null $organization
@@ -39,7 +45,13 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereInvoicePrefix($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting wherePaymentInstructions($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting wherePaymentTermsDays($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereSquareAccessToken($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereSquareEnvironment($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereSquareLocationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereSquareWebhookSignatureKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereSquareWebhookToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereTaxRate($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereUpdatedAt($value)
  * @mixin \Eloquent
@@ -528,6 +540,7 @@ namespace App\Models{
  * @property string|null $notes
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property string|null $square_payment_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Invoice $invoice
@@ -543,6 +556,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereNotes($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment wherePaidOn($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereReference($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereSquarePaymentId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoicePayment whereUpdatedAt($value)
  * @mixin \Eloquent
  */
@@ -882,12 +896,33 @@ namespace App\Models{
 
 namespace App\Models{
 /**
+ * @property int $id
+ * @property int $invoice_id
+ * @property string $payment_link_id
+ * @property string $order_id
+ * @property string $url
+ * @property numeric $amount
  * @property \App\Enums\SquareCheckoutStatus $status
- * @property-read \App\Models\Invoice|null $invoice
+ * @property string|null $square_payment_id
+ * @property \Carbon\CarbonImmutable|null $checked_at
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\Invoice $invoice
  * @method static \Database\Factories\SquareCheckoutFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout whereAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout whereCheckedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout whereInvoiceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout whereOrderId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout wherePaymentLinkId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout whereSquarePaymentId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SquareCheckout whereUrl($value)
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
