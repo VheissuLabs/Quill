@@ -56,6 +56,7 @@ use App\Http\Controllers\Tickets\TicketIssueController;
 use App\Http\Controllers\Tickets\TicketReplyController;
 use App\Http\Controllers\Tickets\TicketReplyDeliveryController;
 use App\Http\Controllers\Webhooks\ResendWebhookController;
+use App\Http\Middleware\DiscourageIndexing;
 use App\Http\Middleware\EnsureOrganizationMembership;
 use App\Http\Middleware\RedirectGuestsFromPrivateProject;
 use App\Http\Middleware\RememberPortalPage;
@@ -78,7 +79,7 @@ use Spatie\Permission\Models\Role;
 
 Route::get('/', HomeController::class)->name('home');
 
-Route::get('invoice/{invoice:public_token}', [PublicInvoiceController::class, 'show'])->name('invoices.public');
+Route::get('invoice/{invoice:public_token}', [PublicInvoiceController::class, 'show'])->middleware(DiscourageIndexing::class)->name('invoices.public');
 
 Route::post('webhooks/resend', ResendWebhookController::class)
     ->middleware(VerifyResendSignature::class)

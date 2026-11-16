@@ -15,7 +15,9 @@ const money = (value: string) =>
 </script>
 
 <template>
-    <Head :title="invoice.number" />
+    <Head :title="invoice.number">
+        <meta name="robots" content="noindex, nofollow" />
+    </Head>
 
     <main
         class="bg-background text-foreground min-h-screen px-4 py-10 print:bg-white print:p-0 print:text-black"

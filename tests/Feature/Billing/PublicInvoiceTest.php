@@ -61,3 +61,11 @@ test('the internal invoice carries the public link only once sent', function () 
         ->get(route('invoices.show', ['current_organization' => $organization, 'invoice' => $sent]))
         ->assertInertia(fn (Assert $page) => $page->where('invoice.publicUrl', $sent->publicUrl()));
 });
+
+test('the public page asks search engines not to index it', function () {
+    $invoice = Invoice::factory()->sent()->create();
+
+    $this->get($invoice->publicUrl())
+        ->assertOk()
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+});
