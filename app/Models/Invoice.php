@@ -120,7 +120,7 @@ class Invoice extends Model
         return number_format(max(0, (float) $this->total - (float) $this->amount_paid), 2, '.', '');
     }
 
-    public function defaultLineRate(): ?string
+    public function defaultLineRate(): float|int|string|null
     {
         return $this->project?->billingRate()
             ?? $this->client->billing_rate
@@ -152,7 +152,7 @@ class Invoice extends Model
             ->dontLogEmptyChanges();
     }
 
-    private function adjustment(?AdjustmentType $type, ?string $value, float $base): float
+    private function adjustment(?AdjustmentType $type, float|int|string|null $value, float $base): float
     {
         return match ($type) {
             AdjustmentType::Percentage => $base * (float) $value / 100,

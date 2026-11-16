@@ -44,7 +44,7 @@ class InvoiceController extends Controller
     {
         $attributes = collect($request->validated())->except('client_id')->reject(fn (mixed $value) => $value === null)->all();
 
-        $invoice = $createInvoice->handle($currentOrganization, $currentOrganization->clients()->findOrFail($request->validated('client_id')), $attributes);
+        $invoice = $createInvoice->handle($currentOrganization, $currentOrganization->clients()->findOrFail($request->integer('client_id')), $attributes);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Invoice created.')]);
 

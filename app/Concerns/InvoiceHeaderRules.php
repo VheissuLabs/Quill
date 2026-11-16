@@ -15,7 +15,7 @@ trait InvoiceHeaderRules
     {
         $billableClientIds = $client?->billableClientIds()->all() ?? [];
 
-        return array_map(fn (array $rules): array => array_values(array_filter($rules)), [
+        return array_map(fn (array $rules): array => array_filter($rules), [
             'project_id' => [
                 'sometimes',
                 'nullable',
@@ -27,7 +27,7 @@ trait InvoiceHeaderRules
                 'sometimes',
                 'nullable',
                 'integer',
-                Rule::exists('client_contacts', 'id')->where('client_id', $client?->id ?? 0),
+                Rule::exists('client_contacts', 'id')->where('client_id', $client instanceof Client ? $client->id : 0),
             ],
             'cc_emails' => ['sometimes', 'nullable', 'array'],
             'cc_emails.*' => ['required', 'email:rfc', 'max:255'],
@@ -56,7 +56,7 @@ trait InvoiceHeaderRules
             ],
         ];
 
-        return array_map(fn (array $rules): array => array_values(array_filter($rules)), [
+        return array_map(fn (array $rules): array => array_filter($rules), [
             'tax_rate' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
             ...$adjustment('discount'),
             ...$adjustment('deposit'),

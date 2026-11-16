@@ -22,7 +22,7 @@ class StoreInvoiceRequest extends FormRequest
             return;
         }
 
-        $client = Project::where('organization_id', $organization->id)->find($this->input('project_id'))?->client;
+        $client = Project::where('organization_id', $organization->id)->find($this->integer('project_id'))?->client;
 
         if ($client) {
             $this->merge(['client_id' => $client->billed_through_client_id ?? $client->id]);
@@ -36,7 +36,7 @@ class StoreInvoiceRequest extends FormRequest
 
         abort_if(! $organization instanceof Organization, 404);
 
-        $client = Client::where('organization_id', $organization->id)->find($this->input('client_id'));
+        $client = Client::where('organization_id', $organization->id)->find($this->integer('client_id'));
 
         return [
             'client_id' => ['required', 'integer', Rule::exists('clients', 'id')->where('organization_id', $organization->id)],

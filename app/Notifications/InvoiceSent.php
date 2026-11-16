@@ -48,7 +48,7 @@ class InvoiceSent extends Notification implements ShouldQueue
         return $message;
     }
 
-    public function money(string $amount): string
+    public function money(float|int|string $amount): string
     {
         return '$'.number_format((float) $amount, 2);
     }

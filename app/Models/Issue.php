@@ -39,6 +39,7 @@ class Issue extends Model
     /**
      * Issues the viewer can see, for picking one by name when only its id can be typed.
      *
+     * @param  Collection<int, int>|null  $clientIds
      * @return EloquentCollection<int, self>
      */
     public static function matching(Organization $organization, User $user, string $term, ?int $except = null, ?Collection $clientIds = null): EloquentCollection

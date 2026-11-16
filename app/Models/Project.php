@@ -66,12 +66,12 @@ class Project extends Model
         return $this->hasMany(Issue::class);
     }
 
-    public function billingRate(): ?string
+    public function billingRate(): float|int|string|null
     {
         $this->loadMissing(['client', 'organization']);
 
         return $this->billing_rate
-            ?? $this->client?->billing_rate
+            ?? $this->client->billing_rate
             ?? $this->organization->billingSettings()->default_rate;
     }
 
