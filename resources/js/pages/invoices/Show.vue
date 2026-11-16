@@ -57,6 +57,23 @@ const deleteDialogOpen = ref(false);
 const sendDialogOpen = ref(false);
 const voidDialogOpen = ref(false);
 const linkCopied = ref(false);
+const duplicating = ref(false);
+
+const duplicateInvoice = () => {
+    if (duplicating.value) {
+        return;
+    }
+
+    duplicating.value = true;
+
+    router.post(
+        duplicate.url([props.currentOrganization.slug, props.invoice.id]),
+        {},
+        {
+            onFinish: () => (duplicating.value = false),
+        },
+    );
+};
 
 const recipient = computed(() => {
     const contact = props.invoice.options.contacts.find(
@@ -217,14 +234,8 @@ const money = (value: string) =>
                     v-if="invoice.canDuplicate"
                     variant="outline"
                     data-test="invoice-duplicate-button"
-                    @click="
-                        router.post(
-                            duplicate.url([
-                                currentOrganization.slug,
-                                invoice.id,
-                            ]),
-                        )
-                    "
+                    :disabled="duplicating"
+                    @click="duplicateInvoice"
                 >
                     <Copy /> Duplicate
                 </Button>
@@ -699,7 +710,7 @@ const money = (value: string) =>
                         <div
                             v-if="Number(invoice.amountPaid) > 0"
                             class="flex justify-between"
-                            >
+                        >
                             <dt class="text-muted-foreground">Paid</dt>
                             <dd class="tabular-nums">
                                 −{{ money(invoice.amountPaid) }}
