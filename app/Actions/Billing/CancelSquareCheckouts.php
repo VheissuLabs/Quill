@@ -25,8 +25,7 @@ class CancelSquareCheckouts
 
             try {
                 $client->deletePaymentLink($checkout->payment_link_id);
-            } catch (SquareException $exception) {
-                return 'Unable to delete the payment link: ';
+            } catch (SquareException) {
             }
         });
     }
