@@ -10,6 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         activity()->disableLogging();
+        config(['broadcasting.default' => 'null']);
 
         (new PermissionsSeeder)->run();
 
