@@ -111,3 +111,15 @@ test('renaming an organization announces it', function () {
 
     Event::assertDispatched(OrganizationChanged::class, fn (OrganizationChanged $event) => $event->organizationId === $organization->id);
 });
+
+test('accepting an invitation announces the new member to the organization', function () {
+    $organization = Organization::factory()->create();
+    $invitation = OrganizationInvitation::factory()->for($organization)->create(['email' => 'new@example.com']);
+    $user = User::factory()->create(['email' => 'new@example.com']);
+
+    Event::fake([MembersChanged::class]);
+
+    $invitation->acceptFor($user);
+
+    Event::assertDispatched(MembersChanged::class, fn (MembersChanged $event) => $event->organizationId === $organization->id);
+});
