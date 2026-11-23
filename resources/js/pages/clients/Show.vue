@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { CircleCheck, Mail, Plus, Settings } from '@lucide/vue';
+import { ArchiveRestore, CircleCheck, Mail, Plus, Settings } from '@lucide/vue';
 import { computed } from 'vue';
 import ClientContacts from '@/components/ClientContacts.vue';
 import CreateContactModal from '@/components/CreateContactModal.vue';
@@ -10,7 +10,7 @@ import Heading from '@/components/Heading.vue';
 import InvoiceStatusBadge from '@/components/InvoiceStatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { edit, index, show } from '@/routes/clients';
+import { edit, index, restore, show } from '@/routes/clients';
 import { show as showInvoice } from '@/routes/invoices';
 import { formatDate } from '@/lib/dates';
 import { show as showBoard } from '@/routes/portal/projects';
@@ -36,6 +36,8 @@ type Props = {
 };
 
 const props = defineProps<Props>();
+
+const isDeleted = computed(() => Boolean(props.client.deletedAt));
 
 const invoiceProjects = computed(() =>
     props.projects.map((project) => ({
@@ -72,10 +74,33 @@ defineOptions({
 
     <div class="flex flex-col gap-10 p-6">
         <div class="flex items-center justify-between gap-4">
-            <h1 class="text-xl font-semibold" data-test="client-name">
-                {{ client.name }}
-            </h1>
-            <Button size="sm" as-child>
+            <div class="flex items-center gap-3">
+                <h1 class="text-xl font-semibold" data-test="client-name">
+                    {{ client.name }}
+                </h1>
+                <Badge
+                    v-if="isDeleted"
+                    variant="destructive"
+                    data-test="client-deleted-badge"
+                >
+                    Deleted {{ formatDate(client.deletedAt!) }}
+                </Badge>
+            </div>
+            <Button
+                v-if="isDeleted && permissions.canManageClients"
+                size="sm"
+                as-child
+            >
+                <Link
+                    :href="restore([currentOrganization.slug, client.slug])"
+                    as="button"
+                    data-test="client-restore-button"
+                >
+                    <ArchiveRestore />
+                    Restore
+                </Link>
+            </Button>
+            <Button v-else-if="!isDeleted" size="sm" as-child>
                 <Link
                     :href="edit([currentOrganization.slug, client.slug])"
                     data-test="client-settings-link"
@@ -95,7 +120,7 @@ defineOptions({
                         description="People at this client you open tickets for"
                     />
                     <CreateContactModal
-                        v-if="permissions.canManageClients"
+                        v-if="!isDeleted && permissions.canManageClients"
                         :organization="currentOrganization.slug"
                         :client="client.slug"
                     >
@@ -108,7 +133,7 @@ defineOptions({
                     :organization="currentOrganization.slug"
                     :client="client.slug"
                     :contacts="client.contacts ?? []"
-                    :can-manage="permissions.canManageClients"
+                    :can-manage="!isDeleted && permissions.canManageClients"
                 />
             </section>
 
@@ -120,7 +145,7 @@ defineOptions({
                         description="Projects run for this client"
                     />
                     <CreateProjectModal
-                        v-if="permissions.canManageProjects"
+                        v-if="!isDeleted && permissions.canManageProjects"
                         :organization="currentOrganization.slug"
                         :visibilities="visibilities"
                         :client-id="client.id"
@@ -204,6 +229,7 @@ defineOptions({
             <div class="flex items-start justify-between gap-4">
                 <Heading variant="small" title="Invoices" />
                 <CreateInvoiceModal
+                    v-if="!isDeleted"
                     :organization="currentOrganization.slug"
                     :clients="[{ id: client.id, name: client.name }]"
                     :projects="invoiceProjects"

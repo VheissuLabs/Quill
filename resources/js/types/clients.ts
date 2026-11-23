@@ -9,6 +9,7 @@ export type Client = {
     id: number;
     name: string;
     slug: string;
+    deletedAt?: string | null;
     contacts?: { id: number; name: string | null; email: string }[];
     domains?: { id: number; domain: string }[];
 };

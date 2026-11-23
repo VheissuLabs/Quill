@@ -16,6 +16,7 @@ use App\Http\Controllers\ClearNotificationsController;
 use App\Http\Controllers\Clients\ClientContactController;
 use App\Http\Controllers\Clients\ClientController;
 use App\Http\Controllers\Clients\ClientDomainController;
+use App\Http\Controllers\Clients\RestoreClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Issues\CommentController as IssueCommentController;
@@ -131,7 +132,8 @@ Route::prefix('{current_organization}')
             ->middlewareFor('store', 'can:create,'.Client::class.',current_organization')
             ->middlewareFor(['show', 'edit'], 'can:view,client')
             ->middlewareFor('update', 'can:update,client')
-            ->middlewareFor('destroy', 'can:delete,client');
+            ->middlewareFor('destroy', 'can:delete,client')
+            ->withTrashed(['show']);
         Route::resource('invoices', InvoiceController::class)->only(['index', 'store', 'show', 'update', 'destroy'])
             ->middlewareFor('index', 'can:viewAny,'.Invoice::class.',current_organization')
             ->middlewareFor('store', 'can:create,'.Invoice::class.',current_organization')
@@ -148,6 +150,7 @@ Route::prefix('{current_organization}')
         Route::resource('invoices.payments', InvoicePaymentController::class)->only(['store', 'update', 'destroy'])
             ->middlewareFor(['store', 'update', 'destroy'], 'can:update,invoice');
         Route::get('client-contacts', [ClientContactController::class, 'index'])->can('create', [Ticket::class, 'current_organization'])->name('client-contacts.index');
+        Route::post('clients/{client}/restore', RestoreClientController::class)->withTrashed()->can('restore', 'client')->name('clients.restore');
         Route::post('clients/{client}/contacts', [ClientContactController::class, 'store'])->can('update', 'client')->name('clients.contacts.store');
         Route::patch('clients/{client}/contacts/{contact}', [ClientContactController::class, 'update'])->can('update', 'client')->name('clients.contacts.update');
         Route::delete('clients/{client}/contacts/{contact}', [ClientContactController::class, 'destroy'])->can('update', 'client')->name('clients.contacts.destroy');

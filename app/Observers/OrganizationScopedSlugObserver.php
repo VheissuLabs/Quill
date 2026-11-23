@@ -26,7 +26,7 @@ class OrganizationScopedSlugObserver
     {
         $defaultSlug = Str::slug($name);
 
-        $existingSlugs = $model->newQuery()
+        $existingSlugs = $model->newQueryWithoutScopes()
             ->where('organization_id', $model->organization_id)
             ->when($excludeId, fn ($query) => $query->where('id', '!=', $excludeId))
             ->where(fn ($query) => $query

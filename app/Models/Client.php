@@ -15,7 +15,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -24,7 +26,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[ObservedBy(OrganizationScopedSlugObserver::class)]
 class Client extends Model
 {
-    use BroadcastsChanges, HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity, SoftDeletes;
 
     protected $guarded = [];
 
@@ -62,6 +64,18 @@ class Client extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function deleteKeepingRecords(): void
+    {
+        DB::transaction(function (): void {
+            $this->openCycleInvoice()?->update(['closes_at' => null]);
+            $this->projects()->get()->each(fn (Project $project) => $project->update(['client_id' => null]));
+            self::where('billed_through_client_id', $this->id)->get()->each(fn (Client $client) => $client->update(['billed_through_client_id' => null]));
+            $this->domains()->get()->each(fn (ClientDomain $domain) => $domain->delete());
+            $this->update(['billing_cycle' => null]);
+            $this->delete();
+        });
     }
 
     /** @return BelongsTo<ClientContact, $this> */

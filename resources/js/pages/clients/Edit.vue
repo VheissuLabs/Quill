@@ -392,7 +392,7 @@ const submit = () => {
             <Heading
                 variant="small"
                 title="Delete client"
-                description="Projects for this client are kept and simply detached"
+                description="The client is hidden. Its invoices are kept for your records and its projects are detached."
             />
             <div
                 class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
@@ -415,6 +415,7 @@ const submit = () => {
         :href="destroy([currentOrganization.slug, client.slug])"
     >
         This will delete <strong>{{ client.name }}</strong
-        >. Its projects are kept.
+        >. Its invoices are kept for your records, its projects are detached and
+        its billing cycle stops.
     </ConfirmDeleteModal>
 </template>

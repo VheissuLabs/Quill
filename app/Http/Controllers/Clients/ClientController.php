@@ -88,7 +88,7 @@ class ClientController extends Controller
 
     public function destroy(Organization $currentOrganization, Client $client): RedirectResponse
     {
-        $client->delete();
+        $client->deleteKeepingRecords();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client deleted.')]);
 

@@ -26,12 +26,19 @@ class ClientPolicy
 
     public function update(User $user, Client $client): bool
     {
-        return $user->hasOrganizationPermission($client->organization, OrganizationPermission::ManageClients);
+        return ! $client->trashed()
+            && $user->hasOrganizationPermission($client->organization, OrganizationPermission::ManageClients);
     }
 
     public function delete(User $user, Client $client): bool
     {
-        return $user->hasOrganizationPermission($client->organization, OrganizationPermission::ManageClients)
-            && ! $client->invoices()->exists();
+        return ! $client->trashed()
+            && $user->hasOrganizationPermission($client->organization, OrganizationPermission::ManageClients);
+    }
+
+    public function restore(User $user, Client $client): bool
+    {
+        return $client->trashed()
+            && $user->hasOrganizationPermission($client->organization, OrganizationPermission::ManageClients);
     }
 }

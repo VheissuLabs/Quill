@@ -128,6 +128,20 @@ test('a known contact is filed under their client even from a free mail address'
         ->client_contact_id->toBe($contact->id);
 });
 
+test('a contact of a deleted client is no longer filed under that client', function () {
+    Notification::fake();
+    $organization = inboxOrganization();
+    $contact = ClientContact::factory()->for(Client::factory()->for($organization))->create(['email' => 'jane@gmail.com']);
+    $contact->client->deleteKeepingRecords();
+    fakeReceivedEmail('email-1', ['from' => 'jane@gmail.com']);
+
+    deliverInboundEmail('email-1');
+
+    expect($organization->tickets()->sole())
+        ->client_id->toBeNull()
+        ->client_contact_id->toBeNull();
+});
+
 test('mail from a free mail domain waits unassigned', function () {
     Notification::fake();
     $organization = inboxOrganization();

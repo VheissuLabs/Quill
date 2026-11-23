@@ -18,6 +18,7 @@ class ClientResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            'deletedAt' => $this->deleted_at?->toISOString(),
             'projectsCount' => $this->whenCounted('projects'),
             'contacts' => $this->whenLoaded('contacts', fn () => $this->contacts->map(fn (ClientContact $contact) => [
                 'id' => $contact->id,

@@ -108,7 +108,7 @@ class ReceiveSupportEmail
 
     private function contactFor(Organization $organization, InboundEmail $email): ?ClientContact
     {
-        return $organization->clientContacts()->firstWhere('email', $email->fromEmail())
+        return $organization->clientContacts()->whereHas('client')->firstWhere('email', $email->fromEmail())
             ?? ClientDomain::clientFor($organization, $email->fromEmail())?->contacts()->create([
                 'name' => $email->fromName(),
                 'email' => $email->fromEmail(),
