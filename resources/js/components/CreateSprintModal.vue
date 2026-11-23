@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import DatePicker from '@/components/DatePicker.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -89,10 +90,9 @@ function handleOpenChange(value: boolean) {
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="grid gap-2">
                             <Label for="sprint-start">Starts</Label>
-                            <Input
+                            <DatePicker
                                 id="sprint-start"
                                 name="starts_at"
-                                type="date"
                                 :default-value="defaultStart"
                                 required
                             />
@@ -100,10 +100,9 @@ function handleOpenChange(value: boolean) {
                         </div>
                         <div class="grid gap-2">
                             <Label for="sprint-end">Ends</Label>
-                            <Input
+                            <DatePicker
                                 id="sprint-end"
                                 name="ends_at"
-                                type="date"
                                 :default-value="defaultEnd"
                                 required
                             />

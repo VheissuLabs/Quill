@@ -2,6 +2,7 @@
 import { Form, Head, useForm } from '@inertiajs/vue3';
 import { X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import DatePicker from '@/components/DatePicker.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -273,10 +274,9 @@ const submit = () => {
                         <Label for="billing-cycle-starts-on">
                             Period starts on
                         </Label>
-                        <Input
+                        <DatePicker
                             id="billing-cycle-starts-on"
                             v-model="form.billing_cycle_starts_on"
-                            type="date"
                             data-test="client-billing-cycle-starts-on-input"
                         />
                         <InputError

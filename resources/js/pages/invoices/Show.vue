@@ -2,6 +2,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { Copy, Link2, Send, Trash2, Ban } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import DatePicker from '@/components/DatePicker.vue';
 import ConfirmActionModal from '@/components/ConfirmActionModal.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -397,10 +398,10 @@ const money = (value: string) =>
                                     <Label for="invoice-issue-date">
                                         Issue date
                                     </Label>
-                                    <Input
+                                    <DatePicker
                                         id="invoice-issue-date"
                                         v-model="form.issue_date"
-                                        type="date"
+                                        required
                                     />
                                     <InputError
                                         :message="form.errors.issue_date"
@@ -411,10 +412,10 @@ const money = (value: string) =>
                                     <Label for="invoice-due-date"
                                         >Due date</Label
                                     >
-                                    <Input
+                                    <DatePicker
                                         id="invoice-due-date"
                                         v-model="form.due_date"
-                                        type="date"
+                                        required
                                     />
                                     <InputError
                                         :message="form.errors.due_date"
@@ -425,10 +426,9 @@ const money = (value: string) =>
                                     <Label for="invoice-period-start">
                                         Service period start
                                     </Label>
-                                    <Input
+                                    <DatePicker
                                         id="invoice-period-start"
                                         v-model="form.service_period_start"
-                                        type="date"
                                     />
                                     <InputError
                                         :message="
@@ -441,10 +441,9 @@ const money = (value: string) =>
                                     <Label for="invoice-period-end">
                                         Service period end
                                     </Label>
-                                    <Input
+                                    <DatePicker
                                         id="invoice-period-end"
                                         v-model="form.service_period_end"
-                                        type="date"
                                     />
                                     <InputError
                                         :message="

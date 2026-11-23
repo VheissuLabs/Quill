@@ -2,6 +2,7 @@
 import { useForm } from '@inertiajs/vue3';
 import { Pencil, Plus, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
+import DatePicker from '@/components/DatePicker.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -200,10 +201,10 @@ const submit = () => {
 
                         <div class="grid gap-2">
                             <Label for="payment-date">Paid on</Label>
-                            <Input
+                            <DatePicker
                                 id="payment-date"
                                 v-model="form.paid_on"
-                                type="date"
+                                required
                             />
                             <InputError :message="form.errors.paid_on" />
                         </div>
