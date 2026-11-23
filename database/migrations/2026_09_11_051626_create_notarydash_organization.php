@@ -1,13 +1,8 @@
 <?php
 
-use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 
-/**
- * Data migration: adds Karl's NotaryDash email address to his account and makes him
- * the owner of the NotaryDash organization in every environment.
- */
 return new class extends Migration
 {
     public function up(): void
@@ -20,10 +15,6 @@ return new class extends Migration
             ['email' => 'karl@notarydash.com'],
             ['verified_at' => now()],
         );
-
-        $organization = Organization::firstOrCreate(['slug' => 'notarydash'], ['name' => 'NotaryDash']);
-
-        $organization->addMember($karl, $organization->ownerRole());
 
         activity()->enableLogging();
     }

@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDateRange } from '@/lib/dates';
 import { index, show } from '@/routes/sprints';
-import { index as teamsIndex } from '@/routes/teams';
 import type {
     Organization,
     OrganizationPermissions,
@@ -38,6 +37,9 @@ defineOptions({
 
 const page = usePage();
 const currentTeam = computed(() => page.props.currentTeam);
+const boardName = computed(
+    () => currentTeam.value?.name ?? props.currentOrganization.name,
+);
 
 const groups = computed(() =>
     (
@@ -78,17 +80,13 @@ const formatRange = (start: string, end: string) => {
             <Heading
                 variant="small"
                 title="Sprints"
-                :description="
-                    currentTeam
-                        ? `Time boxes ${currentTeam.name} commits to`
-                        : 'Time boxes your teams commit to'
-                "
+                :description="`Time boxes ${boardName} commits to`"
             />
 
             <CreateSprintModal
-                v-if="permissions.canManageSprints && currentTeam"
+                v-if="permissions.canManageSprints"
                 :organization="currentOrganization.slug"
-                :team="currentTeam.name"
+                :team="boardName"
             >
                 <Button data-test="sprints-new-sprint-button">
                     <Plus /> New sprint
@@ -166,26 +164,15 @@ const formatRange = (start: string, end: string) => {
             :icon="Timer"
             title="No sprints yet"
             :description="
-                !currentTeam
-                    ? 'Sprints belong to teams. Create a team first, then plan its first sprint.'
-                    : permissions.canManageSprints
-                      ? `Create a sprint for ${currentTeam.name} and plan issues from the backlog into it.`
-                      : 'Sprints will show up here once an admin creates one.'
+                permissions.canManageSprints
+                    ? `Create a sprint for ${boardName} and plan issues from the backlog into it.`
+                    : 'Sprints will show up here once an admin creates one.'
             "
         >
-            <Button
-                v-if="!currentTeam && permissions.canManageTeams"
-                variant="outline"
-                as-child
-            >
-                <Link :href="teamsIndex(currentOrganization.slug)">
-                    Go to teams
-                </Link>
-            </Button>
             <CreateSprintModal
-                v-else-if="currentTeam && permissions.canManageSprints"
+                v-if="permissions.canManageSprints"
                 :organization="currentOrganization.slug"
-                :team="currentTeam.name"
+                :team="boardName"
             >
                 <Button variant="outline"><Plus /> New sprint</Button>
             </CreateSprintModal>

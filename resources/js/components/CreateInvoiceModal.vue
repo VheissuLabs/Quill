@@ -27,13 +27,17 @@ const props = defineProps<{
     organization: string;
     clients: { id: number; name: string }[];
     projects: InvoiceProjectOption[];
+    clientId?: number;
 }>();
 
 const open = defineModel<boolean>('open', { default: false });
 const none = 'none';
 const formKey = ref(0);
 
-const form = useForm({ client_id: '', project_id: none });
+const form = useForm({
+    client_id: props.clientId ? String(props.clientId) : '',
+    project_id: none,
+});
 
 const availableProjects = computed(() =>
     form.client_id === ''

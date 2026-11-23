@@ -6,7 +6,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { mutate } from '@/lib/optimistic';
-import { destroy, store, update } from '@/routes/clients/contacts';
+import { destroy, update } from '@/routes/clients/contacts';
 
 type Contact = { id: number; name: string | null; email: string };
 
@@ -114,41 +114,5 @@ const editing = ref<number | null>(null);
             No contacts yet. People who email support from this client's domains
             are added here.
         </p>
-
-        <Form
-            v-if="canManage"
-            v-bind="store.form([organization, client])"
-            class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
-            reset-on-success
-            v-slot="{ errors, processing }"
-        >
-            <div class="grid gap-1">
-                <Input
-                    name="name"
-                    placeholder="Name"
-                    aria-label="Name"
-                    data-test="client-contact-name"
-                />
-                <InputError :message="errors.name" />
-            </div>
-            <div class="grid gap-1">
-                <Input
-                    name="email"
-                    type="email"
-                    placeholder="name@acme.com"
-                    aria-label="Email"
-                    data-test="client-contact-email"
-                />
-                <InputError :message="errors.email" />
-            </div>
-            <Button
-                type="submit"
-                variant="secondary"
-                data-test="client-contact-add"
-                :disabled="processing"
-            >
-                Add contact
-            </Button>
-        </Form>
     </div>
 </template>

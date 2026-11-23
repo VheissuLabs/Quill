@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { CircleCheck, Mail, Settings } from '@lucide/vue';
+import { CircleCheck, Mail, Plus, Settings } from '@lucide/vue';
+import { computed } from 'vue';
 import ClientContacts from '@/components/ClientContacts.vue';
+import CreateContactModal from '@/components/CreateContactModal.vue';
+import CreateInvoiceModal from '@/components/CreateInvoiceModal.vue';
+import CreateProjectModal from '@/components/CreateProjectModal.vue';
 import Heading from '@/components/Heading.vue';
 import InvoiceStatusBadge from '@/components/InvoiceStatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +22,7 @@ import type {
     LinkedTicket,
     Organization,
     OrganizationPermissions,
+    SelectOption,
 } from '@/types';
 
 type Props = {
@@ -27,9 +32,18 @@ type Props = {
     tickets: LinkedTicket[];
     invoices: InvoiceListItem[] | null;
     permissions: OrganizationPermissions;
+    visibilities: SelectOption[];
 };
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+const invoiceProjects = computed(() =>
+    props.projects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        billToClientId: props.client.id,
+    })),
+);
 
 const money = (value: string) =>
     new Intl.NumberFormat(undefined, {
@@ -61,7 +75,7 @@ defineOptions({
             <h1 class="text-xl font-semibold" data-test="client-name">
                 {{ client.name }}
             </h1>
-            <Button variant="outline" size="sm" as-child>
+            <Button size="sm" as-child>
                 <Link
                     :href="edit([currentOrganization.slug, client.slug])"
                     data-test="client-settings-link"
@@ -72,13 +86,24 @@ defineOptions({
             </Button>
         </div>
 
-        <div class="grid gap-10 lg:grid-cols-2">
+        <div class="grid gap-10">
             <section class="space-y-6">
-                <Heading
-                    variant="small"
-                    title="Contacts"
-                    description="People at this client you open tickets for"
-                />
+                <div class="flex items-start justify-between gap-4">
+                    <Heading
+                        variant="small"
+                        title="Contacts"
+                        description="People at this client you open tickets for"
+                    />
+                    <CreateContactModal
+                        v-if="permissions.canManageClients"
+                        :organization="currentOrganization.slug"
+                        :client="client.slug"
+                    >
+                        <Button size="sm" data-test="client-new-contact-button">
+                            <Plus /> Add contact
+                        </Button>
+                    </CreateContactModal>
+                </div>
                 <ClientContacts
                     :organization="currentOrganization.slug"
                     :client="client.slug"
@@ -88,11 +113,23 @@ defineOptions({
             </section>
 
             <section class="space-y-6">
-                <Heading
-                    variant="small"
-                    title="Projects"
-                    description="Projects run for this client"
-                />
+                <div class="flex items-start justify-between gap-4">
+                    <Heading
+                        variant="small"
+                        title="Projects"
+                        description="Projects run for this client"
+                    />
+                    <CreateProjectModal
+                        v-if="permissions.canManageProjects"
+                        :organization="currentOrganization.slug"
+                        :visibilities="visibilities"
+                        :client-id="client.id"
+                    >
+                        <Button size="sm" data-test="client-new-project-button">
+                            <Plus /> New project
+                        </Button>
+                    </CreateProjectModal>
+                </div>
                 <ul
                     v-if="projects.length > 0"
                     class="divide-y rounded-lg border"
@@ -164,7 +201,19 @@ defineOptions({
             </ul>
         </section>
         <section v-if="invoices !== null" class="space-y-6">
-            <Heading variant="small" title="Invoices" />
+            <div class="flex items-start justify-between gap-4">
+                <Heading variant="small" title="Invoices" />
+                <CreateInvoiceModal
+                    :organization="currentOrganization.slug"
+                    :clients="[{ id: client.id, name: client.name }]"
+                    :projects="invoiceProjects"
+                    :client-id="client.id"
+                >
+                    <Button size="sm" data-test="client-new-invoice-button">
+                        <Plus /> New invoice
+                    </Button>
+                </CreateInvoiceModal>
+            </div>
             <ul v-if="invoices.length > 0" class="divide-y rounded-lg border">
                 <li v-for="invoice in invoices" :key="invoice.id">
                     <Link

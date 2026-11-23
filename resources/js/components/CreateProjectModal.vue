@@ -28,6 +28,7 @@ import type { ProjectVisibility, SelectOption } from '@/types';
 type Props = {
     organization: string;
     visibilities: SelectOption[];
+    clientId?: number;
 };
 
 const props = defineProps<Props>();
@@ -69,6 +70,12 @@ function handleOpenChange(value: boolean) {
                 </DialogHeader>
 
                 <div class="grid gap-4">
+                    <input
+                        v-if="clientId"
+                        type="hidden"
+                        name="client_id"
+                        :value="clientId"
+                    />
                     <div class="grid gap-2">
                         <Label for="name">Project name</Label>
                         <Input

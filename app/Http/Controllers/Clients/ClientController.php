@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Clients;
 
 use App\Actions\Billing\StopBillingCycle;
+use App\Enums\ProjectVisibility;
 use App\Events\ClientsChanged;
 use App\Events\InvoicesChanged;
 use App\Events\IssuesChanged;
@@ -52,6 +53,7 @@ class ClientController extends Controller
             'invoices' => InvoicesChanged::live($currentOrganization->allowsInvoiceManagementBy($user)
                 ? InvoiceListResource::collection($client->invoices()->with('client:id,name,slug')->orderByDesc('issue_date')->orderByDesc('id')->get()->sortBy(fn (Invoice $invoice) => $invoice->id === $openCycleInvoiceId ? 0 : 1)->values())->resolve()
                 : null, $currentOrganization->id),
+            'visibilities' => ProjectVisibility::options(),
         ]);
     }
 
