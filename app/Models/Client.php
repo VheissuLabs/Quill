@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Actions\Billing\OpenBillingPeriod;
+use App\Actions\Billing\StopBillingCycle;
 use App\Concerns\BroadcastsChanges;
 use App\Enums\BillingCycle;
 use App\Enums\InvoiceStatus;
 use App\Events\ClientsChanged;
 use App\Observers\OrganizationScopedSlugObserver;
+use App\Support\BillingEligibility;
 use Carbon\CarbonImmutable;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -64,6 +67,30 @@ class Client extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    /** @param  array<string, mixed>  $attributes */
+    public function saveWithBillingCycle(array $attributes): void
+    {
+        $hadCycle = $this->billing_cycle !== null;
+
+        $this->fill($attributes);
+
+        if (! $hadCycle && $this->billing_cycle !== null) {
+            $this->billing_opened_through = null;
+        }
+
+        $this->save();
+
+        if ($hadCycle && $this->billing_cycle === null) {
+            app(StopBillingCycle::class)->handle($this);
+        }
+
+        if ($this->billing_cycle !== null && app(BillingEligibility::class)->isEligible($this->organization)) {
+            $timezone = $this->organization->billingTimezone();
+
+            app(OpenBillingPeriod::class)->handle($this, CarbonImmutable::parse(CarbonImmutable::now($timezone)->toDateString(), $timezone));
+        }
     }
 
     public function deleteKeepingRecords(): void

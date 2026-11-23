@@ -1,6 +1,5 @@
 <?php
 
-use App\Actions\Billing\OpenBillingPeriod;
 use App\Enums\BillingCycle;
 use App\Enums\InvoiceStatus;
 use App\Enums\OrganizationPermission;
@@ -10,7 +9,6 @@ use App\Models\Invoice;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
-use Carbon\CarbonImmutable;
 
 function clientBillingManager(): array
 {
@@ -323,9 +321,7 @@ test('turning a cycle back on does not back-date the first draft', function () {
         ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billing_cycle' => 'weekly'])
         ->assertSessionHasNoErrors();
 
-    expect($client->fresh()->billing_opened_through)->toBeNull();
-
-    $invoice = app(OpenBillingPeriod::class)->handle($client->fresh(), CarbonImmutable::parse('2026-11-16'));
+    $invoice = $client->fresh()->openCycleInvoice();
 
     expect($invoice->service_period_start->toDateString())->toBe('2026-11-16')
         ->and($invoice->service_period_end->toDateString())->toBe('2026-11-22');
@@ -334,12 +330,13 @@ test('turning a cycle back on does not back-date the first draft', function () {
 test('changing an existing cycle keeps what was already opened', function () {
     [$organization, $admin, $client] = clientBillingManager();
     $client->update(['billing_cycle' => BillingCycle::Biweekly, 'billing_cycle_starts_on' => '2026-11-14', 'billing_opened_through' => '2026-11-27']);
+    $this->travelTo('2026-11-16 10:00');
 
     $this->actingAs($admin)
         ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billing_cycle' => 'monthly'])
         ->assertSessionHasNoErrors();
 
-    expect($client->fresh()->billing_opened_through->toDateString())->toBe('2026-11-27');
+    expect($client->fresh()->openCycleInvoice()->service_period_start->toDateString())->toBe('2026-11-28');
 });
 
 test('cycle fields are hidden and ignored while billing cycles are off', function () {
@@ -378,4 +375,21 @@ test('a cycle client can switch to billed-through in one save when the cycle is 
 
     expect($client->fresh())->billing_cycle->toBeNull()->billed_through_client_id->toBe($payer->id)
         ->and($invoice->fresh()->closes_at)->toBeNull();
+});
+
+test('turning a cycle on opens the draft for the current period straight away', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+    $this->travelTo('2026-11-16 10:00');
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), ['name' => $client->name, 'billing_cycle' => 'weekly'])
+        ->assertSessionHasNoErrors();
+
+    $draft = $client->fresh()->openCycleInvoice();
+
+    expect($draft)->not->toBeNull()
+        ->and($draft->service_period_start->toDateString())->toBe('2026-11-16')
+        ->and($draft->service_period_end->toDateString())->toBe('2026-11-22')
+        ->and($draft->sent_at)->toBeNull()
+        ->and($draft->closes_at)->not->toBeNull();
 });

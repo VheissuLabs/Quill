@@ -30,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRouteBindings();
 
         DevCommands::except('server');
+        DevCommands::artisan('schedule:work', 'scheduler');
 
         Gate::policy(Role::class, RolePolicy::class);
 

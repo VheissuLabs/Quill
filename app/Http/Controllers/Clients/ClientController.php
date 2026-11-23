@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Clients;
 
-use App\Actions\Billing\StopBillingCycle;
 use App\Enums\ProjectVisibility;
 use App\Events\ClientsChanged;
 use App\Events\InvoicesChanged;
@@ -65,21 +64,9 @@ class ClientController extends Controller
         ]);
     }
 
-    public function update(ClientRequest $request, Organization $currentOrganization, Client $client, StopBillingCycle $stopBillingCycle): RedirectResponse
+    public function update(ClientRequest $request, Organization $currentOrganization, Client $client): RedirectResponse
     {
-        $hadCycle = $client->billing_cycle !== null;
-
-        $client->fill($request->validated());
-
-        if (! $hadCycle && $client->billing_cycle !== null) {
-            $client->billing_opened_through = null;
-        }
-
-        $client->save();
-
-        if ($hadCycle && $request->validated('billing_cycle', false) === null) {
-            $stopBillingCycle->handle($client);
-        }
+        $client->saveWithBillingCycle($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client updated.')]);
 
