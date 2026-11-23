@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use RuntimeException;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -134,31 +133,23 @@ class Comment extends Model
                 'author',
                 'mentions',
                 'emailMessage.attachments',
-                'commentable' => function (Relation $commentable): void {
-                    if ($commentable instanceof MorphTo) {
-                        $commentable->morphWith([
-                            Feedback::class => ['project.organization'],
-                            Issue::class => ['project.organization'],
-                            Ticket::class => ['organization'],
-                        ]);
-                    }
-                },
-                'replies' => fn ($query) => $query
+                'commentable' => fn (MorphTo $commentable) => $commentable->morphWith([
+                    Feedback::class => ['project.organization'],
+                    Issue::class => ['project.organization'],
+                    Ticket::class => ['organization'],
+                ]),
+                'replies' => fn (HasMany $query) => $query
                     ->with([
                         'author',
                         'mentions',
                         'emailMessage.attachments',
-                        'commentable' => function (Relation $commentable): void {
-                            if ($commentable instanceof MorphTo) {
-                                $commentable->morphWith([
-                                    Feedback::class => ['project.organization'],
-                                    Issue::class => ['project.organization'],
-                                    Ticket::class => ['organization'],
-                                ]);
-                            }
-                        },
+                        'commentable' => fn (MorphTo $commentable) => $commentable->morphWith([
+                            Feedback::class => ['project.organization'],
+                            Issue::class => ['project.organization'],
+                            Ticket::class => ['organization'],
+                        ]),
                     ])
-                    ->when(! $isMember, fn ($query) => $query->public()),
+                    ->when(! $isMember, fn (Builder $query) => $query->public()),
             ])
             ->when(! $isMember, fn (Builder $query) => $query->public())
             ->when($newestFirst, fn (Builder $query) => $query->latest('id'), fn (Builder $query) => $query->oldest('id'));

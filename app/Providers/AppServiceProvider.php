@@ -38,9 +38,9 @@ class AppServiceProvider extends ServiceProvider
 
     protected function broadcastRoleChanges(): void
     {
-        $announce = function (?int $organizationId): void {
+        $announce = function (int|string|null $organizationId): void {
             if ($organizationId !== null) {
-                broadcast(new MembersChanged($organizationId))->toOthers();
+                broadcast(new MembersChanged((int) $organizationId))->toOthers();
             }
         };
 

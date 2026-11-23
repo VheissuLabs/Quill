@@ -33,7 +33,7 @@ abstract class OrganizationBroadcast implements ShouldBroadcastNow, ShouldDispat
     /** @param  class-string<OrganizationBroadcast>  ...$alsoOn */
     public static function live(mixed $value, int $organizationId, string ...$alsoOn): LiveProp
     {
-        return Inertia::live($value, on: [static::class, ...$alsoOn], channel: self::channel($organizationId));
+        return Inertia::live($value, on: array_values([static::class, ...$alsoOn]), channel: self::channel($organizationId));
     }
 
     /**
@@ -44,7 +44,7 @@ abstract class OrganizationBroadcast implements ShouldBroadcastNow, ShouldDispat
     {
         $channels = collect($organizationIds)->map(fn (int $organizationId) => self::channel($organizationId))->all();
 
-        return $channels === [] ? $value : Inertia::live($value, on: [static::class, ...$alsoOn], channel: $channels);
+        return $channels === [] ? $value : Inertia::live($value, on: array_values([static::class, ...$alsoOn]), channel: $channels);
     }
 
     public function broadcastOn(): PrivateChannel

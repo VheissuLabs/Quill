@@ -31,7 +31,7 @@ abstract class ProjectBroadcast implements ShouldBroadcastNow, ShouldDispatchAft
     /** @param  class-string<ProjectBroadcast>  ...$alsoOn */
     public static function live(mixed $value, int $projectId, string ...$alsoOn): LiveProp
     {
-        return Inertia::live($value, on: [static::class, ...$alsoOn], channel: self::channel($projectId));
+        return Inertia::live($value, on: array_values([static::class, ...$alsoOn]), channel: self::channel($projectId));
     }
 
     /**
@@ -42,7 +42,7 @@ abstract class ProjectBroadcast implements ShouldBroadcastNow, ShouldDispatchAft
     {
         $channels = collect($projectIds)->map(fn (int $projectId) => self::channel($projectId))->all();
 
-        return $channels === [] ? $prop : $prop->live(on: [static::class, ...$alsoOn], channel: $channels);
+        return $channels === [] ? $prop : $prop->live(on: array_values([static::class, ...$alsoOn]), channel: $channels);
     }
 
     public function broadcastOn(): Channel

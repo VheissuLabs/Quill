@@ -103,7 +103,6 @@ const statCards = computed(() => [
             </div>
             <Button
                 v-if="feedbackEnabled && permissions.canManageProjects"
-                variant="outline"
                 as-child
             >
                 <Link :href="projectsIndex(currentOrganization.slug)">

@@ -36,10 +36,8 @@ class ClientDomain extends Model
         return $this->belongsTo(Client::class);
     }
 
-    public function changeBroadcast(): ?ClientsChanged
+    public function changeBroadcast(): ClientsChanged
     {
-        $this->loadMissing('client');
-
-        return $this->client ? new ClientsChanged($this->client->organization_id) : null;
+        return new ClientsChanged($this->organization_id);
     }
 }

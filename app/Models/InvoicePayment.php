@@ -49,10 +49,10 @@ class InvoicePayment extends Model
             ->dontLogEmptyChanges();
     }
 
-    public function changeBroadcast(): ?InvoicesChanged
+    public function changeBroadcast(): InvoicesChanged
     {
         $this->loadMissing('invoice');
 
-        return $this->invoice ? new InvoicesChanged($this->invoice->organization_id) : null;
+        return new InvoicesChanged($this->invoice->organization_id);
     }
 }

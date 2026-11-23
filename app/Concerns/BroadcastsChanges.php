@@ -4,25 +4,20 @@ namespace App\Concerns;
 
 use App\Events\OrganizationBroadcast;
 use App\Events\ProjectBroadcast;
-use Illuminate\Database\Eloquent\Model;
 
 trait BroadcastsChanges
 {
     public static function bootBroadcastsChanges(): void
     {
-        static::created(fn (Model $model) => $model->broadcastChange());
-        static::updated(fn (Model $model) => $model->broadcastChange());
-        static::deleted(fn (Model $model) => $model->broadcastChange());
+        static::created(fn (self $model) => $model->broadcastChange());
+        static::updated(fn (self $model) => $model->broadcastChange());
+        static::deleted(fn (self $model) => $model->broadcastChange());
     }
 
     public function broadcastChange(): void
     {
-        $event = $this->changeBroadcast();
-
-        if ($event !== null) {
-            broadcast($event)->toOthers();
-        }
+        broadcast($this->changeBroadcast())->toOthers();
     }
 
-    abstract public function changeBroadcast(): OrganizationBroadcast|ProjectBroadcast|null;
+    abstract public function changeBroadcast(): OrganizationBroadcast|ProjectBroadcast;
 }

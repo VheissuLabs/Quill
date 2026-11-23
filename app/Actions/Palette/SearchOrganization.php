@@ -14,7 +14,6 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 
 class SearchOrganization
@@ -90,11 +89,7 @@ class SearchOrganization
         return Sprint::query()
             ->onBoardFor($organization, null)
             ->where('name', 'like', $this->wildcard($term))
-            ->with(['owner' => function (Relation $owner): void {
-                if ($owner instanceof MorphTo) {
-                    $owner->morphWith([Team::class => ['organization']]);
-                }
-            }])
+            ->with(['owner' => fn (MorphTo $owner) => $owner->morphWith([Team::class => ['organization']])])
             ->tap(fn (Builder $query) => $this->rank($query, 'name', $term))
             ->limit(self::PER_TYPE)
             ->get()

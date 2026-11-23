@@ -66,10 +66,8 @@ class ClientContact extends Model
             ->dontLogEmptyChanges();
     }
 
-    public function changeBroadcast(): ?ClientsChanged
+    public function changeBroadcast(): ClientsChanged
     {
-        $this->loadMissing('client');
-
-        return $this->client ? new ClientsChanged($this->client->organization_id) : null;
+        return new ClientsChanged($this->organization_id);
     }
 }

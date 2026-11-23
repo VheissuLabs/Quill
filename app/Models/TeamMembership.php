@@ -50,10 +50,10 @@ class TeamMembership extends Pivot
             ->dontLogEmptyChanges();
     }
 
-    public function changeBroadcast(): ?TeamsChanged
+    public function changeBroadcast(): TeamsChanged
     {
         $this->loadMissing('team');
 
-        return $this->team ? new TeamsChanged($this->team->organization_id) : null;
+        return new TeamsChanged($this->team->organization_id);
     }
 }

@@ -97,14 +97,10 @@ class BoardColumn extends Model
         ];
     }
 
-    public function changeBroadcast(): ?TeamsChanged
+    public function changeBroadcast(): TeamsChanged
     {
         $this->loadMissing('owner');
 
-        return match (true) {
-            $this->owner instanceof Team => new TeamsChanged($this->owner->organization_id),
-            $this->owner instanceof Organization => new TeamsChanged($this->owner->id),
-            default => null,
-        };
+        return new TeamsChanged($this->owner instanceof Team ? $this->owner->organization_id : $this->owner->id);
     }
 }
