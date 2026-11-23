@@ -278,6 +278,18 @@ class Organization extends Model
         return $this->hasMany(Role::class, config('permission.column_names.team_foreign_key'));
     }
 
+    /** @return Collection<int, OrganizationMembership> */
+    public function membershipsHolding(Role $role): Collection
+    {
+        return $this->memberships()
+            ->whereIn('user_id', $this->rolesWithMembers()->findOrFail($role->id)->users->modelKeys())
+            ->with(['user.organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $this->id)])
+            ->get()
+            ->each(fn (OrganizationMembership $membership) => $membership->setRelation('organization', $this))
+            ->sortBy(fn (OrganizationMembership $membership) => $membership->user->name)
+            ->values();
+    }
+
     /** @return HasMany<Role, $this> */
     public function rolesWithMembers(): HasMany
     {

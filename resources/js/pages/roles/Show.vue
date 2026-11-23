@@ -1,18 +1,36 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
-import { Check, Lock, Mail, Pencil, UserPlus, Users } from '@lucide/vue';
+import { Head, router } from '@inertiajs/vue3';
+import {
+    Check,
+    ChevronDown,
+    Lock,
+    Mail,
+    Pencil,
+    UserPlus,
+    Users,
+    X,
+} from '@lucide/vue';
 import { computed, ref } from 'vue';
 import AssignRoleModal from '@/components/AssignRoleModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import InviteMemberModal from '@/components/InviteMemberModal.vue';
+import RemoveMemberModal from '@/components/RemoveMemberModal.vue';
 import RoleFormModal from '@/components/RoleFormModal.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useInitials } from '@/composables/useInitials';
+import { update as updateMember } from '@/routes/organizations/members';
 import { index, show } from '@/routes/roles';
 import type {
     Organization,
+    OrganizationMember,
     OrganizationPermissions,
     OrganizationRoleItem,
     PermissionOption,
@@ -26,6 +44,7 @@ type Props = {
     availablePermissions: PermissionOption[];
     availableRoles: RoleOption[];
     candidates: RoleCandidate[];
+    members: OrganizationMember[];
     permissions: OrganizationPermissions;
 };
 
@@ -51,6 +70,20 @@ const { getInitials } = useInitials();
 const editDialogOpen = ref(false);
 const assignDialogOpen = ref(false);
 const inviteDialogOpen = ref(false);
+const removeDialogOpen = ref(false);
+const memberToRemove = ref<OrganizationMember | null>(null);
+
+const changeRole = (member: OrganizationMember, roleId: number) => {
+    router.visit(updateMember([props.currentOrganization.slug, member.id]), {
+        data: { role_id: roleId },
+        preserveScroll: true,
+    });
+};
+
+const confirmRemove = (member: OrganizationMember) => {
+    memberToRemove.value = member;
+    removeDialogOpen.value = true;
+};
 
 /**
  * Permissions grouped the way the role editor shows them, marking the ones this role grants.
@@ -127,7 +160,7 @@ const canInvite = computed(
                     <Mail /> Invite by email
                 </Button>
                 <Button
-                    v-if="permissions.canUpdateMember"
+                    v-if="permissions.canUpdateMember && candidates.length > 0"
                     data-test="assign-role-button"
                     @click="assignDialogOpen = true"
                 >
@@ -143,9 +176,18 @@ const canInvite = computed(
                 description="People who hold this role in the organization."
             />
 
-            <div v-if="role.members.length > 0" class="space-y-2">
+            <p
+                v-if="role.isOwner && members.length === 1"
+                class="text-muted-foreground text-sm"
+                data-test="role-last-owner-note"
+            >
+                Every organization needs an owner. Make someone else an owner
+                before {{ members[0].name }} can step down.
+            </p>
+
+            <div v-if="members.length > 0" class="space-y-2">
                 <div
-                    v-for="member in role.members"
+                    v-for="member in members"
                     :key="member.id"
                     data-test="role-member-row"
                     class="flex items-center gap-3 rounded-lg border p-3"
@@ -162,6 +204,42 @@ const canInvite = computed(
                         <div class="text-muted-foreground truncate text-sm">
                             {{ member.email }}
                         </div>
+                    </div>
+
+                    <div class="ml-auto flex shrink-0 items-center gap-2">
+                        <DropdownMenu v-if="member.canUpdate">
+                            <DropdownMenuTrigger as-child>
+                                <Button
+                                    data-test="role-member-change-role"
+                                    variant="outline"
+                                    size="sm"
+                                >
+                                    Change role
+                                    <ChevronDown class="opacity-50" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                    v-for="option in availableRoles.filter(
+                                        (option) => option.value !== role.id,
+                                    )"
+                                    :key="option.value"
+                                    @click="changeRole(member, option.value)"
+                                >
+                                    {{ option.label }}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button
+                            v-if="member.canRemove"
+                            variant="ghost"
+                            size="icon-sm"
+                            :aria-label="`Remove ${member.name} from the organization`"
+                            data-test="role-member-remove"
+                            @click="confirmRemove(member)"
+                        >
+                            <X />
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -254,5 +332,10 @@ const canInvite = computed(
         :default-role="role.id"
         :open="inviteDialogOpen"
         @update:open="inviteDialogOpen = $event"
+    />
+    <RemoveMemberModal
+        v-model:open="removeDialogOpen"
+        :organization="currentOrganization"
+        :member="memberToRemove"
     />
 </template>

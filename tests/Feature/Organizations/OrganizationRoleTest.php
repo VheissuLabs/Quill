@@ -130,7 +130,7 @@ test('a role somebody holds cannot be deleted, an unused one can', function () {
     expect($organization->roles()->pluck('name')->sort()->values()->all())->toBe(['Member', 'Owner']);
 });
 
-test('a role page shows who holds it, who could be given it, and lets an admin hand it out', function () {
+test('a role page shows who holds it, who could be given it without leaving the organization ownerless, and lets an admin hand it out', function () {
     $owner = User::factory()->create(['name' => 'Olive Owner']);
     $member = User::factory()->create(['name' => 'Mia Member']);
     $organization = Organization::factory()->create();
@@ -145,7 +145,7 @@ test('a role page shows who holds it, who could be given it, and lets an admin h
             ->component('roles/Show')
             ->where('role.name', 'Admin')
             ->where('role.members', [])
-            ->where('candidates', fn ($candidates) => collect($candidates)->pluck('name')->all() === ['Mia Member', 'Olive Owner'])
+            ->where('candidates', fn ($candidates) => collect($candidates)->pluck('name')->all() === ['Mia Member'])
             ->where('permissions.canUpdateMember', true),
         );
 
@@ -160,7 +160,7 @@ test('a role page shows who holds it, who could be given it, and lets an admin h
         ->get(route('roles.show', ['current_organization' => $organization, 'role' => $admin]))
         ->assertInertia(fn (Assert $page) => $page
             ->where('role.members.0.name', 'Mia Member')
-            ->where('candidates', fn ($candidates) => collect($candidates)->pluck('name')->all() === ['Olive Owner']),
+            ->where('candidates', []),
         );
 
     $this
@@ -209,4 +209,29 @@ test('managing roles requires the manage roles permission', function () {
         ->actingAs(User::factory()->create())
         ->get(route('roles.index', ['current_organization' => $organization]))
         ->assertForbidden();
+});
+
+test('the owner role page lets an owner step another owner down but never the last one', function () {
+    $karl = User::factory()->create(['name' => 'Karl']);
+    $kacey = User::factory()->create(['name' => 'Kacey']);
+    $organization = Organization::factory()->create();
+    $organization->addMember($karl, 'Owner');
+    $owner = $organization->ownerRole();
+
+    $this->actingAs($karl)
+        ->get(route('roles.show', ['current_organization' => $organization, 'role' => $owner]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('members', 1)
+            ->where('members.0.canUpdate', false)
+            ->where('members.0.canRemove', false));
+
+    $organization->addMember($kacey, $owner);
+
+    $this->actingAs($karl)
+        ->get(route('roles.show', ['current_organization' => $organization, 'role' => $owner]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('members', 2)
+            ->where('members.0.name', 'Kacey')
+            ->where('members.0.canUpdate', true)
+            ->where('members.0.canRemove', true));
 });

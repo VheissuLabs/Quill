@@ -80,7 +80,16 @@ const assign = () => {
                     </DialogDescription>
                 </DialogHeader>
 
-                <div class="grid gap-2">
+                <p
+                    v-if="props.candidates.length === 0"
+                    class="text-muted-foreground text-sm"
+                    data-test="assign-role-nobody"
+                >
+                    Everyone in the organization already holds this role. Invite
+                    someone by email to give them this role.
+                </p>
+
+                <div v-else class="grid gap-2">
                     <Label for="assign-role-member">Organization member</Label>
                     <Select v-model="userId">
                         <SelectTrigger
@@ -103,12 +112,6 @@ const assign = () => {
                             </SelectItem>
                         </SelectContent>
                     </Select>
-                    <p
-                        v-if="props.candidates.length === 0"
-                        class="text-muted-foreground text-sm"
-                    >
-                        Everyone in the organization already holds this role.
-                    </p>
                 </div>
 
                 <DialogFooter class="gap-2">
@@ -117,6 +120,7 @@ const assign = () => {
                     </DialogClose>
 
                     <Button
+                        v-if="props.candidates.length > 0"
                         type="submit"
                         data-test="assign-role-submit"
                         :disabled="processing || userId === ''"

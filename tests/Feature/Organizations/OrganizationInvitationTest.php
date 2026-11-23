@@ -49,7 +49,7 @@ test('invitation email for existing users uses login route', function () {
     $this->assertStringContainsString('dashboard', implode(' ', $mail->introLines));
 });
 
-test('invitation email for unknown users uses login route', function () {
+test('invitation email for someone without an account links to registration', function () {
     $owner = User::factory()->create();
     $organization = Organization::factory()->create();
 
@@ -63,8 +63,8 @@ test('invitation email for unknown users uses login route', function () {
 
     $mail = (new OrganizationInvitationNotification($invitation))->toMail((object) []);
 
-    expect($mail->actionUrl)->toBe(route('login', ['invitation' => $invitation->code]));
-    $this->assertStringContainsString('log in', strtolower(implode(' ', $mail->introLines)));
+    expect($mail->actionUrl)->toBe(route('register', ['invitation' => $invitation->code]))
+        ->and($mail->actionText)->toBe('Create account');
 });
 
 test('organization invitations can be created by admins', function () {
@@ -309,4 +309,14 @@ test('expired invitations cannot be accepted', function () {
     $response->assertSessionHasErrors('invitation');
 
     expect($invitedUser->fresh()->belongsToOrganization($organization))->toBeFalse();
+});
+
+test('the registration page fills in the invited email address', function () {
+    $invitation = OrganizationInvitation::factory()->create(['email' => 'new@example.com']);
+
+    $this->get(route('register', ['invitation' => $invitation->code]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('auth/Register')
+            ->where('organizationInvitation.email', 'new@example.com'));
 });

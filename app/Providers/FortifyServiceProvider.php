@@ -53,14 +53,7 @@ class FortifyServiceProvider extends ServiceProvider
 
     private function authenticate(Request $request): ?User
     {
-        $email = strtolower((string) $request->input(Fortify::username()));
-
-        $user = User::query()
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->orWhereHas('emailAddresses', fn ($query) => $query
-                ->verified()
-                ->where('email', $email))
-            ->first();
+        $user = User::query()->withEmailAddress((string) $request->input(Fortify::username()))->first();
 
         if ($user && Hash::check((string) $request->input('password'), $user->password)) {
             return $user;
@@ -120,7 +113,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
     }
 
-    /** @return array{code: string, organizationName: string}|null */
+    /** @return array{code: string, email: string, organizationName: string}|null */
     private function organizationInvitation(Request $request): ?array
     {
         $invitationCode = $request->query('invitation');
@@ -144,6 +137,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         return [
             'code' => $invitation->code,
+            'email' => $invitation->email,
             'organizationName' => $invitation->organization->name,
         ];
     }

@@ -60,6 +60,22 @@ void createInertiaApp({
         color: '#4B5563',
     },
     live: broadcastingEnabled ? liveTransport() : undefined,
+    defaults: {
+        visitOptions: (href, options) => {
+            const method = options.method ?? 'get';
+
+            if (method === 'get' || options.preserveScroll !== undefined) {
+                return {};
+            }
+
+            const from = window.location.pathname;
+
+            return {
+                preserveScroll: (page) =>
+                    new URL(page.url, window.location.origin).pathname === from,
+            };
+        },
+    },
 });
 
 // This will set light / dark mode on page load...

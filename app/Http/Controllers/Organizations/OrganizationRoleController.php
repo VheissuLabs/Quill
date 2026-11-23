@@ -7,9 +7,10 @@ use App\Enums\OrganizationPermission;
 use App\Events\MembersChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\OrganizationRoleRequest;
+use App\Http\Resources\OrganizationMemberResource;
+use App\Http\Resources\RoleCandidateResource;
 use App\Http\Resources\RoleResource;
 use App\Models\Organization;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -36,21 +37,10 @@ class OrganizationRoleController extends Controller
 
         return Inertia::render('roles/Show', [
             'role' => MembersChanged::live(RoleResource::make($currentOrganization->rolesWithMembers()->findOrFail($role->id)), $currentOrganization->id),
+            'members' => MembersChanged::live($currentOrganization->membershipsHolding($role)->map(fn ($membership) => OrganizationMemberResource::make($membership, $user)->resolve()), $currentOrganization->id),
             'availablePermissions' => OrganizationPermission::options(),
             'availableRoles' => MembersChanged::live($grantableRoles->map(fn (Role $grantable) => ['value' => $grantable->id, 'label' => $grantable->name])->values(), $currentOrganization->id),
-            'candidates' => MembersChanged::live($currentOrganization->memberships()
-                ->with(['user.organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $currentOrganization->id)])
-                ->get()
-                ->map(fn ($membership) => $membership->user)
-                ->filter(fn (User $member) => $member->organizationRole($currentOrganization)?->id !== $role->id)
-                ->sortBy('name')
-                ->map(fn (User $member) => [
-                    'id' => $member->id,
-                    'name' => $member->name,
-                    'email' => $member->email,
-                    'role' => $member->organizationRole($currentOrganization)?->name,
-                ])
-                ->values(), $currentOrganization->id),
+            'candidates' => MembersChanged::live(RoleCandidateResource::forRole($currentOrganization, $role, $user), $currentOrganization->id),
         ]);
     }
 

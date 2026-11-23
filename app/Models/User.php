@@ -8,7 +8,9 @@ use App\Observers\UserObserver;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -50,6 +52,17 @@ class User extends Authenticatable implements PasskeyUser
             ->map(fn (string $email) => Str::lower($email))
             ->unique()
             ->values();
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function withEmailAddress(Builder $query, string $email): void
+    {
+        $email = strtolower($email);
+
+        $query->where(fn (Builder $query) => $query
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->orWhereHas('emailAddresses', fn ($query) => $query->verified()->where('email', $email)));
     }
 
     public function hasEmailAddress(string $email): bool

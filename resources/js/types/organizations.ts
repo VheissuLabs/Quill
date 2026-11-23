@@ -60,6 +60,7 @@ export type OrganizationInvitation = {
 
 export type OrganizationInvitationContext = {
     code: string;
+    email: string;
     organizationName: string;
 };
 

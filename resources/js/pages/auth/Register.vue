@@ -69,6 +69,7 @@ defineOptions({
                     :tabindex="2"
                     autocomplete="email"
                     name="email"
+                    :default-value="organizationInvitation?.email"
                     placeholder="email@example.com"
                 />
                 <InputError :message="errors.email" />
