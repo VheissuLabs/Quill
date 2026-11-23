@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Sprints;
 
 use App\Enums\IssueStatus;
 use App\Enums\SprintStatus;
+use App\Events\IssuesChanged;
+use App\Events\TeamsChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sprints\SprintRequest;
 use App\Http\Resources\IssueResource;
@@ -20,9 +22,9 @@ class SprintController extends Controller
     public function index(Organization $currentOrganization): Response
     {
         return Inertia::render('sprints/Index', [
-            'sprints' => SprintResource::collection(
+            'sprints' => IssuesChanged::live(fn () => SprintResource::collection(
                 Sprint::boardFor(auth()->user()->boardOwnerFor($currentOrganization))
-            ),
+            ), $currentOrganization->getKey()),
         ]);
     }
 
@@ -52,13 +54,13 @@ class SprintController extends Controller
             ->get();
 
         return Inertia::render('sprints/Show', [
-            'sprint' => SprintResource::make($sprint),
-            'issues' => IssueResource::collection($issues),
-            'columns' => $sprint->columns()->map(fn (BoardColumn $column) => [
+            'sprint' => IssuesChanged::live(SprintResource::make($sprint), $currentOrganization->getKey()),
+            'issues' => IssuesChanged::live(IssueResource::collection($issues), $currentOrganization->getKey()),
+            'columns' => IssuesChanged::live($sprint->columns()->map(fn (BoardColumn $column) => [
                 'id' => $column->id,
                 'name' => $column->name,
                 'status' => $column->status->value,
-            ]),
+            ]), $currentOrganization->getKey(), TeamsChanged::class),
         ]);
     }
 

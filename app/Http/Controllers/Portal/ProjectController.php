@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Portal;
 
 use App\Enums\FeedbackStatus;
 use App\Enums\FeedbackType;
+use App\Events\FeedbackChanged;
+use App\Events\FeedbackCommented;
+use App\Events\FeedbackVoted;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Portal\ProjectBoardRequest;
 use App\Http\Resources\FeedbackResource;
@@ -59,19 +62,19 @@ class ProjectController extends Controller
                 'description' => $project->description,
                 'visibility' => $project->visibility->value,
             ],
-            'feedback' => $feedback,
+            'feedback' => FeedbackChanged::live($feedback, $project->id, FeedbackVoted::class, FeedbackCommented::class),
             'filters' => ['status' => $status?->value, 'type' => $type?->value, 'sort' => $sort, 'search' => $search],
-            'types' => collect(FeedbackType::cases())->map(fn (FeedbackType $type) => [
+            'types' => FeedbackChanged::live(collect(FeedbackType::cases())->map(fn (FeedbackType $type) => [
                 'value' => $type->value,
                 'label' => $type->label(),
                 'count' => (int) ($countsByType[$type->value] ?? 0),
-            ]),
-            'statuses' => collect(FeedbackStatus::cases())->map(fn (FeedbackStatus $status) => [
+            ]), $project->id),
+            'statuses' => FeedbackChanged::live(collect(FeedbackStatus::cases())->map(fn (FeedbackStatus $status) => [
                 'value' => $status->value,
                 'label' => $status->label(),
                 'count' => (int) ($countsByStatus[$status->value] ?? 0),
-            ]),
-            'activeCount' => (int) collect(FeedbackStatus::active())->sum(fn (FeedbackStatus $status) => $countsByStatus[$status->value] ?? 0),
+            ]), $project->id),
+            'activeCount' => FeedbackChanged::live((int) collect(FeedbackStatus::active())->sum(fn (FeedbackStatus $status) => $countsByStatus[$status->value] ?? 0), $project->id),
             'viewer' => ProjectViewerResource::make($project)->for($user),
         ]);
     }

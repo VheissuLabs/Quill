@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Events\MembersChanged;
 use App\Policies\RolePolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -10,10 +11,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Events\PermissionAttachedEvent;
+use Spatie\Permission\Events\PermissionDetachedEvent;
+use Spatie\Permission\Events\RoleAttachedEvent;
+use Spatie\Permission\Events\RoleDetachedEvent;
 use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
@@ -26,6 +32,26 @@ class AppServiceProvider extends ServiceProvider
         DevCommands::except('server');
 
         Gate::policy(Role::class, RolePolicy::class);
+
+        $this->broadcastRoleChanges();
+    }
+
+    protected function broadcastRoleChanges(): void
+    {
+        $announce = function (?int $organizationId): void {
+            if ($organizationId !== null) {
+                broadcast(new MembersChanged($organizationId))->toOthers();
+            }
+        };
+
+        Event::listen([RoleAttachedEvent::class, RoleDetachedEvent::class], fn () => $announce(getPermissionsTeamId()));
+        Event::listen(
+            [PermissionAttachedEvent::class, PermissionDetachedEvent::class],
+            fn (PermissionAttachedEvent|PermissionDetachedEvent $event) => $announce($event->model->getAttribute('organization_id')),
+        );
+        Role::created(fn (Role $role) => $announce($role->getAttribute('organization_id')));
+        Role::updated(fn (Role $role) => $announce($role->getAttribute('organization_id')));
+        Role::deleted(fn (Role $role) => $announce($role->getAttribute('organization_id')));
     }
 
     protected function configureRouteBindings(): void

@@ -3,10 +3,15 @@
 namespace App\Http\Middleware;
 
 use App\Enums\OrganizationCapability;
+use App\Events\MembersChanged;
+use App\Events\ModulesChanged;
+use App\Events\OrganizationChanged;
+use App\Events\TeamsChanged;
 use App\Http\Resources\UserOrganizationResource;
 use App\Models\Organization;
 use App\Models\Team;
 use App\Models\User;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Inertia\Middleware;
@@ -34,6 +39,9 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $organizationId = $user?->current_organization_id;
+
+        $live = fn (string $event, Closure $value, string ...$alsoOn) => $organizationId ? $event::live($value, $organizationId, ...$alsoOn) : $value;
 
         return [
             ...parent::share($request),
@@ -42,18 +50,18 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            'currentOrganization' => fn () => $user?->currentOrganization ? UserOrganizationResource::make($user->currentOrganization, $user) : null,
-            'organizations' => fn () => $user?->memberOrganizations(includeCurrent: true)
-                ->map(fn (Organization $organization) => UserOrganizationResource::make($organization, $user)->resolve()) ?? [],
-            'permissions' => fn () => $user?->currentOrganization
+            'currentOrganization' => $live(ModulesChanged::class, fn () => $user?->currentOrganization ? UserOrganizationResource::make($user->currentOrganization, $user) : null, OrganizationChanged::class),
+            'organizations' => $live(OrganizationChanged::class, fn () => $user?->memberOrganizations(includeCurrent: true)
+                ->map(fn (Organization $organization) => UserOrganizationResource::make($organization, $user)->resolve()) ?? [], MembersChanged::class),
+            'permissions' => $live(MembersChanged::class, fn () => $user?->currentOrganization
                 ? $user->toOrganizationPermissions($user->currentOrganization)
-                : [],
-            'currentTeam' => fn () => $this->currentTeam($user),
+                : []),
+            'currentTeam' => $live(ModulesChanged::class, fn () => $this->currentTeam($user), TeamsChanged::class),
             'notifications' => fn () => $this->notifications($user),
-            'availableTeams' => fn () => $user?->currentOrganization?->teams()
+            'availableTeams' => $live(TeamsChanged::class, fn () => $user?->currentOrganization?->teams()
                 ->orderBy('name')
                 ->get()
-                ->map(fn (Team $team) => ['id' => $team->id, 'name' => $team->name, 'slug' => $team->slug]) ?? [],
+                ->map(fn (Team $team) => ['id' => $team->id, 'name' => $team->name, 'slug' => $team->slug]) ?? []),
         ];
     }
 

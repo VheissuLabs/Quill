@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Teams;
 
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationCapability;
+use App\Events\IssuesChanged;
+use App\Events\MembersChanged;
+use App\Events\ModulesChanged;
+use App\Events\TeamsChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Teams\DeleteTeamRequest;
 use App\Http\Requests\Teams\TeamRequest;
@@ -22,7 +26,7 @@ class TeamController extends Controller
     public function index(Organization $currentOrganization): Response
     {
         return Inertia::render('teams/Index', [
-            'teams' => TeamListResource::collection($currentOrganization->teams()->withCount('members')->orderBy('name')->get()),
+            'teams' => TeamsChanged::live(TeamListResource::collection($currentOrganization->teams()->withCount('members')->orderBy('name')->get()), $currentOrganization->id),
         ]);
     }
 
@@ -39,18 +43,18 @@ class TeamController extends Controller
     {
         return Inertia::render('teams/Edit', [
             'team' => TeamResource::make($team),
-            'modules' => $team->moduleSettings(),
-            'organizationModules' => [
+            'modules' => ModulesChanged::live($team->moduleSettings(), $currentOrganization->id),
+            'organizationModules' => ModulesChanged::live([
                 'sprints' => $currentOrganization->canUse(OrganizationCapability::Sprints),
-            ],
-            'members' => UserContactResource::collection($team->members()->orderBy('name')->get()),
-            'availableMembers' => UserContactResource::collection(
+            ], $currentOrganization->id),
+            'members' => TeamsChanged::live(UserContactResource::collection($team->members()->orderBy('name')->get()), $currentOrganization->id, MembersChanged::class),
+            'availableMembers' => TeamsChanged::live(UserContactResource::collection(
                 $currentOrganization->members()->whereKeyNot($team->members()->pluck('users.id'))->orderBy('name')->get()
-            ),
-            'columns' => BoardColumnResource::collection($team->columns()->withCount('issues')->get()),
+            ), $currentOrganization->id, MembersChanged::class),
+            'columns' => TeamsChanged::live(BoardColumnResource::collection($team->columns()->withCount('issues')->get()), $currentOrganization->id, IssuesChanged::class),
             'columnStatuses' => collect(IssueStatus::columnStatuses())
                 ->map(fn (IssueStatus $status) => ['value' => $status->value, 'label' => $status->label()]),
-            'otherTeams' => TeamResource::collection($currentOrganization->teams()->whereKeyNot($team->id)->orderBy('name')->get()),
+            'otherTeams' => TeamsChanged::live(TeamResource::collection($currentOrganization->teams()->whereKeyNot($team->id)->orderBy('name')->get()), $currentOrganization->id),
         ]);
     }
 

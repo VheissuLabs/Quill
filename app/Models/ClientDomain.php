@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
+use App\Events\ClientsChanged;
 use App\Observers\ClientDomainObserver;
 use Database\Factories\ClientDomainFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -15,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[UseFactory(ClientDomainFactory::class)]
 class ClientDomain extends Model
 {
-    use HasFactory;
+    use BroadcastsChanges, HasFactory;
 
     protected $guarded = [];
 
@@ -32,5 +34,12 @@ class ClientDomain extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function changeBroadcast(): ?ClientsChanged
+    {
+        $this->loadMissing('client');
+
+        return $this->client ? new ClientsChanged($this->client->organization_id) : null;
     }
 }

@@ -8,6 +8,8 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        config(['broadcasting.default' => 'null']);
+
         $this->call(PermissionsSeeder::class);
 
         if (app()->isProduction()) {

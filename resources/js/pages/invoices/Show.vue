@@ -4,7 +4,7 @@ import { Copy, Link2, Send, Trash2, Ban } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ConfirmActionModal from '@/components/ConfirmActionModal.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
-import Heading from '@/components/Heading.vue';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import InputError from '@/components/InputError.vue';
 import InvoiceLines from '@/components/InvoiceLines.vue';
 import InvoicePayments from '@/components/InvoicePayments.vue';
@@ -336,224 +336,27 @@ const money = (value: string) =>
             :href="destroy([currentOrganization.slug, invoice.id])"
         />
 
-        <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <div class="flex min-w-0 flex-col gap-10">
-                <InvoiceLines
-                    :organization="currentOrganization.slug"
-                    :invoice="invoice"
-                />
+        <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div class="flex min-w-0 flex-col gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Details</CardTitle>
+                    </CardHeader>
 
-                <section class="space-y-3">
-                    <Heading variant="small" title="Details" />
-
-                    <form
-                        v-if="invoice.canUpdate"
-                        class="grid gap-6 rounded-lg border p-5"
-                        data-test="invoice-header-form"
-                        @submit.prevent="submit"
-                    >
-                        <div class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                            <div class="grid gap-2">
-                                <Label for="invoice-contact">Contact</Label>
-                                <Select v-model="form.contact_id">
-                                    <SelectTrigger
-                                        id="invoice-contact"
-                                        class="w-full"
-                                    >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem :value="none">
-                                            None
-                                        </SelectItem>
-                                        <SelectItem
-                                            v-for="option in invoice.options
-                                                .contacts"
-                                            :key="option.id"
-                                            :value="String(option.id)"
-                                        >
-                                            {{ option.name ?? option.email }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <InputError :message="form.errors.contact_id" />
-                            </div>
-
-                            <div class="grid gap-2">
-                                <Label for="invoice-cc">CC</Label>
-                                <Input
-                                    id="invoice-cc"
-                                    v-model="form.cc_emails"
-                                    data-test="invoice-cc-input"
-                                />
-                                <InputError :message="form.errors.cc_emails" />
-                            </div>
-
-                            <div class="grid gap-2">
-                                <Label for="invoice-issue-date">
-                                    Issue date
-                                </Label>
-                                <Input
-                                    id="invoice-issue-date"
-                                    v-model="form.issue_date"
-                                    type="date"
-                                />
-                                <InputError :message="form.errors.issue_date" />
-                            </div>
-
-                            <div class="grid gap-2">
-                                <Label for="invoice-due-date">Due date</Label>
-                                <Input
-                                    id="invoice-due-date"
-                                    v-model="form.due_date"
-                                    type="date"
-                                />
-                                <InputError :message="form.errors.due_date" />
-                            </div>
-
-                            <div class="grid gap-2">
-                                <Label for="invoice-period-start">
-                                    Service period start
-                                </Label>
-                                <Input
-                                    id="invoice-period-start"
-                                    v-model="form.service_period_start"
-                                    type="date"
-                                />
-                                <InputError
-                                    :message="form.errors.service_period_start"
-                                />
-                            </div>
-
-                            <div class="grid gap-2">
-                                <Label for="invoice-period-end">
-                                    Service period end
-                                </Label>
-                                <Input
-                                    id="invoice-period-end"
-                                    v-model="form.service_period_end"
-                                    type="date"
-                                />
-                                <InputError
-                                    :message="form.errors.service_period_end"
-                                />
-                            </div>
-
-                            <div class="grid gap-2">
-                                <div
-                                    class="flex items-center justify-between gap-2"
-                                >
-                                    <Label for="invoice-project">Project</Label>
-                                    <Link
-                                        v-if="projectFor(form.project_id)"
-                                        :href="
-                                            editProject([
-                                                currentOrganization.slug,
-                                                projectFor(form.project_id)!
-                                                    .slug,
-                                            ])
-                                        "
-                                        class="text-muted-foreground hover:text-foreground text-xs hover:underline"
-                                    >
-                                        Open project
-                                    </Link>
-                                </div>
-                                <Select v-model="form.project_id">
-                                    <SelectTrigger
-                                        id="invoice-project"
-                                        class="w-full"
-                                    >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem :value="none">
-                                            None
-                                        </SelectItem>
-                                        <SelectItem
-                                            v-for="project in invoice.options
-                                                .projects"
-                                            :key="project.id"
-                                            :value="String(project.id)"
-                                        >
-                                            {{ project.name }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <InputError :message="form.errors.project_id" />
-                            </div>
-
-                            <div class="grid gap-2">
-                                <div
-                                    class="flex items-center justify-between gap-2"
-                                >
-                                    <Label for="invoice-sprint">Sprint</Label>
-                                    <Link
-                                        v-if="sprintFor(form.sprint_id)"
-                                        :href="
-                                            showSprint([
-                                                currentOrganization.slug,
-                                                Number(form.sprint_id),
-                                            ])
-                                        "
-                                        class="text-muted-foreground hover:text-foreground text-xs hover:underline"
-                                    >
-                                        Open sprint
-                                    </Link>
-                                </div>
-                                <Select v-model="form.sprint_id">
-                                    <SelectTrigger
-                                        id="invoice-sprint"
-                                        class="w-full"
-                                    >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem :value="none">
-                                            None
-                                        </SelectItem>
-                                        <SelectItem
-                                            v-for="sprint in invoice.options
-                                                .sprints"
-                                            :key="sprint.id"
-                                            :value="String(sprint.id)"
-                                        >
-                                            {{ sprint.name }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <InputError :message="form.errors.sprint_id" />
-                            </div>
-                        </div>
-
-                        <div
-                            v-if="invoice.isEditable"
-                            class="grid gap-x-6 gap-y-5 border-t pt-5 sm:grid-cols-3"
+                    <CardContent>
+                        <form
+                            v-if="invoice.canUpdate"
+                            class="grid gap-6"
+                            data-test="invoice-header-form"
+                            @submit.prevent="submit"
                         >
-                            <div class="grid content-start gap-2">
-                                <Label for="invoice-tax-rate">
-                                    Tax rate (%)
-                                </Label>
-                                <Input
-                                    id="invoice-tax-rate"
-                                    v-model="form.tax_rate"
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    step="0.01"
-                                    data-test="invoice-tax-rate-input"
-                                />
-                                <InputError :message="form.errors.tax_rate" />
-                            </div>
-
-                            <div class="grid content-start gap-2">
-                                <Label for="invoice-discount-type">
-                                    Discount
-                                </Label>
-                                <div class="flex gap-2">
-                                    <Select v-model="form.discount_type">
+                            <div class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+                                <div class="grid gap-2">
+                                    <Label for="invoice-contact">Contact</Label>
+                                    <Select v-model="form.contact_id">
                                         <SelectTrigger
-                                            id="invoice-discount-type"
-                                            class="w-32"
+                                            id="invoice-contact"
+                                            class="w-full"
                                         >
                                             <SelectValue />
                                         </SelectTrigger>
@@ -561,40 +364,120 @@ const money = (value: string) =>
                                             <SelectItem :value="none">
                                                 None
                                             </SelectItem>
-                                            <SelectItem value="percentage">
-                                                %
-                                            </SelectItem>
-                                            <SelectItem value="fixed">
-                                                Fixed
+                                            <SelectItem
+                                                v-for="option in invoice.options
+                                                    .contacts"
+                                                :key="option.id"
+                                                :value="String(option.id)"
+                                            >
+                                                {{
+                                                    option.name ?? option.email
+                                                }}
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <Input
-                                        v-model="form.discount_value"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        aria-label="Discount value"
-                                        :disabled="form.discount_type === none"
+                                    <InputError
+                                        :message="form.errors.contact_id"
                                     />
                                 </div>
-                                <InputError
-                                    :message="
-                                        form.errors.discount_type ||
-                                        form.errors.discount_value
-                                    "
-                                />
-                            </div>
 
-                            <div class="grid content-start gap-2">
-                                <Label for="invoice-deposit-type">
-                                    Deposit
-                                </Label>
-                                <div class="flex gap-2">
-                                    <Select v-model="form.deposit_type">
+                                <div class="grid gap-2">
+                                    <Label for="invoice-cc">CC</Label>
+                                    <Input
+                                        id="invoice-cc"
+                                        v-model="form.cc_emails"
+                                        data-test="invoice-cc-input"
+                                    />
+                                    <InputError
+                                        :message="form.errors.cc_emails"
+                                    />
+                                </div>
+
+                                <div class="grid gap-2">
+                                    <Label for="invoice-issue-date">
+                                        Issue date
+                                    </Label>
+                                    <Input
+                                        id="invoice-issue-date"
+                                        v-model="form.issue_date"
+                                        type="date"
+                                    />
+                                    <InputError
+                                        :message="form.errors.issue_date"
+                                    />
+                                </div>
+
+                                <div class="grid gap-2">
+                                    <Label for="invoice-due-date"
+                                        >Due date</Label
+                                    >
+                                    <Input
+                                        id="invoice-due-date"
+                                        v-model="form.due_date"
+                                        type="date"
+                                    />
+                                    <InputError
+                                        :message="form.errors.due_date"
+                                    />
+                                </div>
+
+                                <div class="grid gap-2">
+                                    <Label for="invoice-period-start">
+                                        Service period start
+                                    </Label>
+                                    <Input
+                                        id="invoice-period-start"
+                                        v-model="form.service_period_start"
+                                        type="date"
+                                    />
+                                    <InputError
+                                        :message="
+                                            form.errors.service_period_start
+                                        "
+                                    />
+                                </div>
+
+                                <div class="grid gap-2">
+                                    <Label for="invoice-period-end">
+                                        Service period end
+                                    </Label>
+                                    <Input
+                                        id="invoice-period-end"
+                                        v-model="form.service_period_end"
+                                        type="date"
+                                    />
+                                    <InputError
+                                        :message="
+                                            form.errors.service_period_end
+                                        "
+                                    />
+                                </div>
+
+                                <div class="grid gap-2">
+                                    <div
+                                        class="flex items-center justify-between gap-2"
+                                    >
+                                        <Label for="invoice-project"
+                                            >Project</Label
+                                        >
+                                        <Link
+                                            v-if="projectFor(form.project_id)"
+                                            :href="
+                                                editProject([
+                                                    currentOrganization.slug,
+                                                    projectFor(form.project_id)!
+                                                        .slug,
+                                                ])
+                                            "
+                                            class="text-muted-foreground hover:text-foreground text-xs hover:underline"
+                                        >
+                                            Open project
+                                        </Link>
+                                    </div>
+                                    <Select v-model="form.project_id">
                                         <SelectTrigger
-                                            id="invoice-deposit-type"
-                                            class="w-32"
+                                            id="invoice-project"
+                                            class="w-full"
                                         >
                                             <SelectValue />
                                         </SelectTrigger>
@@ -602,229 +485,390 @@ const money = (value: string) =>
                                             <SelectItem :value="none">
                                                 None
                                             </SelectItem>
-                                            <SelectItem value="percentage">
-                                                %
-                                            </SelectItem>
-                                            <SelectItem value="fixed">
-                                                Fixed
+                                            <SelectItem
+                                                v-for="project in invoice
+                                                    .options.projects"
+                                                :key="project.id"
+                                                :value="String(project.id)"
+                                            >
+                                                {{ project.name }}
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <Input
-                                        v-model="form.deposit_value"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        aria-label="Deposit value"
-                                        :disabled="form.deposit_type === none"
+                                    <InputError
+                                        :message="form.errors.project_id"
                                     />
                                 </div>
-                                <InputError
-                                    :message="
-                                        form.errors.deposit_type ||
-                                        form.errors.deposit_value
-                                    "
-                                />
-                            </div>
-                        </div>
 
-                        <div
-                            class="grid gap-x-6 gap-y-5 border-t pt-5 sm:grid-cols-2"
-                        >
-                            <div class="grid gap-2">
-                                <Label for="invoice-notes">Notes</Label>
-                                <Textarea
-                                    id="invoice-notes"
-                                    v-model="form.notes"
-                                    rows="4"
-                                />
-                                <InputError :message="form.errors.notes" />
+                                <div class="grid gap-2">
+                                    <div
+                                        class="flex items-center justify-between gap-2"
+                                    >
+                                        <Label for="invoice-sprint"
+                                            >Sprint</Label
+                                        >
+                                        <Link
+                                            v-if="sprintFor(form.sprint_id)"
+                                            :href="
+                                                showSprint([
+                                                    currentOrganization.slug,
+                                                    Number(form.sprint_id),
+                                                ])
+                                            "
+                                            class="text-muted-foreground hover:text-foreground text-xs hover:underline"
+                                        >
+                                            Open sprint
+                                        </Link>
+                                    </div>
+                                    <Select v-model="form.sprint_id">
+                                        <SelectTrigger
+                                            id="invoice-sprint"
+                                            class="w-full"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem :value="none">
+                                                None
+                                            </SelectItem>
+                                            <SelectItem
+                                                v-for="sprint in invoice.options
+                                                    .sprints"
+                                                :key="sprint.id"
+                                                :value="String(sprint.id)"
+                                            >
+                                                {{ sprint.name }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError
+                                        :message="form.errors.sprint_id"
+                                    />
+                                </div>
                             </div>
 
-                            <div class="grid gap-2">
-                                <Label for="invoice-terms">Terms</Label>
-                                <Textarea
-                                    id="invoice-terms"
-                                    v-model="form.terms"
-                                    rows="4"
-                                />
-                                <InputError :message="form.errors.terms" />
-                            </div>
-                        </div>
-
-                        <div class="flex justify-end">
-                            <Button
-                                type="submit"
-                                data-test="invoice-save-button"
-                                :disabled="form.processing || !form.isDirty"
+                            <div
+                                v-if="invoice.isEditable"
+                                class="grid gap-x-6 gap-y-5 border-t pt-5 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_minmax(0,3fr)]"
                             >
-                                Save details
-                            </Button>
-                        </div>
-                    </form>
+                                <div class="grid content-start gap-2">
+                                    <Label for="invoice-tax-rate">
+                                        Tax rate (%)
+                                    </Label>
+                                    <Input
+                                        id="invoice-tax-rate"
+                                        v-model="form.tax_rate"
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.01"
+                                        data-test="invoice-tax-rate-input"
+                                    />
+                                    <InputError
+                                        :message="form.errors.tax_rate"
+                                    />
+                                </div>
 
-                    <div
-                        v-else
-                        class="grid gap-6 rounded-lg border p-5 text-sm"
-                        data-test="invoice-details"
-                    >
-                        <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-                            <div>
-                                <dt class="text-muted-foreground">Bill to</dt>
-                                <dd class="font-medium">
-                                    <Link
-                                        :href="clientHref"
-                                        class="hover:underline"
-                                    >
-                                        {{ invoice.clientName }}
-                                    </Link>
-                                </dd>
-                                <dd v-if="contact">
-                                    <Link
-                                        :href="clientHref"
-                                        class="hover:underline"
-                                    >
-                                        {{ contact.name ?? contact.email }}
-                                    </Link>
-                                    <span
-                                        v-if="contact.name"
+                                <div class="grid content-start gap-2">
+                                    <Label for="invoice-discount-type">
+                                        Discount
+                                    </Label>
+                                    <div class="flex gap-2">
+                                        <Select v-model="form.discount_type">
+                                            <SelectTrigger
+                                                id="invoice-discount-type"
+                                                class="w-24 shrink-0"
+                                            >
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem :value="none">
+                                                    None
+                                                </SelectItem>
+                                                <SelectItem value="percentage">
+                                                    %
+                                                </SelectItem>
+                                                <SelectItem value="fixed">
+                                                    Fixed
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Input
+                                            v-model="form.discount_value"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            aria-label="Discount value"
+                                            class="min-w-0"
+                                            :disabled="
+                                                form.discount_type === none
+                                            "
+                                        />
+                                    </div>
+                                    <InputError
+                                        :message="
+                                            form.errors.discount_type ||
+                                            form.errors.discount_value
+                                        "
+                                    />
+                                </div>
+
+                                <div class="grid content-start gap-2">
+                                    <Label for="invoice-deposit-type">
+                                        Deposit
+                                    </Label>
+                                    <div class="flex gap-2">
+                                        <Select v-model="form.deposit_type">
+                                            <SelectTrigger
+                                                id="invoice-deposit-type"
+                                                class="w-24 shrink-0"
+                                            >
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem :value="none">
+                                                    None
+                                                </SelectItem>
+                                                <SelectItem value="percentage">
+                                                    %
+                                                </SelectItem>
+                                                <SelectItem value="fixed">
+                                                    Fixed
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Input
+                                            v-model="form.deposit_value"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            aria-label="Deposit value"
+                                            class="min-w-0"
+                                            :disabled="
+                                                form.deposit_type === none
+                                            "
+                                        />
+                                    </div>
+                                    <InputError
+                                        :message="
+                                            form.errors.deposit_type ||
+                                            form.errors.deposit_value
+                                        "
+                                    />
+                                </div>
+                            </div>
+
+                            <div
+                                class="grid gap-x-6 gap-y-5 border-t pt-5 sm:grid-cols-2"
+                            >
+                                <div class="grid gap-2">
+                                    <Label for="invoice-notes">Notes</Label>
+                                    <Textarea
+                                        id="invoice-notes"
+                                        v-model="form.notes"
+                                        rows="4"
+                                    />
+                                    <InputError :message="form.errors.notes" />
+                                </div>
+
+                                <div class="grid gap-2">
+                                    <Label for="invoice-terms">Terms</Label>
+                                    <Textarea
+                                        id="invoice-terms"
+                                        v-model="form.terms"
+                                        rows="4"
+                                    />
+                                    <InputError :message="form.errors.terms" />
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <Button
+                                    type="submit"
+                                    data-test="invoice-save-button"
+                                    :disabled="form.processing || !form.isDirty"
+                                >
+                                    Save details
+                                </Button>
+                            </div>
+                        </form>
+
+                        <div
+                            v-else
+                            class="grid gap-6 text-sm"
+                            data-test="invoice-details"
+                        >
+                            <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                                <div>
+                                    <dt class="text-muted-foreground">
+                                        Bill to
+                                    </dt>
+                                    <dd class="font-medium">
+                                        <Link
+                                            :href="clientHref"
+                                            class="hover:underline"
+                                        >
+                                            {{ invoice.clientName }}
+                                        </Link>
+                                    </dd>
+                                    <dd v-if="contact">
+                                        <Link
+                                            :href="clientHref"
+                                            class="hover:underline"
+                                        >
+                                            {{ contact.name ?? contact.email }}
+                                        </Link>
+                                        <span
+                                            v-if="contact.name"
+                                            class="text-muted-foreground"
+                                        >
+                                            · {{ contact.email }}
+                                        </span>
+                                    </dd>
+                                    <dd
+                                        v-if="ccList"
                                         class="text-muted-foreground"
                                     >
-                                        · {{ contact.email }}
-                                    </span>
-                                </dd>
-                                <dd v-if="ccList" class="text-muted-foreground">
-                                    CC {{ ccList }}
-                                </dd>
-                            </div>
-                            <div v-if="servicePeriod">
-                                <dt class="text-muted-foreground">
-                                    Service period
-                                </dt>
-                                <dd>{{ servicePeriod }}</dd>
-                            </div>
-                            <div v-if="projectFor(invoice.projectId)">
-                                <dt class="text-muted-foreground">Project</dt>
-                                <dd>
-                                    <Link
-                                        :href="
-                                            editProject([
-                                                currentOrganization.slug,
+                                        CC {{ ccList }}
+                                    </dd>
+                                </div>
+                                <div v-if="servicePeriod">
+                                    <dt class="text-muted-foreground">
+                                        Service period
+                                    </dt>
+                                    <dd>{{ servicePeriod }}</dd>
+                                </div>
+                                <div v-if="projectFor(invoice.projectId)">
+                                    <dt class="text-muted-foreground">
+                                        Project
+                                    </dt>
+                                    <dd>
+                                        <Link
+                                            :href="
+                                                editProject([
+                                                    currentOrganization.slug,
+                                                    projectFor(
+                                                        invoice.projectId,
+                                                    )!.slug,
+                                                ])
+                                            "
+                                            class="hover:underline"
+                                        >
+                                            {{
                                                 projectFor(invoice.projectId)!
-                                                    .slug,
-                                            ])
-                                        "
-                                        class="hover:underline"
-                                    >
-                                        {{
-                                            projectFor(invoice.projectId)!.name
-                                        }}
-                                    </Link>
+                                                    .name
+                                            }}
+                                        </Link>
+                                    </dd>
+                                </div>
+                                <div v-if="sprintFor(invoice.sprintId)">
+                                    <dt class="text-muted-foreground">
+                                        Sprint
+                                    </dt>
+                                    <dd>
+                                        <Link
+                                            :href="
+                                                showSprint([
+                                                    currentOrganization.slug,
+                                                    invoice.sprintId!,
+                                                ])
+                                            "
+                                            class="hover:underline"
+                                        >
+                                            {{
+                                                sprintFor(invoice.sprintId)!
+                                                    .name
+                                            }}
+                                        </Link>
+                                    </dd>
+                                </div>
+                            </dl>
+                            <div
+                                v-if="invoice.notes || invoice.terms"
+                                class="grid gap-x-6 gap-y-4 border-t pt-5 sm:grid-cols-2"
+                            >
+                                <div v-if="invoice.notes">
+                                    <p class="text-muted-foreground">Notes</p>
+                                    <p class="whitespace-pre-line">
+                                        {{ invoice.notes }}
+                                    </p>
+                                </div>
+                                <div v-if="invoice.terms">
+                                    <p class="text-muted-foreground">Terms</p>
+                                    <p class="whitespace-pre-line">
+                                        {{ invoice.terms }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <aside class="flex flex-col gap-6 lg:sticky lg:top-6">
+                <Card class="gap-0 text-sm" data-test="invoice-totals">
+                    <CardContent>
+                        <p class="text-muted-foreground">Amount due</p>
+                        <p
+                            class="mt-1 text-3xl font-semibold tracking-tight tabular-nums"
+                        >
+                            {{ money(invoice.amountDue) }}
+                        </p>
+
+                        <dl class="mt-5 space-y-2 border-t pt-4">
+                            <div class="flex justify-between">
+                                <dt class="text-muted-foreground">Subtotal</dt>
+                                <dd class="tabular-nums">
+                                    {{ money(invoice.subtotal) }}
                                 </dd>
                             </div>
-                            <div v-if="sprintFor(invoice.sprintId)">
-                                <dt class="text-muted-foreground">Sprint</dt>
-                                <dd>
-                                    <Link
-                                        :href="
-                                            showSprint([
-                                                currentOrganization.slug,
-                                                invoice.sprintId!,
-                                            ])
-                                        "
-                                        class="hover:underline"
-                                    >
-                                        {{ sprintFor(invoice.sprintId)!.name }}
-                                    </Link>
+                            <div
+                                v-if="Number(invoice.taxAmount) > 0"
+                                class="flex justify-between"
+                            >
+                                <dt class="text-muted-foreground">
+                                    Tax ({{ Number(invoice.taxRate) }}%)
+                                </dt>
+                                <dd class="tabular-nums">
+                                    {{ money(invoice.taxAmount) }}
+                                </dd>
+                            </div>
+                            <div
+                                v-if="Number(invoice.discountAmount) > 0"
+                                class="flex justify-between"
+                            >
+                                <dt class="text-muted-foreground">Discount</dt>
+                                <dd class="tabular-nums">
+                                    −{{ money(invoice.discountAmount) }}
+                                </dd>
+                            </div>
+                            <div class="flex justify-between font-medium">
+                                <dt>Total</dt>
+                                <dd class="tabular-nums">
+                                    {{ money(invoice.total) }}
+                                </dd>
+                            </div>
+                            <div
+                                v-if="Number(invoice.depositAmount) > 0"
+                                class="flex justify-between"
+                            >
+                                <dt class="text-muted-foreground">Deposit</dt>
+                                <dd class="tabular-nums">
+                                    {{ money(invoice.depositAmount) }}
+                                </dd>
+                            </div>
+                            <div
+                                v-if="Number(invoice.amountPaid) > 0"
+                                class="flex justify-between"
+                            >
+                                <dt class="text-muted-foreground">Paid</dt>
+                                <dd class="tabular-nums">
+                                    −{{ money(invoice.amountPaid) }}
                                 </dd>
                             </div>
                         </dl>
-                        <div
-                            v-if="invoice.notes || invoice.terms"
-                            class="grid gap-x-6 gap-y-4 border-t pt-5 sm:grid-cols-2"
-                        >
-                            <div v-if="invoice.notes">
-                                <p class="text-muted-foreground">Notes</p>
-                                <p class="whitespace-pre-line">
-                                    {{ invoice.notes }}
-                                </p>
-                            </div>
-                            <div v-if="invoice.terms">
-                                <p class="text-muted-foreground">Terms</p>
-                                <p class="whitespace-pre-line">
-                                    {{ invoice.terms }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <aside class="flex flex-col gap-8 lg:sticky lg:top-6">
-                <section
-                    class="bg-muted/30 rounded-lg border p-5 text-sm"
-                    data-test="invoice-totals"
-                >
-                    <p class="text-muted-foreground">Amount due</p>
-                    <p
-                        class="mt-1 text-3xl font-semibold tracking-tight tabular-nums"
-                    >
-                        {{ money(invoice.amountDue) }}
-                    </p>
-
-                    <dl class="mt-5 space-y-2 border-t pt-4">
-                        <div class="flex justify-between">
-                            <dt class="text-muted-foreground">Subtotal</dt>
-                            <dd class="tabular-nums">
-                                {{ money(invoice.subtotal) }}
-                            </dd>
-                        </div>
-                        <div
-                            v-if="Number(invoice.taxAmount) > 0"
-                            class="flex justify-between"
-                        >
-                            <dt class="text-muted-foreground">
-                                Tax ({{ Number(invoice.taxRate) }}%)
-                            </dt>
-                            <dd class="tabular-nums">
-                                {{ money(invoice.taxAmount) }}
-                            </dd>
-                        </div>
-                        <div
-                            v-if="Number(invoice.discountAmount) > 0"
-                            class="flex justify-between"
-                        >
-                            <dt class="text-muted-foreground">Discount</dt>
-                            <dd class="tabular-nums">
-                                −{{ money(invoice.discountAmount) }}
-                            </dd>
-                        </div>
-                        <div class="flex justify-between font-medium">
-                            <dt>Total</dt>
-                            <dd class="tabular-nums">
-                                {{ money(invoice.total) }}
-                            </dd>
-                        </div>
-                        <div
-                            v-if="Number(invoice.depositAmount) > 0"
-                            class="flex justify-between"
-                        >
-                            <dt class="text-muted-foreground">Deposit</dt>
-                            <dd class="tabular-nums">
-                                {{ money(invoice.depositAmount) }}
-                            </dd>
-                        </div>
-                        <div
-                            v-if="Number(invoice.amountPaid) > 0"
-                            class="flex justify-between"
-                        >
-                            <dt class="text-muted-foreground">Paid</dt>
-                            <dd class="tabular-nums">
-                                −{{ money(invoice.amountPaid) }}
-                            </dd>
-                        </div>
-                    </dl>
-                </section>
+                    </CardContent>
+                </Card>
 
                 <InvoicePayments
                     :organization="currentOrganization.slug"
@@ -832,5 +876,10 @@ const money = (value: string) =>
                 />
             </aside>
         </div>
+
+        <InvoiceLines
+            :organization="currentOrganization.slug"
+            :invoice="invoice"
+        />
     </div>
 </template>

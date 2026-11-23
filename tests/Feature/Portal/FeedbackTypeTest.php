@@ -96,7 +96,7 @@ test('a bug offers one vote with no opposite and a feature offers both', functio
         ->assertInertia(fn (Assert $page) => $page
             ->where('feedback.acceptsOpposingVotes', false)
             ->where('feedback.voteLabel', "I've experienced this")
-            ->where('feedback.typeLabel', 'Bug report')
+            ->where('feedback.typeLabel', 'Bug')
         );
 
     $this->actingAs($member)

@@ -80,14 +80,7 @@ const props = defineProps<Props>();
 
 const arrived = ref(0);
 
-useLiveFeedback(
-    props.project.id,
-    {
-        voted: () => router.reload({ only: ['feedback'], showProgress: false }),
-        commented: () => arrived.value++,
-    },
-    props.feedback.id,
-);
+useLiveFeedback(props.project.id, props.feedback.id, () => arrived.value++);
 
 const showArrived = () => {
     arrived.value = 0;

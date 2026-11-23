@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
+use App\Events\BillingChanged;
 use App\Observers\WorkTypeObserver;
 use Database\Factories\WorkTypeFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -17,7 +19,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[ObservedBy(WorkTypeObserver::class)]
 class WorkType extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -43,5 +45,10 @@ class WorkType extends Model
             ->logOnly(['name', 'color', 'is_active'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    public function changeBroadcast(): BillingChanged
+    {
+        return new BillingChanged($this->organization_id);
     }
 }

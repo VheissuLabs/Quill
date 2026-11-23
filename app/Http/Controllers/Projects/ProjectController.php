@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Projects;
 
 use App\Enums\ProjectVisibility;
+use App\Events\ClientsChanged;
+use App\Events\FeedbackChanged;
+use App\Events\ProjectsChanged;
+use App\Events\TeamsChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\ProjectRequest;
 use App\Http\Resources\ClientResource;
@@ -20,8 +24,8 @@ class ProjectController extends Controller
     public function index(Organization $currentOrganization): Response
     {
         return Inertia::render('projects/Index', [
-            'projects' => ProjectListResource::collection($currentOrganization->projects()->visibleTo(auth()->user())->with('client')->withCount('feedback')->orderBy('name')->get()),
-            'clients' => ClientResource::collection($currentOrganization->clients()->orderBy('name')->get()),
+            'projects' => FeedbackChanged::alsoRefresh(ProjectsChanged::live(ProjectListResource::collection($projects = $currentOrganization->projects()->visibleTo(auth()->user())->with('client')->withCount('feedback')->orderBy('name')->get()), $currentOrganization->id, ClientsChanged::class), $projects->modelKeys()),
+            'clients' => ClientsChanged::live(ClientResource::collection($currentOrganization->clients()->orderBy('name')->get()), $currentOrganization->id),
             'visibilities' => ProjectVisibility::options(),
         ]);
     }
@@ -40,8 +44,8 @@ class ProjectController extends Controller
     {
         return Inertia::render('projects/Edit', [
             'project' => ProjectFormResource::make($project),
-            'clients' => ClientResource::collection($currentOrganization->clients()->orderBy('name')->get()),
-            'teams' => TeamResource::collection($currentOrganization->teams()->orderBy('name')->get()),
+            'clients' => ClientsChanged::live(ClientResource::collection($currentOrganization->clients()->orderBy('name')->get()), $currentOrganization->id),
+            'teams' => TeamsChanged::live(TeamResource::collection($currentOrganization->teams()->orderBy('name')->get()), $currentOrganization->id),
             'visibilities' => ProjectVisibility::options(),
             'billing' => $currentOrganization->allowsInvoiceManagementBy(auth()->user()) ? ['rate' => $project->billing_rate] : null,
         ]);

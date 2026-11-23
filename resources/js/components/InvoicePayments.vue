@@ -3,9 +3,15 @@ import { useForm } from '@inertiajs/vue3';
 import { Pencil, Plus, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
-import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardAction,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     Dialog,
     DialogClose,
@@ -107,63 +113,67 @@ const submit = () => {
 </script>
 
 <template>
-    <section class="space-y-3" data-test="invoice-payments">
-        <div class="flex items-center justify-between gap-4">
-            <Heading variant="small" title="Payments" />
-            <Button
-                v-if="invoice.canUpdate"
-                variant="outline"
-                data-test="record-payment-button"
-                @click="openCreate"
-            >
-                <Plus /> Record payment
-            </Button>
-        </div>
+    <Card class="gap-4" data-test="invoice-payments">
+        <CardHeader>
+            <CardTitle>Payments</CardTitle>
+            <CardAction v-if="invoice.canUpdate">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    data-test="record-payment-button"
+                    @click="openCreate"
+                >
+                    <Plus /> Record payment
+                </Button>
+            </CardAction>
+        </CardHeader>
 
-        <ul v-if="invoice.payments.length > 0" class="space-y-2 text-sm">
-            <li
-                v-for="payment in invoice.payments"
-                :key="payment.id"
-                class="flex items-center justify-between gap-3 rounded-lg border p-3"
-                data-test="invoice-payment-row"
-            >
-                <span>
-                    {{ payment.paidOn }} · {{ payment.methodLabel }}
-                    <span
-                        v-if="payment.reference"
-                        class="text-muted-foreground"
-                    >
-                        · {{ payment.reference }}
+        <CardContent>
+            <ul v-if="invoice.payments.length > 0" class="divide-y text-sm">
+                <li
+                    v-for="payment in invoice.payments"
+                    :key="payment.id"
+                    class="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
+                    data-test="invoice-payment-row"
+                >
+                    <span>
+                        {{ payment.paidOn }} · {{ payment.methodLabel }}
+                        <span
+                            v-if="payment.reference"
+                            class="text-muted-foreground"
+                        >
+                            · {{ payment.reference }}
+                        </span>
                     </span>
-                </span>
-                <span class="flex items-center gap-2">
-                    <span class="tabular-nums">{{
-                        money(payment.amount)
-                    }}</span>
-                    <template v-if="invoice.canUpdate">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Edit payment"
-                            data-test="edit-payment-button"
-                            @click="openEdit(payment)"
-                        >
-                            <Pencil />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Delete payment"
-                            data-test="delete-payment-button"
-                            @click="openDelete(payment)"
-                        >
-                            <Trash2 />
-                        </Button>
-                    </template>
-                </span>
-            </li>
-        </ul>
-        <p v-else class="text-muted-foreground text-sm">No payments yet.</p>
+                    <span class="flex items-center gap-2">
+                        <span class="tabular-nums">{{
+                            money(payment.amount)
+                        }}</span>
+                        <template v-if="invoice.canUpdate">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Edit payment"
+                                data-test="edit-payment-button"
+                                @click="openEdit(payment)"
+                            >
+                                <Pencil />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Delete payment"
+                                data-test="delete-payment-button"
+                                @click="openDelete(payment)"
+                            >
+                                <Trash2 />
+                            </Button>
+                        </template>
+                    </span>
+                </li>
+            </ul>
+            <p v-else class="text-muted-foreground text-sm">No payments yet.</p>
+        </CardContent>
 
         <Dialog v-model:open="dialogOpen">
             <DialogContent>
@@ -269,5 +279,5 @@ const submit = () => {
                     : null
             "
         />
-    </section>
+    </Card>
 </template>

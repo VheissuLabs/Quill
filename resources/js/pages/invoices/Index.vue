@@ -75,7 +75,11 @@ const money = (value: string) =>
 
     <div class="flex flex-col gap-6 p-6">
         <div class="flex items-center justify-between">
-            <Heading variant="small" title="Invoices" />
+            <Heading
+                variant="small"
+                title="Invoices"
+                description="Bills sent to your clients for completed work"
+            />
 
             <CreateInvoiceModal
                 :organization="currentOrganization.slug"

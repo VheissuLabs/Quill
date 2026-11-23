@@ -4,6 +4,11 @@ namespace App\Http\Controllers\Tickets;
 
 use App\Actions\Tickets\OpenTicket;
 use App\Enums\TicketStatus;
+use App\Events\ClientsChanged;
+use App\Events\IssuesChanged;
+use App\Events\MembersChanged;
+use App\Events\ProjectsChanged;
+use App\Events\TicketsChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tickets\StoreTicketRequest;
 use App\Http\Requests\Tickets\TicketIndexRequest;
@@ -27,11 +32,11 @@ class TicketController extends Controller
             )),
             'filters' => $request->filters(),
             'statuses' => TicketStatus::options(),
-            'clients' => $currentOrganization->clients()->orderBy('name')->get(['id', 'name', 'slug']),
-            'counts' => [
+            'clients' => ClientsChanged::live($currentOrganization->clients()->orderBy('name')->get(['id', 'name', 'slug']), $currentOrganization->id),
+            'counts' => TicketsChanged::live([
                 'unassigned' => $currentOrganization->tickets()->whereNull('client_id')->whereIn('status', [TicketStatus::Open, TicketStatus::AwaitingCustomer])->count(),
                 'ready' => $currentOrganization->tickets()->whereNotNull('issue_resolved_at')->count(),
-            ],
+            ], $currentOrganization->id, IssuesChanged::class),
         ]);
     }
 
@@ -51,13 +56,13 @@ class TicketController extends Controller
         $ticket->load(['client.projects', 'issue.project', 'reporter', 'creator']);
 
         return Inertia::render('tickets/Show', [
-            'ticket' => TicketDetailResource::make($ticket, $user)->resolve(),
+            'ticket' => TicketsChanged::live(TicketDetailResource::make($ticket, $user)->resolve(), $currentOrganization->id, IssuesChanged::class, ClientsChanged::class),
             'comments' => Inertia::scroll(fn () => CommentResource::page($ticket->comments(), $user, true, true)),
-            'mentionables' => $ticket->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]),
+            'mentionables' => MembersChanged::live($ticket->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]), $currentOrganization->id),
             'statuses' => TicketStatus::options(),
-            'clients' => $currentOrganization->clients()->orderBy('name')->get(['id', 'name']),
-            'projects' => $ticket->client?->projects->sortBy('name')->values()->map(fn ($project) => ['id' => $project->id, 'name' => $project->name]) ?? [],
-            'otherTickets' => TicketResource::collection(
+            'clients' => ClientsChanged::live($currentOrganization->clients()->orderBy('name')->get(['id', 'name']), $currentOrganization->id),
+            'projects' => ProjectsChanged::live($ticket->client?->projects->sortBy('name')->values()->map(fn ($project) => ['id' => $project->id, 'name' => $project->name]) ?? [], $currentOrganization->id, TicketsChanged::class),
+            'otherTickets' => TicketsChanged::live(TicketResource::collection(
                 $currentOrganization->tickets()
                     ->where('requester_email', $ticket->requester_email)
                     ->whereKeyNot($ticket->getKey())
@@ -65,7 +70,7 @@ class TicketController extends Controller
                     ->latest('last_message_at')
                     ->limit(5)
                     ->get()
-            ),
+            ), $currentOrganization->id, IssuesChanged::class),
         ]);
     }
 

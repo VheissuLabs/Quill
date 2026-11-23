@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Billing;
 use App\Actions\Billing\CreateInvoice;
 use App\Actions\Billing\DeleteInvoice;
 use App\Enums\InvoiceStatus;
+use App\Events\ClientsChanged;
+use App\Events\InvoicesChanged;
+use App\Events\ProjectsChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Billing\InvoiceIndexRequest;
 use App\Http\Requests\Billing\StoreInvoiceRequest;
@@ -32,12 +35,12 @@ class InvoiceController extends Controller
             ->get();
 
         return Inertia::render('invoices/Index', [
-            'invoices' => InvoiceListResource::collection($invoices)->resolve(),
+            'invoices' => InvoicesChanged::live(InvoiceListResource::collection($invoices)->resolve(), $currentOrganization->id, ClientsChanged::class),
             'filters' => $filters,
             'statuses' => collect(InvoiceStatus::cases())->map(fn (InvoiceStatus $status) => ['value' => $status->value, 'label' => $status->label()])->all(),
-            'clients' => $currentOrganization->clients()->orderBy('name')->get(['id', 'name']),
-            'projects' => $currentOrganization->projects()->whereNotNull('client_id')->with('client:id,billed_through_client_id')->orderBy('name')->get()
-                ->map(fn ($project) => ['id' => $project->id, 'name' => $project->name, 'billToClientId' => $project->client->billed_through_client_id ?? $project->client_id])->all(),
+            'clients' => ClientsChanged::live($currentOrganization->clients()->orderBy('name')->get(['id', 'name']), $currentOrganization->id),
+            'projects' => ProjectsChanged::live($currentOrganization->projects()->whereNotNull('client_id')->with('client:id,billed_through_client_id')->orderBy('name')->get()
+                ->map(fn ($project) => ['id' => $project->id, 'name' => $project->name, 'billToClientId' => $project->client->billed_through_client_id ?? $project->client_id])->all(), $currentOrganization->id, ClientsChanged::class),
         ]);
     }
 
@@ -55,7 +58,7 @@ class InvoiceController extends Controller
     public function show(Organization $currentOrganization, Invoice $invoice): Response
     {
         return Inertia::render('invoices/Show', [
-            'invoice' => InvoiceResource::make($invoice->load(['client', 'organization', 'lines.issue.project', 'payments'])),
+            'invoice' => InvoicesChanged::live(InvoiceResource::make($invoice->load(['client', 'organization', 'lines.issue.project', 'payments'])), $currentOrganization->id),
         ]);
     }
 

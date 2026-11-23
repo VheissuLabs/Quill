@@ -51,7 +51,6 @@ import { show as showFeedback } from '@/routes/portal/feedback';
 import { pointOptions } from '@/lib/points';
 import { show as showSprint } from '@/routes/sprints';
 import { show as showTicket } from '@/routes/tickets';
-import { useLiveIssues } from '@/composables/useLiveIssues';
 import type {
     CommentCommand,
     CommentMention,
@@ -83,8 +82,6 @@ type Props = IssueFormOptions & {
 };
 
 const props = defineProps<Props>();
-
-useLiveIssues(['issue', 'links', 'activity']);
 
 defineOptions({
     layout: (props: {

@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
 use App\Enums\OrganizationPermission;
 use App\Enums\ProjectVisibility;
+use App\Events\ProjectsChanged;
 use App\Observers\OrganizationScopedSlugObserver;
 use App\Observers\ProjectObserver;
 use Database\Factories\ProjectFactory;
@@ -31,7 +33,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[ObservedBy(ProjectObserver::class)]
 class Project extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -144,5 +146,10 @@ class Project extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function changeBroadcast(): ProjectsChanged
+    {
+        return new ProjectsChanged($this->organization_id);
     }
 }

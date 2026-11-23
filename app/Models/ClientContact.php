@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
+use App\Events\ClientsChanged;
 use App\Observers\ClientContactObserver;
 use Database\Factories\ClientContactFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -20,7 +22,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[UseFactory(ClientContactFactory::class)]
 class ClientContact extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -62,5 +64,12 @@ class ClientContact extends Model
             ->logOnly(['client_id', 'name', 'email'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    public function changeBroadcast(): ?ClientsChanged
+    {
+        $this->loadMissing('client');
+
+        return $this->client ? new ClientsChanged($this->client->organization_id) : null;
     }
 }

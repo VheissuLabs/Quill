@@ -15,7 +15,6 @@ import { login } from '@/routes';
 import { show as showIssue } from '@/routes/issues';
 import { show as showFeedback } from '@/routes/portal/feedback';
 import { show as showBoard } from '@/routes/portal/projects';
-import { useLiveFeedback } from '@/composables/useLiveFeedback';
 import type {
     BoardFilters,
     BoardStatusOption,
@@ -53,14 +52,6 @@ defineOptions({
 
 const page = usePage();
 const isGuest = computed(() => !page.props.auth.user);
-
-const refreshBoard = () =>
-    router.reload({ only: ['feedback'], showProgress: false });
-
-useLiveFeedback(props.project.id, {
-    voted: refreshBoard,
-    commented: refreshBoard,
-});
 
 const applyFilters = (changes: {
     status?: string | null;

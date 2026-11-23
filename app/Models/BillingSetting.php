@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
+use App\Events\BillingChanged;
 use App\Observers\BillingSettingObserver;
 use Database\Factories\BillingSettingFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -19,7 +21,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[ObservedBy(BillingSettingObserver::class)]
 class BillingSetting extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -62,5 +64,10 @@ class BillingSetting extends Model
             ->logOnly(['invoice_prefix', 'default_rate', 'payment_terms_days', 'tax_rate'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    public function changeBroadcast(): BillingChanged
+    {
+        return new BillingChanged($this->organization_id);
     }
 }

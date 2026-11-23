@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
+use App\Events\MembersChanged;
 use App\Observers\OrganizationMembershipObserver;
 use Database\Factories\OrganizationMembershipFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -17,7 +19,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[UseFactory(OrganizationMembershipFactory::class)]
 class OrganizationMembership extends Pivot
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -46,5 +48,10 @@ class OrganizationMembership extends Pivot
             ->logOnly(['organization_id', 'user_id'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    public function changeBroadcast(): MembersChanged
+    {
+        return new MembersChanged($this->organization_id);
     }
 }

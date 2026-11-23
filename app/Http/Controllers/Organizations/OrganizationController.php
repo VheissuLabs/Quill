@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Organizations;
 
 use App\Actions\Organizations\CreateOrganization;
+use App\Events\MembersChanged;
+use App\Events\ModulesChanged;
+use App\Events\OrganizationChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\DeleteOrganizationRequest;
 use App\Http\Requests\Organizations\OrganizationRequest;
@@ -24,8 +27,8 @@ class OrganizationController extends Controller
         $user = auth()->user();
 
         return Inertia::render('organizations/Index', [
-            'organizations' => $user->memberOrganizations(includeCurrent: true)
-                ->map(fn (Organization $organization) => UserOrganizationResource::make($organization, $user)->resolve()),
+            'organizations' => OrganizationChanged::liveAcross($organizations = $user->memberOrganizations(includeCurrent: true)
+                ->map(fn (Organization $organization) => UserOrganizationResource::make($organization, $user)->resolve()), $organizations->pluck('id'), MembersChanged::class),
         ]);
     }
 
@@ -43,17 +46,17 @@ class OrganizationController extends Controller
         $user = auth()->user();
 
         return Inertia::render('organization/Settings', [
-            'organization' => OrganizationSettingsResource::make($currentOrganization, $user),
-            'members' => $currentOrganization->memberships()
+            'organization' => OrganizationChanged::live(OrganizationSettingsResource::make($currentOrganization, $user), $currentOrganization->id, ModulesChanged::class),
+            'members' => MembersChanged::live($currentOrganization->memberships()
                 ->with(['user.organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $currentOrganization->id)])
                 ->get()
                 ->each(fn (OrganizationMembership $membership) => $membership->setRelation('organization', $currentOrganization))
-                ->map(fn (OrganizationMembership $membership) => OrganizationMemberResource::make($membership, $user)->resolve()),
-            'invitations' => OrganizationInvitationResource::collection(
+                ->map(fn (OrganizationMembership $membership) => OrganizationMemberResource::make($membership, $user)->resolve()), $currentOrganization->id),
+            'invitations' => MembersChanged::live(OrganizationInvitationResource::collection(
                 $currentOrganization->invitations()->whereNull('accepted_at')->with('role')->get()
-            ),
-            'availableRoles' => RoleOptionResource::collection($currentOrganization->assignableRoles()),
-            'memberRoles' => RoleOptionResource::collection($currentOrganization->rolesVisibleTo($user)),
+            ), $currentOrganization->id),
+            'availableRoles' => MembersChanged::live(RoleOptionResource::collection($currentOrganization->assignableRoles()), $currentOrganization->id),
+            'memberRoles' => MembersChanged::live(RoleOptionResource::collection($currentOrganization->rolesVisibleTo($user)), $currentOrganization->id),
         ]);
     }
 

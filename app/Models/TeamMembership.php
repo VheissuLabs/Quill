@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
+use App\Events\TeamsChanged;
 use App\Observers\TeamMembershipObserver;
 use Database\Factories\TeamMembershipFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -17,7 +19,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[UseFactory(TeamMembershipFactory::class)]
 class TeamMembership extends Pivot
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -46,5 +48,12 @@ class TeamMembership extends Pivot
             ->logOnly(['team_id', 'user_id'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    public function changeBroadcast(): ?TeamsChanged
+    {
+        $this->loadMissing('team');
+
+        return $this->team ? new TeamsChanged($this->team->organization_id) : null;
     }
 }

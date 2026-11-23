@@ -1,4 +1,5 @@
 import { createInertiaApp, http } from '@inertiajs/vue3';
+import { echo as liveTransport } from '@inertiajs/vue3/echo';
 import { initializeTheme } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
@@ -58,6 +59,7 @@ void createInertiaApp({
     progress: {
         color: '#4B5563',
     },
+    live: broadcastingEnabled ? liveTransport() : undefined,
 });
 
 // This will set light / dark mode on page load...

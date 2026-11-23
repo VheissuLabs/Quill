@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Portal;
 use App\Actions\Comments\FeedbackCommentCommands;
 use App\Enums\FeedbackStatus;
 use App\Enums\VoteDirection;
+use App\Events\FeedbackChanged;
+use App\Events\FeedbackCommented;
+use App\Events\FeedbackVoted;
+use App\Events\IssuesChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Feedback\FeedbackPageRequest;
 use App\Http\Requests\Feedback\FeedbackRequest;
@@ -42,13 +46,13 @@ class FeedbackController extends Controller
         return Inertia::render('portal/Feedback', [
             'organization' => PortalOrganizationResource::make($organization),
             'project' => ['id' => $project->id, 'name' => $project->name, 'slug' => $project->slug],
-            'feedback' => $summary = FeedbackResource::make($feedback)->withIssue($isMember)->resolve(),
-            'issue' => $summary['issue'],
+            'feedback' => FeedbackChanged::live($summary = FeedbackResource::make($feedback)->withIssue($isMember)->resolve(), $project->id, FeedbackVoted::class, FeedbackCommented::class),
+            'issue' => $isMember ? IssuesChanged::live($summary['issue'], $organization->id) : $summary['issue'],
             'comments' => Inertia::scroll(fn () => CommentResource::page($feedback->comments(), $user, $isMember, $newestFirst)),
             'commentOrder' => $newestFirst ? 'newest' : 'oldest',
-            'activity' => $viewer['canViewActivity']
+            'activity' => FeedbackChanged::live($viewer['canViewActivity']
                 ? ActivityResource::collection($feedback->activitiesAsSubject()->with('causer')->latest('id')->limit(20)->get())
-                : [],
+                : [], $project->id),
             'commands' => app(FeedbackCommentCommands::class)->availableTo($user, $feedback),
             'mentionableUsers' => $viewer['canComment']
                 ? $feedback->mentionableUsers()->map(fn (User $mentionable) => ['id' => $mentionable->id, 'name' => $mentionable->name])->values()

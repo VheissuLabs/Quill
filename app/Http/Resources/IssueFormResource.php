@@ -6,6 +6,11 @@ use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationCapability;
 use App\Enums\SprintStatus;
+use App\Events\IssuesChanged;
+use App\Events\MembersChanged;
+use App\Events\ModulesChanged;
+use App\Events\ProjectsChanged;
+use App\Events\TeamsChanged;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Sprint;
@@ -65,6 +70,23 @@ class IssueFormResource extends JsonResource
             'boardColumns' => BoardColumnResource::collection($this->user->boardOwnerFor($this->resource)->columns),
             'statuses' => IssueStatus::options(),
             'priorities' => IssuePriority::options(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function liveProps(): array
+    {
+        $form = $this->resolve();
+        $organizationId = $this->resource->getKey();
+
+        return [
+            ...$form,
+            'projects' => ProjectsChanged::live($form['projects'], $organizationId),
+            'teams' => TeamsChanged::live($form['teams'], $organizationId),
+            'sprints' => IssuesChanged::live($form['sprints'], $organizationId),
+            'members' => MembersChanged::live($form['members'], $organizationId),
+            'sprintsEnabled' => ModulesChanged::live($form['sprintsEnabled'], $organizationId, TeamsChanged::class),
+            'boardColumns' => TeamsChanged::live($form['boardColumns'], $organizationId),
         ];
     }
 }

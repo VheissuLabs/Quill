@@ -15,6 +15,14 @@ enum FeedbackType: string
         };
     }
 
+    public function shortLabel(): string
+    {
+        return match ($this) {
+            self::Feature => 'Feature',
+            self::Bug => 'Bug',
+        };
+    }
+
     /** What the vote button offers, which is not the same question for each. */
     public function voteLabel(): string
     {

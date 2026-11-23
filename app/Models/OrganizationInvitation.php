@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
+use App\Events\MembersChanged;
 use App\Observers\OrganizationInvitationObserver;
 use Database\Factories\OrganizationInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -21,7 +23,7 @@ use Spatie\Permission\Models\Role;
 #[ObservedBy(OrganizationInvitationObserver::class)]
 class OrganizationInvitation extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -90,5 +92,10 @@ class OrganizationInvitation extends Model
             ->logOnly(['organization_id', 'email', 'role_id', 'invited_by', 'expires_at', 'accepted_at'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    public function changeBroadcast(): MembersChanged
+    {
+        return new MembersChanged($this->organization_id);
     }
 }

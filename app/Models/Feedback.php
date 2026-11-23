@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
 use App\Enums\FeedbackStatus;
 use App\Enums\FeedbackType;
 use App\Enums\VoteDirection;
+use App\Events\FeedbackChanged;
 use App\Events\FeedbackVoted;
 use App\Observers\FeedbackObserver;
 use Database\Factories\FeedbackFactory;
@@ -33,7 +35,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[UseFactory(FeedbackFactory::class)]
 class Feedback extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $table = 'feedback';
 
@@ -135,5 +137,10 @@ class Feedback extends Model
             'status' => FeedbackStatus::class,
             'type' => FeedbackType::class,
         ];
+    }
+
+    public function changeBroadcast(): FeedbackChanged
+    {
+        return new FeedbackChanged($this->project_id, $this->getKey());
     }
 }

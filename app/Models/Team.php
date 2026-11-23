@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
 use App\Concerns\RunsABoard;
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationCapability;
 use App\Events\IssuesChanged;
 use App\Events\ModulesChanged;
+use App\Events\TeamsChanged;
 use App\Observers\OrganizationScopedSlugObserver;
 use App\Observers\TeamObserver;
 use Database\Factories\TeamFactory;
@@ -27,7 +29,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[ObservedBy([TeamObserver::class, OrganizationScopedSlugObserver::class])]
 class Team extends Model
 {
-    use HasFactory, LogsActivity, RunsABoard;
+    use BroadcastsChanges, HasFactory, LogsActivity, RunsABoard;
 
     protected $guarded = [];
 
@@ -229,5 +231,10 @@ class Team extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function changeBroadcast(): TeamsChanged
+    {
+        return new TeamsChanged($this->organization_id);
     }
 }

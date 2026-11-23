@@ -3,6 +3,11 @@
 namespace App\Http\Controllers\Clients;
 
 use App\Actions\Billing\StopBillingCycle;
+use App\Events\ClientsChanged;
+use App\Events\InvoicesChanged;
+use App\Events\IssuesChanged;
+use App\Events\ProjectsChanged;
+use App\Events\TicketsChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Clients\ClientRequest;
 use App\Http\Resources\ClientBillingResource;
@@ -22,7 +27,7 @@ class ClientController extends Controller
     public function index(Organization $currentOrganization): Response
     {
         return Inertia::render('clients/Index', [
-            'clients' => ClientResource::collection($currentOrganization->clients()->withCount('projects')->orderBy('name')->get()),
+            'clients' => ClientsChanged::live(ClientResource::collection($currentOrganization->clients()->withCount('projects')->orderBy('name')->get()), $currentOrganization->id, ProjectsChanged::class),
         ]);
     }
 
@@ -41,12 +46,12 @@ class ClientController extends Controller
         $openCycleInvoiceId = $client->openCycleInvoice()?->id;
 
         return Inertia::render('clients/Show', [
-            'client' => ClientResource::make($client->load(['contacts' => fn ($query) => $query->orderBy('name')])),
-            'projects' => ProjectResource::collection($client->projects()->visibleTo($user)->orderBy('name')->get()),
-            'tickets' => LinkedTicketResource::forClient($client, $user),
-            'invoices' => $currentOrganization->allowsInvoiceManagementBy($user)
+            'client' => ClientsChanged::live(ClientResource::make($client->load(['contacts' => fn ($query) => $query->orderBy('name')])), $currentOrganization->id),
+            'projects' => ProjectsChanged::live(ProjectResource::collection($client->projects()->visibleTo($user)->orderBy('name')->get()), $currentOrganization->id),
+            'tickets' => TicketsChanged::live(LinkedTicketResource::forClient($client, $user), $currentOrganization->id, IssuesChanged::class),
+            'invoices' => InvoicesChanged::live($currentOrganization->allowsInvoiceManagementBy($user)
                 ? InvoiceListResource::collection($client->invoices()->with('client:id,name,slug')->orderByDesc('issue_date')->orderByDesc('id')->get()->sortBy(fn (Invoice $invoice) => $invoice->id === $openCycleInvoiceId ? 0 : 1)->values())->resolve()
-                : null,
+                : null, $currentOrganization->id),
         ]);
     }
 

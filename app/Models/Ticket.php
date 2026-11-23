@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
 use App\Enums\EmailDirection;
 use App\Enums\IssueStatus;
 use App\Enums\OrganizationPermission;
 use App\Enums\TicketStatus;
+use App\Events\TicketsChanged;
 use App\Observers\TicketObserver;
 use Database\Factories\TicketFactory;
 use DomainException;
@@ -27,7 +29,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[UseFactory(TicketFactory::class)]
 class Ticket extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -233,5 +235,10 @@ class Ticket extends Model
             'issue_resolved_at' => 'datetime',
             'last_message_at' => 'datetime',
         ];
+    }
+
+    public function changeBroadcast(): TicketsChanged
+    {
+        return new TicketsChanged($this->organization_id);
     }
 }

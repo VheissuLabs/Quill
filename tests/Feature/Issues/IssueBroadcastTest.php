@@ -76,3 +76,19 @@ test('completing a sprint announces the issues it sent back', function () {
         fn (IssuesChanged $event) => in_array($issue->id, $event->issueIds, true)
     );
 });
+
+test('the issue board refreshes its issues, activity and sprints when issues change', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+
+    $liveProps = $this->actingAs($member)
+        ->get(route('issues.index', ['current_organization' => $organization]))
+        ->viewData('page')['liveProps'];
+
+    expect($liveProps)->toHaveKeys(['issues', 'activity', 'sprints'])
+        ->and($liveProps['issues']['listeners'])->toBe([[
+            'channel' => ['name' => "organizations.{$organization->id}", 'type' => 'private'],
+            'events' => ['issues.changed'],
+        ]]);
+});

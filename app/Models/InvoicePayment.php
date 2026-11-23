@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
 use App\Enums\PaymentMethod;
+use App\Events\InvoicesChanged;
 use App\Observers\InvoicePaymentObserver;
 use Database\Factories\InvoicePaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -18,7 +20,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[ObservedBy(InvoicePaymentObserver::class)]
 class InvoicePayment extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -45,5 +47,12 @@ class InvoicePayment extends Model
             ->logOnly(['amount', 'paid_on', 'method', 'reference', 'notes'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    public function changeBroadcast(): ?InvoicesChanged
+    {
+        $this->loadMissing('invoice');
+
+        return $this->invoice ? new InvoicesChanged($this->invoice->organization_id) : null;
     }
 }

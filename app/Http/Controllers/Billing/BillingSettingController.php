@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Billing;
 
 use App\Actions\Billing\CancelSquareCheckouts;
 use App\Enums\SquareCheckoutStatus;
+use App\Events\BillingChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Billing\BillingSettingRequest;
 use App\Http\Requests\Billing\WorkTypeRequest;
@@ -37,10 +38,10 @@ class BillingSettingController extends Controller
                 'default_terms',
                 'from_address',
             ]),
-            'workTypes' => $currentOrganization->workTypes()
+            'workTypes' => BillingChanged::live($currentOrganization->workTypes()
                 ->orderBy('sort_order')
                 ->orderBy('id')
-                ->get(['id', 'name', 'color', 'is_active']),
+                ->get(['id', 'name', 'color', 'is_active']), $currentOrganization->id),
             'colors' => WorkTypeRequest::colors(),
         ]);
     }

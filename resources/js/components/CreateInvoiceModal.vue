@@ -33,10 +33,10 @@ const open = defineModel<boolean>('open', { default: false });
 const none = 'none';
 const formKey = ref(0);
 
-const form = useForm({ client_id: none, project_id: none });
+const form = useForm({ client_id: '', project_id: none });
 
 const availableProjects = computed(() =>
-    form.client_id === none
+    form.client_id === ''
         ? props.projects
         : props.projects.filter(
               (project) => String(project.billToClientId) === form.client_id,
@@ -56,9 +56,20 @@ watch(
     },
 );
 
-const needsClient = computed(
-    () => form.client_id === none && form.project_id === none,
+watch(
+    () => form.project_id,
+    (projectId) => {
+        const project = props.projects.find(
+            (option) => String(option.id) === projectId,
+        );
+
+        if (project && form.client_id === '') {
+            form.client_id = String(project.billToClientId);
+        }
+    },
 );
+
+const needsClient = computed(() => form.client_id === '');
 
 function handleOpenChange(value: boolean) {
     open.value = value;
@@ -72,7 +83,7 @@ function handleOpenChange(value: boolean) {
 
 const submit = () => {
     form.transform((data) => ({
-        client_id: data.client_id === none ? null : Number(data.client_id),
+        client_id: data.client_id === '' ? null : Number(data.client_id),
         project_id: data.project_id === none ? null : Number(data.project_id),
     })).post(store.url(props.organization), {
         onSuccess: () => (open.value = false),
@@ -98,12 +109,9 @@ const submit = () => {
                         data-test="create-invoice-client"
                     >
                         <SelectTrigger id="invoice-client" class="w-full">
-                            <SelectValue />
+                            <SelectValue placeholder="Select a client" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem :value="none">
-                                From the project
-                            </SelectItem>
                             <SelectItem
                                 v-for="client in clients"
                                 :key="client.id"

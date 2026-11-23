@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Actions\Billing\RemoveAutomaticBilling;
+use App\Concerns\BroadcastsChanges;
 use App\Concerns\RunsABoard;
 use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationModule;
 use App\Enums\OrganizationPermission;
 use App\Events\ModulesChanged;
+use App\Events\OrganizationChanged;
 use App\Observers\OrganizationObserver;
 use Closure;
 use Database\Factories\OrganizationFactory;
@@ -41,7 +43,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 #[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model
 {
-    use HasFactory, LogsActivity, RunsABoard, SoftDeletes;
+    use BroadcastsChanges, HasFactory, LogsActivity, RunsABoard, SoftDeletes;
 
     protected $guarded = [];
 
@@ -528,5 +530,10 @@ class Organization extends Model
             ->logOnly(['name', 'slug'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    public function changeBroadcast(): OrganizationChanged
+    {
+        return new OrganizationChanged($this->id);
     }
 }

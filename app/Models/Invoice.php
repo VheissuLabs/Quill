@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
 use App\Enums\AdjustmentType;
 use App\Enums\InvoiceStatus;
 use App\Enums\SquareCheckoutStatus;
+use App\Events\InvoicesChanged;
 use App\Observers\InvoiceObserver;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -21,7 +23,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[ObservedBy(InvoiceObserver::class)]
 class Invoice extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -204,5 +206,10 @@ class Invoice extends Model
             $this->status === InvoiceStatus::Overdue => InvoiceStatus::Overdue,
             default => InvoiceStatus::Sent,
         };
+    }
+
+    public function changeBroadcast(): InvoicesChanged
+    {
+        return new InvoicesChanged($this->organization_id);
     }
 }

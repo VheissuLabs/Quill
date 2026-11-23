@@ -255,6 +255,17 @@ const statCards = computed(() => [
                                 <div
                                     class="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs"
                                 >
+                                    <span
+                                        data-test="feedback-type-badge"
+                                        :class="
+                                            feedback.type === 'bug'
+                                                ? 'text-destructive border-destructive/30'
+                                                : 'border-border'
+                                        "
+                                        class="rounded-full border px-2 py-0.5 font-medium"
+                                    >
+                                        {{ feedback.typeLabel }}
+                                    </span>
                                     <span>{{ feedback.project.name }}</span>
                                     <span>·</span>
                                     <span>{{

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Organizations;
 
 use App\Actions\Organizations\DeleteOrganizationRole;
 use App\Enums\OrganizationPermission;
+use App\Events\MembersChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\OrganizationRoleRequest;
 use App\Http\Resources\RoleResource;
@@ -20,7 +21,7 @@ class OrganizationRoleController extends Controller
     public function index(Organization $currentOrganization): Response
     {
         return Inertia::render('roles/Index', [
-            'roles' => RoleResource::collection($currentOrganization->rolesWithMembers()->get()),
+            'roles' => MembersChanged::live(RoleResource::collection($currentOrganization->rolesWithMembers()->get()), $currentOrganization->id),
             'availablePermissions' => OrganizationPermission::options(),
         ]);
     }
@@ -34,10 +35,10 @@ class OrganizationRoleController extends Controller
             : $currentOrganization->assignableRoles();
 
         return Inertia::render('roles/Show', [
-            'role' => RoleResource::make($currentOrganization->rolesWithMembers()->findOrFail($role->id)),
+            'role' => MembersChanged::live(RoleResource::make($currentOrganization->rolesWithMembers()->findOrFail($role->id)), $currentOrganization->id),
             'availablePermissions' => OrganizationPermission::options(),
-            'availableRoles' => $grantableRoles->map(fn (Role $grantable) => ['value' => $grantable->id, 'label' => $grantable->name])->values(),
-            'candidates' => $currentOrganization->memberships()
+            'availableRoles' => MembersChanged::live($grantableRoles->map(fn (Role $grantable) => ['value' => $grantable->id, 'label' => $grantable->name])->values(), $currentOrganization->id),
+            'candidates' => MembersChanged::live($currentOrganization->memberships()
                 ->with(['user.organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $currentOrganization->id)])
                 ->get()
                 ->map(fn ($membership) => $membership->user)
@@ -49,7 +50,7 @@ class OrganizationRoleController extends Controller
                     'email' => $member->email,
                     'role' => $member->organizationRole($currentOrganization)?->name,
                 ])
-                ->values(),
+                ->values(), $currentOrganization->id),
         ]);
     }
 

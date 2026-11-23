@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
 use App\Enums\IssueStatus;
+use App\Events\TeamsChanged;
 use App\Observers\BoardColumnObserver;
 use Database\Factories\BoardColumnFactory;
 use DomainException;
@@ -25,7 +27,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[UseFactory(BoardColumnFactory::class)]
 class BoardColumn extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -93,5 +95,16 @@ class BoardColumn extends Model
         return [
             'status' => IssueStatus::class,
         ];
+    }
+
+    public function changeBroadcast(): ?TeamsChanged
+    {
+        $this->loadMissing('owner');
+
+        return match (true) {
+            $this->owner instanceof Team => new TeamsChanged($this->owner->organization_id),
+            $this->owner instanceof Organization => new TeamsChanged($this->owner->id),
+            default => null,
+        };
     }
 }

@@ -7,6 +7,11 @@ use App\Actions\Issues\CreateIssue;
 use App\Actions\Issues\UpdateIssue;
 use App\Data\IssueChangesData;
 use App\Enums\IssueLinkType;
+use App\Events\IssuesChanged;
+use App\Events\MembersChanged;
+use App\Events\ProjectsChanged;
+use App\Events\TeamsChanged;
+use App\Events\TicketsChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Issues\IssueIndexRequest;
 use App\Http\Requests\Issues\IssueRequest;
@@ -36,12 +41,10 @@ class IssueController extends Controller
         $permissions = $user->toOrganizationPermissions($currentOrganization);
 
         return Inertia::render('issues/Index', [
-            'issues' => IssueResource::collection(Issue::onOrganizationBoard($projectIds, $user, $team, $filters)->get()),
+            ...IssueFormResource::make($currentOrganization, $user, $team)->liveProps(),
+            'issues' => IssuesChanged::live(fn () => IssueResource::collection(Issue::onOrganizationBoard($projectIds, $user, $team, $filters)->get()), $currentOrganization->getKey()),
             'filters' => $filters,
-            'activity' => $permissions['canViewActivity']
-                ? IssueActivityResource::collection(Issue::recentActivity($projectIds, $team))
-                : [],
-            ...IssueFormResource::make($currentOrganization, $user, $team)->resolve(),
+            'activity' => IssuesChanged::live(fn () => $permissions['canViewActivity'] ? IssueActivityResource::collection(Issue::recentActivity($projectIds, $team)) : [], $currentOrganization->getKey()),
         ]);
     }
 
@@ -65,18 +68,16 @@ class IssueController extends Controller
             'feedback' => fn ($query) => $query->withVoteSummary($user)->withCount('comments')->with('author')]);
 
         return Inertia::render('issues/Show', [
-            'issue' => IssueDetailResource::make($issue, $user)->resolve(),
-            'links' => IssueLinkResource::collection($issue->relatedIssues()),
+            'issue' => IssuesChanged::live(fn () => IssueDetailResource::make($issue, $user)->resolve(), $currentOrganization->getKey()),
+            'links' => IssuesChanged::live(fn () => IssueLinkResource::collection($issue->relatedIssues()), $currentOrganization->getKey()),
             'linkTypes' => IssueLinkType::perspectives(),
             'comments' => Inertia::scroll(fn () => CommentResource::page($issue->comments(), $user, true)),
             'commands' => app(IssueCommentCommands::class)->availableTo($user, $issue),
-            'mentionables' => $issue->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]),
-            'feedback' => $issue->feedback ? FeedbackResource::make($issue->feedback)->resolve() : null,
-            'tickets' => LinkedTicketResource::forIssue($issue, $user),
-            'activity' => $permissions['canViewActivity']
-                ? ActivityResource::collection($issue->activitiesAsSubject()->with('causer')->latest('id')->limit(30)->get())
-                : [],
-            ...IssueFormResource::make($currentOrganization, $user, $issue->team ?? $user->currentTeamFor($currentOrganization))->resolve(),
+            'mentionables' => MembersChanged::live($issue->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]), $currentOrganization->getKey(), TeamsChanged::class, ProjectsChanged::class),
+            'feedback' => FeedbackResource::liveForIssue($issue),
+            'tickets' => TicketsChanged::live(fn () => LinkedTicketResource::forIssue($issue, $user), $currentOrganization->getKey(), IssuesChanged::class),
+            'activity' => IssuesChanged::live(fn () => $permissions['canViewActivity'] ? ActivityResource::collection($issue->activitiesAsSubject()->with('causer')->latest('id')->limit(30)->get()) : [], $currentOrganization->getKey()),
+            ...IssueFormResource::make($currentOrganization, $user, $issue->team ?? $user->currentTeamFor($currentOrganization))->liveProps(),
         ]);
     }
 

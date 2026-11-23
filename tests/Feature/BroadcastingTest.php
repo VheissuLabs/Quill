@@ -10,6 +10,11 @@ use App\Models\User;
 use Illuminate\Support\Facades\Event;
 
 test('a member may listen to their organization channel and a stranger may not', function () {
+    $member = User::factory()->create();
+    $stranger = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+
     config([
         'broadcasting.default' => 'reverb',
         'broadcasting.connections.reverb.key' => 'test-key',
@@ -18,11 +23,6 @@ test('a member may listen to their organization channel and a stranger may not',
     ]);
 
     require base_path('routes/channels.php');
-
-    $member = User::factory()->create();
-    $stranger = User::factory()->create();
-    $organization = Organization::factory()->create();
-    $organization->addMember($member, 'Member');
 
     $this->actingAs($member)
         ->post('/broadcasting/auth', [
@@ -88,15 +88,6 @@ test('the announcement rides the organization private channel', function () {
 });
 
 test('presence on a feedback is open to anyone who may see the project and closed to everyone else', function () {
-    config([
-        'broadcasting.default' => 'reverb',
-        'broadcasting.connections.reverb.key' => 'test-key',
-        'broadcasting.connections.reverb.secret' => 'test-secret',
-        'broadcasting.connections.reverb.app_id' => 'test-app',
-    ]);
-
-    require base_path('routes/channels.php');
-
     $organization = Organization::factory()->create();
     $project = Project::factory()->for($organization)->create([
         'visibility' => ProjectVisibility::Private,
@@ -107,6 +98,15 @@ test('presence on a feedback is open to anyone who may see the project and close
     $organization->addMember($member, 'Member');
     $outsider = User::factory()->create();
 
+    config([
+        'broadcasting.default' => 'reverb',
+        'broadcasting.connections.reverb.key' => 'test-key',
+        'broadcasting.connections.reverb.secret' => 'test-secret',
+        'broadcasting.connections.reverb.app_id' => 'test-app',
+    ]);
+
+    require base_path('routes/channels.php');
+
     $payload = [
         'socket_id' => '1234.5678',
         'channel_name' => "presence-feedback.{$feedback->id}",
@@ -114,4 +114,15 @@ test('presence on a feedback is open to anyone who may see the project and close
 
     $this->actingAs($member)->post('/broadcasting/auth', $payload)->assertOk();
     $this->actingAs($outsider)->post('/broadcasting/auth', $payload)->assertForbidden();
+});
+
+test('signed in pages refresh the sidebar when the organization modules change', function () {
+    $user = User::factory()->withOrganization()->create();
+
+    $liveProps = $this->actingAs($user)->get(route('dashboard'))->viewData('page')['liveProps'];
+
+    expect($liveProps['currentOrganization']['listeners'])->toBe([[
+        'channel' => ['name' => "organizations.{$user->current_organization_id}", 'type' => 'private'],
+        'events' => ['modules.changed', 'organization.changed'],
+    ]])->and($liveProps)->toHaveKey('currentTeam');
 });

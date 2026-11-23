@@ -3,14 +3,30 @@
 namespace App\Http\Resources;
 
 use App\Enums\VoteDirection;
+use App\Events\FeedbackChanged;
+use App\Events\FeedbackCommented;
+use App\Events\FeedbackVoted;
+use App\Events\IssuesChanged;
 use App\Models\Feedback;
+use App\Models\Issue;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Inertia\LiveProp;
 
 /** @mixin Feedback */
 class FeedbackResource extends JsonResource
 {
     private bool $withIssue = false;
+
+    public static function liveForIssue(Issue $issue): LiveProp
+    {
+        return FeedbackChanged::alsoRefresh(
+            IssuesChanged::live($issue->feedback ? self::make($issue->feedback)->resolve() : null, $issue->project->organization_id),
+            array_filter([$issue->feedback?->project_id]),
+            FeedbackVoted::class,
+            FeedbackCommented::class,
+        );
+    }
 
     public function withIssue(bool $withIssue = true): static
     {
@@ -27,7 +43,7 @@ class FeedbackResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'type' => $this->type->value,
-            'typeLabel' => $this->type->label(),
+            'typeLabel' => $this->type->shortLabel(),
             'voteLabel' => $this->type->voteLabel(),
             'acceptsOpposingVotes' => $this->type->acceptsOpposingVotes(),
             'status' => $this->status->value,

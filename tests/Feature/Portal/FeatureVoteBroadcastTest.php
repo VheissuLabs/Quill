@@ -96,3 +96,15 @@ test('deleting a feedback takes its comments quietly', function () {
 
     Event::assertNotDispatched(FeedbackCommented::class);
 });
+
+test('a project board refreshes its feedback when any feedback changes, gets a vote or a comment', function () {
+    $project = Project::factory()->public()->create();
+
+    $liveProps = $this->get(route('portal.projects.show', [$project->organization, $project]))
+        ->viewData('page')['liveProps'];
+
+    expect($liveProps['feedback']['listeners'])->toBe([[
+        'channel' => ['name' => "projects.{$project->id}", 'type' => 'public'],
+        'events' => ['feedback.changed', 'feedback.voted', 'feedback.commented'],
+    ]]);
+});

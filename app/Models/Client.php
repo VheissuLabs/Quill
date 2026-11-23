@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Concerns\BroadcastsChanges;
 use App\Enums\BillingCycle;
 use App\Enums\InvoiceStatus;
+use App\Events\ClientsChanged;
 use App\Observers\OrganizationScopedSlugObserver;
 use Carbon\CarbonImmutable;
 use Database\Factories\ClientFactory;
@@ -22,7 +24,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[ObservedBy(OrganizationScopedSlugObserver::class)]
 class Client extends Model
 {
-    use HasFactory, LogsActivity;
+    use BroadcastsChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -131,5 +133,10 @@ class Client extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function changeBroadcast(): ClientsChanged
+    {
+        return new ClientsChanged($this->organization_id);
     }
 }

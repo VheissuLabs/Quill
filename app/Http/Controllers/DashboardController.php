@@ -4,6 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Enums\FeedbackStatus;
 use App\Enums\OrganizationCapability;
+use App\Events\FeedbackChanged;
+use App\Events\FeedbackCommented;
+use App\Events\FeedbackVoted;
+use App\Events\ModulesChanged;
+use App\Events\ProjectsChanged;
 use App\Http\Resources\DashboardProjectResource;
 use App\Http\Resources\PendingInvitationResource;
 use App\Http\Resources\RecentFeedbackResource;
@@ -34,6 +39,7 @@ class DashboardController extends Controller
                 ->get())->resolve();
 
             $recentFeedback = RecentFeedbackResource::collection(Feedback::whereIn('project_id', $visibleProjectIds)
+                ->active()
                 ->with('project')
                 ->withCount(['votes' => fn ($query) => $query->where('direction', 1)])
                 ->latest()
@@ -42,15 +48,20 @@ class DashboardController extends Controller
                 ->get());
         }
 
+        $stats = [
+            'projectsCount' => count($projects),
+            'openFeedbackCount' => collect($projects)->sum('openFeedbackCount'),
+            'votesCount' => Vote::where('direction', 1)->whereHas('feedback', fn ($query) => $query->whereIn('project_id', $visibleProjectIds))->count(),
+        ];
+
+        $organizationId = $currentOrganization->getKey();
+        $feedbackEvents = [FeedbackVoted::class, FeedbackCommented::class];
+
         return Inertia::render('Dashboard', [
             'pendingInvitations' => PendingInvitationResource::collection(OrganizationInvitation::pendingFor($user)->get()),
-            'projects' => $projects,
-            'recentFeedback' => $recentFeedback,
-            'stats' => [
-                'projectsCount' => count($projects),
-                'openFeedbackCount' => collect($projects)->sum('openFeedbackCount'),
-                'votesCount' => Vote::where('direction', 1)->whereHas('feedback', fn ($query) => $query->whereIn('project_id', $visibleProjectIds))->count(),
-            ],
+            'projects' => FeedbackChanged::alsoRefresh(ProjectsChanged::live($projects, $organizationId, ModulesChanged::class), $visibleProjectIds),
+            'recentFeedback' => FeedbackChanged::alsoRefresh(ProjectsChanged::live($recentFeedback, $organizationId, ModulesChanged::class), $visibleProjectIds, ...$feedbackEvents),
+            'stats' => FeedbackChanged::alsoRefresh(ProjectsChanged::live($stats, $organizationId, ModulesChanged::class), $visibleProjectIds, ...$feedbackEvents),
         ]);
     }
 }

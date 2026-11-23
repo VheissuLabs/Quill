@@ -15,6 +15,8 @@ class RecentFeedbackResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
+            'type' => $this->type->value,
+            'typeLabel' => $this->type->shortLabel(),
             'status' => $this->status->value,
             'statusLabel' => $this->status->label(),
             'votesCount' => $this->whenCounted('votes'),

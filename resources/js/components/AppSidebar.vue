@@ -42,7 +42,6 @@ import { index as roles } from '@/routes/roles';
 import { index as sprints } from '@/routes/sprints';
 import { index as teams } from '@/routes/teams';
 import { index as tickets } from '@/routes/tickets';
-import { useLiveModules } from '@/composables/useLiveModules';
 import type { NavItem } from '@/types';
 
 type NavGroup = {
@@ -51,8 +50,6 @@ type NavGroup = {
 };
 
 const page = usePage();
-
-useLiveModules();
 
 const organizationSlug = computed(() => page.props.currentOrganization?.slug);
 
