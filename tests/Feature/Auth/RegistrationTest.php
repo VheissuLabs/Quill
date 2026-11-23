@@ -59,3 +59,42 @@ test('registering after browsing a public board returns to that board', function
         'password_confirmation' => 'password',
     ])->assertRedirect($board);
 });
+
+test('registering through an invitation joins the organization', function () {
+    $organization = Organization::factory()->create();
+    $invitation = OrganizationInvitation::factory()->for($organization)->create(['email' => 'new@example.com']);
+
+    $this->post(route('register.store'), [
+        'name' => 'New Person',
+        'email' => 'New@Example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'invitation' => $invitation->code,
+    ]);
+
+    $user = User::query()->withEmailAddress('new@example.com')->sole();
+
+    expect($user->belongsToOrganization($organization))->toBeTrue()
+        ->and($user->current_organization_id)->toBe($organization->id)
+        ->and($user->email_verified_at)->not->toBeNull()
+        ->and($invitation->fresh()->accepted_at)->not->toBeNull();
+});
+
+test('an invitation is not accepted when someone registers with a different email', function () {
+    $organization = Organization::factory()->create();
+    $invitation = OrganizationInvitation::factory()->for($organization)->create(['email' => 'invited@example.com']);
+
+    $this->post(route('register.store'), [
+        'name' => 'Someone Else',
+        'email' => 'someone@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'invitation' => $invitation->code,
+    ]);
+
+    $user = User::where('email', 'someone@example.com')->sole();
+
+    expect($user->belongsToOrganization($organization))->toBeFalse()
+        ->and($user->email_verified_at)->toBeNull()
+        ->and($invitation->fresh()->accepted_at)->toBeNull();
+});

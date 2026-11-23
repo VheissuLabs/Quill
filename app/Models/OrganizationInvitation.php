@@ -80,9 +80,27 @@ class OrganizationInvitation extends Model
     {
         $query->with(['inviter', 'organization'])
             ->whereIn(DB::raw('LOWER(email)'), $user->verifiedEmailAddresses())
-            ->whereNull('accepted_at')
-            ->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhere('expires_at', '>=', now()))
+            ->open()
             ->latest();
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function open(Builder $query): void
+    {
+        $query->whereNull('accepted_at')
+            ->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhere('expires_at', '>=', now()));
+    }
+
+    public function acceptFor(User $user): void
+    {
+        $this->loadMissing(['organization', 'role']);
+
+        DB::transaction(function () use ($user): void {
+            $this->organization->addMember($user, $this->role);
+            $this->update(['accepted_at' => now()]);
+            $user->switchOrganization($this->organization);
+        });
     }
 
     public function getActivitylogOptions(): LogOptions

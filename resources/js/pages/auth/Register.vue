@@ -43,6 +43,12 @@ defineOptions({
         v-slot="{ errors, processing }"
         class="flex flex-col gap-6"
     >
+        <input
+            v-if="organizationInvitation"
+            type="hidden"
+            name="invitation"
+            :value="organizationInvitation.code"
+        />
         <input type="hidden" name="timezone" :value="timezone" />
         <div class="grid gap-6">
             <div class="grid gap-2">

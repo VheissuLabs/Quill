@@ -125,10 +125,7 @@ class FortifyServiceProvider extends ServiceProvider
         $invitation = OrganizationInvitation::query()
             ->with('organization')
             ->where('code', $invitationCode)
-            ->whereNull('accepted_at')
-            ->where(fn ($query) => $query
-                ->whereNull('expires_at')
-                ->orWhere('expires_at', '>=', now()))
+            ->open()
             ->first();
 
         if (! $invitation) {
