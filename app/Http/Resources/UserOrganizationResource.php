@@ -31,6 +31,7 @@ class UserOrganizationResource extends JsonResource
             'canManageRoles' => $this->viewer->hasOrganizationPermission($this->resource, OrganizationPermission::ManageRoles),
             'receivesSupportMail' => $this->resource->receivesSupportMail(),
             'modules' => $this->moduleSettings(),
+            'moduleOrder' => $this->resource->moduleOrder(),
             'isCurrent' => $this->viewer->isCurrentOrganization($this->resource),
         ];
     }

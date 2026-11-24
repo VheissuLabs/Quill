@@ -8,6 +8,7 @@ use App\Concerns\RunsABoard;
 use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationModule;
 use App\Enums\OrganizationPermission;
+use App\Enums\SidebarSection;
 use App\Events\ModulesChanged;
 use App\Events\OrganizationChanged;
 use App\Observers\OrganizationObserver;
@@ -46,6 +47,22 @@ class Organization extends Model
     use BroadcastsChanges, HasFactory, LogsActivity, RunsABoard, SoftDeletes;
 
     protected $guarded = [];
+
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'module_order' => 'array',
+        ];
+    }
+
+    /** @return array<int, string> */
+    public function moduleOrder(): array
+    {
+        $saved = array_values(array_intersect($this->module_order ?? [], SidebarSection::defaultOrder()));
+
+        return [...$saved, ...array_values(array_diff(SidebarSection::defaultOrder(), $saved))];
+    }
 
     public static function generateUniqueOrganizationSlug(string $name, ?int $excludeId = null): string
     {

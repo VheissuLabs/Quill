@@ -42,7 +42,7 @@ import { index as roles } from '@/routes/roles';
 import { index as sprints } from '@/routes/sprints';
 import { index as teams } from '@/routes/teams';
 import { index as tickets } from '@/routes/tickets';
-import type { NavItem } from '@/types';
+import type { NavItem, SidebarSectionKey } from '@/types';
 
 type NavGroup = {
     label?: string;
@@ -76,6 +76,16 @@ const modules = computed(
         },
 );
 
+const moduleOrder = computed<SidebarSectionKey[]>(
+    () =>
+        page.props.currentOrganization?.moduleOrder ?? [
+            'feedback',
+            'development',
+            'support',
+            'billing',
+        ],
+);
+
 const dashboardUrl = computed(() =>
     organizationSlug.value
         ? dashboard(organizationSlug.value).url
@@ -98,8 +108,50 @@ const navGroups = computed<NavGroup[]>(() => {
     const slug = organizationSlug.value;
 
     if (slug) {
+        const feedbackEnabled = modules.value.feedback.enabled;
+        const projectsItem = {
+            title: 'Projects',
+            href: projects(slug),
+            icon: FolderKanban,
+        };
+
+        const sections: Record<SidebarSectionKey, NavGroup | null> = {
+            feedback: feedbackEnabled
+                ? { label: 'Feedback', items: [projectsItem] }
+                : null,
+            development: null,
+            support:
+                page.props.currentOrganization?.receivesSupportMail &&
+                page.props.permissions?.canManageTickets
+                    ? {
+                          label: 'Support',
+                          items: [
+                              {
+                                  title: 'Tickets',
+                                  href: tickets(slug),
+                                  icon: Inbox,
+                              },
+                          ],
+                      }
+                    : null,
+            billing:
+                modules.value.billing.enabled &&
+                page.props.permissions?.canManageInvoices
+                    ? {
+                          label: 'Billing',
+                          items: [
+                              {
+                                  title: 'Invoices',
+                                  href: invoices(slug),
+                                  icon: Receipt,
+                              },
+                          ],
+                      }
+                    : null,
+        };
+
         const developmentItems = [
-            { title: 'Projects', href: projects(slug), icon: FolderKanban },
+            ...(feedbackEnabled ? [] : [projectsItem]),
             ...(modules.value.development.enabled &&
             modules.value.development.capabilities.issues
                 ? [{ title: 'Issues', href: issues(slug), icon: ListTodo }]
@@ -112,30 +164,19 @@ const navGroups = computed<NavGroup[]>(() => {
         ];
 
         if (developmentItems.length > 0) {
-            groups.push({ label: 'Development', items: developmentItems });
+            sections.development = {
+                label: 'Development',
+                items: developmentItems,
+            };
         }
 
-        if (
-            page.props.currentOrganization?.receivesSupportMail &&
-            page.props.permissions?.canManageTickets
-        ) {
-            groups.push({
-                label: 'Support',
-                items: [{ title: 'Tickets', href: tickets(slug), icon: Inbox }],
-            });
-        }
+        moduleOrder.value.forEach((key) => {
+            const section = sections[key];
 
-        if (
-            modules.value.billing.enabled &&
-            page.props.permissions?.canManageInvoices
-        ) {
-            groups.push({
-                label: 'Billing',
-                items: [
-                    { title: 'Invoices', href: invoices(slug), icon: Receipt },
-                ],
-            });
-        }
+            if (section) {
+                groups.push(section);
+            }
+        });
 
         groups.push({
             label: 'Organization',

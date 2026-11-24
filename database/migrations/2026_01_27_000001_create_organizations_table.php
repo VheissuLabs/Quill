@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
+            $table->json('module_order')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

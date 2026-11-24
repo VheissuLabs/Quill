@@ -26,6 +26,12 @@ export type OrganizationModules = {
     };
 };
 
+export type SidebarSectionKey =
+    | 'feedback'
+    | 'development'
+    | 'support'
+    | 'billing';
+
 export type Organization = {
     id: number;
     name: string;
@@ -37,6 +43,7 @@ export type Organization = {
     canManageRoles?: boolean;
     receivesSupportMail?: boolean;
     modules: OrganizationModules;
+    moduleOrder?: SidebarSectionKey[];
     isCurrent?: boolean;
 };
 

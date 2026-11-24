@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import { Form, Head, router, useForm } from '@inertiajs/vue3';
-import { ChevronDown, Mail, Pencil, Trash2, UserPlus, X } from '@lucide/vue';
+import {
+    ChevronDown,
+    GripVertical,
+    Mail,
+    Pencil,
+    Trash2,
+    UserPlus,
+    X,
+} from '@lucide/vue';
 import { useLocalStorage } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
+import draggable from 'vuedraggable';
 import CancelInvitationModal from '@/components/CancelInvitationModal.vue';
 import DeleteOrganizationModal from '@/components/DeleteOrganizationModal.vue';
 import Heading from '@/components/Heading.vue';
@@ -45,6 +54,7 @@ import {
 import { useInitials } from '@/composables/useInitials';
 import { edit, update } from '@/routes/organizations';
 import { update as updateModules } from '@/routes/organizations/modules';
+import { update as updateModuleOrder } from '@/routes/organizations/modules/order';
 import {
     destroy as destroyLogo,
     store as storeLogo,
@@ -56,6 +66,7 @@ import type {
     OrganizationInvitation,
     OrganizationMember,
     OrganizationPermissions,
+    SidebarSectionKey,
 } from '@/types';
 
 type Props = {
@@ -120,6 +131,23 @@ const moduleValues = (modules: Organization['modules']) => ({
 });
 
 const modulesForm = useForm(moduleValues(props.organization.modules));
+
+const moduleOrder = ref<SidebarSectionKey[]>([
+    ...(props.organization.moduleOrder ?? []),
+]);
+
+watch(
+    () => props.organization.moduleOrder,
+    (order) => (moduleOrder.value = [...(order ?? [])]),
+);
+
+const saveModuleOrder = () => {
+    router.patch(
+        updateModuleOrder.url(props.organization.slug),
+        { order: moduleOrder.value },
+        { preserveScroll: true, preserveState: true },
+    );
+};
 
 /**
  * Enabling a module re-enables its capabilities on the server, so take the
@@ -414,370 +442,449 @@ const updateModule = (field: ModuleField, value: boolean) => {
                         class="space-y-6"
                         data-test="organization-modules-form"
                     >
-                        <div class="space-y-6 rounded-lg border p-4">
-                            <div class="space-y-3">
-                                <label
-                                    class="flex cursor-pointer items-start justify-between gap-4"
+                        <draggable
+                            v-model="moduleOrder"
+                            :item-key="(key: string) => key"
+                            handle="[data-module-handle]"
+                            :animation="150"
+                            class="space-y-3"
+                            data-test="organization-module-order"
+                            @end="saveModuleOrder"
+                        >
+                            <template #item="{ element }">
+                                <div
+                                    class="flex gap-3 rounded-lg border p-4"
+                                    :data-test="`module-card-${element}`"
                                 >
-                                    <span class="min-w-0">
-                                        <span class="block font-medium">
-                                            Feedback
-                                        </span>
-                                        <span
-                                            class="text-muted-foreground mt-1 block text-sm"
+                                    <button
+                                        type="button"
+                                        data-module-handle
+                                        class="text-muted-foreground hover:text-foreground mt-1 h-fit cursor-grab"
+                                        :aria-label="`Drag to reorder ${element}`"
+                                    >
+                                        <GripVertical class="size-4" />
+                                    </button>
+                                    <div class="min-w-0 flex-1 space-y-3">
+                                        <template v-if="element === 'feedback'">
+                                            <label
+                                                class="flex cursor-pointer items-start justify-between gap-4"
+                                            >
+                                                <span class="min-w-0">
+                                                    <span
+                                                        class="block font-medium"
+                                                    >
+                                                        Feedback
+                                                    </span>
+                                                    <span
+                                                        class="text-muted-foreground mt-1 block text-sm"
+                                                    >
+                                                        Let people request and
+                                                        vote on ideas.
+                                                    </span>
+                                                </span>
+                                                <Switch
+                                                    id="feedback-voting-enabled"
+                                                    data-test="module-feedback-voting"
+                                                    class="mt-1 shrink-0"
+                                                    :model-value="
+                                                        modulesForm.feedback_enabled
+                                                    "
+                                                    :disabled="
+                                                        modulesForm.processing
+                                                    "
+                                                    @update:model-value="
+                                                        updateModule(
+                                                            'feedback_enabled',
+                                                            $event === true,
+                                                        )
+                                                    "
+                                                />
+                                            </label>
+                                            <div
+                                                class="ml-4 space-y-3 border-l pl-4"
+                                            >
+                                                <label
+                                                    class="flex cursor-pointer items-start justify-between gap-4"
+                                                >
+                                                    <span class="min-w-0">
+                                                        <span
+                                                            class="block font-medium"
+                                                        >
+                                                            Boards
+                                                        </span>
+                                                        <span
+                                                            class="text-muted-foreground mt-1 block text-sm"
+                                                        >
+                                                            Public, private, and
+                                                            team-restricted
+                                                            boards.
+                                                        </span>
+                                                    </span>
+                                                    <Switch
+                                                        id="feedback-voting-boards-enabled"
+                                                        data-test="module-feedback-voting-boards"
+                                                        class="mt-1 shrink-0"
+                                                        :model-value="
+                                                            modulesForm.feedback_boards_enabled
+                                                        "
+                                                        :disabled="
+                                                            modulesForm.processing ||
+                                                            !modulesForm.feedback_enabled
+                                                        "
+                                                        @update:model-value="
+                                                            updateModule(
+                                                                'feedback_boards_enabled',
+                                                                $event === true,
+                                                            )
+                                                        "
+                                                    />
+                                                </label>
+                                                <label
+                                                    class="flex cursor-pointer items-start justify-between gap-4"
+                                                >
+                                                    <span class="min-w-0">
+                                                        <span
+                                                            class="block font-medium"
+                                                        >
+                                                            Voting
+                                                        </span>
+                                                        <span
+                                                            class="text-muted-foreground mt-1 block text-sm"
+                                                        >
+                                                            Let people vote for
+                                                            requests.
+                                                        </span>
+                                                    </span>
+                                                    <Switch
+                                                        id="feedback-voting-voting-enabled"
+                                                        data-test="module-feedback-voting-voting"
+                                                        class="mt-1 shrink-0"
+                                                        :model-value="
+                                                            modulesForm.feedback_voting_enabled
+                                                        "
+                                                        :disabled="
+                                                            modulesForm.processing ||
+                                                            !modulesForm.feedback_enabled
+                                                        "
+                                                        @update:model-value="
+                                                            updateModule(
+                                                                'feedback_voting_enabled',
+                                                                $event === true,
+                                                            )
+                                                        "
+                                                    />
+                                                </label>
+                                            </div>
+                                        </template>
+                                        <template
+                                            v-else-if="
+                                                element === 'development'
+                                            "
                                         >
-                                            Let people request and vote on
-                                            ideas.
-                                        </span>
-                                    </span>
-                                    <Switch
-                                        id="feedback-voting-enabled"
-                                        data-test="module-feedback-voting"
-                                        class="mt-1 shrink-0"
-                                        :model-value="
-                                            modulesForm.feedback_enabled
-                                        "
-                                        :disabled="modulesForm.processing"
-                                        @update:model-value="
-                                            updateModule(
-                                                'feedback_enabled',
-                                                $event === true,
-                                            )
-                                        "
-                                    />
-                                </label>
-                                <div class="ml-4 space-y-3 border-l pl-4">
-                                    <label
-                                        class="flex cursor-pointer items-start justify-between gap-4"
-                                    >
-                                        <span class="min-w-0">
-                                            <span class="block font-medium">
-                                                Boards
-                                            </span>
-                                            <span
-                                                class="text-muted-foreground mt-1 block text-sm"
+                                            <label
+                                                class="flex cursor-pointer items-start justify-between gap-4"
                                             >
-                                                Public, private, and
-                                                team-restricted boards.
-                                            </span>
-                                        </span>
-                                        <Switch
-                                            id="feedback-voting-boards-enabled"
-                                            data-test="module-feedback-voting-boards"
-                                            class="mt-1 shrink-0"
-                                            :model-value="
-                                                modulesForm.feedback_boards_enabled
-                                            "
-                                            :disabled="
-                                                modulesForm.processing ||
-                                                !modulesForm.feedback_enabled
-                                            "
-                                            @update:model-value="
-                                                updateModule(
-                                                    'feedback_boards_enabled',
-                                                    $event === true,
-                                                )
-                                            "
-                                        />
-                                    </label>
-                                    <label
-                                        class="flex cursor-pointer items-start justify-between gap-4"
-                                    >
-                                        <span class="min-w-0">
-                                            <span class="block font-medium">
-                                                Voting
-                                            </span>
-                                            <span
-                                                class="text-muted-foreground mt-1 block text-sm"
+                                                <span class="min-w-0">
+                                                    <span
+                                                        class="block font-medium"
+                                                    >
+                                                        Development
+                                                    </span>
+                                                    <span
+                                                        class="text-muted-foreground mt-1 block text-sm"
+                                                    >
+                                                        Issues, sprints, and
+                                                        workflow tools.
+                                                    </span>
+                                                </span>
+                                                <Switch
+                                                    id="development-enabled"
+                                                    data-test="module-development"
+                                                    class="mt-1 shrink-0"
+                                                    :model-value="
+                                                        modulesForm.development_enabled
+                                                    "
+                                                    :disabled="
+                                                        modulesForm.processing
+                                                    "
+                                                    @update:model-value="
+                                                        updateModule(
+                                                            'development_enabled',
+                                                            $event === true,
+                                                        )
+                                                    "
+                                                />
+                                            </label>
+                                            <div
+                                                class="ml-4 space-y-3 border-l pl-4"
                                             >
-                                                Let people vote for requests.
-                                            </span>
-                                        </span>
-                                        <Switch
-                                            id="feedback-voting-voting-enabled"
-                                            data-test="module-feedback-voting-voting"
-                                            class="mt-1 shrink-0"
-                                            :model-value="
-                                                modulesForm.feedback_voting_enabled
-                                            "
-                                            :disabled="
-                                                modulesForm.processing ||
-                                                !modulesForm.feedback_enabled
-                                            "
-                                            @update:model-value="
-                                                updateModule(
-                                                    'feedback_voting_enabled',
-                                                    $event === true,
-                                                )
-                                            "
-                                        />
-                                    </label>
+                                                <label
+                                                    class="flex cursor-pointer items-start justify-between gap-4"
+                                                >
+                                                    <span class="min-w-0">
+                                                        <span
+                                                            class="block font-medium"
+                                                            >Issues</span
+                                                        >
+                                                        <span
+                                                            class="text-muted-foreground mt-1 block text-sm"
+                                                        >
+                                                            Track work that
+                                                            needs to be done.
+                                                        </span>
+                                                    </span>
+                                                    <Switch
+                                                        id="development-issues-enabled"
+                                                        data-test="module-development-issues"
+                                                        class="mt-1 shrink-0"
+                                                        :model-value="
+                                                            modulesForm.development_issues_enabled
+                                                        "
+                                                        :disabled="
+                                                            modulesForm.processing ||
+                                                            !modulesForm.development_enabled
+                                                        "
+                                                        @update:model-value="
+                                                            updateModule(
+                                                                'development_issues_enabled',
+                                                                $event === true,
+                                                            )
+                                                        "
+                                                    />
+                                                </label>
+                                                <label
+                                                    class="flex cursor-pointer items-start justify-between gap-4"
+                                                >
+                                                    <span class="min-w-0">
+                                                        <span
+                                                            class="block font-medium"
+                                                            >Sprints</span
+                                                        >
+                                                        <span
+                                                            class="text-muted-foreground mt-1 block text-sm"
+                                                        >
+                                                            Plan issues into
+                                                            time-boxed cycles.
+                                                        </span>
+                                                    </span>
+                                                    <Switch
+                                                        id="development-sprints-enabled"
+                                                        data-test="module-development-sprints"
+                                                        class="mt-1 shrink-0"
+                                                        :model-value="
+                                                            modulesForm.development_sprints_enabled
+                                                        "
+                                                        :disabled="
+                                                            modulesForm.processing ||
+                                                            !modulesForm.development_enabled
+                                                        "
+                                                        @update:model-value="
+                                                            updateModule(
+                                                                'development_sprints_enabled',
+                                                                $event === true,
+                                                            )
+                                                        "
+                                                    />
+                                                </label>
+                                                <label
+                                                    class="flex cursor-pointer items-start justify-between gap-4"
+                                                >
+                                                    <span class="min-w-0">
+                                                        <span
+                                                            class="block font-medium"
+                                                        >
+                                                            Workflow
+                                                        </span>
+                                                        <span
+                                                            class="text-muted-foreground mt-1 block text-sm"
+                                                        >
+                                                            Customize issue
+                                                            board columns.
+                                                        </span>
+                                                    </span>
+                                                    <Switch
+                                                        id="development-workflow-enabled"
+                                                        data-test="module-development-workflow"
+                                                        class="mt-1 shrink-0"
+                                                        :model-value="
+                                                            modulesForm.development_workflow_enabled
+                                                        "
+                                                        :disabled="
+                                                            modulesForm.processing ||
+                                                            !modulesForm.development_enabled
+                                                        "
+                                                        @update:model-value="
+                                                            updateModule(
+                                                                'development_workflow_enabled',
+                                                                $event === true,
+                                                            )
+                                                        "
+                                                    />
+                                                </label>
+                                            </div>
+                                        </template>
+                                        <template
+                                            v-else-if="element === 'support'"
+                                        >
+                                            <div>
+                                                <span class="block font-medium">
+                                                    Support
+                                                </span>
+                                                <span
+                                                    class="text-muted-foreground mt-1 block text-sm"
+                                                >
+                                                    Tickets from your support
+                                                    inbox. Shown once a support
+                                                    address receives mail.
+                                                </span>
+                                            </div>
+                                        </template>
+                                        <template
+                                            v-else-if="element === 'billing'"
+                                        >
+                                            <label
+                                                class="flex cursor-pointer items-start justify-between gap-4"
+                                            >
+                                                <span class="min-w-0">
+                                                    <span
+                                                        class="block font-medium"
+                                                    >
+                                                        Billing
+                                                    </span>
+                                                    <span
+                                                        class="text-muted-foreground mt-1 block text-sm"
+                                                    >
+                                                        Invoices and payments.
+                                                    </span>
+                                                </span>
+                                                <Switch
+                                                    id="billing-enabled"
+                                                    data-test="module-billing"
+                                                    class="mt-1 shrink-0"
+                                                    :model-value="
+                                                        modulesForm.billing_enabled
+                                                    "
+                                                    :disabled="
+                                                        modulesForm.processing
+                                                    "
+                                                    @update:model-value="
+                                                        requestModuleUpdate(
+                                                            'billing_enabled',
+                                                            $event === true,
+                                                        )
+                                                    "
+                                                />
+                                            </label>
+                                            <div
+                                                class="ml-4 space-y-3 border-l pl-4"
+                                            >
+                                                <label
+                                                    class="flex cursor-pointer items-start justify-between gap-4"
+                                                >
+                                                    <span class="min-w-0">
+                                                        <span
+                                                            class="block font-medium"
+                                                            >Invoices</span
+                                                        >
+                                                        <span
+                                                            class="text-muted-foreground mt-1 block text-sm"
+                                                        >
+                                                            Bill clients for
+                                                            completed work.
+                                                        </span>
+                                                    </span>
+                                                    <Switch
+                                                        id="billing-invoices-enabled"
+                                                        data-test="module-billing-invoices"
+                                                        class="mt-1 shrink-0"
+                                                        :model-value="
+                                                            modulesForm.billing_invoices_enabled
+                                                        "
+                                                        :disabled="
+                                                            modulesForm.processing ||
+                                                            !modulesForm.billing_enabled
+                                                        "
+                                                        @update:model-value="
+                                                            updateModule(
+                                                                'billing_invoices_enabled',
+                                                                $event === true,
+                                                            )
+                                                        "
+                                                    />
+                                                </label>
+                                                <label
+                                                    class="flex cursor-pointer items-start justify-between gap-4"
+                                                >
+                                                    <span class="min-w-0">
+                                                        <span
+                                                            class="block font-medium"
+                                                        >
+                                                            Automated billing
+                                                        </span>
+                                                        <span
+                                                            class="text-muted-foreground mt-1 block text-sm"
+                                                        >
+                                                            Invoice clients
+                                                            automatically each
+                                                            period.
+                                                        </span>
+                                                    </span>
+                                                    <Switch
+                                                        id="billing-billing-cycles-enabled"
+                                                        data-test="module-billing-billing-cycles"
+                                                        class="mt-1 shrink-0"
+                                                        :model-value="
+                                                            modulesForm.billing_billing_cycles_enabled
+                                                        "
+                                                        :disabled="
+                                                            modulesForm.processing ||
+                                                            !modulesForm.billing_enabled
+                                                        "
+                                                        @update:model-value="
+                                                            requestModuleUpdate(
+                                                                'billing_billing_cycles_enabled',
+                                                                $event === true,
+                                                            )
+                                                        "
+                                                    />
+                                                </label>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </div>
-                            </div>
+                            </template>
+                        </draggable>
 
-                            <div class="space-y-3 border-t pt-6">
-                                <label
-                                    class="flex cursor-pointer items-start justify-between gap-4"
-                                >
-                                    <span class="min-w-0">
-                                        <span class="block font-medium">
-                                            Development
-                                        </span>
-                                        <span
-                                            class="text-muted-foreground mt-1 block text-sm"
-                                        >
-                                            Issues, sprints, and workflow tools.
-                                        </span>
+                        <div class="space-y-3 rounded-lg border p-4 pl-11">
+                            <label
+                                class="flex cursor-pointer items-start justify-between gap-4"
+                            >
+                                <span class="min-w-0">
+                                    <span class="block font-medium">
+                                        Teams
                                     </span>
-                                    <Switch
-                                        id="development-enabled"
-                                        data-test="module-development"
-                                        class="mt-1 shrink-0"
-                                        :model-value="
-                                            modulesForm.development_enabled
-                                        "
-                                        :disabled="modulesForm.processing"
-                                        @update:model-value="
-                                            updateModule(
-                                                'development_enabled',
-                                                $event === true,
-                                            )
-                                        "
-                                    />
-                                </label>
-                                <div class="ml-4 space-y-3 border-l pl-4">
-                                    <label
-                                        class="flex cursor-pointer items-start justify-between gap-4"
+                                    <span
+                                        class="text-muted-foreground mt-1 block text-sm"
                                     >
-                                        <span class="min-w-0">
-                                            <span class="block font-medium"
-                                                >Issues</span
-                                            >
-                                            <span
-                                                class="text-muted-foreground mt-1 block text-sm"
-                                            >
-                                                Track work that needs to be
-                                                done.
-                                            </span>
-                                        </span>
-                                        <Switch
-                                            id="development-issues-enabled"
-                                            data-test="module-development-issues"
-                                            class="mt-1 shrink-0"
-                                            :model-value="
-                                                modulesForm.development_issues_enabled
-                                            "
-                                            :disabled="
-                                                modulesForm.processing ||
-                                                !modulesForm.development_enabled
-                                            "
-                                            @update:model-value="
-                                                updateModule(
-                                                    'development_issues_enabled',
-                                                    $event === true,
-                                                )
-                                            "
-                                        />
-                                    </label>
-                                    <label
-                                        class="flex cursor-pointer items-start justify-between gap-4"
-                                    >
-                                        <span class="min-w-0">
-                                            <span class="block font-medium"
-                                                >Sprints</span
-                                            >
-                                            <span
-                                                class="text-muted-foreground mt-1 block text-sm"
-                                            >
-                                                Plan issues into time-boxed
-                                                cycles.
-                                            </span>
-                                        </span>
-                                        <Switch
-                                            id="development-sprints-enabled"
-                                            data-test="module-development-sprints"
-                                            class="mt-1 shrink-0"
-                                            :model-value="
-                                                modulesForm.development_sprints_enabled
-                                            "
-                                            :disabled="
-                                                modulesForm.processing ||
-                                                !modulesForm.development_enabled
-                                            "
-                                            @update:model-value="
-                                                updateModule(
-                                                    'development_sprints_enabled',
-                                                    $event === true,
-                                                )
-                                            "
-                                        />
-                                    </label>
-                                    <label
-                                        class="flex cursor-pointer items-start justify-between gap-4"
-                                    >
-                                        <span class="min-w-0">
-                                            <span class="block font-medium">
-                                                Workflow
-                                            </span>
-                                            <span
-                                                class="text-muted-foreground mt-1 block text-sm"
-                                            >
-                                                Customize issue board columns.
-                                            </span>
-                                        </span>
-                                        <Switch
-                                            id="development-workflow-enabled"
-                                            data-test="module-development-workflow"
-                                            class="mt-1 shrink-0"
-                                            :model-value="
-                                                modulesForm.development_workflow_enabled
-                                            "
-                                            :disabled="
-                                                modulesForm.processing ||
-                                                !modulesForm.development_enabled
-                                            "
-                                            @update:model-value="
-                                                updateModule(
-                                                    'development_workflow_enabled',
-                                                    $event === true,
-                                                )
-                                            "
-                                        />
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="space-y-3 border-t pt-6">
-                                <label
-                                    class="flex cursor-pointer items-start justify-between gap-4"
-                                >
-                                    <span class="min-w-0">
-                                        <span class="block font-medium">
-                                            Teams
-                                        </span>
-                                        <span
-                                            class="text-muted-foreground mt-1 block text-sm"
-                                        >
-                                            Departments that run their own
-                                            boards and sprints. Turning this off
-                                            moves their work back to the
-                                            organization.
-                                        </span>
+                                        Departments that run their own boards
+                                        and sprints. Turning this off moves
+                                        their work back to the organization.
                                     </span>
-                                    <Switch
-                                        id="teams-enabled"
-                                        data-test="module-teams"
-                                        class="mt-1 shrink-0"
-                                        :model-value="modulesForm.teams_enabled"
-                                        :disabled="modulesForm.processing"
-                                        @update:model-value="
-                                            updateModule(
-                                                'teams_enabled',
-                                                $event === true,
-                                            )
-                                        "
-                                    />
-                                </label>
-                            </div>
-
-                            <div class="space-y-3 border-t pt-6">
-                                <label
-                                    class="flex cursor-pointer items-start justify-between gap-4"
-                                >
-                                    <span class="min-w-0">
-                                        <span class="block font-medium">
-                                            Billing
-                                        </span>
-                                        <span
-                                            class="text-muted-foreground mt-1 block text-sm"
-                                        >
-                                            Invoices and payments.
-                                        </span>
-                                    </span>
-                                    <Switch
-                                        id="billing-enabled"
-                                        data-test="module-billing"
-                                        class="mt-1 shrink-0"
-                                        :model-value="
-                                            modulesForm.billing_enabled
-                                        "
-                                        :disabled="modulesForm.processing"
-                                        @update:model-value="
-                                            requestModuleUpdate(
-                                                'billing_enabled',
-                                                $event === true,
-                                            )
-                                        "
-                                    />
-                                </label>
-                                <div class="ml-4 space-y-3 border-l pl-4">
-                                    <label
-                                        class="flex cursor-pointer items-start justify-between gap-4"
-                                    >
-                                        <span class="min-w-0">
-                                            <span class="block font-medium"
-                                                >Invoices</span
-                                            >
-                                            <span
-                                                class="text-muted-foreground mt-1 block text-sm"
-                                            >
-                                                Bill clients for completed work.
-                                            </span>
-                                        </span>
-                                        <Switch
-                                            id="billing-invoices-enabled"
-                                            data-test="module-billing-invoices"
-                                            class="mt-1 shrink-0"
-                                            :model-value="
-                                                modulesForm.billing_invoices_enabled
-                                            "
-                                            :disabled="
-                                                modulesForm.processing ||
-                                                !modulesForm.billing_enabled
-                                            "
-                                            @update:model-value="
-                                                updateModule(
-                                                    'billing_invoices_enabled',
-                                                    $event === true,
-                                                )
-                                            "
-                                        />
-                                    </label>
-                                    <label
-                                        class="flex cursor-pointer items-start justify-between gap-4"
-                                    >
-                                        <span class="min-w-0">
-                                            <span class="block font-medium">
-                                                Automated billing
-                                            </span>
-                                            <span
-                                                class="text-muted-foreground mt-1 block text-sm"
-                                            >
-                                                Invoice clients automatically
-                                                each period.
-                                            </span>
-                                        </span>
-                                        <Switch
-                                            id="billing-billing-cycles-enabled"
-                                            data-test="module-billing-billing-cycles"
-                                            class="mt-1 shrink-0"
-                                            :model-value="
-                                                modulesForm.billing_billing_cycles_enabled
-                                            "
-                                            :disabled="
-                                                modulesForm.processing ||
-                                                !modulesForm.billing_enabled
-                                            "
-                                            @update:model-value="
-                                                requestModuleUpdate(
-                                                    'billing_billing_cycles_enabled',
-                                                    $event === true,
-                                                )
-                                            "
-                                        />
-                                    </label>
-                                </div>
-                            </div>
+                                </span>
+                                <Switch
+                                    id="teams-enabled"
+                                    data-test="module-teams"
+                                    class="mt-1 shrink-0"
+                                    :model-value="modulesForm.teams_enabled"
+                                    :disabled="modulesForm.processing"
+                                    @update:model-value="
+                                        updateModule(
+                                            'teams_enabled',
+                                            $event === true,
+                                        )
+                                    "
+                                />
+                            </label>
                         </div>
                     </div>
                 </CollapsibleContent>

@@ -33,6 +33,7 @@ use App\Http\Controllers\Organizations\OrganizationInvitationController;
 use App\Http\Controllers\Organizations\OrganizationLogoController;
 use App\Http\Controllers\Organizations\OrganizationMemberController;
 use App\Http\Controllers\Organizations\OrganizationModuleController;
+use App\Http\Controllers\Organizations\OrganizationModuleOrderController;
 use App\Http\Controllers\Organizations\OrganizationRoleController;
 use App\Http\Controllers\Palette\PaletteController;
 use App\Http\Controllers\Palette\PaletteOptionsController;
@@ -217,6 +218,7 @@ Route::prefix('{current_organization}/settings')
         Route::patch('/', [OrganizationController::class, 'update'])->can('update', 'current_organization')->name('update');
         Route::delete('/', [OrganizationController::class, 'destroy'])->name('destroy');
         Route::patch('modules', [OrganizationModuleController::class, 'update'])->can('manageModules', 'current_organization')->name('modules.update');
+        Route::patch('modules/order', [OrganizationModuleOrderController::class, 'update'])->can('manageModules', 'current_organization')->name('modules.order.update');
 
         Route::post('logo', [OrganizationLogoController::class, 'store'])->can('update', 'current_organization')->name('logo.store');
         Route::delete('logo', [OrganizationLogoController::class, 'destroy'])->can('update', 'current_organization')->name('logo.destroy');

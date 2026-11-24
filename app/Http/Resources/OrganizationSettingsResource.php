@@ -25,6 +25,7 @@ class OrganizationSettingsResource extends JsonResource
             'logoUrl' => $this->logoUrl(),
             'isOwner' => $this->isOwner($this->viewer),
             'modules' => $this->moduleSettings(),
+            'moduleOrder' => $this->resource->moduleOrder(),
         ];
     }
 }
