@@ -22,8 +22,6 @@ class DuplicateInvoice
                 'discount_value' => $invoice->discount_value,
                 'deposit_type' => $invoice->deposit_type,
                 'deposit_value' => $invoice->deposit_value,
-                'notes' => $invoice->notes,
-                'terms' => $invoice->terms,
             ]);
 
             $invoice->lines->each(fn (InvoiceLine $line) => $copy->lines()->create($line->only([

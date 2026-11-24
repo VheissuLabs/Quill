@@ -23,8 +23,6 @@ function duplicableInvoice(string $state = 'sent'): array
         'tax_rate' => '10.00',
         'discount_type' => AdjustmentType::Percentage,
         'discount_value' => '5.00',
-        'notes' => 'Thank you',
-        'terms' => 'Net 30',
         'issue_date' => '2026-01-01',
         'due_date' => '2026-01-31',
         'service_period_start' => '2026-01-01',
@@ -55,8 +53,6 @@ test('duplicating copies lines into a new draft', function () {
         ->cc_emails->toBe(['boss@client.test'])
         ->tax_rate->toBe('10.00')
         ->discount_value->toBe('5.00')
-        ->notes->toBe('Thank you')
-        ->terms->toBe('Net 30')
         ->issue_date->toDateString()->toBe(today()->toDateString())
         ->due_date->toDateString()->toBe(today()->addDays(30)->toDateString())
         ->service_period_start->toBeNull()

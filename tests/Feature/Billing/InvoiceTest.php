@@ -141,10 +141,10 @@ test('a draft\'s header and amounts update and totals are recalculated', functio
     $invoice->lines()->create(['description' => 'Dev', 'quantity' => '10', 'unit' => 'hours', 'rate' => '100.00']);
 
     $this->actingAs($admin)
-        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['tax_rate' => '10', 'notes' => 'Thanks'])
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['tax_rate' => '10'])
         ->assertSessionHasNoErrors();
 
-    expect($invoice->fresh())->notes->toBe('Thanks')->tax_amount->toBe('100.00')->total->toBe('1100.00');
+    expect($invoice->fresh())->tax_amount->toBe('100.00')->total->toBe('1100.00');
 });
 
 test('money fields cannot change once sent', function () {
@@ -156,10 +156,10 @@ test('money fields cannot change once sent', function () {
         ->assertSessionHasErrors('tax_rate');
 
     $this->actingAs($admin)
-        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['notes' => 'Updated'])
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['cc_emails' => ['finance@example.com']])
         ->assertSessionHasNoErrors();
 
-    expect($invoice->fresh())->notes->toBe('Updated');
+    expect($invoice->fresh())->cc_emails->toBe(['finance@example.com']);
 });
 
 test('void invoices cannot be edited', function () {
@@ -167,7 +167,7 @@ test('void invoices cannot be edited', function () {
     $invoice = Invoice::factory()->void()->for($organization)->for($client)->create();
 
     $this->actingAs($admin)
-        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['notes' => 'Nope'])
+        ->patch(invoiceRoute('invoices.update', $organization, $invoice), ['cc_emails' => ['nope@example.com']])
         ->assertForbidden();
 });
 
@@ -211,7 +211,7 @@ test('invoices from another workspace are 404', function () {
     $foreign = Invoice::factory()->create();
 
     $this->actingAs($admin)->get(invoiceRoute('invoices.show', $organization, $foreign))->assertNotFound();
-    $this->actingAs($admin)->patch(invoiceRoute('invoices.update', $organization, $foreign), ['notes' => 'x'])->assertNotFound();
+    $this->actingAs($admin)->patch(invoiceRoute('invoices.update', $organization, $foreign), ['cc_emails' => ['x@example.com']])->assertNotFound();
     $this->actingAs($admin)->delete(invoiceRoute('invoices.destroy', $organization, $foreign))->assertNotFound();
 });
 
@@ -224,7 +224,7 @@ test('members without invoice management get 403', function () {
     $this->actingAs($member)->get(invoiceRoute('invoices.index', $organization))->assertForbidden();
     $this->actingAs($member)->post(invoiceRoute('invoices.store', $organization), ['client_id' => $client->id])->assertForbidden();
     $this->actingAs($member)->get(invoiceRoute('invoices.show', $organization, $invoice))->assertForbidden();
-    $this->actingAs($member)->patch(invoiceRoute('invoices.update', $organization, $invoice), ['notes' => 'x'])->assertForbidden();
+    $this->actingAs($member)->patch(invoiceRoute('invoices.update', $organization, $invoice), ['cc_emails' => ['x@example.com']])->assertForbidden();
     $this->actingAs($member)->delete(invoiceRoute('invoices.destroy', $organization, $invoice))->assertForbidden();
 });
 

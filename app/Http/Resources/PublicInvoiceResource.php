@@ -56,8 +56,6 @@ class PublicInvoiceResource extends JsonResource
             'canPayOnline' => $this->canPayOnline(),
             'paymentProcessing' => $this->hasPendingSquareCheckout(),
             'paymentInstructions' => $this->status === InvoiceStatus::Paid ? null : $this->organization->billingSettings()->payment_instructions,
-            'notes' => $this->notes,
-            'terms' => $this->terms,
         ];
     }
 }

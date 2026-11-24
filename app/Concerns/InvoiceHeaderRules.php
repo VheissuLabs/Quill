@@ -35,8 +35,6 @@ trait InvoiceHeaderRules
             'due_date' => ['sometimes', 'required', 'date', $this->filled('issue_date') ? 'after_or_equal:issue_date' : null],
             'service_period_start' => ['sometimes', 'nullable', 'date'],
             'service_period_end' => ['sometimes', 'nullable', 'date', $this->filled('service_period_start') ? 'after_or_equal:service_period_start' : null],
-            'notes' => ['sometimes', 'nullable', 'string', 'max:10000'],
-            'terms' => ['sometimes', 'nullable', 'string', 'max:10000'],
             ...$this->moneyRules(),
         ]);
     }

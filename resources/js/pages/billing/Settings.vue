@@ -39,8 +39,6 @@ type Props = {
         default_rate: string | null;
         payment_terms_days: number;
         tax_rate: string | null;
-        default_notes: string | null;
-        default_terms: string | null;
         from_address: string | null;
     };
     square: {
@@ -165,28 +163,6 @@ const confirmDelete = (workType: WorkType) => {
                         :default-value="settings.from_address ?? ''"
                     />
                     <InputError :message="errors.from_address" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="default_notes">Default notes</Label>
-                    <Textarea
-                        id="default_notes"
-                        name="default_notes"
-                        rows="3"
-                        :default-value="settings.default_notes ?? ''"
-                    />
-                    <InputError :message="errors.default_notes" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="default_terms">Default terms</Label>
-                    <Textarea
-                        id="default_terms"
-                        name="default_terms"
-                        rows="3"
-                        :default-value="settings.default_terms ?? ''"
-                    />
-                    <InputError :message="errors.default_terms" />
                 </div>
 
                 <div class="space-y-6 border-t pt-6">

@@ -46,11 +46,7 @@ test('each workspace numbers on its own', function () {
 
 test('defaults come from the client and billing settings', function () {
     $organization = Organization::factory()->create();
-    $organization->billingSettings()->update([
-        'tax_rate' => '8.25',
-        'default_notes' => 'Thank you for your business.',
-        'default_terms' => 'Net 30',
-    ]);
+    $organization->billingSettings()->update(['tax_rate' => '8.25']);
     $client = Client::factory()->for($organization)->create();
     $contact = ClientContact::factory()->for($client)->create();
     $client->update(['billing_contact_id' => $contact->id]);
@@ -62,8 +58,6 @@ test('defaults come from the client and billing settings', function () {
         ->client_id->toBe($client->id)
         ->contact_id->toBe($contact->id)
         ->tax_rate->toBe('8.25')
-        ->notes->toBe('Thank you for your business.')
-        ->terms->toBe('Net 30')
         ->issue_date->toDateString()->toBe('2026-11-15')
         ->due_date->toDateString()->toBe('2026-12-15')
         ->public_token->toHaveLength(40);
@@ -71,20 +65,18 @@ test('defaults come from the client and billing settings', function () {
 
 test('given attributes win over the defaults', function () {
     $organization = Organization::factory()->create();
-    $organization->billingSettings()->update(['tax_rate' => '8.25', 'default_notes' => 'Thanks']);
+    $organization->billingSettings()->update(['tax_rate' => '8.25']);
     $client = Client::factory()->for($organization)->create();
     $client->update(['billing_contact_id' => ClientContact::factory()->for($client)->create()->id]);
 
     $invoice = app(CreateInvoice::class)->handle($organization, $client, [
         'tax_rate' => null,
-        'notes' => 'Custom',
         'contact_id' => null,
         'due_date' => '2026-11-30',
     ]);
 
     expect($invoice->fresh())
         ->tax_rate->toBeNull()
-        ->notes->toBe('Custom')
         ->contact_id->toBeNull()
         ->due_date->toDateString()->toBe('2026-11-30');
 });

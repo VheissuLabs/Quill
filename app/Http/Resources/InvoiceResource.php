@@ -9,7 +9,6 @@ use App\Models\Invoice;
 use App\Models\InvoiceLine;
 use App\Models\InvoicePayment;
 use App\Models\Project;
-use App\Models\Sprint;
 use App\Models\WorkType;
 use Illuminate\Http\Request;
 
@@ -24,7 +23,6 @@ class InvoiceResource extends InvoiceListResource
         return [
             ...parent::toArray($request),
             'projectId' => $this->project_id,
-            'sprintId' => $this->sprint_id,
             'contactId' => $this->contact_id,
             'ccEmails' => $this->cc_emails ?? [],
             'servicePeriodStart' => $this->service_period_start?->toDateString(),
@@ -39,8 +37,6 @@ class InvoiceResource extends InvoiceListResource
             'depositValue' => $this->deposit_value,
             'depositAmount' => $this->deposit_amount,
             'amountPaid' => $this->amount_paid,
-            'notes' => $this->notes,
-            'terms' => $this->terms,
             'sentAt' => $this->sent_at?->toIso8601String(),
             'closesAt' => $this->organization->canUse(OrganizationCapability::BillingCycles) ? $this->closes_at?->toIso8601String() : null,
             'voidedAt' => $this->voided_at?->toIso8601String(),
@@ -78,8 +74,6 @@ class InvoiceResource extends InvoiceListResource
                     ->map(fn (ClientContact $contact) => ['id' => $contact->id, 'name' => $contact->name, 'email' => $contact->email])->all(),
                 'projects' => Project::whereIn('client_id', $this->client->billableClientIds())->orderBy('name')->get(['id', 'name', 'slug'])
                     ->map(fn (Project $project) => ['id' => $project->id, 'name' => $project->name, 'slug' => $project->slug])->all(),
-                'sprints' => $this->organization->allSprints()->orderByDesc('starts_at')->get(['id', 'name'])
-                    ->map(fn (Sprint $sprint) => ['id' => $sprint->id, 'name' => $sprint->name])->all(),
                 'workTypes' => $this->organization->workTypes()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name'])
                     ->map(fn (WorkType $workType) => ['id' => $workType->id, 'name' => $workType->name])->all(),
             ],

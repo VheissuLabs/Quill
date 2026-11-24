@@ -19,8 +19,6 @@ namespace App\Models{
  * @property numeric|null $default_rate
  * @property int $payment_terms_days
  * @property numeric|null $tax_rate
- * @property string|null $default_notes
- * @property string|null $default_terms
  * @property string|null $from_address
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
@@ -38,9 +36,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereDefaultNotes($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereDefaultRate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereDefaultTerms($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereFromAddress($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereInvoicePrefix($value)
@@ -109,6 +105,7 @@ namespace App\Models{
  * @property array<array-key, mixed>|null $billing_cc_emails
  * @property int|null $payment_terms_days
  * @property \Carbon\CarbonImmutable|null $billing_opened_through
+ * @property \Carbon\CarbonImmutable|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Client> $billedClients
@@ -129,6 +126,7 @@ namespace App\Models{
  * @method static \Database\Factories\ClientFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBilledThroughClientId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingCcEmails($value)
@@ -138,12 +136,15 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingOpenedThrough($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereBillingRate($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereOrganizationId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client wherePaymentTermsDays($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client withoutTrashed()
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
@@ -161,7 +162,7 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
- * @property-read \App\Models\Client $client
+ * @property-read \App\Models\Client|null $client
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ticket> $tickets
  * @property-read int|null $tickets_count
  * @method static \Database\Factories\ClientContactFactory factory($count = null, $state = [])
@@ -190,7 +191,7 @@ namespace App\Models{
  * @property string $domain
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
- * @property-read \App\Models\Client $client
+ * @property-read \App\Models\Client|null $client
  * @method static \Database\Factories\ClientDomainFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientDomain newQuery()
@@ -422,8 +423,6 @@ namespace App\Models{
  * @property numeric $deposit_amount
  * @property numeric $total
  * @property numeric $amount_paid
- * @property string|null $notes
- * @property string|null $terms
  * @property \Carbon\CarbonImmutable|null $sent_at
  * @property \Carbon\CarbonImmutable|null $voided_at
  * @property \Carbon\CarbonImmutable|null $created_at
@@ -462,7 +461,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereDueDate($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereIssueDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereNotes($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereNumber($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereOrganizationId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereProjectId($value)
@@ -476,7 +474,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereSubtotal($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereTaxAmount($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereTaxRate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereTerms($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereTotal($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereVoidedAt($value)
@@ -662,6 +659,7 @@ namespace App\Models{
  * @property int $id
  * @property string $name
  * @property string $slug
+ * @property array<array-key, mixed>|null $module_order
  * @property string|null $logo_path
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
@@ -711,6 +709,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization whereLogoPath($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization whereModuleOrder($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Organization whereUpdatedAt($value)
@@ -742,6 +741,7 @@ namespace App\Models{
  * @method static \Database\Factories\OrganizationInvitationFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation open()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation pendingFor(\App\Models\User $user)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganizationInvitation whereAcceptedAt($value)
@@ -1149,6 +1149,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTwoFactorRecoveryCodes($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTwoFactorSecret($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User withEmailAddress(string $email)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutPermission($permissions)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutRole($roles, ?string $guard = null)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTeam($teams)

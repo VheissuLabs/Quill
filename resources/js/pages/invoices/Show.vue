@@ -20,14 +20,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { show as showClient } from '@/routes/clients';
 import { destroy, index, show, update } from '@/routes/invoices';
 import { store as duplicate } from '@/routes/invoices/duplicate';
 import { store as send } from '@/routes/invoices/send';
 import { store as voidInvoice } from '@/routes/invoices/void';
 import { edit as editProject } from '@/routes/projects';
-import { show as showSprint } from '@/routes/sprints';
 import { formatDate } from '@/lib/dates';
 import type { Invoice, Organization } from '@/types';
 
@@ -100,11 +98,6 @@ const projectFor = (id: number | string | null) =>
         (project) => String(project.id) === String(id),
     ) ?? null;
 
-const sprintFor = (id: number | string | null) =>
-    props.invoice.options.sprints.find(
-        (sprint) => String(sprint.id) === String(id),
-    ) ?? null;
-
 const clientHref = computed(() =>
     showClient([props.currentOrganization.slug, props.invoice.clientSlug]),
 );
@@ -156,9 +149,6 @@ const headerFields = () => ({
     service_period_start: props.invoice.servicePeriodStart ?? '',
     service_period_end: props.invoice.servicePeriodEnd ?? '',
     project_id: select(props.invoice.projectId),
-    sprint_id: select(props.invoice.sprintId),
-    notes: props.invoice.notes ?? '',
-    terms: props.invoice.terms ?? '',
     tax_rate: props.invoice.taxRate ?? '',
     discount_type: select(props.invoice.discountType),
     discount_value: props.invoice.discountValue ?? '',
@@ -191,9 +181,6 @@ const submit = () => {
         service_period_start: data.service_period_start || null,
         service_period_end: data.service_period_end || null,
         project_id: orNull(data.project_id),
-        sprint_id: orNull(data.sprint_id),
-        notes: data.notes,
-        terms: data.terms,
         ...(props.invoice.isEditable
             ? {
                   tax_rate: data.tax_rate || null,
@@ -498,52 +485,6 @@ const money = (value: string) =>
                                         :message="form.errors.project_id"
                                     />
                                 </div>
-
-                                <div class="grid gap-2">
-                                    <div
-                                        class="flex items-center justify-between gap-2"
-                                    >
-                                        <Label for="invoice-sprint"
-                                            >Sprint</Label
-                                        >
-                                        <Link
-                                            v-if="sprintFor(form.sprint_id)"
-                                            :href="
-                                                showSprint([
-                                                    currentOrganization.slug,
-                                                    Number(form.sprint_id),
-                                                ])
-                                            "
-                                            class="text-muted-foreground hover:text-foreground text-xs hover:underline"
-                                        >
-                                            Open sprint
-                                        </Link>
-                                    </div>
-                                    <Select v-model="form.sprint_id">
-                                        <SelectTrigger
-                                            id="invoice-sprint"
-                                            class="w-full"
-                                        >
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem :value="none">
-                                                None
-                                            </SelectItem>
-                                            <SelectItem
-                                                v-for="sprint in invoice.options
-                                                    .sprints"
-                                                :key="sprint.id"
-                                                :value="String(sprint.id)"
-                                            >
-                                                {{ sprint.name }}
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError
-                                        :message="form.errors.sprint_id"
-                                    />
-                                </div>
                             </div>
 
                             <div
@@ -657,30 +598,6 @@ const money = (value: string) =>
                                 </div>
                             </div>
 
-                            <div
-                                class="grid gap-x-6 gap-y-5 border-t pt-5 sm:grid-cols-2"
-                            >
-                                <div class="grid gap-2">
-                                    <Label for="invoice-notes">Notes</Label>
-                                    <Textarea
-                                        id="invoice-notes"
-                                        v-model="form.notes"
-                                        rows="4"
-                                    />
-                                    <InputError :message="form.errors.notes" />
-                                </div>
-
-                                <div class="grid gap-2">
-                                    <Label for="invoice-terms">Terms</Label>
-                                    <Textarea
-                                        id="invoice-terms"
-                                        v-model="form.terms"
-                                        rows="4"
-                                    />
-                                    <InputError :message="form.errors.terms" />
-                                </div>
-                            </div>
-
                             <div class="flex justify-end">
                                 <Button
                                     type="submit"
@@ -760,45 +677,7 @@ const money = (value: string) =>
                                         </Link>
                                     </dd>
                                 </div>
-                                <div v-if="sprintFor(invoice.sprintId)">
-                                    <dt class="text-muted-foreground">
-                                        Sprint
-                                    </dt>
-                                    <dd>
-                                        <Link
-                                            :href="
-                                                showSprint([
-                                                    currentOrganization.slug,
-                                                    invoice.sprintId!,
-                                                ])
-                                            "
-                                            class="hover:underline"
-                                        >
-                                            {{
-                                                sprintFor(invoice.sprintId)!
-                                                    .name
-                                            }}
-                                        </Link>
-                                    </dd>
-                                </div>
                             </dl>
-                            <div
-                                v-if="invoice.notes || invoice.terms"
-                                class="grid gap-x-6 gap-y-4 border-t pt-5 sm:grid-cols-2"
-                            >
-                                <div v-if="invoice.notes">
-                                    <p class="text-muted-foreground">Notes</p>
-                                    <p class="whitespace-pre-line">
-                                        {{ invoice.notes }}
-                                    </p>
-                                </div>
-                                <div v-if="invoice.terms">
-                                    <p class="text-muted-foreground">Terms</p>
-                                    <p class="whitespace-pre-line">
-                                        {{ invoice.terms }}
-                                    </p>
-                                </div>
-                            </div>
                         </div>
                     </CardContent>
                 </Card>

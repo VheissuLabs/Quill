@@ -26,7 +26,7 @@ test('a sent invoice can be voided and becomes read-only', function () {
 
     expect($invoice->fresh())->status->toBe(InvoiceStatus::Void)->voided_at->not->toBeNull();
 
-    $this->actingAs($admin)->patch(route('invoices.update', [$invoice->organization, $invoice]), ['notes' => 'Changed'])->assertForbidden();
+    $this->actingAs($admin)->patch(route('invoices.update', [$invoice->organization, $invoice]), ['cc_emails' => ['changed@example.com']])->assertForbidden();
 });
 
 test('a paid invoice cannot be voided', function () {

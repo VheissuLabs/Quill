@@ -25,8 +25,6 @@ class BillingSettingRequest extends FormRequest
             'default_rate' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'payment_terms_days' => ['required', 'integer', 'min:0', 'max:365'],
             'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'default_notes' => ['nullable', 'string', 'max:5000'],
-            'default_terms' => ['nullable', 'string', 'max:5000'],
             'from_address' => ['nullable', 'string', 'max:1000'],
             'square_environment' => ['sometimes', 'required', 'in:sandbox,production'],
             'square_access_token' => ['nullable', 'string', 'max:500'],

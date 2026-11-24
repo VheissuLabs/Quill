@@ -48,7 +48,6 @@ export type InvoicePayment = {
 
 export type Invoice = InvoiceListItem & {
     projectId: number | null;
-    sprintId: number | null;
     contactId: number | null;
     ccEmails: string[];
     servicePeriodStart: string | null;
@@ -63,8 +62,6 @@ export type Invoice = InvoiceListItem & {
     depositValue: string | null;
     depositAmount: string;
     amountPaid: string;
-    notes: string | null;
-    terms: string | null;
     publicUrl?: string;
     sentAt: string | null;
     closesAt: string | null;
@@ -80,7 +77,6 @@ export type Invoice = InvoiceListItem & {
     options: {
         contacts: { id: number; name: string | null; email: string }[];
         projects: { id: number; name: string; slug: string }[];
-        sprints: { id: number; name: string }[];
         workTypes: { id: number; name: string }[];
         paymentMethods: { value: string; label: string }[];
     };
@@ -130,6 +126,4 @@ export type PublicInvoice = {
     canPayOnline: boolean;
     paymentProcessing: boolean;
     paymentInstructions: string | null;
-    notes: string | null;
-    terms: string | null;
 };

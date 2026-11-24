@@ -15,8 +15,6 @@ return new class extends Migration
             $table->decimal('default_rate', 12, 2)->nullable();
             $table->unsignedSmallInteger('payment_terms_days')->default(30);
             $table->decimal('tax_rate', 5, 2)->nullable();
-            $table->text('default_notes')->nullable();
-            $table->text('default_terms')->nullable();
             $table->text('from_address')->nullable();
             $table->timestamps();
         });

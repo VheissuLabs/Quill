@@ -34,8 +34,6 @@ return new class extends Migration
             $table->decimal('deposit_amount', 12, 2)->default(0);
             $table->decimal('total', 12, 2)->default(0);
             $table->decimal('amount_paid', 12, 2)->default(0);
-            $table->text('notes')->nullable();
-            $table->text('terms')->nullable();
             $table->timestamp('sent_at')->nullable();
             $table->timestamp('voided_at')->nullable();
             $table->timestamps();

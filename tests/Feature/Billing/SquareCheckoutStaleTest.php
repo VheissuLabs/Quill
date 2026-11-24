@@ -55,7 +55,7 @@ test('unrelated changes keep open checkouts and pending ones survive', function 
     [$invoice, $checkout] = staleInvoice();
     $pending = SquareCheckout::factory()->for($invoice)->create(['status' => SquareCheckoutStatus::Pending]);
 
-    $invoice->update(['notes' => 'Thanks']);
+    $invoice->update(['cc_emails' => ['finance@example.com']]);
     expect($checkout->refresh()->status)->toBe(SquareCheckoutStatus::Open);
 
     $invoice->payments()->create(['amount' => '100.00', 'paid_on' => '2026-11-16', 'method' => 'check']);

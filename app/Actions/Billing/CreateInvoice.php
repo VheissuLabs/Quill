@@ -27,8 +27,6 @@ class CreateInvoice
                 'contact_id' => $client->billing_contact_id,
                 'cc_emails' => $client->billing_cc_emails,
                 'tax_rate' => $settings->tax_rate,
-                'notes' => $settings->default_notes,
-                'terms' => $settings->default_terms,
                 ...$attributes,
                 'organization_id' => $organization->id,
                 'client_id' => $client->id,

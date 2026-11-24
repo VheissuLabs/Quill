@@ -252,16 +252,6 @@ const money = (value: string) =>
                     {{ invoice.paymentInstructions }}
                 </p>
             </section>
-
-            <section v-if="invoice.notes" class="text-sm">
-                <h2 class="font-medium">Notes</h2>
-                <p class="whitespace-pre-line">{{ invoice.notes }}</p>
-            </section>
-
-            <section v-if="invoice.terms" class="text-sm">
-                <h2 class="font-medium">Terms</h2>
-                <p class="whitespace-pre-line">{{ invoice.terms }}</p>
-            </section>
         </article>
 
         <Toaster />

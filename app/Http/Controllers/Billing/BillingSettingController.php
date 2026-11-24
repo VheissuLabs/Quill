@@ -34,8 +34,6 @@ class BillingSettingController extends Controller
                 'default_rate',
                 'payment_terms_days',
                 'tax_rate',
-                'default_notes',
-                'default_terms',
                 'from_address',
             ]),
             'workTypes' => BillingChanged::live($currentOrganization->workTypes()
