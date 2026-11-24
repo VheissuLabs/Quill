@@ -1,11 +1,24 @@
 <?php
 
+use App\Mcp\Tools\QuillTool;
 use App\Support\SquareException;
+use Laravel\Mcp\Server;
 
 arch()
     ->preset()
     ->laravel()
-    ->ignoring(SquareException::class);
+    ->ignoring([SquareException::class, 'App\Mcp']);
+
+arch()
+    ->expect('App\Mcp\Tools')
+    ->classes()
+    ->toExtend(QuillTool::class)
+    ->toHaveSuffix('Tool')
+    ->ignoring(QuillTool::class);
+
+arch()
+    ->expect('App\Mcp\Servers')
+    ->toExtend(Server::class);
 
 arch()
     ->preset()
@@ -29,6 +42,7 @@ test('app keeps the directories it has agreed on', function () {
         'Enums',
         'Events',
         'Http',
+        'Mcp',
         'Models',
         'Notifications',
         'Observers',

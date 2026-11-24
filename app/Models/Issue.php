@@ -260,6 +260,21 @@ class Issue extends Model
     }
 
     /**
+     * @param  Builder<$this>  $query
+     * @param  array{project?: string|null, status?: string|null, search?: string|null}  $filters
+     */
+    #[Scope]
+    protected function searchedFor(Builder $query, array $filters): void
+    {
+        $query
+            ->when($filters['project'] ?? null, fn (Builder $query, string $project) => $query->whereHas('project', fn (Builder $query) => $query->identifiedBy($project)))
+            ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
+            ->when($filters['search'] ?? null, fn (Builder $query, string $term) => $query->where(fn (Builder $query) => $query
+                ->where('title', 'like', '%'.addcslashes($term, '%_\\').'%')
+                ->when(ctype_digit($term), fn (Builder $query) => $query->orWhere('number', (int) $term))));
+    }
+
+    /**
      * @param  Collection<int, int>  $projectIds
      * @return EloquentCollection<int, Activity>
      */

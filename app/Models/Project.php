@@ -104,6 +104,15 @@ class Project extends Model
 
     /** @param  Builder<$this>  $query */
     #[Scope]
+    protected function identifiedBy(Builder $query, int|string $identifier): void
+    {
+        $query->where(fn (Builder $query) => $query
+            ->where('slug', (string) $identifier)
+            ->when(ctype_digit((string) $identifier), fn (Builder $query) => $query->orWhere('projects.id', (int) $identifier)));
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
     protected function visibleTo(Builder $query, ?User $user): void
     {
         $query->where(function (Builder $query) use ($user) {

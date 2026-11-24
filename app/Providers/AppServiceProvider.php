@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Passport\Passport;
 use Spatie\Permission\Events\PermissionAttachedEvent;
 use Spatie\Permission\Events\PermissionDetachedEvent;
 use Spatie\Permission\Events\RoleAttachedEvent;
@@ -33,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
         DevCommands::artisan('schedule:work', 'scheduler');
 
         Gate::policy(Role::class, RolePolicy::class);
+
+        Passport::authorizationView('mcp.authorize');
 
         $this->broadcastRoleChanges();
     }
