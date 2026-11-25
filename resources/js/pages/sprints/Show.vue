@@ -262,7 +262,7 @@ const unfinishedCount = computed(
         confirm-label="Delete sprint"
         :href="destroy([currentOrganization.slug, sprint.id])"
     >
-        This deletes <strong>{{ sprint.name }}</strong
-        >. Its issues stay and return to the backlog.
+        This deletes <strong>{{ sprint.name }}</strong>. Its issues stay and
+        return to the backlog.
     </ConfirmDeleteModal>
 </template>

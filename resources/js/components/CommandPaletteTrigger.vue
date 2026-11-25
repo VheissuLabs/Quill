@@ -25,8 +25,7 @@ const isApple = computed(
         <kbd
             class="bg-muted text-muted-foreground ml-2 hidden h-5 items-center gap-1 rounded px-1.5 font-sans text-[10px] leading-none font-medium tabular-nums [text-box:trim-both_cap_alphabetic] sm:inline-flex"
         >
-            <span>{{ isApple ? '⌘' : 'Ctrl' }}</span
-            ><span>K</span>
+            <span>{{ isApple ? '⌘' : 'Ctrl' }}</span><span>K</span>
         </kbd>
     </button>
 </template>

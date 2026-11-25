@@ -855,8 +855,8 @@ const currentSprint = computed(() =>
         confirm-label="Delete issue"
         :href="destroy(routeArgs)"
     >
-        This permanently deletes <strong>{{ issue.reference }}</strong
-        >. The feedback request it came from, if any, is kept.
+        This permanently deletes <strong>{{ issue.reference }}</strong>. The
+        feedback request it came from, if any, is kept.
     </ConfirmDeleteModal>
 
     <ConfirmDeleteModal

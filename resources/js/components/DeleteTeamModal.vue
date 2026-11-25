@@ -76,9 +76,9 @@ const confirm = () => {
                 <DialogTitle>Delete {{ team?.name }}</DialogTitle>
                 <DialogDescription>
                     Its sprints and issues move to
-                    <strong>{{ movingTo?.name ?? organization.name }}</strong
-                    >, keeping their status and landing in the matching column
-                    on that board.
+                    <strong>{{ movingTo?.name ?? organization.name }}</strong>,
+                    keeping their status and landing in the matching column on
+                    that board.
                     <template v-if="!movingTo">
                         Members stay in the organization, and boards restricted
                         to this team become visible to every organization

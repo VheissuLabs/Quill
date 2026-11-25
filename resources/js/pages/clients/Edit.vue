@@ -414,8 +414,8 @@ const submit = () => {
         confirm-label="Delete client"
         :href="destroy([currentOrganization.slug, client.slug])"
     >
-        This will delete <strong>{{ client.name }}</strong
-        >. Its invoices are kept for your records, its projects are detached and
-        its billing cycle stops.
+        This will delete <strong>{{ client.name }}</strong>. Its invoices are
+        kept for your records, its projects are detached and its billing cycle
+        stops.
     </ConfirmDeleteModal>
 </template>
