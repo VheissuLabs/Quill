@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
+use App\Models\TimeEntry;
 use App\Models\User;
 
 function timeTrackingSetup(array $client = []): array
@@ -93,4 +94,17 @@ test('issues from another organization are not found', function () {
     $stranger = Issue::factory()->create();
 
     QuillServer::actingAs($user)->tool(LogTimeTool::class, ['issue_id' => $stranger->id, 'hours' => 1])->assertHasErrors();
+});
+
+test('logged hours are kept as a dated entry on the invoice line', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$user, $issue] = timeTrackingSetup();
+
+    QuillServer::actingAs($user)->tool(LogTimeTool::class, ['issue_id' => $issue->id, 'hours' => 2, 'date' => '2026-11-24'])->assertOk();
+
+    $entry = TimeEntry::query()->sole();
+
+    expect($entry)->issue_id->toBe($issue->id)->user_id->toBe($user->id)->description->toBe('Build the login page')
+        ->and($entry->worked_on->toDateString())->toBe('2026-11-24')
+        ->and($entry->invoiceLine->issue_id)->toBe($issue->id);
 });
