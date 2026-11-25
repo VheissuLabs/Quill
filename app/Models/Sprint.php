@@ -116,6 +116,25 @@ class Sprint extends Model
         return $this->hasMany(Issue::class);
     }
 
+    /** @param  array<int, int>  $issueIds */
+    public function arrangeColumn(BoardColumn $column, array $issueIds): void
+    {
+        DB::transaction(function () use ($issueIds, $column) {
+            $issues = Issue::whereIn('id', $issueIds)->get()->keyBy('id');
+
+            foreach (array_values($issueIds) as $position => $issueId) {
+                $issue = $issues[$issueId];
+
+                if ($issue->sprint_id !== $this->id) {
+                    $issue->planInto($this);
+                }
+
+                $issue->moveToColumn($column);
+                $issue->update(['position' => $position]);
+            }
+        });
+    }
+
     public function start(): void
     {
         if ($this->status !== SprintStatus::Planned) {

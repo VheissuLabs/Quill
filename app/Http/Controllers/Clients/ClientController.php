@@ -33,7 +33,7 @@ class ClientController extends Controller
 
     public function store(ClientRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        $currentOrganization->clients()->create($request->validated());
+        $currentOrganization->clients()->make()->saveWithBillingCycle($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Client created.')]);
 

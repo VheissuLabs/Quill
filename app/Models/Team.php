@@ -13,7 +13,9 @@ use App\Observers\OrganizationScopedSlugObserver;
 use App\Observers\TeamObserver;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -226,6 +228,15 @@ class Team extends Model
             ->logOnly(['name'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function identifiedBy(Builder $query, int|string $identifier): void
+    {
+        $query->where(fn (Builder $query) => $query
+            ->where('slug', (string) $identifier)
+            ->when(ctype_digit((string) $identifier), fn (Builder $query) => $query->orWhere('teams.id', (int) $identifier)));
     }
 
     public function getRouteKeyName(): string

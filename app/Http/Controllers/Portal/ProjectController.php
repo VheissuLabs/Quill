@@ -44,12 +44,7 @@ class ProjectController extends Controller
             ->with($isMember ? ['author', 'issue.project'] : ['author'])
             ->withVoteSummary($user)
             ->withCount(['comments' => fn ($query) => $query->public()])
-            ->when($status, fn ($query) => $query->where('status', $status), fn ($query) => $query->active())
-            ->when($type, fn ($query) => $query->where('type', $type))
-            ->when($search, fn ($query, string $term) => $query->where('title', 'like', '%'.addcslashes($term, '%_\\').'%'))
-            ->when($sort === 'top', fn ($query) => $query->orderByRaw('coalesce(score, 0) desc'))
-            ->latest()
-            ->orderByDesc('id')
+            ->onBoard($status, $type, $search, $sort)
             ->get()
             ->map(fn (Feedback $feedback) => FeedbackResource::make($feedback)->withIssue($isMember)->resolve());
 

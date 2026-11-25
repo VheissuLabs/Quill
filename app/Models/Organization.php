@@ -11,6 +11,7 @@ use App\Enums\OrganizationPermission;
 use App\Enums\SidebarSection;
 use App\Events\ModulesChanged;
 use App\Events\OrganizationChanged;
+use App\Notifications\Organizations\OrganizationInvitation as OrganizationInvitationNotification;
 use App\Observers\OrganizationObserver;
 use Closure;
 use Database\Factories\OrganizationFactory;
@@ -29,6 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -293,6 +295,53 @@ class Organization extends Model
     public function roles(): HasMany
     {
         return $this->hasMany(Role::class, config('permission.column_names.team_foreign_key'));
+    }
+
+    /** @return Collection<int, OrganizationMembership> */
+    public function membershipsWithRoles(): Collection
+    {
+        return $this->memberships()
+            ->with(['user.organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $this->id)])
+            ->get()
+            ->each(fn (OrganizationMembership $membership) => $membership->setRelation('organization', $this));
+    }
+
+    /** @param  array<int, string>  $permissions */
+    public function defineRole(string $name, array $permissions): Role
+    {
+        return DB::transaction(function () use ($name, $permissions) {
+            $role = $this->roles()->create(['name' => $name, 'guard_name' => 'web']);
+            $role->syncPermissions($permissions);
+
+            return $role;
+        });
+    }
+
+    /** @param  array<int, string>  $permissions */
+    public function redefineRole(Role $role, string $name, array $permissions): Role
+    {
+        $role = $this->resolveRole($role);
+
+        DB::transaction(function () use ($role, $name, $permissions) {
+            $role->update(['name' => $name]);
+            $role->syncPermissions($permissions);
+        });
+
+        return $role;
+    }
+
+    public function invite(string $email, Role $role, User $inviter): OrganizationInvitation
+    {
+        $invitation = $this->invitations()->create([
+            'email' => $email,
+            'role_id' => $this->resolveRole($role)->id,
+            'invited_by' => $inviter->id,
+            'expires_at' => now()->addDays(3),
+        ]);
+
+        Notification::route('mail', $invitation->email)->notify(new OrganizationInvitationNotification($invitation));
+
+        return $invitation;
     }
 
     /** @return Collection<int, OrganizationMembership> */

@@ -46,9 +46,7 @@ class InvoiceController extends Controller
 
     public function store(StoreInvoiceRequest $request, Organization $currentOrganization, CreateInvoice $createInvoice): RedirectResponse
     {
-        $attributes = collect($request->validated())->except('client_id')->reject(fn (mixed $value) => $value === null)->all();
-
-        $invoice = $createInvoice->handle($currentOrganization, $currentOrganization->clients()->findOrFail($request->integer('client_id')), $attributes);
+        $invoice = $createInvoice->handle($currentOrganization, $currentOrganization->clients()->findOrFail($request->integer('client_id')), $request->invoiceAttributes());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Invoice created.')]);
 

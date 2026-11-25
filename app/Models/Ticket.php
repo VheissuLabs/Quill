@@ -175,6 +175,18 @@ class Ticket extends Model
         $this->update(['issue_id' => null, 'issue_resolved_at' => null]);
     }
 
+    /** @param  array{status?: string, client_id?: int|null}  $changes */
+    public function applyChanges(array $changes): void
+    {
+        if (array_key_exists('client_id', $changes)) {
+            $this->assignTo($changes['client_id'] !== null ? $this->organization->clients()->find($changes['client_id']) : null);
+        }
+
+        if (array_key_exists('status', $changes)) {
+            $this->changeStatus(TicketStatus::from($changes['status']));
+        }
+    }
+
     public function changeStatus(TicketStatus $status): void
     {
         $this->update([

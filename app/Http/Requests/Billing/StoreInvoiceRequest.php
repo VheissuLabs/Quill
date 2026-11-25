@@ -43,4 +43,10 @@ class StoreInvoiceRequest extends FormRequest
             ...$this->headerRules($organization, $client),
         ];
     }
+
+    /** @return array<string, mixed> */
+    public function invoiceAttributes(): array
+    {
+        return collect($this->validated())->except('client_id')->reject(fn (mixed $value) => $value === null)->all();
+    }
 }

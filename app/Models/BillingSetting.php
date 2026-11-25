@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Actions\Billing\CancelSquareCheckouts;
 use App\Concerns\BroadcastsChanges;
+use App\Enums\SquareCheckoutStatus;
 use App\Events\BillingChanged;
 use App\Observers\BillingSettingObserver;
 use Database\Factories\BillingSettingFactory;
@@ -41,6 +43,24 @@ class BillingSetting extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    /** @param  array<string, mixed>  $attributes */
+    public function saveSettings(array $attributes): void
+    {
+        $environment = $attributes['square_environment'] ?? $this->square_environment;
+
+        if ($environment !== $this->square_environment) {
+            $this->organization->invoices()
+                ->whereHas('squareCheckouts', fn ($query) => $query->where('status', SquareCheckoutStatus::Open))
+                ->get()
+                ->each(function (Invoice $invoice): void {
+                    $invoice->setRelation('organization', $this->organization);
+                    app(CancelSquareCheckouts::class)->handle($invoice);
+                });
+        }
+
+        $this->update($attributes);
     }
 
     public function squareConfigured(): bool

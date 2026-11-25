@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -124,6 +125,28 @@ class Invoice extends Model
             'deposit_amount' => round($this->adjustment($this->deposit_type, $this->deposit_value, $total), 2),
             'status' => $this->derivedStatus($total, $amountPaid),
         ])->save();
+    }
+
+    /** @param  array<string, mixed>  $attributes */
+    public function addLine(array $attributes): InvoiceLine
+    {
+        $attributes['description'] = filled($attributes['description'] ?? null)
+            ? $attributes['description']
+            : Issue::query()->whereKey($attributes['issue_id'] ?? 0)->value('title');
+        $attributes['rate'] ??= $this->defaultLineRate();
+        $attributes['sort_order'] = ($this->lines()->max('sort_order') ?? -1) + 1;
+
+        return $this->lines()->create($attributes);
+    }
+
+    /** @param  array<int, int|string>  $lineIds */
+    public function reorderLines(array $lineIds): void
+    {
+        DB::transaction(function () use ($lineIds): void {
+            foreach (array_values($lineIds) as $position => $lineId) {
+                $this->lines()->whereKey($lineId)->toBase()->update(['sort_order' => $position]);
+            }
+        });
     }
 
     public function takeMissingRecipientsFromClient(): void

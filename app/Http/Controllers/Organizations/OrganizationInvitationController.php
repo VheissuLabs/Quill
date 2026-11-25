@@ -6,24 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizations\CreateOrganizationInvitationRequest;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
-use App\Notifications\Organizations\OrganizationInvitation as OrganizationInvitationNotification;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 
 class OrganizationInvitationController extends Controller
 {
     public function store(CreateOrganizationInvitationRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        $invitation = $currentOrganization->invitations()->create([
-            'email' => $request->validated('email'),
-            'role_id' => $request->integer('role_id'),
-            'invited_by' => $request->user()->id,
-            'expires_at' => now()->addDays(3),
-        ]);
-
-        Notification::route('mail', $invitation->email)
-            ->notify(new OrganizationInvitationNotification($invitation));
+        $currentOrganization->invite($request->validated('email'), $currentOrganization->roles()->findOrFail($request->integer('role_id')), $request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Invitation sent.')]);
 

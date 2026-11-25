@@ -60,6 +60,18 @@ class BoardColumn extends Model
         return $this->hasMany(Issue::class);
     }
 
+    /** @param  array<string, mixed>  $attributes */
+    public function change(array $attributes): void
+    {
+        DB::transaction(function () use ($attributes) {
+            $this->update($attributes);
+
+            $this->issues()
+                ->where('status', '!=', $this->status)
+                ->each(fn (Issue $issue) => $issue->changeStatus($this->status));
+        });
+    }
+
     public function deleteAndReassignIssues(): self
     {
         $columns = $this->owner->columns()->get();

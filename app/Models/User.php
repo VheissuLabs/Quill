@@ -67,6 +67,18 @@ class User extends Authenticatable implements OAuthenticatable, PasskeyUser
             ->orWhereHas('emailAddresses', fn ($query) => $query->verified()->where('email', $email)));
     }
 
+    /** @param  array<string, mixed>  $attributes */
+    public function updateProfile(array $attributes): void
+    {
+        $this->fill($attributes);
+
+        if ($this->isDirty('email')) {
+            $this->email_verified_at = null;
+        }
+
+        $this->save();
+    }
+
     public function hasEmailAddress(string $email): bool
     {
         return $this->verifiedEmailAddresses()->contains(strtolower($email));

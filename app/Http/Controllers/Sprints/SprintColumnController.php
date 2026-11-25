@@ -5,11 +5,9 @@ namespace App\Http\Controllers\Sprints;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sprints\UpdateSprintColumnRequest;
 use App\Models\BoardColumn;
-use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Sprint;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 
 class SprintColumnController extends Controller
 {
@@ -18,20 +16,7 @@ class SprintColumnController extends Controller
         /** @var array<int, int> $issueIds */
         $issueIds = $request->validated('issue_ids');
 
-        DB::transaction(function () use ($issueIds, $sprint, $column) {
-            $issues = Issue::whereIn('id', $issueIds)->get()->keyBy('id');
-
-            foreach (array_values($issueIds) as $position => $issueId) {
-                $issue = $issues[$issueId];
-
-                if ($issue->sprint_id !== $sprint->id) {
-                    $issue->planInto($sprint);
-                }
-
-                $issue->moveToColumn($column);
-                $issue->update(['position' => $position]);
-            }
-        });
+        $sprint->arrangeColumn($column, $issueIds);
 
         return back();
     }

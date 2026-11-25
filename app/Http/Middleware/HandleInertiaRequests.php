@@ -7,6 +7,7 @@ use App\Events\MembersChanged;
 use App\Events\ModulesChanged;
 use App\Events\OrganizationChanged;
 use App\Events\TeamsChanged;
+use App\Http\Resources\NotificationResource;
 use App\Http\Resources\UserOrganizationResource;
 use App\Models\Organization;
 use App\Models\Team;
@@ -78,14 +79,7 @@ class HandleInertiaRequests extends Middleware
                 ->latest()
                 ->limit(10)
                 ->get()
-                ->map(fn (DatabaseNotification $notification) => [
-                    'id' => $notification->id,
-                    'title' => (string) ($notification->data['title'] ?? ''),
-                    'body' => (string) ($notification->data['body'] ?? ''),
-                    'url' => $notification->data['url'] ?? null,
-                    'readAt' => $notification->read_at?->toISOString(),
-                    'createdAt' => $notification->created_at?->toISOString() ?? now()->toISOString(),
-                ])
+                ->map(fn (DatabaseNotification $notification) => NotificationResource::make($notification)->toArray(request()))
                 ->all(),
         ];
     }

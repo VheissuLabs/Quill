@@ -47,10 +47,7 @@ class OrganizationController extends Controller
 
         return Inertia::render('organization/Settings', [
             'organization' => OrganizationChanged::live(OrganizationSettingsResource::make($currentOrganization, $user), $currentOrganization->id, ModulesChanged::class),
-            'members' => MembersChanged::live($currentOrganization->memberships()
-                ->with(['user.organizationRoles' => fn ($query) => $query->wherePivot('organization_id', $currentOrganization->id)])
-                ->get()
-                ->each(fn (OrganizationMembership $membership) => $membership->setRelation('organization', $currentOrganization))
+            'members' => MembersChanged::live($currentOrganization->membershipsWithRoles()
                 ->map(fn (OrganizationMembership $membership) => OrganizationMemberResource::make($membership, $user)->resolve()), $currentOrganization->id),
             'invitations' => MembersChanged::live(OrganizationInvitationResource::collection(
                 $currentOrganization->invitations()->whereNull('accepted_at')->with('role')->get()

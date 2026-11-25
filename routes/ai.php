@@ -5,4 +5,4 @@ use Laravel\Mcp\Facades\Mcp;
 
 Mcp::oauthRoutes();
 
-Mcp::web('/mcp', QuillServer::class)->middleware('auth:api');
+Mcp::web('/mcp', QuillServer::class)->middleware(['auth:api', 'verified']);

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Portal;
 
 use App\Actions\Comments\FeedbackCommentCommands;
 use App\Enums\FeedbackStatus;
-use App\Enums\VoteDirection;
 use App\Events\FeedbackChanged;
 use App\Events\FeedbackCommented;
 use App\Events\FeedbackVoted;
@@ -36,9 +35,7 @@ class FeedbackController extends Controller
 
         $feedback = Feedback::query()
             ->whereKey($feedback->id)
-            ->withVoteSummary($user)
-            ->withCount(['comments' => fn ($query) => $query->public()])
-            ->with(['author', 'issue.project'])
+            ->withSummary($user)
             ->firstOrFail();
 
         $newestFirst = $request->newestFirst();
@@ -64,13 +61,7 @@ class FeedbackController extends Controller
 
     public function store(FeedbackRequest $request, Organization $organization, Project $project): RedirectResponse
     {
-        $feedback = $project->feedback()->create([
-            ...$request->validated(),
-            'user_id' => $request->user()->id,
-            'status' => FeedbackStatus::Open,
-        ]);
-
-        $feedback->castVote($request->user(), VoteDirection::Up);
+        $feedback = Feedback::submit($project, $request->user(), $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Feedback requested.')]);
 

@@ -12,7 +12,6 @@ use App\Http\Resources\RoleCandidateResource;
 use App\Http\Resources\RoleResource;
 use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -31,26 +30,18 @@ class OrganizationRoleController extends Controller
     {
         $user = auth()->user();
 
-        $grantableRoles = $currentOrganization->isOwner($user)
-            ? $currentOrganization->roles()->orderByRaw("CASE WHEN name = 'Owner' THEN 0 ELSE 1 END")->orderBy('name')->get()
-            : $currentOrganization->assignableRoles();
-
         return Inertia::render('roles/Show', [
             'role' => MembersChanged::live(RoleResource::make($currentOrganization->rolesWithMembers()->findOrFail($role->id)), $currentOrganization->id),
             'members' => MembersChanged::live($currentOrganization->membershipsHolding($role)->map(fn ($membership) => OrganizationMemberResource::make($membership, $user)->resolve()), $currentOrganization->id),
             'availablePermissions' => OrganizationPermission::options(),
-            'availableRoles' => MembersChanged::live($grantableRoles->map(fn (Role $grantable) => ['value' => $grantable->id, 'label' => $grantable->name])->values(), $currentOrganization->id),
+            'availableRoles' => MembersChanged::live($currentOrganization->rolesVisibleTo($user)->map(fn (Role $grantable) => ['value' => $grantable->id, 'label' => $grantable->name])->values(), $currentOrganization->id),
             'candidates' => MembersChanged::live(RoleCandidateResource::forRole($currentOrganization, $role, $user), $currentOrganization->id),
         ]);
     }
 
     public function store(OrganizationRoleRequest $request, Organization $currentOrganization): RedirectResponse
     {
-        DB::transaction(function () use ($request, $currentOrganization) {
-            $currentOrganization->roles()
-                ->create(['name' => $request->validated('name'), 'guard_name' => 'web'])
-                ->syncPermissions($request->validated('permissions'));
-        });
+        $currentOrganization->defineRole($request->validated('name'), $request->validated('permissions'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role created.')]);
 
@@ -59,10 +50,7 @@ class OrganizationRoleController extends Controller
 
     public function update(OrganizationRoleRequest $request, Organization $currentOrganization, Role $role): RedirectResponse
     {
-        DB::transaction(function () use ($request, $role) {
-            $role->update(['name' => $request->validated('name')]);
-            $role->syncPermissions($request->validated('permissions'));
-        });
+        $currentOrganization->redefineRole($role, $request->validated('name'), $request->validated('permissions'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role updated.')]);
 

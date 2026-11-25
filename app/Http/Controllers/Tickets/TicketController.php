@@ -76,13 +76,7 @@ class TicketController extends Controller
 
     public function update(UpdateTicketRequest $request, Organization $currentOrganization, Ticket $ticket): RedirectResponse
     {
-        if ($request->has('client_id')) {
-            $ticket->assignTo($request->filled('client_id') ? $currentOrganization->clients()->find($request->integer('client_id')) : null);
-        }
-
-        if ($request->has('status')) {
-            $ticket->changeStatus(TicketStatus::from($request->validated('status')));
-        }
+        $ticket->applyChanges($request->validated());
 
         return back();
     }

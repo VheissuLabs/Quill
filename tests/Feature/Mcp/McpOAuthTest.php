@@ -1,5 +1,9 @@
 <?php
 
+use App\Mcp\Servers\QuillServer;
+use App\Mcp\Tools\Billing\LogTimeTool;
+use App\Mcp\Tools\Issues\CreateIssueTool;
+use App\Mcp\Tools\Organizations\ListOrganizationsTool;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -57,4 +61,9 @@ test('the mcp endpoint asks unauthenticated clients to sign in with oauth', func
     $this->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'])
         ->assertUnauthorized()
         ->assertHeader('WWW-Authenticate');
+});
+
+test('the server registers every tool under app/Mcp/Tools', function () {
+    QuillServer::actingAs(User::factory()->create())->tools()
+        ->assertRegistered([LogTimeTool::class, CreateIssueTool::class, ListOrganizationsTool::class]);
 });

@@ -59,11 +59,55 @@ class Feedback extends Model
         return $this->hasMany(Vote::class);
     }
 
+    /** @param  array<string, mixed>  $attributes */
+    public static function submit(Project $project, User $author, array $attributes): self
+    {
+        $feedback = $project->feedback()->create([
+            ...$attributes,
+            'user_id' => $author->id,
+            'status' => FeedbackStatus::Open,
+        ]);
+
+        $feedback->castVote($author, VoteDirection::Up);
+
+        return $feedback;
+    }
+
     /** @param  Builder<$this>  $query */
     #[Scope]
     protected function active(Builder $query): void
     {
         $query->whereIn('status', FeedbackStatus::active());
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function withSummary(Builder $query, ?User $viewer): void
+    {
+        $query
+            ->withVoteSummary($viewer)
+            ->withCount(['comments' => fn ($query) => $query->public()])
+            ->with(['author', 'issue.project']);
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function inOrganization(Builder $query, Organization $organization): void
+    {
+        $query->whereIn('project_id', $organization->projects()->select('projects.id'));
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function onBoard(Builder $query, ?FeedbackStatus $status, ?FeedbackType $type, ?string $search, string $sort): void
+    {
+        $query
+            ->when($status, fn (Builder $query) => $query->where('status', $status), fn (Builder $query) => $query->active())
+            ->when($type, fn (Builder $query) => $query->where('type', $type))
+            ->when($search, fn (Builder $query, string $term) => $query->where('title', 'like', '%'.addcslashes($term, '%_\\').'%'))
+            ->when($sort === 'top', fn (Builder $query) => $query->orderByRaw('coalesce(score, 0) desc'))
+            ->latest()
+            ->orderByDesc('id');
     }
 
     /** @param  Builder<$this>  $query */

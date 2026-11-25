@@ -393,3 +393,17 @@ test('turning a cycle on opens the draft for the current period straight away', 
         ->and($draft->sent_at)->toBeNull()
         ->and($draft->closes_at)->not->toBeNull();
 });
+
+test('creating a client with a cycle opens its first draft right away', function () {
+    [$organization, $admin] = clientBillingManager();
+    $this->travelTo('2026-11-16 10:00');
+
+    $this->actingAs($admin)
+        ->post(route('clients.store', ['current_organization' => $organization]), ['name' => 'Northwind', 'billing_cycle' => 'weekly'])
+        ->assertSessionHasNoErrors();
+
+    $invoice = $organization->clients()->where('name', 'Northwind')->sole()->openCycleInvoice();
+
+    expect($invoice->service_period_start->toDateString())->toBe('2026-11-16')
+        ->and($invoice->service_period_end->toDateString())->toBe('2026-11-22');
+});

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Http\Resources\EmailAddressResource;
 use App\Models\EmailAddress;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -22,23 +23,13 @@ class ProfileController extends Controller
             'emailAddresses' => auth()->user()->emailAddresses()
                 ->oldest()
                 ->get()
-                ->map(fn (EmailAddress $emailAddress) => [
-                    'id' => $emailAddress->id,
-                    'email' => $emailAddress->email,
-                    'verified' => $emailAddress->isVerified(),
-                ]),
+                ->map(fn (EmailAddress $emailAddress) => EmailAddressResource::make($emailAddress)->resolve()),
         ]);
     }
 
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
-
-        $request->user()->save();
+        $request->user()->updateProfile($request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 

@@ -58,6 +58,12 @@ class InvoiceLineRequest extends FormRequest
         return $rules;
     }
 
+    /** @return array<string, mixed> */
+    public function lineAttributes(): array
+    {
+        return collect($this->validated())->reject(fn (mixed $value, string $key) => $value === null && in_array($key, ['rate', 'quantity', 'unit'], true))->all();
+    }
+
     /** @return array<string, string> */
     public function messages(): array
     {
