@@ -71,6 +71,11 @@ class Client extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function timeEntries(): HasMany
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
+
     /** @param  array<string, mixed>  $attributes */
     public function saveWithBillingCycle(array $attributes): void
     {
@@ -137,6 +142,16 @@ class Client extends Model
             ->whereNotNull('closes_at')
             ->whereNull('sent_at')
             ->where('status', '!=', InvoiceStatus::Void)
+            ->first();
+    }
+
+    public function invoiceCovering(CarbonImmutable $day): ?Invoice
+    {
+        return $this->invoices()
+            ->where('status', '!=', InvoiceStatus::Void)
+            ->whereDate('service_period_start', '<=', $day->toDateString())
+            ->whereDate('service_period_end', '>=', $day->toDateString())
+            ->latest('id')
             ->first();
     }
 

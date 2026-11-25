@@ -3,36 +3,43 @@
 namespace App\Mcp\Tools\Billing;
 
 use App\Actions\Billing\LogTime;
-use App\Http\Resources\InvoiceResource;
+use App\Http\Resources\LoggedTimeResource;
 use App\Mcp\Tools\QuillTool;
 use App\Models\Invoice;
+use DomainException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Log hours worked on an issue. The hours are added to that issue\'s line on its client\'s open draft invoice (the current billing period\'s invoice, or a new draft), at the project\'s hourly rate. Logging again adds to the same line.')]
+#[Description('Log hours worked on a Quill issue on a given day (default today). The time is always recorded, and it rolls onto that issue\'s line on the client\'s draft invoice for the billing period containing the day, at the project\'s hourly rate, so the draft total stays current. If that period\'s invoice was already sent, the time is recorded but not billed. For work tracked outside Quill (a client\'s Jira, GitHub, Monday ticket, or meetings), use track-time.')]
 class LogTimeTool extends QuillTool
 {
     public function handle(Request $request, LogTime $logTime): Response
     {
         return $this->attempt(function () use ($request, $logTime) {
             $organization = $this->organization($request);
+            $user = $this->user($request);
             $issue = $this->issue($organization, (int) $request->get('issue_id'));
             $this->authorize($request, 'view', $issue);
             $this->authorize($request, 'create', [Invoice::class, $organization]);
 
             $validated = $request->validate([
                 'hours' => ['required', 'numeric', 'min:0.01', 'max:24'],
+                'date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:'.$this->today($request)],
             ]);
 
-            $line = $logTime->handle($issue, (float) $validated['hours']);
+            $client = $issue->project->client
+                ?? throw new DomainException(__(':project has no client, so its time has no invoice to go on.', ['project' => $issue->project->name]));
 
-            return Response::json([
-                'logged' => __(':hours h on :issue', ['hours' => round((float) $validated['hours'], 2), 'issue' => $issue->reference()]),
-                'lineId' => $line->id,
-                'invoice' => InvoiceResource::make($line->invoice->refresh()->load(['client', 'organization', 'lines.issue.project', 'payments']))->resolve(),
+            $entry = $logTime->handle($client, [
+                'issue_id' => $issue->id,
+                'user_id' => $user->id,
+                'hours' => $validated['hours'],
+                'worked_on' => $validated['date'] ?? $this->today($request),
             ]);
+
+            return Response::json(LoggedTimeResource::make($entry)->resolve());
         });
     }
 
@@ -42,6 +49,7 @@ class LogTimeTool extends QuillTool
             'organization' => $this->organizationArgument($schema),
             'issue_id' => $schema->integer()->description('Issue id.')->required(),
             'hours' => $schema->number()->description('Hours worked, e.g. 1.5 for an hour and a half.')->required(),
+            'date' => $schema->string()->format('date')->description('Day the work was done, YYYY-MM-DD. Defaults to today in your timezone.'),
         ];
     }
 }

@@ -13,7 +13,7 @@ use Symfony\Component\Finder\Finder;
 
 #[Name('Quill')]
 #[Version('1.0.0')]
-#[Instructions('Quill runs projects, issues (tasks), sprints, boards, feedback, support tickets, clients and invoices for organizations. Every tool acts as the signed-in user with their permissions. Tools take an optional organization slug and default to the user\'s current organization. Issues are what the user calls tasks. Time is tracked by logging hours on an issue with log-time, which adds them to the client\'s open draft invoice.')]
+#[Instructions('Quill runs projects, issues (tasks), sprints, boards, feedback, support tickets, clients and invoices for organizations. Every tool acts as the signed-in user with their permissions. Tools take an optional organization slug and default to the user\'s current organization. Issues are what the user calls tasks. Time is tracked as dated entries: log-time for hours on a Quill issue, track-time for any other client work (a ticket in the client\'s own tracker, meetings). Every entry is recorded and rolls onto the client\'s draft invoice for the billing period containing its date, so draft totals show expected earnings; list-time-entries shows what was recorded and what is unbilled.')]
 class QuillServer extends Server
 {
     protected function boot(): void

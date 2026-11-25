@@ -6,6 +6,7 @@ use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -54,6 +55,11 @@ abstract class QuillTool extends Tool
         setPermissionsTeamId($organization->id);
 
         return $organization;
+    }
+
+    protected function today(Request $request): string
+    {
+        return CarbonImmutable::now($this->user($request)->timezone ?? config('app.timezone'))->toDateString();
     }
 
     protected function project(Organization $organization, int|string $identifier): Project

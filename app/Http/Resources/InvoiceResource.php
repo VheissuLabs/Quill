@@ -58,6 +58,7 @@ class InvoiceResource extends InvoiceListResource
                 'issueId' => $line->issue_id,
                 'issueReference' => $line->issue?->reference(),
                 'referenceUrl' => $line->reference_url,
+                'entries' => $this->when($line->relationLoaded('timeEntries'), fn () => TimeEntryResource::collection($line->timeEntries)->resolve()),
             ])->all(),
             'payments' => $this->payments->map(fn (InvoicePayment $payment) => [
                 'id' => $payment->id,

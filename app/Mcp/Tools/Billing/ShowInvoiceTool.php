@@ -11,7 +11,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Show an invoice with its lines (hours, rate and amount per task), payments and totals.')]
+#[Description('Show an invoice with its lines (hours, rate and amount per task, and the dated time entries behind each line), payments and totals.')]
 class ShowInvoiceTool extends QuillTool
 {
     public function handle(Request $request): Response
@@ -21,7 +21,7 @@ class ShowInvoiceTool extends QuillTool
             $invoice = $organization->invoices()->findOrFail((int) $request->get('invoice_id'));
             $this->authorize($request, 'view', $invoice);
 
-            return Response::json(InvoiceResource::make($invoice->load(['client', 'organization', 'lines.issue.project', 'payments']))->resolve());
+            return Response::json(InvoiceResource::make($invoice->load(['client', 'organization', 'lines.issue.project', 'lines.timeEntries', 'payments']))->resolve());
         });
     }
 
