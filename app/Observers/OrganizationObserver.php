@@ -3,7 +3,6 @@
 namespace App\Observers;
 
 use App\Models\Organization;
-use Illuminate\Support\Facades\Schema;
 
 class OrganizationObserver
 {
@@ -24,11 +23,6 @@ class OrganizationObserver
     public function created(Organization $organization): void
     {
         $organization->createOwnerRole();
-
-        // Migrations that predate the board create organizations too, and run before the table
-        // they would write to exists.
-        if (Schema::hasTable('board_columns')) {
-            $organization->createDefaultColumns();
-        }
+        $organization->createDefaultColumns();
     }
 }

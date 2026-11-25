@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
+            $table->string('logo_path')->nullable();
             $table->json('module_order')->nullable();
             $table->timestamps();
             $table->softDeletes();
@@ -37,10 +38,18 @@ return new class extends Migration
             $table->timestamp('accepted_at')->nullable();
             $table->timestamps();
         });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('current_organization_id')->nullable()->constrained('organizations')->nullOnDelete();
+        });
     }
 
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('current_organization_id');
+        });
+
         Schema::dropIfExists('organization_invitations');
         Schema::dropIfExists('organization_members');
         Schema::dropIfExists('organizations');

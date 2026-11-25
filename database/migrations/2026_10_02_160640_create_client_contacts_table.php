@@ -20,12 +20,20 @@ return new class extends Migration
         });
 
         Schema::table('tickets', function (Blueprint $table) {
-            $table->foreignId('client_contact_id')->nullable()->after('client_id')->constrained()->nullOnDelete();
+            $table->foreignId('client_contact_id')->nullable()->constrained()->nullOnDelete();
+        });
+
+        Schema::table('clients', function (Blueprint $table) {
+            $table->foreignId('billing_contact_id')->nullable()->constrained('client_contacts')->nullOnDelete();
         });
     }
 
     public function down(): void
     {
+        Schema::table('clients', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('billing_contact_id');
+        });
+
         Schema::table('tickets', function (Blueprint $table) {
             $table->dropConstrainedForeignId('client_contact_id');
         });

@@ -19,11 +19,6 @@ return new class extends Migration
             'password' => 'password',
         ]);
 
-        $karl->emailAddresses()->updateOrCreate(
-            ['email' => 'karl@notarydash.com'],
-            ['verified_at' => now()],
-        );
-
         $organization = Organization::firstOrCreate(['slug' => 'vheissulabs'], ['name' => 'VheissuLabs']);
 
         $organization->addMember($karl, $organization->ownerRole());
@@ -35,8 +30,5 @@ return new class extends Migration
         activity()->enableLogging();
     }
 
-    public function down(): void
-    {
-        //
-    }
+    public function down(): void {}
 };

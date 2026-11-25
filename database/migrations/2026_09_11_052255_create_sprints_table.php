@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('sprints', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('team_id')->constrained()->cascadeOnDelete();
+            $table->nullableMorphs('owner');
             $table->string('name');
             $table->date('starts_at');
             $table->date('ends_at');
@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
-            $table->index(['team_id', 'status']);
+            $table->index(['owner_type', 'owner_id', 'status']);
         });
     }
 

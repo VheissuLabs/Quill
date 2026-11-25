@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /** Run the migrations. */
     public function up(): void
     {
         Schema::create('oauth_device_codes', function (Blueprint $table) {
@@ -22,13 +21,11 @@ return new class extends Migration
         });
     }
 
-    /** Reverse the migrations. */
     public function down(): void
     {
         Schema::dropIfExists('oauth_device_codes');
     }
 
-    /** Get the migration connection name. */
     public function getConnection(): ?string
     {
         return $this->connection ?? config('passport.connection');

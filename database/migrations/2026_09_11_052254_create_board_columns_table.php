@@ -10,13 +10,13 @@ return new class extends Migration
     {
         Schema::create('board_columns', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('team_id')->constrained()->cascadeOnDelete();
+            $table->nullableMorphs('owner');
             $table->string('name');
             $table->string('status');
             $table->unsignedInteger('position');
             $table->timestamps();
 
-            $table->index(['team_id', 'position']);
+            $table->index(['owner_type', 'owner_id', 'position']);
         });
     }
 

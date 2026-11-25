@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('method');
             $table->string('reference')->nullable();
             $table->text('notes')->nullable();
+            $table->string('square_payment_id')->nullable()->unique();
             $table->timestamps();
         });
     }

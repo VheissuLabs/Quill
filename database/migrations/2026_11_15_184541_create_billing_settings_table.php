@@ -16,6 +16,12 @@ return new class extends Migration
             $table->unsignedSmallInteger('payment_terms_days')->default(30);
             $table->decimal('tax_rate', 5, 2)->nullable();
             $table->text('from_address')->nullable();
+            $table->text('payment_instructions')->nullable();
+            $table->string('square_environment')->default('sandbox');
+            $table->text('square_access_token')->nullable();
+            $table->string('square_location_id')->nullable();
+            $table->text('square_webhook_signature_key')->nullable();
+            $table->string('square_webhook_token')->nullable()->unique();
             $table->timestamps();
         });
     }

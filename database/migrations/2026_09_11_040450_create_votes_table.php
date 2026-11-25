@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('feedback_id')->constrained('feedback')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->tinyInteger('direction')->default(1);
             $table->timestamps();
 
             $table->unique(['feedback_id', 'user_id']);

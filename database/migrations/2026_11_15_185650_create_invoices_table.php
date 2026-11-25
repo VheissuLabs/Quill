@@ -36,6 +36,8 @@ return new class extends Migration
             $table->decimal('amount_paid', 12, 2)->default(0);
             $table->timestamp('sent_at')->nullable();
             $table->timestamp('voided_at')->nullable();
+            $table->timestamp('closes_at')->nullable();
+            $table->timestamp('reminded_at')->nullable();
             $table->timestamps();
 
             $table->unique(['organization_id', 'number']);

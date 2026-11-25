@@ -17,6 +17,7 @@ return new class extends Migration
             $table->decimal('amount', 12, 2);
             $table->string('status')->default('open');
             $table->string('square_payment_id')->nullable();
+            $table->timestamp('checked_at')->nullable();
             $table->timestamps();
         });
     }

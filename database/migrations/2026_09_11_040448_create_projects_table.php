@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('slug');
             $table->text('description')->nullable();
             $table->string('visibility');
+            $table->decimal('billing_rate', 12, 2)->nullable();
             $table->timestamps();
 
             $table->unique(['organization_id', 'slug']);
