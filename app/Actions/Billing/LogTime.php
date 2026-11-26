@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceLine;
 use App\Models\Issue;
 use App\Models\TimeEntry;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,24 +19,32 @@ class LogTime
 {
     public function __construct(private OpenBillingPeriod $openBillingPeriod, private CreateInvoice $createInvoice) {}
 
-    public function handle(Client $client, array $attributes): TimeEntry
-    {
-        $issue = Issue::query()
-            ->with('project')
-            ->find($attributes['issue_id'] ?? null);
-
+    public function handle(
+        Client $client,
+        CarbonImmutable $workedOn,
+        float $hours,
+        ?User $user = null,
+        ?Issue $issue = null,
+        ?string $description = null,
+        ?string $referenceUrl = null,
+        ?int $workTypeId = null,
+    ): TimeEntry {
         $billedClient = $client->billedThrough ?? $client;
 
-        return DB::transaction(function () use ($client, $attributes, $issue, $billedClient): TimeEntry {
+        return DB::transaction(function () use ($client, $workedOn, $hours, $user, $issue, $description, $referenceUrl, $workTypeId, $billedClient): TimeEntry {
             $entry = TimeEntry::query()->create([
-                ...$attributes,
-                'description' => filled($attributes['description'] ?? null) ? $attributes['description'] : $issue?->title,
-                'hours' => round((float) $attributes['hours'], 2),
-                'organization_id' => $client->organization_id,
                 'client_id' => $client->id,
+                'organization_id' => $client->organization_id,
+                'user_id' => $user?->id,
+                'issue_id' => $issue?->id,
+                'worked_on' => $workedOn->toDateString(),
+                'hours' => round($hours, 2),
+                'description' => filled($description) ? $description : $issue?->title,
+                'reference_url' => $referenceUrl,
+                'work_type_id' => $workTypeId,
             ]);
 
-            $invoice = $this->invoiceFor($billedClient, $entry->worked_on);
+            $invoice = $this->invoiceFor($billedClient, $workedOn);
 
             if ($invoice === null) {
                 return $entry;

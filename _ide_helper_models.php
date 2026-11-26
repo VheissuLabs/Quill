@@ -97,6 +97,7 @@ namespace App\Models{
  * @property string $slug
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property \Carbon\CarbonImmutable|null $deleted_at
  * @property numeric|null $billing_rate
  * @property int|null $billing_contact_id
  * @property int|null $billed_through_client_id
@@ -105,7 +106,6 @@ namespace App\Models{
  * @property array<array-key, mixed>|null $billing_cc_emails
  * @property int|null $payment_terms_days
  * @property \Carbon\CarbonImmutable|null $billing_opened_through
- * @property \Carbon\CarbonImmutable|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Client> $billedClients
@@ -123,7 +123,10 @@ namespace App\Models{
  * @property-read int|null $projects_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ticket> $tickets
  * @property-read int|null $tickets_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TimeEntry> $timeEntries
+ * @property-read int|null $time_entries_count
  * @method static \Database\Factories\ClientFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Client identifiedBy(string|int $identifier)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Client onlyTrashed()
@@ -377,8 +380,10 @@ namespace App\Models{
  * @property-read int|null $votes_count
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback active()
  * @method static \Database\Factories\FeedbackFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback inOrganization(\App\Models\Organization $organization)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback onBoard(?\App\Enums\FeedbackStatus $status, ?\App\Enums\FeedbackType $type, ?string $search, string $sort)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereDescription($value)
@@ -389,6 +394,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback withSummary(?\App\Models\User $viewer)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback withVoteSummary(?\App\Models\User $viewer)
  * @mixin \Eloquent
  */
@@ -502,6 +508,8 @@ namespace App\Models{
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Invoice $invoice
  * @property-read \App\Models\Issue|null $issue
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TimeEntry> $timeEntries
+ * @property-read int|null $time_entries_count
  * @property-read \App\Models\WorkType|null $workType
  * @method static \Database\Factories\InvoiceLineFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine newModelQuery()
@@ -604,6 +612,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue onOrganizationBoard(\Illuminate\Support\Collection $projectIds, \App\Models\User $user, ?\App\Models\Team $team, array $filters)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue ownedBy(?\App\Models\Team $team)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue searchedFor(array $filters)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereAssigneeId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereBoardColumnId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Issue whereCompletedAt($value)
@@ -659,8 +668,8 @@ namespace App\Models{
  * @property int $id
  * @property string $name
  * @property string $slug
- * @property array<array-key, mixed>|null $module_order
  * @property string|null $logo_path
+ * @property array<array-key, mixed>|null $module_order
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
  * @property \Carbon\CarbonImmutable|null $deleted_at
@@ -836,6 +845,7 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Team> $teams
  * @property-read int|null $teams_count
  * @method static \Database\Factories\ProjectFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Project identifiedBy(string|int $identifier)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Project query()
@@ -956,6 +966,7 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Sprint> $sprints
  * @property-read int|null $sprints_count
  * @method static \Database\Factories\TeamFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Team identifiedBy(string|int $identifier)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Team newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Team newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Team query()
@@ -1085,6 +1096,50 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property int $organization_id
+ * @property int $client_id
+ * @property int|null $user_id
+ * @property int|null $invoice_line_id
+ * @property int|null $issue_id
+ * @property int|null $work_type_id
+ * @property \Carbon\CarbonImmutable $worked_on
+ * @property numeric $hours
+ * @property string $description
+ * @property string|null $reference_url
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \App\Models\Client $client
+ * @property-read \App\Models\InvoiceLine|null $invoiceLine
+ * @property-read \App\Models\Issue|null $issue
+ * @property-read \App\Models\Organization|null $organization
+ * @property-read \App\Models\User|null $user
+ * @property-read \App\Models\WorkType|null $workType
+ * @method static \Database\Factories\TimeEntryFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereHours($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereInvoiceLineId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereIssueId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereReferenceUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereWorkTypeId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereWorkedOn($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperTimeEntry {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property string $name
  * @property string $email
  * @property \Carbon\CarbonImmutable|null $email_verified_at
@@ -1102,6 +1157,8 @@ namespace App\Models{
  * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $assignedIssues
  * @property-read int|null $assigned_issues_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Passport\Client> $clients
+ * @property-read int|null $clients_count
  * @property-read \App\Models\Organization|null $currentOrganization
  * @property-read \App\Models\Team|null $currentTeam
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\EmailAddress> $emailAddresses
@@ -1110,6 +1167,8 @@ namespace App\Models{
  * @property-read int|null $feedback_count
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read int|null $notifications_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Passport\Client> $oauthApps
+ * @property-read int|null $oauth_apps_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrganizationMembership> $organizationMemberships
  * @property-read int|null $organization_memberships_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Role> $organizationRoles
@@ -1126,6 +1185,8 @@ namespace App\Models{
  * @property-read int|null $roles_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Team> $teams
  * @property-read int|null $teams_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Passport\Token> $tokens
+ * @property-read int|null $tokens_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Vote> $votes
  * @property-read int|null $votes_count
  * @method static \Database\Factories\UserFactory factory($count = null, $state = [])

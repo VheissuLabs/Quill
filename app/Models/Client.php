@@ -71,6 +71,7 @@ class Client extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    /** @return HasMany<TimeEntry, $this> */
     public function timeEntries(): HasMany
     {
         return $this->hasMany(TimeEntry::class);

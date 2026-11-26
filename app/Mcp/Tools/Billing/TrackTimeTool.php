@@ -6,6 +6,7 @@ use App\Actions\Billing\LogTime;
 use App\Http\Resources\LoggedTimeResource;
 use App\Mcp\Tools\QuillTool;
 use App\Models\Invoice;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
@@ -32,11 +33,15 @@ class TrackTimeTool extends QuillTool
                 'work_type_id' => ['nullable', 'integer', Rule::exists('work_types', 'id')->where('organization_id', $organization->id)],
             ]);
 
-            $entry = $logTime->handle($client, [
-                ...collect($validated)->except('date')->all(),
-                'user_id' => $user->id,
-                'worked_on' => $validated['date'] ?? $this->today($request),
-            ]);
+            $entry = $logTime->handle(
+                client: $client,
+                workedOn: CarbonImmutable::parse($validated['date'] ?? $this->today($request)),
+                hours: (float) $validated['hours'],
+                user: $user,
+                description: $validated['description'],
+                referenceUrl: $validated['reference_url'] ?? null,
+                workTypeId: isset($validated['work_type_id']) ? (int) $validated['work_type_id'] : null,
+            );
 
             return Response::json(LoggedTimeResource::make($entry)->resolve());
         });

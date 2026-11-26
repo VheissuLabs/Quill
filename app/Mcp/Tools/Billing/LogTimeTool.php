@@ -6,6 +6,7 @@ use App\Actions\Billing\LogTime;
 use App\Http\Resources\LoggedTimeResource;
 use App\Mcp\Tools\QuillTool;
 use App\Models\Invoice;
+use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -32,12 +33,13 @@ class LogTimeTool extends QuillTool
             $client = $issue->project->client
                 ?? throw new DomainException(__(':project has no client, so its time has no invoice to go on.', ['project' => $issue->project->name]));
 
-            $entry = $logTime->handle($client, [
-                'issue_id' => $issue->id,
-                'user_id' => $user->id,
-                'hours' => $validated['hours'],
-                'worked_on' => $validated['date'] ?? $this->today($request),
-            ]);
+            $entry = $logTime->handle(
+                client: $client,
+                workedOn: CarbonImmutable::parse($validated['date'] ?? $this->today($request)),
+                hours: (float) $validated['hours'],
+                user: $user,
+                issue: $issue,
+            );
 
             return Response::json(LoggedTimeResource::make($entry)->resolve());
         });

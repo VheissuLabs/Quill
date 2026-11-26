@@ -55,6 +55,7 @@ class InvoiceLine extends Model
         return $this->belongsTo(Issue::class);
     }
 
+    /** @return HasMany<TimeEntry, $this> */
     public function timeEntries(): HasMany
     {
         return $this->hasMany(TimeEntry::class)->orderBy('worked_on')->orderBy('id');

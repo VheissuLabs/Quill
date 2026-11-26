@@ -78,7 +78,8 @@
             "@test"
         ],
         "types:check": [
-            "phpstan analyse --memory-limit=512M"
+            "@putenv PHPSTAN_RESTART=",
+            "phpstan analyse -c phpstan.neon --memory-limit=512M"
         ],
         "ide-helper": [
             "@php artisan ide-helper:models -M -R --no-interaction",
