@@ -161,7 +161,7 @@ const submit = () => {
 <template>
     <Head :title="client.name" />
 
-    <div class="flex max-w-3xl flex-col gap-6 p-6">
+    <div class="grid max-w-7xl items-start gap-6 p-6 lg:grid-cols-2">
         <form
             v-if="permissions.canManageClients"
             class="flex flex-col gap-6"
@@ -356,141 +356,146 @@ const submit = () => {
             </CardHeader>
         </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Addresses</CardTitle>
-                <CardDescription>
-                    The Billing address prints under "Billed to" on invoices
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <AddressList
-                    :addresses="client.addresses ?? []"
-                    :types="addressTypes"
-                    :can-manage="permissions.canManageClients"
-                    :store="
-                        storeAddress.form([
-                            currentOrganization.slug,
-                            client.slug,
-                        ])
-                    "
-                    :update="
-                        (id) =>
-                            updateAddress.form([
+        <div class="flex flex-col gap-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Addresses</CardTitle>
+                    <CardDescription>
+                        The Billing address prints under "Billed to" on invoices
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <AddressList
+                        :addresses="client.addresses ?? []"
+                        :types="addressTypes"
+                        :can-manage="permissions.canManageClients"
+                        :store="
+                            storeAddress.form([
                                 currentOrganization.slug,
                                 client.slug,
-                                id,
                             ])
-                    "
-                    :destroy="
-                        (id) =>
-                            destroyAddress([
-                                currentOrganization.slug,
-                                client.slug,
-                                id,
-                            ])
-                    "
-                />
-            </CardContent>
-        </Card>
+                        "
+                        :update="
+                            (id) =>
+                                updateAddress.form([
+                                    currentOrganization.slug,
+                                    client.slug,
+                                    id,
+                                ])
+                        "
+                        :destroy="
+                            (id) =>
+                                destroyAddress([
+                                    currentOrganization.slug,
+                                    client.slug,
+                                    id,
+                                ])
+                        "
+                    />
+                </CardContent>
+            </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Support domains</CardTitle>
-                <CardDescription>
-                    Mail to support from these domains is filed under this
-                    client
-                </CardDescription>
-            </CardHeader>
-            <CardContent class="space-y-4">
-                <ul v-if="client.domains?.length" class="flex flex-wrap gap-2">
-                    <li
-                        v-for="domain in client.domains"
-                        :key="domain.id"
-                        class="inline-flex items-center gap-1 rounded-md border py-1 pr-1 pl-2.5 text-sm"
-                        data-test="client-domain"
+            <Card>
+                <CardHeader>
+                    <CardTitle>Support domains</CardTitle>
+                    <CardDescription>
+                        Mail to support from these domains is filed under this
+                        client
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="space-y-4">
+                    <ul
+                        v-if="client.domains?.length"
+                        class="flex flex-wrap gap-2"
                     >
-                        {{ domain.domain }}
-                        <Button
-                            v-if="permissions.canManageClients"
-                            variant="ghost"
-                            size="icon-sm"
-                            :aria-label="`Remove ${domain.domain}`"
-                            @click="
-                                mutate(
-                                    destroyDomain([
-                                        currentOrganization.slug,
-                                        client.slug,
-                                        domain.id,
-                                    ]),
-                                    {
-                                        errorMessage:
-                                            'The domain could not be removed.',
-                                    },
-                                )
-                            "
+                        <li
+                            v-for="domain in client.domains"
+                            :key="domain.id"
+                            class="inline-flex items-center gap-1 rounded-md border py-1 pr-1 pl-2.5 text-sm"
+                            data-test="client-domain"
                         >
-                            <X />
-                        </Button>
-                    </li>
-                </ul>
-                <p v-else class="text-muted-foreground text-sm">
-                    No domains yet. Mail from this client waits unassigned.
-                </p>
-                <Form
-                    v-if="permissions.canManageClients"
-                    v-bind="
-                        storeDomain.form([
-                            currentOrganization.slug,
-                            client.slug,
-                        ])
-                    "
-                    class="flex items-start gap-2"
-                    reset-on-success
-                    v-slot="{ errors, processing }"
-                >
-                    <div class="grid flex-1 gap-2">
-                        <Input
-                            name="domain"
-                            placeholder="acme.com"
-                            aria-label="Domain"
-                            data-test="client-domain-input"
-                        />
-                        <InputError :message="errors.domain" />
-                    </div>
-                    <Button
-                        type="submit"
-                        variant="secondary"
-                        data-test="client-domain-add"
-                        :disabled="processing"
+                            {{ domain.domain }}
+                            <Button
+                                v-if="permissions.canManageClients"
+                                variant="ghost"
+                                size="icon-sm"
+                                :aria-label="`Remove ${domain.domain}`"
+                                @click="
+                                    mutate(
+                                        destroyDomain([
+                                            currentOrganization.slug,
+                                            client.slug,
+                                            domain.id,
+                                        ]),
+                                        {
+                                            errorMessage:
+                                                'The domain could not be removed.',
+                                        },
+                                    )
+                                "
+                            >
+                                <X />
+                            </Button>
+                        </li>
+                    </ul>
+                    <p v-else class="text-muted-foreground text-sm">
+                        No domains yet. Mail from this client waits unassigned.
+                    </p>
+                    <Form
+                        v-if="permissions.canManageClients"
+                        v-bind="
+                            storeDomain.form([
+                                currentOrganization.slug,
+                                client.slug,
+                            ])
+                        "
+                        class="flex items-start gap-2"
+                        reset-on-success
+                        v-slot="{ errors, processing }"
                     >
-                        Add domain
-                    </Button>
-                </Form>
-            </CardContent>
-        </Card>
+                        <div class="grid flex-1 gap-2">
+                            <Input
+                                name="domain"
+                                placeholder="acme.com"
+                                aria-label="Domain"
+                                data-test="client-domain-input"
+                            />
+                            <InputError :message="errors.domain" />
+                        </div>
+                        <Button
+                            type="submit"
+                            variant="secondary"
+                            data-test="client-domain-add"
+                            :disabled="processing"
+                        >
+                            Add domain
+                        </Button>
+                    </Form>
+                </CardContent>
+            </Card>
 
-        <Card
-            v-if="permissions.canManageClients"
-            class="border-red-200 dark:border-red-900/50"
-        >
-            <CardHeader>
-                <CardTitle>Delete client</CardTitle>
-                <CardDescription>
-                    The client is hidden. Its invoices are kept for your records
-                    and its projects are detached.
-                </CardDescription>
-            </CardHeader>
-            <CardFooter>
-                <Button
-                    data-test="delete-client-button"
-                    variant="destructive"
-                    @click="deleteDialogOpen = true"
-                >
-                    Delete client
-                </Button>
-            </CardFooter>
-        </Card>
+            <Card
+                v-if="permissions.canManageClients"
+                class="border-red-200 dark:border-red-900/50"
+            >
+                <CardHeader>
+                    <CardTitle>Delete client</CardTitle>
+                    <CardDescription>
+                        The client is hidden. Its invoices are kept for your
+                        records and its projects are detached.
+                    </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                    <Button
+                        data-test="delete-client-button"
+                        variant="destructive"
+                        @click="deleteDialogOpen = true"
+                    >
+                        Delete client
+                    </Button>
+                </CardFooter>
+            </Card>
+        </div>
     </div>
 
     <ConfirmDeleteModal
