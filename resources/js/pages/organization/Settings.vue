@@ -14,7 +14,7 @@ import { computed, ref, watch } from 'vue';
 import draggable from 'vuedraggable';
 import CancelInvitationModal from '@/components/CancelInvitationModal.vue';
 import DeleteOrganizationModal from '@/components/DeleteOrganizationModal.vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import InputError from '@/components/InputError.vue';
 import InviteMemberModal from '@/components/InviteMemberModal.vue';
 import RemoveMemberModal from '@/components/RemoveMemberModal.vue';
@@ -281,7 +281,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
     <div class="grid max-w-7xl items-start gap-6 p-6 lg:grid-cols-2">
         <template v-if="permissions.canUpdateOrganization">
             <Collapsible v-model:open="organizationSettingsOpen">
-                <SettingsCard
+                <SectionCard
                     title="Organization settings"
                     description="Update your organization name and settings"
                 >
@@ -405,11 +405,11 @@ const updateModule = (field: ModuleField, value: boolean) => {
                             </div>
                         </Form>
                     </CollapsibleContent>
-                </SettingsCard>
+                </SectionCard>
             </Collapsible>
 
             <Collapsible v-if="organization.isOwner" v-model:open="modulesOpen">
-                <SettingsCard
+                <SectionCard
                     title="Product modules"
                     description="Changes save immediately. Existing data is kept and can be restored later."
                 >
@@ -751,6 +751,23 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                                 </div>
                                             </template>
                                             <template
+                                                v-else-if="element === 'crm'"
+                                            >
+                                                <div>
+                                                    <span
+                                                        class="block font-medium"
+                                                    >
+                                                        CRM
+                                                    </span>
+                                                    <span
+                                                        class="text-muted-foreground mt-1 block text-sm"
+                                                    >
+                                                        Clients and the people
+                                                        you work with there.
+                                                    </span>
+                                                </div>
+                                            </template>
+                                            <template
                                                 v-else-if="
                                                     element === 'billing'
                                                 "
@@ -906,15 +923,19 @@ const updateModule = (field: ModuleField, value: boolean) => {
                             </div>
                         </div>
                     </CollapsibleContent>
-                </SettingsCard>
+                </SectionCard>
             </Collapsible>
         </template>
 
-        <SettingsCard v-else :title="organization.name" />
+        <SectionCard
+            v-else
+            :title="organization.name"
+            description="The organization you belong to"
+        />
 
         <!-- Members Section -->
         <Collapsible v-model:open="membersOpen">
-            <SettingsCard
+            <SectionCard
                 title="Organization members"
                 :description="
                     permissions.canCreateInvitation
@@ -1036,7 +1057,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
                         </div>
                     </div>
                 </CollapsibleContent>
-            </SettingsCard>
+            </SectionCard>
         </Collapsible>
 
         <!-- Pending Invitations Section -->
@@ -1044,7 +1065,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
             v-if="invitations.length > 0"
             v-model:open="invitationsOpen"
         >
-            <SettingsCard
+            <SectionCard
                 title="Pending invitations"
                 description="Invitations that haven't been accepted yet"
             >
@@ -1124,7 +1145,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
                         </div>
                     </div>
                 </CollapsibleContent>
-            </SettingsCard>
+            </SectionCard>
         </Collapsible>
 
         <!-- Danger Zone -->
@@ -1132,7 +1153,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
             v-if="permissions.canDeleteOrganization"
             v-model:open="deleteOrganizationOpen"
         >
-            <SettingsCard
+            <SectionCard
                 title="Delete organization"
                 description="Permanently delete your organization"
             >
@@ -1177,7 +1198,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
                         >
                     </div>
                 </CollapsibleContent>
-            </SettingsCard>
+            </SectionCard>
         </Collapsible>
     </div>
 

@@ -20,6 +20,7 @@ use App\Http\Controllers\ClearNotificationsController;
 use App\Http\Controllers\Clients\ClientContactController;
 use App\Http\Controllers\Clients\ClientController;
 use App\Http\Controllers\Clients\ClientDomainController;
+use App\Http\Controllers\Clients\ContactController;
 use App\Http\Controllers\Clients\RestoreClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
@@ -155,6 +156,7 @@ Route::prefix('{current_organization}')
             ->middlewareFor('update', 'can:update,invoice');
         Route::resource('invoices.payments', InvoicePaymentController::class)->only(['store', 'update', 'destroy'])
             ->middlewareFor(['store', 'update', 'destroy'], 'can:update,invoice');
+        Route::get('contacts', [ContactController::class, 'index'])->can('viewAny', [Client::class, 'current_organization'])->name('contacts.index');
         Route::get('client-contacts', [ClientContactController::class, 'index'])->can('create', [Ticket::class, 'current_organization'])->name('client-contacts.index');
         Route::post('clients/{client}/restore', RestoreClientController::class)->withTrashed()->can('restore', 'client')->name('clients.restore');
         Route::post('clients/{client}/contacts', [ClientContactController::class, 'store'])->can('update', 'client')->name('clients.contacts.store');

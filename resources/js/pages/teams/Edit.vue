@@ -7,7 +7,7 @@ import AddTeamMemberModal from '@/components/AddTeamMemberModal.vue';
 import BoardColumnsEditor from '@/components/BoardColumnsEditor.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import DeleteTeamModal from '@/components/DeleteTeamModal.vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import InputError from '@/components/InputError.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -106,7 +106,10 @@ const confirmRemoveMember = (member: TeamMember) => {
 
     <div class="grid max-w-7xl items-start gap-6 p-6 lg:grid-cols-2">
         <Collapsible v-model:open="settingsOpen">
-            <SettingsCard title="Team settings">
+            <SectionCard
+                title="Team settings"
+                description="The name of this team"
+            >
                 <template #action>
                     <CollapsibleTrigger as-child>
                         <Button
@@ -153,11 +156,11 @@ const confirmRemoveMember = (member: TeamMember) => {
                     </Form>
                     <p v-else class="font-medium">{{ team.name }}</p>
                 </CollapsibleContent>
-            </SettingsCard>
+            </SectionCard>
         </Collapsible>
 
         <Collapsible v-model:open="membersOpen">
-            <SettingsCard
+            <SectionCard
                 title="Team members"
                 description="Organization members who belong to this team"
             >
@@ -238,7 +241,7 @@ const confirmRemoveMember = (member: TeamMember) => {
                         </p>
                     </div>
                 </CollapsibleContent>
-            </SettingsCard>
+            </SectionCard>
         </Collapsible>
 
         <Collapsible
@@ -248,7 +251,7 @@ const confirmRemoveMember = (member: TeamMember) => {
             "
             v-model:open="columnsOpen"
         >
-            <SettingsCard
+            <SectionCard
                 title="Board columns"
                 description="The stages this team moves work through. Each column counts as Todo, In progress or Done."
             >
@@ -277,14 +280,14 @@ const confirmRemoveMember = (member: TeamMember) => {
                         :can-manage="permissions.canManageTeams"
                     />
                 </CollapsibleContent>
-            </SettingsCard>
+            </SectionCard>
         </Collapsible>
 
         <Collapsible
             v-if="permissions.canManageTeams && organizationModules.sprints"
             v-model:open="modulesOpen"
         >
-            <SettingsCard
+            <SectionCard
                 title="Modules"
                 description="Switch off anything this team does not use. The organization's own settings still apply on top."
             >
@@ -329,14 +332,14 @@ const confirmRemoveMember = (member: TeamMember) => {
                         />
                     </div>
                 </CollapsibleContent>
-            </SettingsCard>
+            </SectionCard>
         </Collapsible>
 
         <Collapsible
             v-if="permissions.canManageTeams"
             v-model:open="deleteOpen"
         >
-            <SettingsCard
+            <SectionCard
                 title="Delete team"
                 description="Boards restricted to this team become visible to every organization member"
             >
@@ -369,7 +372,7 @@ const confirmRemoveMember = (member: TeamMember) => {
                         </Button>
                     </div>
                 </CollapsibleContent>
-            </SettingsCard>
+            </SectionCard>
         </Collapsible>
     </div>
 

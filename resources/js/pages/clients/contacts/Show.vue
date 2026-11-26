@@ -4,7 +4,7 @@ import { Trash2 } from '@lucide/vue';
 import { computed } from 'vue';
 import AddressList from '@/components/AddressList.vue';
 import EmailLink from '@/components/EmailLink.vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import InputError from '@/components/InputError.vue';
 import PhoneLink from '@/components/PhoneLink.vue';
 import { Button } from '@/components/ui/button';
@@ -115,7 +115,10 @@ defineOptions({
                 :options="{ preserveScroll: true }"
                 v-slot="{ errors, processing, recentlySuccessful }"
             >
-                <SettingsCard title="Details">
+                <SectionCard
+                    title="Details"
+                    description="Name, title and how to reach this person"
+                >
                     <div class="grid gap-x-4 gap-y-5 sm:grid-cols-2">
                         <div class="grid gap-2">
                             <Label for="contact-name">Name</Label>
@@ -179,10 +182,13 @@ defineOptions({
                             Saved.
                         </span>
                     </template>
-                </SettingsCard>
+                </SectionCard>
             </Form>
 
-            <SettingsCard title="Addresses">
+            <SectionCard
+                title="Addresses"
+                description="Where this person works and receives mail"
+            >
                 <AddressList
                     :addresses="contact.addresses"
                     :types="addressTypes"
@@ -191,7 +197,7 @@ defineOptions({
                     :update="(id) => updateAddress.form([...contactArgs(), id])"
                     :destroy="(id) => destroyAddress([...contactArgs(), id])"
                 />
-            </SettingsCard>
+            </SectionCard>
         </div>
     </div>
 </template>

@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { Eye, LogOut, Pencil, Plus } from '@lucide/vue';
 import { ref } from 'vue';
 import CreateOrganizationModal from '@/components/CreateOrganizationModal.vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import LeaveOrganizationModal from '@/components/LeaveOrganizationModal.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -50,7 +50,7 @@ defineOptions({
 
     <h1 class="sr-only">Organizations</h1>
 
-    <SettingsCard
+    <SectionCard
         title="Organizations"
         description="Manage your organizations and organization memberships"
     >
@@ -150,7 +150,7 @@ defineOptions({
                 You don't belong to any organizations yet.
             </p>
         </div>
-    </SettingsCard>
+    </SectionCard>
 
     <LeaveOrganizationModal
         v-model:open="leaveOrganizationDialogOpen"

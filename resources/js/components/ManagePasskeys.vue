@@ -2,7 +2,7 @@
 import { router } from '@inertiajs/vue3';
 import { KeyRound } from '@lucide/vue';
 import type { Passkey } from '@/types/auth';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import PasskeyItem from '@/components/PasskeyItem.vue';
 import PasskeyRegister from '@/components/PasskeyRegister.vue';
 import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
@@ -30,7 +30,7 @@ const handleRegisterSuccess = () => {
 </script>
 
 <template>
-    <SettingsCard
+    <SectionCard
         v-if="canManagePasskeys"
         title="Passkeys"
         description="Manage your passkeys for passwordless sign-in"
@@ -59,5 +59,5 @@ const handleRegisterSuccess = () => {
         </div>
 
         <PasskeyRegister @success="handleRegisterSuccess" />
-    </SettingsCard>
+    </SectionCard>
 </template>

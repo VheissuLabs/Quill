@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AddressType;
 use App\Enums\ProjectVisibility;
 use App\Models\Client;
 use App\Models\ClientContact;
@@ -20,11 +21,12 @@ function overviewClient(): array
     return [$organization, Client::factory()->for($organization)->create()];
 }
 
-test('a client overview lists its contacts, projects and recent tickets', function () {
+test('a client overview lists its contacts, addresses, projects and recent tickets', function () {
     [$organization, $client] = overviewClient();
     $admin = User::factory()->create();
     $organization->addMember($admin, 'Admin');
     ClientContact::factory()->for($client)->create(['name' => 'Jane Doe']);
+    $client->addresses()->create(['type' => AddressType::Billing, 'line1' => '1 Main St', 'city' => 'Dallas']);
     Project::factory()->for($organization)->public()->create(['client_id' => $client->id, 'name' => 'Website']);
     Ticket::factory()->forClient($client)->create();
 
@@ -33,6 +35,8 @@ test('a client overview lists its contacts, projects and recent tickets', functi
         ->assertInertia(fn (Assert $page) => $page
             ->component('clients/Show')
             ->where('client.contacts.0.name', 'Jane Doe')
+            ->where('client.addresses.0.line1', '1 Main St')
+            ->has('addressTypes')
             ->where('projects.0.name', 'Website')
             ->has('tickets', 1)
             ->where('invoices', []));

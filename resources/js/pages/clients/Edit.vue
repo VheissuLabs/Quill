@@ -2,7 +2,6 @@
 import { Form, Head, useForm } from '@inertiajs/vue3';
 import { X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import AddressList from '@/components/AddressList.vue';
 import DatePicker from '@/components/DatePicker.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import InputError from '@/components/InputError.vue';
@@ -26,17 +25,11 @@ import {
 } from '@/components/ui/select';
 import { destroy, edit, index, show, update } from '@/routes/clients';
 import {
-    destroy as destroyAddress,
-    store as storeAddress,
-    update as updateAddress,
-} from '@/routes/clients/addresses';
-import {
     destroy as destroyDomain,
     store as storeDomain,
 } from '@/routes/clients/domains';
 import { mutate } from '@/lib/optimistic';
 import type {
-    AddressTypeOption,
     Client,
     ClientBilling,
     Organization,
@@ -48,7 +41,6 @@ type Props = {
     client: Client;
     billing: ClientBilling | null;
     permissions: OrganizationPermissions;
-    addressTypes: AddressTypeOption[];
 };
 
 const props = defineProps<Props>();
@@ -359,48 +351,9 @@ const submit = () => {
         <div class="flex flex-col gap-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Addresses</CardTitle>
-                    <CardDescription>
-                        The Billing address prints under "Billed to" on invoices
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <AddressList
-                        :addresses="client.addresses ?? []"
-                        :types="addressTypes"
-                        :can-manage="permissions.canManageClients"
-                        :store="
-                            storeAddress.form([
-                                currentOrganization.slug,
-                                client.slug,
-                            ])
-                        "
-                        :update="
-                            (id) =>
-                                updateAddress.form([
-                                    currentOrganization.slug,
-                                    client.slug,
-                                    id,
-                                ])
-                        "
-                        :destroy="
-                            (id) =>
-                                destroyAddress([
-                                    currentOrganization.slug,
-                                    client.slug,
-                                    id,
-                                ])
-                        "
-                    />
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
                     <CardTitle>Support domains</CardTitle>
                     <CardDescription>
-                        Mail to support from these domains is filed under this
-                        client
+                        Email domains this client sends support mail from
                     </CardDescription>
                 </CardHeader>
                 <CardContent class="space-y-4">

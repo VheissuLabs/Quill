@@ -2,7 +2,7 @@
 import { Form } from '@inertiajs/vue3';
 import { useTemplateRef } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ const passwordInput = useTemplateRef('passwordInput');
 </script>
 
 <template>
-    <SettingsCard
+    <SectionCard
         title="Delete account"
         description="Delete your account and all of its resources. This cannot be undone."
         destructive
@@ -100,5 +100,5 @@ const passwordInput = useTemplateRef('passwordInput');
                 </DialogContent>
             </Dialog>
         </div>
-    </SettingsCard>
+    </SectionCard>
 </template>

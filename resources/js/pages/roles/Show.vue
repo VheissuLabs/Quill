@@ -13,7 +13,7 @@ import {
 import { computed, ref } from 'vue';
 import AssignRoleModal from '@/components/AssignRoleModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import InviteMemberModal from '@/components/InviteMemberModal.vue';
 import RemoveMemberModal from '@/components/RemoveMemberModal.vue';
 import RoleFormModal from '@/components/RoleFormModal.vue';
@@ -172,7 +172,7 @@ const canInvite = computed(
             </div>
         </div>
 
-        <SettingsCard
+        <SectionCard
             title="Members"
             description="People who hold this role in the organization."
         >
@@ -262,9 +262,9 @@ const canInvite = computed(
                     <UserPlus /> Add member
                 </Button>
             </EmptyState>
-        </SettingsCard>
+        </SectionCard>
 
-        <SettingsCard
+        <SectionCard
             title="Permissions"
             :description="
                 role.isOwner
@@ -301,7 +301,7 @@ const canInvite = computed(
                     </ul>
                 </div>
             </div>
-        </SettingsCard>
+        </SectionCard>
     </div>
 
     <RoleFormModal

@@ -3,7 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ExternalLink } from '@lucide/vue';
 import { ref } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -102,7 +102,7 @@ const submit = () => {
 
     <div class="grid max-w-7xl items-start gap-6 p-6 lg:grid-cols-2">
         <form @submit.prevent="submit">
-            <SettingsCard
+            <SectionCard
                 title="Project settings"
                 description="Name, client, and who can see the board"
             >
@@ -241,11 +241,11 @@ const submit = () => {
                         Saved.
                     </p>
                 </template>
-            </SettingsCard>
+            </SectionCard>
         </form>
 
         <div class="flex flex-col gap-6">
-            <SettingsCard
+            <SectionCard
                 title="Board"
                 description="Share this link with the people you want feedback from"
             >
@@ -259,9 +259,9 @@ const submit = () => {
                         </Link>
                     </Button>
                 </div>
-            </SettingsCard>
+            </SectionCard>
 
-            <SettingsCard
+            <SectionCard
                 title="Delete project"
                 description="Permanently delete this project and all the feedback on its board. This cannot be undone."
                 destructive
@@ -275,7 +275,7 @@ const submit = () => {
                         Delete project
                     </Button>
                 </template>
-            </SettingsCard>
+            </SectionCard>
         </div>
     </div>
 

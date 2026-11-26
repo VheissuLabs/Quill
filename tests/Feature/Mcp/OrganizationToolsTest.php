@@ -187,9 +187,9 @@ test('non owners cannot switch modules', function () {
 test('owners can reorder the sidebar modules', function () {
     [$user, $organization] = organizationToolMember();
 
-    QuillServer::actingAs($user)->tool(UpdateModuleOrderTool::class, ['order' => ['billing', 'support', 'development', 'feedback']])->assertOk();
+    QuillServer::actingAs($user)->tool(UpdateModuleOrderTool::class, ['order' => ['billing', 'support', 'crm', 'development', 'feedback']])->assertOk();
 
-    expect($organization->fresh()->moduleOrder())->toBe(['billing', 'support', 'development', 'feedback']);
+    expect($organization->fresh()->moduleOrder())->toBe(['billing', 'support', 'crm', 'development', 'feedback']);
 
     QuillServer::actingAs($user)->tool(UpdateModuleOrderTool::class, ['order' => ['billing']])->assertHasErrors(['order']);
 });
@@ -197,7 +197,7 @@ test('owners can reorder the sidebar modules', function () {
 test('non owners cannot reorder the sidebar modules', function () {
     [$user] = organizationToolMember('Admin');
 
-    QuillServer::actingAs($user)->tool(UpdateModuleOrderTool::class, ['order' => ['billing', 'support', 'development', 'feedback']])->assertHasErrors();
+    QuillServer::actingAs($user)->tool(UpdateModuleOrderTool::class, ['order' => ['billing', 'support', 'crm', 'development', 'feedback']])->assertHasErrors();
 });
 
 test('it removes the organization logo when allowed', function () {

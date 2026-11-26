@@ -47,7 +47,8 @@ class ClientController extends Controller
         $openCycleInvoiceId = $client->openCycleInvoice()?->id;
 
         return Inertia::render('clients/Show', [
-            'client' => ClientsChanged::live(ClientResource::make($client->load(['contacts' => fn ($query) => $query->orderBy('name')])), $currentOrganization->id),
+            'client' => ClientsChanged::live(ClientResource::make($client->load(['contacts' => fn ($query) => $query->orderBy('name'), 'addresses'])), $currentOrganization->id),
+            'addressTypes' => AddressType::options(),
             'projects' => ProjectsChanged::live(ProjectResource::collection($client->projects()->visibleTo($user)->orderBy('name')->get()), $currentOrganization->id),
             'tickets' => TicketsChanged::live(LinkedTicketResource::forClient($client, $user), $currentOrganization->id, IssuesChanged::class),
             'invoices' => InvoicesChanged::live($currentOrganization->allowsInvoiceManagementBy($user)
@@ -60,8 +61,7 @@ class ClientController extends Controller
     public function edit(Organization $currentOrganization, Client $client): Response
     {
         return Inertia::render('clients/Edit', [
-            'client' => ClientResource::make($client->load(['domains', 'addresses'])),
-            'addressTypes' => AddressType::options(),
+            'client' => ClientResource::make($client->load('domains')),
             'billing' => $currentOrganization->allowsInvoiceManagementBy(auth()->user()) ? ClientBillingResource::make($client)->resolve() : null,
         ]);
     }

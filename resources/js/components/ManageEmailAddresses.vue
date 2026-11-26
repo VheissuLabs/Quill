@@ -3,7 +3,7 @@ import { Form, Link } from '@inertiajs/vue3';
 import { Mail, X } from '@lucide/vue';
 import { ref } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ const addressToRemove = ref<EmailAddress | null>(null);
 </script>
 
 <template>
-    <SettingsCard
+    <SectionCard
         title="Email addresses"
         description="Invitations sent to any verified address reach this account, and you can log in with any of them"
     >
@@ -107,7 +107,7 @@ const addressToRemove = ref<EmailAddress | null>(null);
                 <InputError :message="errors.email" />
             </div>
         </Form>
-    </SettingsCard>
+    </SectionCard>
 
     <ConfirmDeleteModal
         :open="addressToRemove !== null"

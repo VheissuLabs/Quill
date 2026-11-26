@@ -99,6 +99,6 @@ test('the contact lookup finds contacts by name or email with their client', fun
             'title' => 'CTO',
             'email' => 'jane@acme.test',
             'phone' => null,
-            'client' => ['id' => $client->id, 'name' => $client->name],
+            'client' => ['id' => $client->id, 'name' => $client->name, 'slug' => $client->slug],
         ]]);
 });

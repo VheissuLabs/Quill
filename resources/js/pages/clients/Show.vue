@@ -2,20 +2,27 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { ArchiveRestore, CircleCheck, Mail, Plus, Settings } from '@lucide/vue';
 import { computed } from 'vue';
+import AddressList from '@/components/AddressList.vue';
 import ClientContacts from '@/components/ClientContacts.vue';
 import CreateContactModal from '@/components/CreateContactModal.vue';
 import CreateInvoiceModal from '@/components/CreateInvoiceModal.vue';
 import CreateProjectModal from '@/components/CreateProjectModal.vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import InvoiceStatusBadge from '@/components/InvoiceStatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { edit, index, restore, show } from '@/routes/clients';
+import {
+    destroy as destroyAddress,
+    store as storeAddress,
+    update as updateAddress,
+} from '@/routes/clients/addresses';
 import { show as showInvoice } from '@/routes/invoices';
 import { formatDate } from '@/lib/dates';
 import { show as showBoard } from '@/routes/portal/projects';
 import { show as showTicket } from '@/routes/tickets';
 import type {
+    AddressTypeOption,
     Client,
     ClientProject,
     InvoiceListItem,
@@ -33,6 +40,7 @@ type Props = {
     invoices: InvoiceListItem[] | null;
     permissions: OrganizationPermissions;
     visibilities: SelectOption[];
+    addressTypes: AddressTypeOption[];
 };
 
 const props = defineProps<Props>();
@@ -72,8 +80,8 @@ defineOptions({
 <template>
     <Head :title="client.name" />
 
-    <div class="grid max-w-7xl items-start gap-6 p-6 lg:grid-cols-2">
-        <div class="flex items-center justify-between gap-4 lg:col-span-2">
+    <div class="grid items-start gap-6 p-6 lg:grid-cols-2 2xl:grid-cols-3">
+        <div class="flex items-center justify-between gap-4 lg:col-span-full">
             <div class="flex items-center gap-3">
                 <h1 class="text-xl font-semibold" data-test="client-name">
                     {{ client.name }}
@@ -111,7 +119,7 @@ defineOptions({
             </Button>
         </div>
 
-        <SettingsCard
+        <SectionCard
             title="Contacts"
             description="People at this client you open tickets for"
         >
@@ -132,9 +140,39 @@ defineOptions({
                 :contacts="client.contacts ?? []"
                 :can-manage="!isDeleted && permissions.canManageClients"
             />
-        </SettingsCard>
+        </SectionCard>
 
-        <SettingsCard
+        <SectionCard
+            title="Addresses"
+            description="Where this client is located and billed"
+        >
+            <AddressList
+                :addresses="client.addresses ?? []"
+                :types="addressTypes"
+                :can-manage="!isDeleted && permissions.canManageClients"
+                :store="
+                    storeAddress.form([currentOrganization.slug, client.slug])
+                "
+                :update="
+                    (id) =>
+                        updateAddress.form([
+                            currentOrganization.slug,
+                            client.slug,
+                            id,
+                        ])
+                "
+                :destroy="
+                    (id) =>
+                        destroyAddress([
+                            currentOrganization.slug,
+                            client.slug,
+                            id,
+                        ])
+                "
+            />
+        </SectionCard>
+
+        <SectionCard
             title="Projects"
             description="Projects run for this client"
         >
@@ -171,9 +209,9 @@ defineOptions({
             <p v-else class="text-muted-foreground text-sm">
                 No projects are assigned to this client.
             </p>
-        </SettingsCard>
+        </SectionCard>
 
-        <SettingsCard
+        <SectionCard
             v-if="tickets.length > 0"
             title="Recent tickets"
             description="The latest support conversations with this client"
@@ -209,8 +247,12 @@ defineOptions({
                     </Link>
                 </li>
             </ul>
-        </SettingsCard>
-        <SettingsCard v-if="invoices !== null" title="Invoices">
+        </SectionCard>
+        <SectionCard
+            v-if="invoices !== null"
+            title="Invoices"
+            description="Invoices issued to this client"
+        >
             <template #action>
                 <CreateInvoiceModal
                     v-if="!isDeleted"
@@ -271,6 +313,6 @@ defineOptions({
             <p v-else class="text-muted-foreground text-sm">
                 No invoices for this client yet.
             </p>
-        </SettingsCard>
+        </SectionCard>
     </div>
 </template>

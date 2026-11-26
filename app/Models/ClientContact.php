@@ -46,6 +46,15 @@ class ClientContact extends Model
 
     /** @param  Builder<$this>  $query */
     #[Scope]
+    protected function directory(Builder $query): void
+    {
+        $query->whereHas('client')
+            ->with('client')
+            ->orderByRaw('lower(coalesce(name, email))');
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
     protected function matching(Builder $query, string $term): void
     {
         $like = '%'.addcslashes($term, '%_\\').'%';

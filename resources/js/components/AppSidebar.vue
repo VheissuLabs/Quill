@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     Briefcase,
+    Contact,
     FolderKanban,
     Inbox,
     LayoutGrid,
@@ -30,6 +31,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as clients } from '@/routes/clients';
+import { index as contacts } from '@/routes/contacts';
 import { index as invoices } from '@/routes/invoices';
 import { index as issues } from '@/routes/issues';
 import {
@@ -82,6 +84,7 @@ const moduleOrder = computed<SidebarSectionKey[]>(
             'feedback',
             'development',
             'support',
+            'crm',
             'billing',
         ],
 );
@@ -134,6 +137,13 @@ const navGroups = computed<NavGroup[]>(() => {
                           ],
                       }
                     : null,
+            crm: {
+                label: 'CRM',
+                items: [
+                    { title: 'Clients', href: clients(slug), icon: Briefcase },
+                    { title: 'Contacts', href: contacts(slug), icon: Contact },
+                ],
+            },
             billing:
                 modules.value.billing.enabled &&
                 page.props.permissions?.canManageInvoices
@@ -181,7 +191,6 @@ const navGroups = computed<NavGroup[]>(() => {
         groups.push({
             label: 'Organization',
             items: [
-                { title: 'Clients', href: clients(slug), icon: Briefcase },
                 ...(modules.value.teams.enabled
                     ? [{ title: 'Teams', href: teams(slug), icon: Users }]
                     : []),

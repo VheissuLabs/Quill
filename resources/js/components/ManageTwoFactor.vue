@@ -2,7 +2,7 @@
 import { Form } from '@inertiajs/vue3';
 import { ShieldCheck } from '@lucide/vue';
 import { onUnmounted, ref } from 'vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ onUnmounted(() => clearTwoFactorAuthData());
 </script>
 
 <template>
-    <SettingsCard
+    <SectionCard
         v-if="canManageTwoFactor"
         title="Two-factor authentication"
         description="Manage your two-factor authentication settings"
@@ -87,5 +87,5 @@ onUnmounted(() => clearTwoFactorAuthData());
             :requiresConfirmation="requiresConfirmation"
             :twoFactorEnabled="twoFactorEnabled"
         />
-    </SettingsCard>
+    </SectionCard>
 </template>

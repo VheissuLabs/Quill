@@ -4,7 +4,7 @@ import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/DeleteUser.vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import ManageEmailAddresses from '@/components/ManageEmailAddresses.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,7 @@ const user = computed(() => page.props.auth.user);
         v-bind="ProfileController.update.form()"
         v-slot="{ errors, processing }"
     >
-        <SettingsCard
+        <SectionCard
             title="Profile"
             description="Update your name and email address"
         >
@@ -100,7 +100,7 @@ const user = computed(() => page.props.auth.user);
                     >Save</Button
                 >
             </template>
-        </SettingsCard>
+        </SectionCard>
     </Form>
 
     <ManageEmailAddresses :email-addresses="emailAddresses" />

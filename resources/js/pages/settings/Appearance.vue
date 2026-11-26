@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppearanceTabs from '@/components/AppearanceTabs.vue';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import { edit } from '@/routes/appearance';
 
 defineOptions({
@@ -21,10 +21,10 @@ defineOptions({
 
     <h1 class="sr-only">Appearance settings</h1>
 
-    <SettingsCard
+    <SectionCard
         title="Appearance"
         description="Update the appearance settings for your account"
     >
         <AppearanceTabs />
-    </SettingsCard>
+    </SectionCard>
 </template>

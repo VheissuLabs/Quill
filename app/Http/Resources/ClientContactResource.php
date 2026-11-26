@@ -22,6 +22,7 @@ class ClientContactResource extends JsonResource
             'client' => $this->relationLoaded('client') ? [
                 'id' => $this->client->id,
                 'name' => $this->client->name,
+                'slug' => $this->client->slug,
             ] : null,
         ];
     }

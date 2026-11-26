@@ -322,7 +322,7 @@ const confirmDelete = (workType: WorkType) => {
                 <CardHeader>
                     <CardTitle>Addresses</CardTitle>
                     <CardDescription>
-                        Your Billing address prints at the top of every invoice
+                        Where your business is located and billed from
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

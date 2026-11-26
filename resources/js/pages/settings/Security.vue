@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
-import SettingsCard from '@/components/SettingsCard.vue';
+import SectionCard from '@/components/SectionCard.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
@@ -50,7 +50,7 @@ defineOptions({
         ]"
         v-slot="{ errors, processing }"
     >
-        <SettingsCard
+        <SectionCard
             title="Update password"
             description="Ensure your account is using a long, random password to stay secure"
         >
@@ -100,7 +100,7 @@ defineOptions({
                     Save
                 </Button>
             </template>
-        </SettingsCard>
+        </SectionCard>
     </Form>
 
     <ManageTwoFactor
