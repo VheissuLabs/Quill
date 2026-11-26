@@ -4,9 +4,18 @@ import { useDebounceFn, useEventListener } from '@vueuse/core';
 import { VisuallyHidden } from 'reka-ui';
 import { computed, ref, watch } from 'vue';
 import CreateClientModal from '@/components/CreateClientModal.vue';
+import CreateContactModal from '@/components/CreateContactModal.vue';
+import CreateInvoiceModal from '@/components/CreateInvoiceModal.vue';
 import CreateIssueModal from '@/components/CreateIssueModal.vue';
+import CreateOrganizationModal from '@/components/CreateOrganizationModal.vue';
 import CreateProjectModal from '@/components/CreateProjectModal.vue';
+import CreateSprintModal from '@/components/CreateSprintModal.vue';
 import CreateTeamModal from '@/components/CreateTeamModal.vue';
+import CreateTicketModal from '@/components/CreateTicketModal.vue';
+import CreateWorkTypeModal from '@/components/CreateWorkTypeModal.vue';
+import InviteMemberModal from '@/components/InviteMemberModal.vue';
+import RoleFormModal from '@/components/RoleFormModal.vue';
+import SubmitFeedbackModal from '@/components/SubmitFeedbackModal.vue';
 import {
     Command,
     CommandEmpty,
@@ -63,9 +72,10 @@ const navigation = computed(() =>
 
 const actions = computed(() =>
     organization.value
-        ? actionCommands(organization.value).filter((command) =>
-              matches(command, query.value),
-          )
+        ? actionCommands(
+              organization.value,
+              page.props.permissions ?? null,
+          ).filter((command) => matches(command, query.value))
         : [],
 );
 
@@ -198,7 +208,7 @@ useEventListener('keydown', (event: KeyboardEvent) => {
                 <Command>
                     <CommandInput
                         v-model="query"
-                        placeholder="Search issues, projects, teams…"
+                        placeholder="Search issues, projects, contacts…"
                     />
 
                     <CommandList>
@@ -299,6 +309,78 @@ useEventListener('keydown', (event: KeyboardEvent) => {
             v-if="activeAction === 'create-client'"
             :open="true"
             :organization="organization.slug"
+            @update:open="closeAction"
+        />
+
+        <CreateContactModal
+            v-if="activeAction === 'create-contact' && options"
+            :open="true"
+            :organization="organization.slug"
+            :clients="options.clients"
+            @update:open="closeAction"
+        />
+
+        <CreateInvoiceModal
+            v-if="activeAction === 'create-invoice' && options"
+            :open="true"
+            :organization="organization.slug"
+            :clients="options.clients"
+            :projects="options.invoiceProjects"
+            @update:open="closeAction"
+        />
+
+        <CreateTicketModal
+            v-if="activeAction === 'create-ticket' && options"
+            :open="true"
+            :organization="organization.slug"
+            :clients="options.clients"
+            @update:open="closeAction"
+        />
+
+        <CreateSprintModal
+            v-if="activeAction === 'create-sprint' && options"
+            :open="true"
+            :organization="organization.slug"
+            :team="options.sprintBoard"
+            @update:open="closeAction"
+        />
+
+        <SubmitFeedbackModal
+            v-if="activeAction === 'create-feedback' && options"
+            :open="true"
+            :organization="organization.slug"
+            :projects="options.feedbackProjects"
+            @update:open="closeAction"
+        />
+
+        <CreateWorkTypeModal
+            v-if="activeAction === 'create-work-type' && options"
+            :open="true"
+            :organization="organization.slug"
+            :colors="options.workTypeColors"
+            @update:open="closeAction"
+        />
+
+        <InviteMemberModal
+            v-if="activeAction === 'invite-member' && options"
+            :open="true"
+            :organization="organization"
+            :available-roles="options.roles"
+            @update:open="closeAction"
+        />
+
+        <RoleFormModal
+            v-if="activeAction === 'create-role' && options"
+            :open="true"
+            :organization="organization"
+            :role="null"
+            :available-permissions="options.permissions"
+            @update:open="closeAction"
+        />
+
+        <CreateOrganizationModal
+            v-if="activeAction === 'create-organization'"
+            :open="true"
             @update:open="closeAction"
         />
 

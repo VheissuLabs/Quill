@@ -17,20 +17,25 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import RichTextEditor from '@/components/RichTextEditor.vue';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { store } from '@/routes/portal/feedback';
 
-defineProps<{
+const props = defineProps<{
     organization: string;
-    project: string;
+    project?: string;
+    projects?: { name: string; slug: string }[];
 }>();
 
-const open = ref(false);
+const open = defineModel<boolean>('open', { default: false });
 const formKey = ref(0);
+const chosenProject = ref(props.project ?? '');
 
-/**
- * The prompt is the point of asking. An idea wants to know what problem it solves; a bug is
- * worth nothing without what happened and what was expected instead.
- */
 const type = ref<'feature' | 'bug'>('feature');
 const description = ref('');
 
@@ -63,19 +68,20 @@ function handleOpenChange(value: boolean) {
         formKey.value++;
         description.value = '';
         type.value = 'feature';
+        chosenProject.value = props.project ?? '';
     }
 }
 </script>
 
 <template>
     <Dialog :open="open" @update:open="handleOpenChange">
-        <DialogTrigger as-child>
+        <DialogTrigger v-if="$slots.default" as-child>
             <slot />
         </DialogTrigger>
         <DialogContent>
             <Form
                 :key="formKey"
-                v-bind="store.form([organization, project])"
+                v-bind="store.form([organization, chosenProject || '_'])"
                 class="space-y-6"
                 v-slot="{ errors, processing }"
                 @success="open = false"
@@ -89,6 +95,24 @@ function handleOpenChange(value: boolean) {
 
                 <div class="grid gap-4">
                     <input type="hidden" name="type" :value="type" />
+
+                    <div v-if="!project && projects" class="grid gap-2">
+                        <Label for="feedback-project">Project</Label>
+                        <Select v-model="chosenProject">
+                            <SelectTrigger id="feedback-project" class="w-full">
+                                <SelectValue placeholder="Choose a project" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="option in projects"
+                                    :key="option.slug"
+                                    :value="option.slug"
+                                >
+                                    {{ option.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <button
@@ -146,7 +170,7 @@ function handleOpenChange(value: boolean) {
                     <Button
                         type="submit"
                         data-test="feedback-submit"
-                        :disabled="processing"
+                        :disabled="processing || !chosenProject"
                     >
                         {{ copy.submit }}
                     </Button>

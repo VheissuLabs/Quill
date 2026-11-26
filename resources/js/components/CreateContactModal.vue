@@ -15,21 +15,31 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { store } from '@/routes/clients/contacts';
 
-defineProps<{
+const props = defineProps<{
     organization: string;
-    client: string;
+    client?: string;
+    clients?: { name: string; slug: string }[];
 }>();
 
 const open = defineModel<boolean>('open', { default: false });
 const formKey = ref(0);
+const chosenClient = ref(props.client ?? '');
 
 function handleOpenChange(value: boolean) {
     open.value = value;
 
     if (!value) {
         formKey.value++;
+        chosenClient.value = props.client ?? '';
     }
 }
 </script>
@@ -42,7 +52,7 @@ function handleOpenChange(value: boolean) {
         <DialogContent>
             <Form
                 :key="formKey"
-                v-bind="store.form([organization, client])"
+                v-bind="store.form([organization, chosenClient || '_'])"
                 class="space-y-6"
                 v-slot="{ errors, processing }"
                 @success="open = false"
@@ -55,6 +65,23 @@ function handleOpenChange(value: boolean) {
                 </DialogHeader>
 
                 <div class="grid gap-4">
+                    <div v-if="!client && clients" class="grid gap-2">
+                        <Label for="contact-client">Client</Label>
+                        <Select v-model="chosenClient">
+                            <SelectTrigger id="contact-client" class="w-full">
+                                <SelectValue placeholder="Choose a client" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="option in clients"
+                                    :key="option.slug"
+                                    :value="option.slug"
+                                >
+                                    {{ option.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div class="grid gap-2">
                         <Label for="contact-name">Name</Label>
                         <Input
@@ -108,7 +135,7 @@ function handleOpenChange(value: boolean) {
                     <Button
                         type="submit"
                         data-test="client-contact-add"
-                        :disabled="processing"
+                        :disabled="processing || !chosenClient"
                     >
                         Add contact
                     </Button>

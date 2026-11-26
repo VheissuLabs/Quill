@@ -1,14 +1,26 @@
 <?php
 
+use App\Enums\AddressType;
 use App\Enums\ProjectVisibility;
+use App\Models\BoardColumn;
 use App\Models\Client;
+use App\Models\ClientContact;
+use App\Models\Comment;
+use App\Models\EmailAttachment;
+use App\Models\EmailMessage;
 use App\Models\Feedback;
+use App\Models\Invoice;
+use App\Models\InvoiceLine;
+use App\Models\InvoicePayment;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Sprint;
 use App\Models\Team;
+use App\Models\Ticket;
+use App\Models\TimeEntry;
 use App\Models\User;
+use App\Models\WorkType;
 
 function palette(Organization $organization, string $term): string
 {
@@ -23,7 +35,8 @@ test('a member searches every record type at once', function () {
     Issue::factory()->for($project)->create(['title' => 'Orbit drifts on resize', 'number' => 12]);
     Feedback::factory()->for($project)->create(['title' => 'Orbit dark mode']);
     Team::factory()->for($organization)->create(['name' => 'Orbit crew']);
-    Client::factory()->for($organization)->create(['name' => 'Orbit Industries']);
+    $client = Client::factory()->for($organization)->create(['name' => 'Orbit Industries']);
+    ClientContact::factory()->for($client)->create(['name' => 'Orbit Olsen']);
     Sprint::factory()->for(Team::factory()->for($organization), 'owner')->create(['name' => 'Orbit sprint 3']);
 
     $response = $this->actingAs($member)->getJson(palette($organization, 'orbit'));
@@ -31,7 +44,28 @@ test('a member searches every record type at once', function () {
     $response->assertOk();
 
     expect(collect($response->json())->pluck('type')->unique()->sort()->values()->all())
-        ->toBe(['client', 'feedback', 'issue', 'project', 'sprint', 'team']);
+        ->toBe(['client', 'contact', 'feedback', 'issue', 'project', 'sprint', 'team']);
+});
+
+test('a contact is found by name or email and opens their contact page', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    $client = Client::factory()->for($organization)->create(['name' => 'Real Time Feedback']);
+    $kfir = ClientContact::factory()->for($client)->create(['name' => 'Kfir Alfia', 'email' => 'kfir@rtf.test']);
+    $deleted = Client::factory()->for($organization)->create();
+    ClientContact::factory()->for($deleted)->create(['name' => 'Kfir Gone']);
+    $deleted->delete();
+    ClientContact::factory()->create(['name' => 'Kfir Elsewhere']);
+
+    foreach (['kfi', 'rtf.test'] as $term) {
+        expect($this->actingAs($member)->getJson(palette($organization, $term))->json())->toBe([[
+            'type' => 'contact',
+            'title' => 'Kfir Alfia',
+            'subtitle' => 'Real Time Feedback',
+            'url' => route('clients.contacts.show', ['current_organization' => $organization, 'client' => $client, 'contact' => $kfir]),
+        ]]);
+    }
 });
 
 test('an issue is found by its number as well as its title', function () {
@@ -151,6 +185,44 @@ test('the options endpoint carries what the create modals need', function () {
         ]);
 });
 
+test('the options endpoint gives an owner what every create form needs', function () {
+    $owner = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($owner, 'Owner');
+    $client = Client::factory()->for($organization)->create(['name' => 'Acme']);
+    Project::factory()->for($organization)->public()->create(['name' => 'Portal', 'client_id' => $client->id]);
+
+    $response = $this->actingAs($owner)
+        ->getJson(route('palette.options', ['current_organization' => $organization]));
+
+    $response->assertOk()
+        ->assertJsonPath('clients.0.slug', $client->slug)
+        ->assertJsonPath('invoiceProjects.0.billToClientId', $client->id)
+        ->assertJsonPath('feedbackProjects.0.name', 'Portal')
+        ->assertJsonPath('sprintBoard', $organization->name);
+
+    expect($response->json('roles'))->not->toBeEmpty()
+        ->and($response->json('permissions'))->not->toBeEmpty()
+        ->and($response->json('workTypeColors'))->toContain('gray');
+});
+
+test('the options endpoint withholds what a member cannot create', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $organization->addMember($member, 'Member');
+    Client::factory()->for($organization)->create();
+
+    $response = $this->actingAs($member)
+        ->getJson(route('palette.options', ['current_organization' => $organization]));
+
+    $response->assertOk()
+        ->assertJsonPath('clients', [])
+        ->assertJsonPath('invoiceProjects', [])
+        ->assertJsonPath('roles', [])
+        ->assertJsonPath('permissions', [])
+        ->assertJsonPath('workTypeColors', []);
+});
+
 test('the options endpoint withholds issue options when the capability is off', function () {
     $member = User::factory()->create();
     $organization = Organization::factory()->create();
@@ -212,4 +284,52 @@ test('an alphabetically late leading match is not cut off by the per type cap', 
     $response = $this->actingAs($member)->getJson(palette($organization, 'fugit'));
 
     expect(collect($response->json())->pluck('title'))->toContain('Fugit leads the title');
+});
+
+test('an admin finds every other kind of record by what it says', function () {
+    $admin = User::factory()->create();
+    $organization = Organization::factory()->create(['name' => 'Zephyr Labs']);
+    config(['services.resend.support_organization' => $organization->slug]);
+    $organization->addMember($admin, 'Admin');
+    $project = Project::factory()->for($organization)->create();
+    $team = Team::factory()->for($organization)->create();
+    $client = Client::factory()->for($organization)->create(['name' => 'Zephyr Co']);
+    $contact = ClientContact::factory()->for($client)->create(['name' => 'Zia Zephyr']);
+
+    $client->domains()->create(['domain' => 'zephyr.test']);
+    $contact->addresses()->create(['type' => AddressType::Mailing, 'line1' => '1 Zephyr Way', 'city' => 'Dallas']);
+    BoardColumn::factory()->for($team, 'owner')->create(['name' => 'Zephyr review']);
+    $ticket = Ticket::factory()->forClient($client)->create(['subject' => 'Zephyr login broken']);
+    $message = EmailMessage::factory()->for(Comment::factory()->for($ticket, 'commentable')->create(['body' => 'Nothing to see']))->create();
+    EmailAttachment::factory()->for($message)->create(['filename' => 'zephyr-screenshot.png']);
+    Comment::factory()->for(Issue::factory()->for($project), 'commentable')->create(['body' => 'The zephyr deploy needs a retry']);
+    $invoice = Invoice::factory()->for($organization)->for($client)->create(['number' => 'ZEPHYR-0001']);
+    InvoiceLine::factory()->for($invoice)->create(['description' => 'Zephyr onboarding']);
+    InvoicePayment::factory()->for($invoice)->create(['reference' => 'ZEPHYR-PAY-7']);
+    TimeEntry::factory()->for($client)->create(['description' => 'Zephyr call', 'invoice_line_id' => null]);
+    WorkType::factory()->for($organization)->create(['name' => 'Zephyr support']);
+    $organization->addMember(User::factory()->create(['name' => 'Zed Zephyr']), 'Member');
+    $organization->defineRole('Zephyr reviewers', []);
+
+    $response = $this->actingAs($admin)->getJson(palette($organization, 'zephyr'));
+
+    $response->assertOk();
+
+    expect(collect($response->json())->pluck('type')->unique()->sort()->values()->all())
+        ->toBe(['address', 'attachment', 'client', 'column', 'comment', 'contact', 'domain', 'invoice', 'invoice line', 'member', 'organization', 'payment', 'role', 'ticket', 'time', 'work type']);
+});
+
+test('invoices, tickets and billing records stay hidden from members who cannot manage them', function () {
+    $member = User::factory()->create();
+    $organization = Organization::factory()->create();
+    config(['services.resend.support_organization' => $organization->slug]);
+    $organization->addMember($member, 'Member');
+    $client = Client::factory()->for($organization)->create(['name' => 'Quasar']);
+    Ticket::factory()->forClient($client)->create(['subject' => 'Quasar outage']);
+    Invoice::factory()->for($organization)->for($client)->create(['number' => 'QUASAR-1']);
+    WorkType::factory()->for($organization)->create(['name' => 'Quasar work']);
+
+    $types = collect($this->actingAs($member)->getJson(palette($organization, 'quasar'))->json())->pluck('type')->unique()->values()->all();
+
+    expect($types)->toBe(['client']);
 });
