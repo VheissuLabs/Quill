@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\ClientContact;
 use App\Models\ClientDomain;
 use App\Models\Comment;
+use App\Models\Document;
 use App\Models\EmailAttachment;
 use App\Models\Feedback;
 use App\Models\Invoice;
@@ -47,6 +48,7 @@ class PaletteResultResource extends JsonResource
             $this->resource instanceof Ticket => $this->ticket($this->resource),
             $this->resource instanceof EmailAttachment => $this->attachment($this->resource),
             $this->resource instanceof Comment => $this->comment($this->resource),
+            $this->resource instanceof Document => $this->document($this->resource),
             $this->resource instanceof Invoice => $this->invoice($this->resource),
             $this->resource instanceof InvoiceLine => $this->invoiceLine($this->resource),
             $this->resource instanceof InvoicePayment => $this->payment($this->resource),
@@ -352,6 +354,23 @@ class PaletteResultResource extends JsonResource
             'title' => $organization->name,
             'subtitle' => null,
             'url' => route('dashboard', ['current_organization' => $organization]),
+        ];
+    }
+
+    /** @return array{type: string, title: string, subtitle: string|null, url: string} */
+    private function document(Document $document): array
+    {
+        $owner = $document->documentable;
+
+        return [
+            'type' => 'document',
+            'title' => $document->name,
+            'subtitle' => match (true) {
+                $owner instanceof Issue => $owner->title,
+                $owner instanceof Project => $owner->name,
+                default => null,
+            },
+            'url' => route('documents.show', ['current_organization' => $document->organization, 'document' => $document]),
         ];
     }
 }

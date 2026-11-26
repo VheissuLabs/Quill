@@ -209,6 +209,7 @@ namespace App\Models{
  * @property-read \App\Models\Client|null $client
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ticket> $tickets
  * @property-read int|null $tickets_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact directory()
  * @method static \Database\Factories\ClientContactFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact matching(string $term)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact newModelQuery()
@@ -297,6 +298,43 @@ namespace App\Models{
  */
 	#[\AllowDynamicProperties]
 	class IdeHelperComment {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $organization_id
+ * @property string $documentable_type
+ * @property int $documentable_id
+ * @property int|null $user_id
+ * @property string $name
+ * @property string $path
+ * @property string $content_type
+ * @property int $size
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Model $documentable
+ * @property-read \App\Models\Organization|null $organization
+ * @property-read \App\Models\User|null $uploader
+ * @method static \Database\Factories\DocumentFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereContentType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereDocumentableId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereDocumentableType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document wherePath($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereSize($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Document whereUserId($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperDocument {}
 }
 
 namespace App\Models{
@@ -643,6 +681,8 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comment> $comments
  * @property-read int|null $comments_count
  * @property-read \App\Models\User|null $creator
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Document> $documents
+ * @property-read int|null $documents_count
  * @property-read \App\Models\Feedback|null $feedback
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\IssueLink> $inverseLinks
  * @property-read int|null $inverse_links_count
@@ -886,6 +926,8 @@ namespace App\Models{
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Client|null $client
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Document> $documents
+ * @property-read int|null $documents_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Feedback> $feedback
  * @property-read int|null $feedback_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $issues

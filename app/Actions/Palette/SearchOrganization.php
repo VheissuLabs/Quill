@@ -10,6 +10,7 @@ use App\Models\Client;
 use App\Models\ClientContact;
 use App\Models\ClientDomain;
 use App\Models\Comment;
+use App\Models\Document;
 use App\Models\EmailAttachment;
 use App\Models\Feedback;
 use App\Models\Invoice;
@@ -67,6 +68,7 @@ class SearchOrganization
             ->concat($tickets ? $this->tickets($organization, $term) : [])
             ->concat($tickets ? $this->attachments($organization, $term) : [])
             ->concat($this->comments($organization, $projectIds, $issues, $boards, $tickets, $term))
+            ->concat($this->documents($organization, $projectIds, $issues, $term))
             ->concat($invoices ? $this->invoices($organization, $term) : [])
             ->concat($invoices ? $this->invoiceLines($organization, $term) : [])
             ->concat($invoices ? $this->payments($organization, $term) : [])
@@ -272,6 +274,24 @@ class SearchOrganization
                 Ticket::class => ['organization'],
             ])])
             ->latest('id')
+            ->limit(self::PER_TYPE)
+            ->get();
+    }
+
+    /**
+     * @param  Collection<int, int>  $projectIds
+     * @return Collection<int, Document>
+     */
+    private function documents(Organization $organization, Collection $projectIds, bool $issues, string $term): Collection
+    {
+        return Document::query()
+            ->where('organization_id', $organization->id)
+            ->where('name', 'like', $this->wildcard($term))
+            ->whereHasMorph('documentable', $issues ? [Project::class, Issue::class] : [Project::class], fn (Builder $query, string $type) => $type === Project::class
+                ? $query->whereIn('id', $projectIds)
+                : $query->whereIn('project_id', $projectIds))
+            ->with(['organization', 'documentable'])
+            ->tap(fn (Builder $query) => $this->rank($query, 'name', $term))
             ->limit(self::PER_TYPE)
             ->get();
     }

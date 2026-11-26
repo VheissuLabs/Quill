@@ -20,6 +20,7 @@ class IssueDetailResource extends IssueResource
         return [
             ...parent::toArray($request),
             'description' => $this->description,
+            'documents' => DocumentResource::collection($this->documents()->with(['uploader', 'organization'])->get())->resolve(),
             'sprintId' => $this->sprint_id,
             'assigneeId' => $this->assignee_id,
             'creatorName' => $this->creator?->name,

@@ -23,6 +23,9 @@ use App\Http\Controllers\Clients\ClientDomainController;
 use App\Http\Controllers\Clients\ContactController;
 use App\Http\Controllers\Clients\RestoreClientController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Documents\DocumentController;
+use App\Http\Controllers\Documents\IssueDocumentController;
+use App\Http\Controllers\Documents\ProjectDocumentController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Issues\CommentController as IssueCommentController;
 use App\Http\Controllers\Issues\IssueController;
@@ -187,6 +190,10 @@ Route::prefix('{current_organization}')
             ->middlewareFor('show', 'can:view,issue')
             ->middlewareFor('update', 'can:update,issue')
             ->middlewareFor('destroy', 'can:delete,issue');
+        Route::post('issues/{issue}/documents', [IssueDocumentController::class, 'store'])->can('update', 'issue')->name('issues.documents.store');
+        Route::post('projects/{project}/documents', [ProjectDocumentController::class, 'store'])->can('update', 'project')->name('projects.documents.store');
+        Route::get('documents/{document}', [DocumentController::class, 'show'])->withoutScopedBindings()->can('view', 'document')->name('documents.show');
+        Route::delete('documents/{document}', [DocumentController::class, 'destroy'])->withoutScopedBindings()->can('delete', 'document')->name('documents.destroy');
         Route::patch('issues/{issue}/links/{link}', [IssueLinkController::class, 'update'])->withoutScopedBindings()->can('update', 'issue')->name('issues.links.update');
         Route::delete('issues/{issue}/links/{link}', [IssueLinkController::class, 'destroy'])->withoutScopedBindings()->can('update', 'issue')->name('issues.links.destroy');
         Route::post('issues/{issue}/comments', [IssueCommentController::class, 'store'])->can('comment', 'issue')->name('issues.comments.store');

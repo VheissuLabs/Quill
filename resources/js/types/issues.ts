@@ -1,3 +1,4 @@
+import type { DocumentItem } from './documents';
 import type { ActivityEntry, FeedbackStatus } from './portal';
 import type { SelectOption } from './projects';
 
@@ -68,6 +69,7 @@ export type IssueActivityEntry = ActivityEntry & {
 
 export type IssueDetail = IssueListItem & {
     description: string | null;
+    documents: DocumentItem[];
     teamId: number | null;
     sprintId: number | null;
     columns: BoardColumn[];

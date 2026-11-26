@@ -3,6 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ExternalLink } from '@lucide/vue';
 import { ref } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import DocumentList from '@/components/DocumentList.vue';
 import SectionCard from '@/components/SectionCard.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -19,8 +20,10 @@ import {
 import RichTextEditor from '@/components/RichTextEditor.vue';
 import { show as showBoard } from '@/routes/portal/projects';
 import { destroy, edit, index, update } from '@/routes/projects';
+import { store as storeDocument } from '@/routes/projects/documents';
 import type {
     ClientOption,
+    DocumentItem,
     Organization,
     ProjectBilling,
     ProjectSettings,
@@ -35,6 +38,7 @@ type Props = {
     teams: TeamOption[];
     visibilities: SelectOption[];
     billing: ProjectBilling | null;
+    documents: DocumentItem[];
 };
 
 const props = defineProps<Props>();
@@ -245,6 +249,20 @@ const submit = () => {
         </form>
 
         <div class="flex flex-col gap-6">
+            <SectionCard
+                title="Documents"
+                description="Specs, contracts and screenshots for this project"
+            >
+                <DocumentList
+                    :organization="currentOrganization.slug"
+                    :documents="documents"
+                    :can-manage="true"
+                    :upload="
+                        storeDocument([currentOrganization.slug, project.slug])
+                    "
+                />
+            </SectionCard>
+
             <SectionCard
                 title="Board"
                 description="Share this link with the people you want feedback from"

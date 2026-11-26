@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasDocuments;
 use App\Enums\IssueLinkType;
 use App\Enums\IssuePriority;
 use App\Enums\IssueStatus;
@@ -29,7 +30,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[UseFactory(IssueFactory::class)]
 class Issue extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasDocuments, HasFactory, LogsActivity;
 
     protected $guarded = [];
 

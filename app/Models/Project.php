@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BroadcastsChanges;
+use App\Concerns\HasDocuments;
 use App\Enums\OrganizationPermission;
 use App\Enums\ProjectVisibility;
 use App\Events\ProjectsChanged;
@@ -33,7 +34,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[ObservedBy(ProjectObserver::class)]
 class Project extends Model
 {
-    use BroadcastsChanges, HasFactory, LogsActivity;
+    use BroadcastsChanges, HasDocuments, HasFactory, LogsActivity;
 
     protected $guarded = [];
 

@@ -14,6 +14,7 @@ import ActivityFeed from '@/components/ActivityFeed.vue';
 import CommentForm from '@/components/CommentForm.vue';
 import CommentThread from '@/components/CommentThread.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
+import DocumentList from '@/components/DocumentList.vue';
 import FeedbackStatusBadge from '@/components/FeedbackStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -47,6 +48,7 @@ import {
     update as updateLink,
 } from '@/routes/issues/links';
 import { lookup as issueLookup } from '@/routes/issues';
+import { store as storeDocument } from '@/routes/issues/documents';
 import { show as showFeedback } from '@/routes/portal/feedback';
 import { pointOptions } from '@/lib/points';
 import { show as showSprint } from '@/routes/sprints';
@@ -351,6 +353,21 @@ const currentSprint = computed(() =>
                     </p>
                 </template>
             </div>
+
+            <section
+                class="space-y-5 border-t pt-8"
+                data-test="issue-documents"
+            >
+                <Heading variant="small" title="Documents" />
+                <DocumentList
+                    :organization="currentOrganization.slug"
+                    :documents="issue.documents"
+                    :can-manage="true"
+                    :upload="
+                        storeDocument([currentOrganization.slug, issue.id])
+                    "
+                />
+            </section>
 
             <section class="space-y-5 border-t pt-8" data-test="issue-links">
                 <Heading variant="small" title="Links" />

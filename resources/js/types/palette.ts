@@ -18,6 +18,7 @@ export type PaletteResultType =
     | 'ticket'
     | 'attachment'
     | 'comment'
+    | 'document'
     | 'invoice'
     | 'invoice line'
     | 'payment'

@@ -10,6 +10,7 @@ use App\Events\TeamsChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Projects\ProjectRequest;
 use App\Http\Resources\ClientResource;
+use App\Http\Resources\DocumentResource;
 use App\Http\Resources\ProjectFormResource;
 use App\Http\Resources\ProjectListResource;
 use App\Http\Resources\TeamResource;
@@ -48,6 +49,7 @@ class ProjectController extends Controller
             'teams' => TeamsChanged::live(TeamResource::collection($currentOrganization->teams()->orderBy('name')->get()), $currentOrganization->id),
             'visibilities' => ProjectVisibility::options(),
             'billing' => $currentOrganization->allowsInvoiceManagementBy(auth()->user()) ? ['rate' => $project->billing_rate] : null,
+            'documents' => ProjectsChanged::live(fn () => DocumentResource::collection($project->documents()->with(['uploader', 'organization'])->get())->resolve(), $currentOrganization->id),
         ]);
     }
 

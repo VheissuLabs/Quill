@@ -174,6 +174,13 @@ const run = async (command: PaletteCommand): Promise<void> => {
 
 const openResult = (result: PaletteResult): void => {
     hide();
+
+    if (result.type === 'document') {
+        window.open(result.url, '_blank', 'noopener');
+
+        return;
+    }
+
     router.visit(result.url);
 };
 
