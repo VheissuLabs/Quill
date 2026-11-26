@@ -36,6 +36,7 @@ class UpdateInvoiceLineTool extends QuillTool
         return [
             'organization' => $this->organizationArgument($schema),
             'invoice_id' => $schema->integer()->description('Invoice id.')->required(),
+            'completed_at' => $schema->string()->format('date')->description('Day the work was done, YYYY-MM-DD. Lines are grouped by day on the invoice; leave empty for undated lines.'),
             'line_id' => $schema->integer()->description('Line id; show-invoice lists them.')->required(),
             'description' => $schema->string(),
             'quantity' => $schema->number()->description('Hours or units.'),

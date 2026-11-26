@@ -53,5 +53,5 @@ test('an invoice shows the dated entries behind each line', function () {
 
     QuillServer::actingAs($user)->tool(ShowInvoiceTool::class, ['invoice_id' => $client->invoices()->sole()->id])
         ->assertOk()
-        ->assertSee(['"workedOn":"2026-11-24"', '"workedOn":"2026-11-25"']);
+        ->assertSee(['"completedAt":"2026-11-24"', '"completedAt":"2026-11-25"']);
 });

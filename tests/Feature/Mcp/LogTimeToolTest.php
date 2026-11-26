@@ -105,6 +105,6 @@ test('logged hours are kept as a dated entry on the invoice line', function () {
     $entry = TimeEntry::query()->sole();
 
     expect($entry)->issue_id->toBe($issue->id)->user_id->toBe($user->id)->description->toBe('Build the login page')
-        ->and($entry->worked_on->toDateString())->toBe('2026-11-24')
+        ->and($entry->completed_at->toDateString())->toBe('2026-11-24')
         ->and($entry->invoiceLine->issue_id)->toBe($issue->id);
 });

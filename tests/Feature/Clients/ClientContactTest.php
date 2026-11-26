@@ -21,12 +21,14 @@ test('a client manager adds a contact to a client', function () {
     $this->actingAs($admin)
         ->post(route('clients.contacts.store', ['current_organization' => $organization, 'client' => $client]), [
             'name' => 'Jane Doe',
+            'title' => 'CTO',
             'email' => ' Jane@Acme.test ',
         ])
         ->assertRedirect();
 
     expect($client->contacts()->sole())
         ->name->toBe('Jane Doe')
+        ->title->toBe('CTO')
         ->email->toBe('jane@acme.test')
         ->organization_id->toBe($organization->id);
 });
@@ -57,6 +59,18 @@ test('a contact keeps its own email when renamed', function () {
     expect($contact->fresh()->name)->toBe('Jane Smith');
 });
 
+test('a contact\'s title can be changed and cleared', function () {
+    [$organization, $admin, $client] = contactManager();
+    $contact = ClientContact::factory()->for($client)->create(['title' => 'Engineer', 'email' => 'jane@acme.test']);
+    $route = route('clients.contacts.update', ['current_organization' => $organization, 'client' => $client, 'contact' => $contact]);
+
+    $this->actingAs($admin)->patch($route, ['name' => 'Jane', 'title' => 'CTO', 'email' => 'jane@acme.test'])->assertSessionHasNoErrors();
+    expect($contact->fresh()->title)->toBe('CTO');
+
+    $this->actingAs($admin)->patch($route, ['name' => 'Jane', 'title' => '', 'email' => 'jane@acme.test'])->assertSessionHasNoErrors();
+    expect($contact->fresh()->title)->toBeNull();
+});
+
 test('members without client management cannot add contacts', function () {
     [$organization, , $client] = contactManager();
     $member = User::factory()->create();
@@ -72,7 +86,7 @@ test('members without client management cannot add contacts', function () {
 
 test('the contact lookup finds contacts by name or email with their client', function () {
     [$organization, $admin, $client] = contactManager();
-    $jane = ClientContact::factory()->for($client)->create(['name' => 'Jane Doe', 'email' => 'jane@acme.test']);
+    $jane = ClientContact::factory()->for($client)->create(['name' => 'Jane Doe', 'title' => 'CTO', 'email' => 'jane@acme.test']);
     ClientContact::factory()->for($client)->create(['name' => 'Bob Roe', 'email' => 'bob@acme.test']);
     ClientContact::factory()->create(['name' => 'Jane Elsewhere']);
 
@@ -82,7 +96,9 @@ test('the contact lookup finds contacts by name or email with their client', fun
         ->assertExactJson([[
             'id' => $jane->id,
             'name' => 'Jane Doe',
+            'title' => 'CTO',
             'email' => 'jane@acme.test',
+            'phone' => null,
             'client' => ['id' => $client->id, 'name' => $client->name],
         ]]);
 });

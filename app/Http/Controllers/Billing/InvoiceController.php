@@ -14,6 +14,7 @@ use App\Http\Requests\Billing\StoreInvoiceRequest;
 use App\Http\Requests\Billing\UpdateInvoiceRequest;
 use App\Http\Resources\InvoiceListResource;
 use App\Http\Resources\InvoiceResource;
+use App\Http\Resources\InvoiceSummaryResource;
 use App\Models\Invoice;
 use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
@@ -36,6 +37,7 @@ class InvoiceController extends Controller
 
         return Inertia::render('invoices/Index', [
             'invoices' => InvoicesChanged::live(InvoiceListResource::collection($invoices)->resolve(), $currentOrganization->id, ClientsChanged::class),
+            'summary' => InvoicesChanged::live(InvoiceSummaryResource::make($currentOrganization)->resolve(), $currentOrganization->id, ClientsChanged::class),
             'filters' => $filters,
             'statuses' => collect(InvoiceStatus::cases())->map(fn (InvoiceStatus $status) => ['value' => $status->value, 'label' => $status->label()])->all(),
             'clients' => ClientsChanged::live($currentOrganization->clients()->orderBy('name')->get(['id', 'name']), $currentOrganization->id),

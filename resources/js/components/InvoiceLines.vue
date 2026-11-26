@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, router, useForm } from '@inertiajs/vue3';
 import { ExternalLink, GripVertical, Plus, Trash2 } from '@lucide/vue';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import draggable from 'vuedraggable';
 import InputError from '@/components/InputError.vue';
 import InvoiceIssuePicker from '@/components/InvoiceIssuePicker.vue';
@@ -24,6 +24,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { groupLinesByDay, hasDatedLines } from '@/lib/invoiceDays';
 import { lookup, show as showIssue } from '@/routes/issues';
 import { destroy, store, update } from '@/routes/invoices/lines';
 import { update as updateOrder } from '@/routes/invoices/lines/order';
@@ -39,6 +40,7 @@ type Row = InvoiceLine & {
     draftQuantity: string;
     draftRate: string;
     draftReferenceUrl: string;
+    draftCompletedAt: string;
 };
 
 const props = defineProps<Props>();
@@ -79,18 +81,27 @@ const toRows = (previous: Row[] = []): Row[] =>
                 before && before.referenceUrl === line.referenceUrl
                     ? before.draftReferenceUrl
                     : (line.referenceUrl ?? ''),
+            draftCompletedAt:
+                before && before.completedAt === line.completedAt
+                    ? before.draftCompletedAt
+                    : (line.completedAt ?? ''),
         };
     });
 
 const rows = ref<Row[]>(toRows());
+const days = ref(groupLinesByDay(rows.value));
+const showDays = computed(() => hasDatedLines(rows.value));
 const errors = ref<Record<number, Record<string, string>>>({});
 
 watch(
     () => props.invoice.lines,
-    () => (rows.value = toRows(rows.value)),
+    () => {
+        rows.value = toRows(rows.value);
+        days.value = groupLinesByDay(rows.value);
+    },
 );
 
-const money = (value: string) =>
+const money = (value: string | number) =>
     new Intl.NumberFormat(undefined, {
         style: 'currency',
         currency: 'USD',
@@ -118,6 +129,12 @@ const saveReference = (row: Row) => {
     }
 };
 
+const saveCompletedAt = (row: Row) => {
+    if (row.draftCompletedAt !== (row.completedAt ?? '')) {
+        patch(row, { completed_at: row.draftCompletedAt || null });
+    }
+};
+
 const saveQuantity = (row: Row) => {
     if (row.draftQuantity !== row.quantity && row.draftQuantity !== '') {
         patch(row, { quantity: row.draftQuantity });
@@ -142,7 +159,11 @@ const pickIssue = (row: Row, issue: IssueSuggestion | null) => {
 const onReorder = () => {
     router.visit(updateOrder([props.organization, props.invoice.id]), {
         method: 'put',
-        data: { line_ids: rows.value.map((row) => row.id) },
+        data: {
+            line_ids: days.value.flatMap((day) =>
+                day.lines.map((row) => row.id),
+            ),
+        },
         preserveScroll: true,
         preserveState: true,
     });
@@ -158,6 +179,7 @@ const form = useForm({
     description: '',
     issue_id: null as number | null,
     issueReference: null as string | null,
+    completed_at: '',
     quantity: '',
     unit: 'hours',
     rate: '',
@@ -176,6 +198,7 @@ const add = () => {
     form.transform((data) => ({
         description: data.description || null,
         issue_id: data.issue_id,
+        completed_at: data.completed_at || null,
         quantity: data.quantity,
         unit: data.unit,
         rate: data.rate || null,
@@ -205,234 +228,294 @@ const add = () => {
                 </TableRow>
             </TableHeader>
 
-            <draggable
-                v-if="rows.length > 0"
-                :list="rows"
-                tag="tbody"
-                item-key="id"
-                handle="[data-handle]"
-                :disabled="!editable()"
-                :animation="150"
-                class="[&_tr:last-child]:border-0"
-                @change="onReorder"
-            >
-                <template #item="{ element: row }">
-                    <TableRow data-test="invoice-line-row">
-                        <TableCell class="align-top">
-                            <button
-                                v-if="editable()"
-                                type="button"
-                                data-handle
-                                class="text-muted-foreground hover:text-foreground mt-2.5 cursor-grab"
-                                aria-label="Drag to reorder"
-                            >
-                                <GripVertical class="size-4" />
-                            </button>
-                        </TableCell>
-
-                        <TableCell class="align-top whitespace-normal">
-                            <div class="grid gap-2">
-                                <template v-if="canEditDetails()">
-                                    <Input
-                                        v-model="row.draftDescription"
-                                        aria-label="Description"
-                                        data-test="invoice-line-description"
-                                        @blur="saveDescription(row)"
-                                    />
-                                    <InputError
-                                        :message="errors[row.id]?.description"
-                                    />
-                                    <div
-                                        class="flex flex-wrap items-center gap-2"
-                                    >
-                                        <InvoiceIssuePicker
-                                            v-if="
-                                                editable() || row.issueReference
-                                            "
-                                            :lookup="lookupUrl"
-                                            :reference="row.issueReference"
-                                            :href="issueHref(row.issueId)"
-                                            :disabled="!editable()"
-                                            @select="pickIssue(row, $event)"
-                                        />
-                                        <Input
-                                            v-model="row.draftReferenceUrl"
-                                            type="url"
-                                            placeholder="Reference link"
-                                            aria-label="Reference link"
-                                            class="h-8 min-w-40 flex-1"
-                                            data-test="invoice-line-reference"
-                                            @blur="saveReference(row)"
-                                        />
-                                        <Select
-                                            :model-value="
-                                                row.workTypeId === null
-                                                    ? none
-                                                    : String(row.workTypeId)
-                                            "
-                                            @update:model-value="
-                                                patch(row, {
-                                                    work_type_id:
-                                                        $event === none
-                                                            ? null
-                                                            : Number($event),
-                                                })
-                                            "
-                                        >
-                                            <SelectTrigger
-                                                size="sm"
-                                                class="w-40"
-                                                aria-label="Work type"
-                                            >
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem :value="none">
-                                                    No work type
-                                                </SelectItem>
-                                                <SelectItem
-                                                    v-for="workType in invoice
-                                                        .options.workTypes"
-                                                    :key="workType.id"
-                                                    :value="String(workType.id)"
-                                                >
-                                                    {{ workType.name }}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <InputError
-                                        :message="errors[row.id]?.reference_url"
-                                    />
-                                </template>
-                                <template v-else>
-                                    <p class="pt-2">{{ row.description }}</p>
-                                    <p
-                                        v-if="
-                                            row.issueReference ||
-                                            row.workTypeId ||
-                                            row.referenceUrl
-                                        "
-                                        class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs"
-                                    >
-                                        <Link
-                                            v-if="row.issueReference"
-                                            :href="issueHref(row.issueId)!"
-                                            class="hover:text-foreground hover:underline"
-                                        >
-                                            {{ row.issueReference }}
-                                        </Link>
-                                        <span
-                                            v-if="workTypeName(row.workTypeId)"
-                                        >
-                                            {{ workTypeName(row.workTypeId) }}
-                                        </span>
-                                        <a
-                                            v-if="row.referenceUrl"
-                                            :href="row.referenceUrl"
-                                            target="_blank"
-                                            rel="noopener"
-                                            class="hover:text-foreground inline-flex items-center gap-1 underline-offset-2 hover:underline"
-                                        >
-                                            Reference
-                                            <ExternalLink class="size-3" />
-                                        </a>
-                                    </p>
-                                </template>
-                            </div>
-                        </TableCell>
-
-                        <template v-if="editable()">
-                            <TableCell class="align-top">
-                                <Input
-                                    v-model="row.draftQuantity"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    aria-label="Quantity"
-                                    class="text-right"
-                                    data-test="invoice-line-quantity"
-                                    @blur="saveQuantity(row)"
-                                />
-                                <InputError
-                                    :message="errors[row.id]?.quantity"
-                                />
-                            </TableCell>
-                            <TableCell class="align-top">
-                                <Select
-                                    :model-value="row.unit"
-                                    @update:model-value="
-                                        patch(row, { unit: String($event) })
-                                    "
-                                >
-                                    <SelectTrigger
-                                        class="w-full"
-                                        aria-label="Unit"
-                                    >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="hours">
-                                            Hours
-                                        </SelectItem>
-                                        <SelectItem value="units">
-                                            Units
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </TableCell>
-                            <TableCell class="align-top">
-                                <Input
-                                    v-model="row.draftRate"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    aria-label="Rate"
-                                    class="text-right"
-                                    data-test="invoice-line-rate"
-                                    @blur="saveRate(row)"
-                                />
-                                <InputError :message="errors[row.id]?.rate" />
-                            </TableCell>
-                        </template>
-                        <template v-else>
-                            <TableCell
-                                class="pt-4 text-right align-top tabular-nums"
-                            >
-                                {{ row.quantity }}
-                            </TableCell>
-                            <TableCell class="pt-4 align-top">
-                                {{ row.unit === 'hours' ? 'Hours' : 'Units' }}
-                            </TableCell>
-                            <TableCell
-                                class="pt-4 text-right align-top tabular-nums"
-                            >
-                                {{ money(row.rate) }}
-                            </TableCell>
-                        </template>
-
-                        <TableCell
-                            class="pt-4 text-right align-top font-medium tabular-nums"
-                            data-test="invoice-line-amount"
+            <template v-if="rows.length > 0">
+                <draggable
+                    v-for="day in days"
+                    :key="day.day ?? 'undated'"
+                    :list="day.lines"
+                    tag="tbody"
+                    item-key="id"
+                    handle="[data-handle]"
+                    :disabled="!editable()"
+                    :animation="150"
+                    data-test="invoice-line-day"
+                    @change="onReorder"
+                >
+                    <template #header>
+                        <TableRow
+                            v-if="showDays"
+                            class="bg-muted/40 hover:bg-muted/40"
+                            data-test="invoice-line-day-header"
                         >
-                            {{ money(row.amount) }}
-                        </TableCell>
-
-                        <TableCell class="align-top">
-                            <Button
-                                v-if="editable()"
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Remove line"
-                                data-test="invoice-line-delete"
-                                @click="remove(row)"
+                            <TableCell />
+                            <TableCell class="font-medium">
+                                {{ day.label ?? 'No date' }}
+                            </TableCell>
+                            <TableCell
+                                class="text-muted-foreground text-right tabular-nums"
                             >
-                                <Trash2 />
-                            </Button>
-                        </TableCell>
-                    </TableRow>
-                </template>
-            </draggable>
+                                <template v-if="day.hours > 0">
+                                    {{ day.hours.toFixed(2) }}
+                                </template>
+                            </TableCell>
+                            <TableCell class="text-muted-foreground">
+                                <template v-if="day.hours > 0">Hours</template>
+                            </TableCell>
+                            <TableCell />
+                            <TableCell
+                                class="text-right font-medium tabular-nums"
+                            >
+                                {{ money(day.amount) }}
+                            </TableCell>
+                            <TableCell />
+                        </TableRow>
+                    </template>
+                    <template #item="{ element: row }">
+                        <TableRow data-test="invoice-line-row">
+                            <TableCell class="align-top">
+                                <button
+                                    v-if="editable()"
+                                    type="button"
+                                    data-handle
+                                    class="text-muted-foreground hover:text-foreground mt-2.5 cursor-grab"
+                                    aria-label="Drag to reorder"
+                                >
+                                    <GripVertical class="size-4" />
+                                </button>
+                            </TableCell>
+
+                            <TableCell class="align-top whitespace-normal">
+                                <div class="grid gap-2">
+                                    <template v-if="canEditDetails()">
+                                        <Input
+                                            v-model="row.draftDescription"
+                                            aria-label="Description"
+                                            data-test="invoice-line-description"
+                                            @blur="saveDescription(row)"
+                                        />
+                                        <InputError
+                                            :message="
+                                                errors[row.id]?.description
+                                            "
+                                        />
+                                        <div
+                                            class="flex flex-wrap items-center gap-2"
+                                        >
+                                            <InvoiceIssuePicker
+                                                v-if="
+                                                    editable() ||
+                                                    row.issueReference
+                                                "
+                                                :lookup="lookupUrl"
+                                                :reference="row.issueReference"
+                                                :href="issueHref(row.issueId)"
+                                                :disabled="!editable()"
+                                                @select="pickIssue(row, $event)"
+                                            />
+                                            <Input
+                                                v-model="row.draftReferenceUrl"
+                                                type="url"
+                                                placeholder="Reference link"
+                                                aria-label="Reference link"
+                                                class="h-8 min-w-40 flex-1"
+                                                data-test="invoice-line-reference"
+                                                @blur="saveReference(row)"
+                                            />
+                                            <Input
+                                                v-model="row.draftCompletedAt"
+                                                type="date"
+                                                aria-label="Date"
+                                                class="h-8 w-40"
+                                                data-test="invoice-line-date"
+                                                @change="saveCompletedAt(row)"
+                                            />
+                                            <Select
+                                                :model-value="
+                                                    row.workTypeId === null
+                                                        ? none
+                                                        : String(row.workTypeId)
+                                                "
+                                                @update:model-value="
+                                                    patch(row, {
+                                                        work_type_id:
+                                                            $event === none
+                                                                ? null
+                                                                : Number(
+                                                                      $event,
+                                                                  ),
+                                                    })
+                                                "
+                                            >
+                                                <SelectTrigger
+                                                    size="sm"
+                                                    class="w-40"
+                                                    aria-label="Work type"
+                                                >
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem :value="none">
+                                                        No work type
+                                                    </SelectItem>
+                                                    <SelectItem
+                                                        v-for="workType in invoice
+                                                            .options.workTypes"
+                                                        :key="workType.id"
+                                                        :value="
+                                                            String(workType.id)
+                                                        "
+                                                    >
+                                                        {{ workType.name }}
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <InputError
+                                            :message="
+                                                errors[row.id]?.reference_url ||
+                                                errors[row.id]?.completed_at
+                                            "
+                                        />
+                                    </template>
+                                    <template v-else>
+                                        <p class="pt-2">
+                                            {{ row.description }}
+                                        </p>
+                                        <p
+                                            v-if="
+                                                row.issueReference ||
+                                                row.workTypeId ||
+                                                row.referenceUrl
+                                            "
+                                            class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs"
+                                        >
+                                            <Link
+                                                v-if="row.issueReference"
+                                                :href="issueHref(row.issueId)!"
+                                                class="hover:text-foreground hover:underline"
+                                            >
+                                                {{ row.issueReference }}
+                                            </Link>
+                                            <span
+                                                v-if="
+                                                    workTypeName(row.workTypeId)
+                                                "
+                                            >
+                                                {{
+                                                    workTypeName(row.workTypeId)
+                                                }}
+                                            </span>
+                                            <a
+                                                v-if="row.referenceUrl"
+                                                :href="row.referenceUrl"
+                                                target="_blank"
+                                                rel="noopener"
+                                                class="hover:text-foreground inline-flex items-center gap-1 underline-offset-2 hover:underline"
+                                            >
+                                                Reference
+                                                <ExternalLink class="size-3" />
+                                            </a>
+                                        </p>
+                                    </template>
+                                </div>
+                            </TableCell>
+
+                            <template v-if="editable()">
+                                <TableCell class="align-top">
+                                    <Input
+                                        v-model="row.draftQuantity"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        aria-label="Quantity"
+                                        class="text-right"
+                                        data-test="invoice-line-quantity"
+                                        @blur="saveQuantity(row)"
+                                    />
+                                    <InputError
+                                        :message="errors[row.id]?.quantity"
+                                    />
+                                </TableCell>
+                                <TableCell class="align-top">
+                                    <Select
+                                        :model-value="row.unit"
+                                        @update:model-value="
+                                            patch(row, { unit: String($event) })
+                                        "
+                                    >
+                                        <SelectTrigger
+                                            class="w-full"
+                                            aria-label="Unit"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="hours">
+                                                Hours
+                                            </SelectItem>
+                                            <SelectItem value="units">
+                                                Units
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
+                                <TableCell class="align-top">
+                                    <Input
+                                        v-model="row.draftRate"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        aria-label="Rate"
+                                        class="text-right"
+                                        data-test="invoice-line-rate"
+                                        @blur="saveRate(row)"
+                                    />
+                                    <InputError
+                                        :message="errors[row.id]?.rate"
+                                    />
+                                </TableCell>
+                            </template>
+                            <template v-else>
+                                <TableCell
+                                    class="pt-4 text-right align-top tabular-nums"
+                                >
+                                    {{ row.quantity }}
+                                </TableCell>
+                                <TableCell class="pt-4 align-top">
+                                    {{
+                                        row.unit === 'hours' ? 'Hours' : 'Units'
+                                    }}
+                                </TableCell>
+                                <TableCell
+                                    class="pt-4 text-right align-top tabular-nums"
+                                >
+                                    {{ money(row.rate) }}
+                                </TableCell>
+                            </template>
+
+                            <TableCell
+                                class="pt-4 text-right align-top font-medium tabular-nums"
+                                data-test="invoice-line-amount"
+                            >
+                                {{ money(row.amount) }}
+                            </TableCell>
+
+                            <TableCell class="align-top">
+                                <Button
+                                    v-if="editable()"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Remove line"
+                                    data-test="invoice-line-delete"
+                                    @click="remove(row)"
+                                >
+                                    <Trash2 />
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    </template>
+                </draggable>
+            </template>
             <TableBody v-else>
                 <TableRow class="hover:bg-transparent">
                     <TableCell
@@ -458,13 +541,26 @@ const add = () => {
                     aria-label="New line description"
                     data-test="new-line-description"
                 />
-                <InvoiceIssuePicker
-                    :lookup="lookupUrl"
-                    :reference="form.issueReference"
-                    @select="pickNewIssue"
-                />
+                <div class="flex flex-wrap items-center gap-2">
+                    <InvoiceIssuePicker
+                        :lookup="lookupUrl"
+                        :reference="form.issueReference"
+                        @select="pickNewIssue"
+                    />
+                    <Input
+                        v-model="form.completed_at"
+                        type="date"
+                        aria-label="New line date"
+                        class="h-8 w-40"
+                        data-test="new-line-date"
+                    />
+                </div>
                 <InputError
-                    :message="form.errors.description || form.errors.issue_id"
+                    :message="
+                        form.errors.description ||
+                        form.errors.issue_id ||
+                        form.errors.completed_at
+                    "
                 />
             </div>
             <div class="grid gap-1">

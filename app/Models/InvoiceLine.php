@@ -29,6 +29,7 @@ class InvoiceLine extends Model
     protected function casts(): array
     {
         return [
+            'completed_at' => 'date',
             'quantity' => 'decimal:2',
             'unit' => LineUnit::class,
             'rate' => 'decimal:2',
@@ -58,14 +59,14 @@ class InvoiceLine extends Model
     /** @return HasMany<TimeEntry, $this> */
     public function timeEntries(): HasMany
     {
-        return $this->hasMany(TimeEntry::class)->orderBy('worked_on')->orderBy('id');
+        return $this->hasMany(TimeEntry::class)->orderBy('completed_at')->orderBy('id');
     }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
             ->useLogName('invoices')
-            ->logOnly(['description', 'quantity', 'unit', 'rate', 'amount', 'work_type_id', 'issue_id', 'reference_url'])
+            ->logOnly(['completed_at', 'description', 'quantity', 'unit', 'rate', 'amount', 'work_type_id', 'issue_id', 'reference_url'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

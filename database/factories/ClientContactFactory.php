@@ -15,6 +15,7 @@ class ClientContactFactory extends Factory
         return [
             'client_id' => Client::factory(),
             'name' => fake()->name(),
+            'title' => fake()->jobTitle(),
             'email' => fake()->unique()->safeEmail(),
         ];
     }

@@ -35,7 +35,9 @@ class ReceiveSupportEmail
 
         $email = $this->inbox->email($resendId);
 
-        if ($email->isAutomated() || $email->fromEmail() === strtolower((string) config('services.resend.support_address'))) {
+        $ownAddresses = array_map('strtolower', [(string) config('services.resend.support_address'), Ticket::inboundAddress()]);
+
+        if ($email->isAutomated() || in_array($email->fromEmail(), $ownAddresses, true)) {
             return null;
         }
 

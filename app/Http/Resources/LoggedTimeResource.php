@@ -21,7 +21,7 @@ class LoggedTimeResource extends JsonResource
         return [
             'logged' => __(':hours h on :date for :client: :description', [
                 'hours' => (float) $this->hours,
-                'date' => $this->worked_on->toDateString(),
+                'date' => $this->completed_at->toDateString(),
                 'client' => $this->client->name,
                 'description' => $this->description,
             ]),
@@ -36,10 +36,10 @@ class LoggedTimeResource extends JsonResource
 
     private function notBilledReason(Client $billedClient): string
     {
-        $covering = $billedClient->invoiceCovering($this->worked_on);
+        $covering = $billedClient->invoiceCovering($this->completed_at);
 
         return $covering === null
-            ? __('Recorded, but no open invoice covers :date, so it is not billed yet.', ['date' => $this->worked_on->toDateString()])
-            : __('Recorded, but :date falls in invoice :number, which has already been sent, so it is not billed.', ['date' => $this->worked_on->toDateString(), 'number' => $covering->number]);
+            ? __('Recorded, but no open invoice covers :date, so it is not billed yet.', ['date' => $this->completed_at->toDateString()])
+            : __('Recorded, but :date falls in invoice :number, which has already been sent, so it is not billed.', ['date' => $this->completed_at->toDateString(), 'number' => $covering->number]);
     }
 }

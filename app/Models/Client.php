@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Actions\Billing\OpenBillingPeriod;
 use App\Actions\Billing\StopBillingCycle;
 use App\Concerns\BroadcastsChanges;
+use App\Concerns\HasAddresses;
 use App\Enums\BillingCycle;
 use App\Enums\InvoiceStatus;
 use App\Events\ClientsChanged;
@@ -31,7 +32,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[ObservedBy(OrganizationScopedSlugObserver::class)]
 class Client extends Model
 {
-    use BroadcastsChanges, HasFactory, LogsActivity, SoftDeletes;
+    use BroadcastsChanges, HasAddresses, HasFactory, LogsActivity, SoftDeletes;
 
     protected $guarded = [];
 
@@ -81,6 +82,8 @@ class Client extends Model
     public function saveWithBillingCycle(array $attributes): void
     {
         $hadCycle = $this->billing_cycle !== null;
+        $previousContactId = $this->getOriginal('billing_contact_id');
+        $previousCcEmails = $this->getOriginal('billing_cc_emails') ?? [];
 
         $this->fill($attributes);
 
@@ -89,6 +92,8 @@ class Client extends Model
         }
 
         $this->save();
+
+        $this->passRecipientsToDrafts($previousContactId, $previousCcEmails);
 
         if ($hadCycle && $this->billing_cycle === null) {
             app(StopBillingCycle::class)->handle($this);
@@ -99,6 +104,29 @@ class Client extends Model
 
             app(OpenBillingPeriod::class)->handle($this, CarbonImmutable::parse(CarbonImmutable::now($timezone)->toDateString(), $timezone));
         }
+    }
+
+    /** @param  array<int, string>  $previousCcEmails */
+    private function passRecipientsToDrafts(?int $previousContactId, array $previousCcEmails): void
+    {
+        if (! $this->wasChanged(['billing_contact_id', 'billing_cc_emails'])) {
+            return;
+        }
+
+        $this->invoices()
+            ->whereNull('sent_at')
+            ->where('status', '!=', InvoiceStatus::Void)
+            ->get()
+            ->each(function (Invoice $invoice) use ($previousContactId, $previousCcEmails): void {
+                $invoice->fill(array_filter([
+                    'contact_id' => $this->wasChanged('billing_contact_id') && in_array($invoice->contact_id, [null, $previousContactId], true)
+                        ? $this->billing_contact_id
+                        : null,
+                    'cc_emails' => $this->wasChanged('billing_cc_emails') && in_array($invoice->cc_emails ?? [], [[], $previousCcEmails], true)
+                        ? $this->billing_cc_emails
+                        : null,
+                ], fn (mixed $value): bool => $value !== null))->save();
+            });
     }
 
     public function deleteKeepingRecords(): void

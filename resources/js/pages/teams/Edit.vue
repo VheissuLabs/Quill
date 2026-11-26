@@ -39,6 +39,7 @@ import type {
     TeamMember,
     TeamMergeTarget,
 } from '@/types';
+import EmailLink from '@/components/EmailLink.vue';
 
 type Props = {
     currentOrganization: Organization;
@@ -203,7 +204,7 @@ const confirmRemoveMember = (member: TeamMember) => {
                             <div>
                                 <div class="font-medium">{{ member.name }}</div>
                                 <div class="text-muted-foreground text-sm">
-                                    {{ member.email }}
+                                    <EmailLink :email="member.email" />
                                 </div>
                             </div>
                         </div>

@@ -22,8 +22,9 @@ class PublicInvoiceResource extends JsonResource
             'statusLabel' => $this->status->label(),
             'organizationName' => $this->organization->name,
             'organizationLogoUrl' => $this->organization->logoUrl(),
-            'fromAddress' => $this->organization->billingSettings()->from_address,
+            'fromAddress' => $this->organization->billingAddress()?->lines() ?? [],
             'clientName' => $this->client->name,
+            'clientAddress' => $this->client->billingAddress()?->lines() ?? [],
             'contactName' => $this->contact?->name,
             'contactEmail' => $this->contact?->email,
             'issueDate' => $this->issue_date->toDateString(),
@@ -31,6 +32,7 @@ class PublicInvoiceResource extends JsonResource
             'servicePeriodStart' => $this->service_period_start?->toDateString(),
             'servicePeriodEnd' => $this->service_period_end?->toDateString(),
             'lines' => $this->lines->map(fn (InvoiceLine $line) => [
+                'completedAt' => $line->completed_at?->toDateString(),
                 'description' => $line->description,
                 'issueReference' => $line->issue?->reference(),
                 'referenceUrl' => $line->reference_url,

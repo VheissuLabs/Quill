@@ -21,7 +21,7 @@ function clientWorkSetup(array $client = []): array
     return [$user, Client::factory()->for($organization)->create(['billing_rate' => 120, ...$client])];
 }
 
-test('time for a client rolls onto their draft so its total shows what is expected', function () {
+test('time for a client rolls onto their draft, one line per item per day, so its total shows what is expected', function () {
     $this->travelTo('2026-11-25 12:00:00');
     [$user, $client] = clientWorkSetup(['name' => 'RTF']);
     $meetings = WorkType::factory()->for($client->organization)->create(['name' => 'Meetings']);
@@ -34,15 +34,27 @@ test('time for a client rolls onto their draft so its total shows what is expect
 
     $invoice = $client->invoices()->sole();
 
-    expect($invoice->lines->map->only(['description', 'quantity', 'reference_url', 'work_type_id'])->all())->toBe([
-        ['description' => 'Onboarding', 'quantity' => '4.00', 'reference_url' => 'https://rtf.atlassian.net/browse/RTF-12', 'work_type_id' => null],
-        ['description' => 'Daily Stand Up', 'quantity' => '0.50', 'reference_url' => null, 'work_type_id' => $meetings->id],
+    expect($invoice->lines->map(fn ($line) => [$line->completed_at->toDateString(), $line->description, $line->quantity, $line->reference_url, $line->work_type_id])->all())->toBe([
+        ['2026-11-24', 'Onboarding', '4.00', 'https://rtf.atlassian.net/browse/RTF-12', null],
+        ['2026-11-24', 'Daily Stand Up', '0.25', null, $meetings->id],
+        ['2026-11-25', 'Daily Stand Up', '0.25', null, $meetings->id],
     ])
         ->and($invoice->total)->toBe('540.00')
         ->and($invoice->service_period_start->toDateString())->toBe('2026-11-24')
         ->and($invoice->service_period_end->toDateString())->toBe('2026-11-25')
-        ->and(TimeEntry::query()->orderBy('id')->pluck('worked_on')->map->toDateString()->all())->toBe(['2026-11-24', '2026-11-24', '2026-11-25'])
+        ->and(TimeEntry::query()->orderBy('id')->pluck('completed_at')->map->toDateString()->all())->toBe(['2026-11-24', '2026-11-24', '2026-11-25'])
         ->and(TimeEntry::query()->whereNull('invoice_line_id')->exists())->toBeFalse();
+});
+
+test('more time on the same item and day adds to that day\'s line', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$user, $client] = clientWorkSetup();
+
+    QuillServer::actingAs($user)->tool(TrackTimeTool::class, ['client' => $client->slug, 'description' => 'Onboarding', 'hours' => 2, 'date' => '2026-11-24']);
+    QuillServer::actingAs($user)->tool(TrackTimeTool::class, ['client' => $client->slug, 'description' => 'Onboarding', 'hours' => 1.5, 'date' => '2026-11-24'])->assertOk();
+
+    expect($client->invoices()->sole()->lines()->sole())->quantity->toBe('3.50')
+        ->and(TimeEntry::query()->count())->toBe(2);
 });
 
 test('entries for the same ticket add to one line even when described differently', function () {

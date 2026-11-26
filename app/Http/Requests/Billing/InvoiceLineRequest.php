@@ -47,6 +47,7 @@ class InvoiceLineRequest extends FormRequest
             'work_type_id' => ['sometimes', 'nullable', 'integer', Rule::exists('work_types', 'id')->where('organization_id', $organization->id)],
             'issue_id' => ['sometimes', 'nullable', 'integer', Rule::exists('issues', 'id')->whereIn('project_id', $projectIds)],
             'reference_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
+            'completed_at' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
         ];
 
         if (! $creating && ! $invoice->isEditable()) {

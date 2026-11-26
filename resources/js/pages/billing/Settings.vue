@@ -2,6 +2,7 @@
 import { Form, Head } from '@inertiajs/vue3';
 import { Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
+import AddressList from '@/components/AddressList.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -17,13 +18,23 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { edit as editSettings } from '@/routes/organizations';
+import {
+    destroy as destroyAddress,
+    store as storeAddress,
+    update as updateAddress,
+} from '@/routes/organizations/addresses';
 import { edit, update } from '@/routes/organizations/billing';
 import {
     destroy as destroyWorkType,
     store as storeWorkType,
     update as updateWorkType,
 } from '@/routes/organizations/work-types';
-import type { Organization } from '@/types';
+import type {
+    Address,
+    AddressTypeOption,
+    Organization,
+    OrganizationPermissions,
+} from '@/types';
 
 type WorkType = {
     id: number;
@@ -39,7 +50,6 @@ type Props = {
         default_rate: string | null;
         payment_terms_days: number;
         tax_rate: string | null;
-        from_address: string | null;
     };
     square: {
         environment: 'sandbox' | 'production';
@@ -51,6 +61,9 @@ type Props = {
     paymentInstructions: string | null;
     workTypes: WorkType[];
     colors: string[];
+    addresses: Address[];
+    addressTypes: AddressTypeOption[];
+    permissions: OrganizationPermissions;
 };
 
 const props = defineProps<Props>();
@@ -152,17 +165,6 @@ const confirmDelete = (workType: WorkType) => {
                         :default-value="settings.tax_rate ?? ''"
                     />
                     <InputError :message="errors.tax_rate" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="from_address">From address</Label>
-                    <Textarea
-                        id="from_address"
-                        name="from_address"
-                        rows="3"
-                        :default-value="settings.from_address ?? ''"
-                    />
-                    <InputError :message="errors.from_address" />
                 </div>
 
                 <div class="space-y-6 border-t pt-6">
@@ -287,6 +289,26 @@ const confirmDelete = (workType: WorkType) => {
                     Save
                 </Button>
             </Form>
+        </div>
+
+        <div class="max-w-xl space-y-6">
+            <Heading
+                variant="small"
+                title="Addresses"
+                description="Your Billing address prints at the top of every invoice"
+            />
+            <AddressList
+                :addresses="addresses"
+                :types="addressTypes"
+                :can-manage="permissions.canUpdateOrganization"
+                :store="storeAddress.form(currentOrganization.slug)"
+                :update="
+                    (id) => updateAddress.form([currentOrganization.slug, id])
+                "
+                :destroy="
+                    (id) => destroyAddress([currentOrganization.slug, id])
+                "
+            />
         </div>
 
         <div class="max-w-xl space-y-6">

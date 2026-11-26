@@ -2,11 +2,19 @@
 import { Form, Head, useForm } from '@inertiajs/vue3';
 import { X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AddressList from '@/components/AddressList.vue';
 import DatePicker from '@/components/DatePicker.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
-import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -18,11 +26,17 @@ import {
 } from '@/components/ui/select';
 import { destroy, edit, index, show, update } from '@/routes/clients';
 import {
+    destroy as destroyAddress,
+    store as storeAddress,
+    update as updateAddress,
+} from '@/routes/clients/addresses';
+import {
     destroy as destroyDomain,
     store as storeDomain,
 } from '@/routes/clients/domains';
 import { mutate } from '@/lib/optimistic';
 import type {
+    AddressTypeOption,
     Client,
     ClientBilling,
     Organization,
@@ -34,6 +48,7 @@ type Props = {
     client: Client;
     billing: ClientBilling | null;
     permissions: OrganizationPermissions;
+    addressTypes: AddressTypeOption[];
 };
 
 const props = defineProps<Props>();
@@ -77,6 +92,11 @@ const form = useForm({
 });
 
 const cyclesEnabled = computed(() => props.billing?.cycles !== undefined);
+const showsCycle = computed(
+    () =>
+        props.billing?.cycles !== undefined &&
+        form.billed_through_client_id === none,
+);
 const hasCycle = computed(() => form.billing_cycle !== none);
 const needsStart = computed(
     () => hasCycle.value && form.billing_cycle !== 'monthly',
@@ -141,29 +161,48 @@ const submit = () => {
 <template>
     <Head :title="client.name" />
 
-    <div class="flex flex-col gap-10 p-6">
-        <div class="max-w-xl space-y-6">
-            <Heading variant="small" title="Client settings" />
+    <div class="flex max-w-3xl flex-col gap-6 p-6">
+        <form
+            v-if="permissions.canManageClients"
+            class="flex flex-col gap-6"
+            data-test="client-settings-form"
+            @submit.prevent="submit"
+        >
+            <Card>
+                <CardHeader>
+                    <CardTitle>Client</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div class="grid gap-2">
+                        <Label for="name">Name</Label>
+                        <Input
+                            id="name"
+                            v-model="form.name"
+                            data-test="client-name-input"
+                            required
+                        />
+                        <InputError :message="form.errors.name" />
+                    </div>
+                </CardContent>
+                <CardFooter v-if="!billing" class="justify-end">
+                    <Button
+                        type="submit"
+                        data-test="client-save-button"
+                        :disabled="form.processing"
+                    >
+                        Save
+                    </Button>
+                </CardFooter>
+            </Card>
 
-            <form
-                v-if="permissions.canManageClients"
-                class="space-y-6"
-                @submit.prevent="submit"
-            >
-                <div class="grid gap-2">
-                    <Label for="name">Client name</Label>
-                    <Input
-                        id="name"
-                        v-model="form.name"
-                        data-test="client-name-input"
-                        required
-                    />
-                    <InputError :message="form.errors.name" />
-                </div>
-
-                <template v-if="billing">
-                    <Heading variant="small" title="Billing" />
-
+            <Card v-if="billing">
+                <CardHeader>
+                    <CardTitle>Billing</CardTitle>
+                    <CardDescription>
+                        How and when this client is invoiced
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="grid gap-x-4 gap-y-5 sm:grid-cols-2">
                     <div class="grid gap-2">
                         <Label for="billing-rate">Hourly rate</Label>
                         <Input
@@ -172,9 +211,24 @@ const submit = () => {
                             type="number"
                             min="0"
                             step="0.01"
+                            placeholder="Organization default"
                             data-test="client-billing-rate-input"
                         />
                         <InputError :message="form.errors.billing_rate" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="payment-terms">Payment terms (days)</Label>
+                        <Input
+                            id="payment-terms"
+                            v-model="form.payment_terms_days"
+                            type="number"
+                            min="0"
+                            max="365"
+                            placeholder="Organization default"
+                            data-test="client-payment-terms-input"
+                        />
+                        <InputError :message="form.errors.payment_terms_days" />
                     </div>
 
                     <div class="grid gap-2">
@@ -225,13 +279,7 @@ const submit = () => {
                         />
                     </div>
 
-                    <div
-                        v-if="
-                            billing.cycles &&
-                            form.billed_through_client_id === none
-                        "
-                        class="grid gap-2"
-                    >
+                    <div v-if="showsCycle" class="grid gap-2">
                         <Label for="billing-cycle">Billing cycle</Label>
                         <Select
                             v-model="form.billing_cycle"
@@ -241,7 +289,9 @@ const submit = () => {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem :value="none">None</SelectItem>
+                                <SelectItem :value="none">
+                                    None, invoice manually
+                                </SelectItem>
                                 <SelectItem
                                     v-for="cycle in billing.cycles"
                                     :key="cycle.value"
@@ -252,27 +302,11 @@ const submit = () => {
                             </SelectContent>
                         </Select>
                         <InputError :message="form.errors.billing_cycle" />
-                        <p
-                            v-if="hasCycle && billing.currentPeriod"
-                            class="text-muted-foreground text-sm"
-                            data-test="client-current-period"
-                        >
-                            Current period:
-                            {{ formatDay(billing.currentPeriod.start) }} –
-                            {{ formatDay(billing.currentPeriod.end) }}
-                        </p>
                     </div>
 
-                    <div
-                        v-if="
-                            billing.cycles &&
-                            form.billed_through_client_id === none &&
-                            needsStart
-                        "
-                        class="grid gap-2"
-                    >
+                    <div v-if="showsCycle && needsStart" class="grid gap-2">
                         <Label for="billing-cycle-starts-on">
-                            Period starts on
+                            Cycle starts on
                         </Label>
                         <DatePicker
                             id="billing-cycle-starts-on"
@@ -284,119 +318,170 @@ const submit = () => {
                         />
                     </div>
 
-                    <div class="grid gap-2">
-                        <Label for="billing-cc">CC</Label>
+                    <p
+                        v-if="showsCycle && hasCycle && billing.currentPeriod"
+                        class="text-muted-foreground text-sm sm:col-span-2"
+                        data-test="client-current-period"
+                    >
+                        Current period:
+                        {{ formatDay(billing.currentPeriod.start) }} –
+                        {{ formatDay(billing.currentPeriod.end) }}
+                    </p>
+
+                    <div class="grid gap-2 sm:col-span-2">
+                        <Label for="billing-cc">CC on invoices</Label>
                         <Input
                             id="billing-cc"
                             v-model="form.billing_cc_emails"
+                            placeholder="ap@acme.com, finance@acme.com"
                             data-test="client-billing-cc-input"
                         />
                         <InputError :message="form.errors.billing_cc_emails" />
                     </div>
-
-                    <div class="grid gap-2">
-                        <Label for="payment-terms">Payment terms (days)</Label>
-                        <Input
-                            id="payment-terms"
-                            v-model="form.payment_terms_days"
-                            type="number"
-                            min="0"
-                            max="365"
-                            data-test="client-payment-terms-input"
-                        />
-                        <InputError :message="form.errors.payment_terms_days" />
-                    </div>
-                </template>
-
-                <Button
-                    type="submit"
-                    data-test="client-save-button"
-                    :disabled="form.processing"
-                >
-                    Save
-                </Button>
-            </form>
-            <p v-else class="font-medium">{{ client.name }}</p>
-        </div>
-
-        <div class="max-w-xl space-y-6">
-            <Heading
-                variant="small"
-                title="Support domains"
-                description="Mail to support from these domains is filed under this client"
-            />
-            <ul v-if="client.domains?.length" class="flex flex-wrap gap-2">
-                <li
-                    v-for="domain in client.domains"
-                    :key="domain.id"
-                    class="inline-flex items-center gap-1 rounded-md border py-1 pr-1 pl-2.5 text-sm"
-                    data-test="client-domain"
-                >
-                    {{ domain.domain }}
+                </CardContent>
+                <CardFooter class="justify-end">
                     <Button
-                        v-if="permissions.canManageClients"
-                        variant="ghost"
-                        size="icon-sm"
-                        :aria-label="`Remove ${domain.domain}`"
-                        @click="
-                            mutate(
-                                destroyDomain([
-                                    currentOrganization.slug,
-                                    client.slug,
-                                    domain.id,
-                                ]),
-                                {
-                                    errorMessage:
-                                        'The domain could not be removed.',
-                                },
-                            )
-                        "
+                        type="submit"
+                        data-test="client-save-button"
+                        :disabled="form.processing"
                     >
-                        <X />
+                        Save
                     </Button>
-                </li>
-            </ul>
-            <p v-else class="text-muted-foreground text-sm">
-                No domains yet. Mail from this client waits unassigned.
-            </p>
-            <Form
-                v-if="permissions.canManageClients"
-                v-bind="
-                    storeDomain.form([currentOrganization.slug, client.slug])
-                "
-                class="flex items-start gap-2"
-                reset-on-success
-                v-slot="{ errors, processing }"
-            >
-                <div class="grid flex-1 gap-2">
-                    <Input
-                        name="domain"
-                        placeholder="acme.com"
-                        aria-label="Domain"
-                        data-test="client-domain-input"
-                    />
-                    <InputError :message="errors.domain" />
-                </div>
-                <Button
-                    type="submit"
-                    variant="secondary"
-                    data-test="client-domain-add"
-                    :disabled="processing"
-                >
-                    Add domain
-                </Button>
-            </Form>
-        </div>
+                </CardFooter>
+            </Card>
+        </form>
+        <Card v-else>
+            <CardHeader>
+                <CardTitle>{{ client.name }}</CardTitle>
+            </CardHeader>
+        </Card>
 
-        <div v-if="permissions.canManageClients" class="max-w-xl space-y-6">
-            <Heading
-                variant="small"
-                title="Delete client"
-                description="The client is hidden. Its invoices are kept for your records and its projects are detached."
-            />
-            <div
-                class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
-            >
+        <Card>
+            <CardHeader>
+                <CardTitle>Addresses</CardTitle>
+                <CardDescription>
+                    The Billing address prints under "Billed to" on invoices
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <AddressList
+                    :addresses="client.addresses ?? []"
+                    :types="addressTypes"
+                    :can-manage="permissions.canManageClients"
+                    :store="
+                        storeAddress.form([
+                            currentOrganization.slug,
+                            client.slug,
+                        ])
+                    "
+                    :update="
+                        (id) =>
+                            updateAddress.form([
+                                currentOrganization.slug,
+                                client.slug,
+                                id,
+                            ])
+                    "
+                    :destroy="
+                        (id) =>
+                            destroyAddress([
+                                currentOrganization.slug,
+                                client.slug,
+                                id,
+                            ])
+                    "
+                />
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Support domains</CardTitle>
+                <CardDescription>
+                    Mail to support from these domains is filed under this
+                    client
+                </CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-4">
+                <ul v-if="client.domains?.length" class="flex flex-wrap gap-2">
+                    <li
+                        v-for="domain in client.domains"
+                        :key="domain.id"
+                        class="inline-flex items-center gap-1 rounded-md border py-1 pr-1 pl-2.5 text-sm"
+                        data-test="client-domain"
+                    >
+                        {{ domain.domain }}
+                        <Button
+                            v-if="permissions.canManageClients"
+                            variant="ghost"
+                            size="icon-sm"
+                            :aria-label="`Remove ${domain.domain}`"
+                            @click="
+                                mutate(
+                                    destroyDomain([
+                                        currentOrganization.slug,
+                                        client.slug,
+                                        domain.id,
+                                    ]),
+                                    {
+                                        errorMessage:
+                                            'The domain could not be removed.',
+                                    },
+                                )
+                            "
+                        >
+                            <X />
+                        </Button>
+                    </li>
+                </ul>
+                <p v-else class="text-muted-foreground text-sm">
+                    No domains yet. Mail from this client waits unassigned.
+                </p>
+                <Form
+                    v-if="permissions.canManageClients"
+                    v-bind="
+                        storeDomain.form([
+                            currentOrganization.slug,
+                            client.slug,
+                        ])
+                    "
+                    class="flex items-start gap-2"
+                    reset-on-success
+                    v-slot="{ errors, processing }"
+                >
+                    <div class="grid flex-1 gap-2">
+                        <Input
+                            name="domain"
+                            placeholder="acme.com"
+                            aria-label="Domain"
+                            data-test="client-domain-input"
+                        />
+                        <InputError :message="errors.domain" />
+                    </div>
+                    <Button
+                        type="submit"
+                        variant="secondary"
+                        data-test="client-domain-add"
+                        :disabled="processing"
+                    >
+                        Add domain
+                    </Button>
+                </Form>
+            </CardContent>
+        </Card>
+
+        <Card
+            v-if="permissions.canManageClients"
+            class="border-red-200 dark:border-red-900/50"
+        >
+            <CardHeader>
+                <CardTitle>Delete client</CardTitle>
+                <CardDescription>
+                    The client is hidden. Its invoices are kept for your records
+                    and its projects are detached.
+                </CardDescription>
+            </CardHeader>
+            <CardFooter>
                 <Button
                     data-test="delete-client-button"
                     variant="destructive"
@@ -404,8 +489,8 @@ const submit = () => {
                 >
                     Delete client
                 </Button>
-            </div>
-        </div>
+            </CardFooter>
+        </Card>
     </div>
 
     <ConfirmDeleteModal

@@ -23,8 +23,11 @@ class ClientResource extends JsonResource
             'contacts' => $this->whenLoaded('contacts', fn () => $this->contacts->map(fn (ClientContact $contact) => [
                 'id' => $contact->id,
                 'name' => $contact->name,
+                'title' => $contact->title,
                 'email' => $contact->email,
+                'phone' => $contact->phone,
             ])->all()),
+            'addresses' => $this->whenLoaded('addresses', fn () => AddressResource::collection($this->addresses)->resolve()),
             'domains' => $this->whenLoaded('domains', fn () => $this->domains->map(fn (ClientDomain $domain) => [
                 'id' => $domain->id,
                 'domain' => $domain->domain,

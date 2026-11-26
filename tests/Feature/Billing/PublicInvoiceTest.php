@@ -69,3 +69,15 @@ test('the public page asks search engines not to index it', function () {
         ->assertOk()
         ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
 });
+
+test('the invoice prints the organization billing address as from and the client billing address as bill to', function () {
+    $invoice = Invoice::factory()->sent()->create();
+    $invoice->organization->addresses()->create(['type' => 'office', 'line1' => '9 Office Rd', 'city' => 'Austin']);
+    $invoice->organization->addresses()->create(['type' => 'billing', 'line1' => '1 Main St', 'line2' => 'Suite 5', 'city' => 'Austin', 'region' => 'TX', 'postal_code' => '78701', 'country' => 'United States']);
+    $invoice->client->addresses()->create(['type' => 'mailing', 'line1' => '2 Side St', 'city' => 'Tel Aviv', 'country' => 'Israel']);
+
+    $this->get($invoice->publicUrl())
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('invoice.fromAddress', ['1 Main St', 'Suite 5', 'Austin, TX 78701', 'United States'])
+            ->where('invoice.clientAddress', ['2 Side St', 'Tel Aviv', 'Israel']));
+});

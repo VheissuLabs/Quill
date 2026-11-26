@@ -33,10 +33,15 @@ class Ticket extends Model
 
     protected $guarded = [];
 
+    public static function inboundAddress(): string
+    {
+        return (string) (config('services.resend.support_inbound_address') ?: config('services.resend.support_address'));
+    }
+
     public static function addressedBy(string $address): ?int
     {
-        $local = Str::before(config('services.resend.support_address'), '@');
-        $domain = Str::after(config('services.resend.support_address'), '@');
+        $local = Str::before(self::inboundAddress(), '@');
+        $domain = Str::after(self::inboundAddress(), '@');
 
         return preg_match('/^'.preg_quote($local, '/').'\+t(\d+)@'.preg_quote($domain, '/').'$/i', trim($address), $matches)
             ? (int) $matches[1]
@@ -106,9 +111,9 @@ class Ticket extends Model
 
     public function replyAddress(): string
     {
-        return Str::before(config('services.resend.support_address'), '@')
+        return Str::before(self::inboundAddress(), '@')
             .'+t'.$this->getKey()
-            .'@'.Str::after(config('services.resend.support_address'), '@');
+            .'@'.Str::after(self::inboundAddress(), '@');
     }
 
     public function latestInboundMessage(): ?EmailMessage

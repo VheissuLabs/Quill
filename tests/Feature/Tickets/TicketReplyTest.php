@@ -51,6 +51,24 @@ test('a reply is emailed to the requester in their existing thread', function ()
         ->and($ticket->fresh()->status)->toBe(TicketStatus::AwaitingCustomer);
 });
 
+test('with an inbound address set, replies come from the support address and are answered at the inbound one', function () {
+    [$organization, $agent] = replyingAgent();
+    config(['services.resend.support_inbound_address' => 'support@in.vheissulabs.com']);
+    $ticket = Ticket::factory()->for($organization)->create(['requester_email' => 'jane@acme.test']);
+
+    $this->actingAs($agent)
+        ->post(route('tickets.replies.store', ['current_organization' => $organization, 'ticket' => $ticket]), [
+            'body' => '<p>Fixed, try again.</p>',
+        ])
+        ->assertRedirect();
+
+    $sent = collect(app('mailer')->getSymfonyTransport()->messages())->sole()->getOriginalMessage();
+
+    expect($sent)->toBeInstanceOf(Email::class)
+        ->and($sent->getFrom()[0]->getAddress())->toBe('support@vheissulabs.com')
+        ->and($sent->getReplyTo()[0]->getAddress())->toBe("support+t{$ticket->id}@in.vheissulabs.com");
+});
+
 test('an internal note is never emailed', function () {
     Notification::fake();
     [$organization, $agent] = replyingAgent();

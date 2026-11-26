@@ -22,6 +22,7 @@ return [
         'key' => env('RESEND_API_KEY'),
         'webhook_secret' => env('RESEND_WEBHOOK_SECRET'),
         'support_address' => env('SUPPORT_EMAIL_ADDRESS', 'support@vheissulabs.com'),
+        'support_inbound_address' => env('SUPPORT_INBOUND_ADDRESS'),
         'support_name' => env('SUPPORT_EMAIL_NAME', 'Vheissu Labs Support'),
         'support_organization' => env('SUPPORT_ORGANIZATION', 'vheissulabs'),
     ],

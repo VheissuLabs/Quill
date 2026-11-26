@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Show a client with its contacts, email domains and projects. For people who manage invoices it also includes billing (rate, billing contact, billing cycle, payment terms) and the 10 most recent invoices.')]
+#[Description('Show a client with its contacts, addresses, email domains and projects. For people who manage invoices it also includes billing (rate, billing contact, billing cycle, payment terms) and the 10 most recent invoices.')]
 class ShowClientTool extends QuillTool
 {
     public function handle(Request $request): Response
@@ -31,6 +31,7 @@ class ShowClientTool extends QuillTool
                 'client' => ClientResource::make($client->load([
                     'contacts' => fn ($query) => $query->orderBy('name'),
                     'domains' => fn ($query) => $query->orderBy('domain'),
+                    'addresses',
                 ]))->resolve(),
                 'projects' => ProjectResource::collection($client->projects()->visibleTo($user)->orderBy('name')->get())->resolve(),
                 'billing' => $managesBilling ? ClientBillingResource::make($client)->resolve() : null,

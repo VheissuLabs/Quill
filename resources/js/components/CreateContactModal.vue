@@ -66,6 +66,27 @@ function handleOpenChange(value: boolean) {
                         <InputError :message="errors.name" />
                     </div>
                     <div class="grid gap-2">
+                        <Label for="contact-title">Title</Label>
+                        <Input
+                            id="contact-title"
+                            name="title"
+                            placeholder="CTO"
+                            data-test="client-contact-title"
+                        />
+                        <InputError :message="errors.title" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="contact-phone">Phone</Label>
+                        <Input
+                            id="contact-phone"
+                            name="phone"
+                            type="tel"
+                            placeholder="+1 555 123 4567"
+                            data-test="client-contact-phone"
+                        />
+                        <InputError :message="errors.phone" />
+                    </div>
+                    <div class="grid gap-2">
                         <Label for="contact-email">Email</Label>
                         <Input
                             id="contact-email"

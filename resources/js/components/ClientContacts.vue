@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { Form } from '@inertiajs/vue3';
-import { Pencil, X } from '@lucide/vue';
-import { ref } from 'vue';
-import InputError from '@/components/InputError.vue';
+import { Link } from '@inertiajs/vue3';
+import { X } from '@lucide/vue';
+import EmailLink from '@/components/EmailLink.vue';
+import PhoneLink from '@/components/PhoneLink.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { mutate } from '@/lib/optimistic';
-import { destroy, update } from '@/routes/clients/contacts';
+import { destroy, show } from '@/routes/clients/contacts';
 
-type Contact = { id: number; name: string | null; email: string };
+type Contact = {
+    id: number;
+    name: string | null;
+    title: string | null;
+    email: string;
+    phone: string | null;
+};
 
 defineProps<{
     organization: string;
@@ -16,8 +21,6 @@ defineProps<{
     contacts: Contact[];
     canManage: boolean;
 }>();
-
-const editing = ref<number | null>(null);
 </script>
 
 <template>
@@ -26,88 +29,39 @@ const editing = ref<number | null>(null);
             <li
                 v-for="contact in contacts"
                 :key="contact.id"
-                class="px-4 py-3"
+                class="flex items-center justify-between gap-3 px-4 py-3 text-sm"
                 data-test="client-contact"
             >
-                <Form
-                    v-if="editing === contact.id"
-                    v-bind="update.form([organization, client, contact.id])"
-                    class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
-                    v-slot="{ errors, processing }"
-                    @success="editing = null"
-                >
-                    <div class="grid gap-1">
-                        <Input
-                            name="name"
-                            :default-value="contact.name ?? ''"
-                            aria-label="Name"
-                            required
-                        />
-                        <InputError :message="errors.name" />
-                    </div>
-                    <div class="grid gap-1">
-                        <Input
-                            name="email"
-                            type="email"
-                            :default-value="contact.email"
-                            aria-label="Email"
-                            required
-                        />
-                        <InputError :message="errors.email" />
-                    </div>
-                    <div class="flex gap-1">
-                        <Button type="submit" size="sm" :disabled="processing">
-                            Save
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            @click="editing = null"
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </Form>
-                <div
-                    v-else
-                    class="flex items-center justify-between gap-3 text-sm"
-                >
-                    <span class="min-w-0 truncate">
-                        <span class="font-medium">
-                            {{ contact.name ?? contact.email }}
-                        </span>
-                        <span class="text-muted-foreground">
-                            · {{ contact.email }}
-                        </span>
+                <span class="min-w-0 truncate">
+                    <Link
+                        :href="show([organization, client, contact.id])"
+                        class="font-medium underline-offset-2 hover:underline"
+                    >
+                        {{ contact.name ?? contact.email }}
+                    </Link>
+                    <span v-if="contact.title" class="text-muted-foreground">
+                        · {{ contact.title }}
                     </span>
-                    <span v-if="canManage" class="flex shrink-0 gap-1">
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            :aria-label="`Edit ${contact.name ?? contact.email}`"
-                            @click="editing = contact.id"
-                        >
-                            <Pencil />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            :aria-label="`Remove ${contact.name ?? contact.email}`"
-                            @click="
-                                mutate(
-                                    destroy([organization, client, contact.id]),
-                                    {
-                                        errorMessage:
-                                            'The contact could not be removed.',
-                                    },
-                                )
-                            "
-                        >
-                            <X />
-                        </Button>
+                    <span class="text-muted-foreground">
+                        · <EmailLink :email="contact.email" />
                     </span>
-                </div>
+                    <span v-if="contact.phone" class="text-muted-foreground">
+                        · <PhoneLink :phone="contact.phone" />
+                    </span>
+                </span>
+                <Button
+                    v-if="canManage"
+                    variant="ghost"
+                    size="icon-sm"
+                    :aria-label="`Remove ${contact.name ?? contact.email}`"
+                    @click="
+                        mutate(destroy([organization, client, contact.id]), {
+                            errorMessage: 'The contact could not be removed.',
+                        })
+                    "
+                >
+                    <X />
+                </Button>
             </li>
         </ul>
         <p v-else class="text-muted-foreground text-sm">

@@ -1,11 +1,15 @@
 <?php
 
+use App\Http\Controllers\Addresses\ClientAddressController;
+use App\Http\Controllers\Addresses\ClientContactAddressController;
+use App\Http\Controllers\Addresses\OrganizationAddressController;
 use App\Http\Controllers\Billing\BillingSettingController;
 use App\Http\Controllers\Billing\InvoiceController;
 use App\Http\Controllers\Billing\InvoiceDuplicateController;
 use App\Http\Controllers\Billing\InvoiceLineController;
 use App\Http\Controllers\Billing\InvoiceLineOrderController;
 use App\Http\Controllers\Billing\InvoicePaymentController;
+use App\Http\Controllers\Billing\InvoicePreviewController;
 use App\Http\Controllers\Billing\InvoiceSendController;
 use App\Http\Controllers\Billing\InvoiceVoidController;
 use App\Http\Controllers\Billing\PublicInvoiceController;
@@ -141,6 +145,7 @@ Route::prefix('{current_organization}')
             ->middlewareFor('show', 'can:view,invoice')
             ->middlewareFor('update', 'can:update,invoice')
             ->middlewareFor('destroy', 'can:delete,invoice');
+        Route::get('invoices/{invoice}/preview', InvoicePreviewController::class)->can('view', 'invoice')->name('invoices.preview');
         Route::post('invoices/{invoice}/send', [InvoiceSendController::class, 'store'])->can('send', 'invoice')->name('invoices.send.store');
         Route::post('invoices/{invoice}/void', [InvoiceVoidController::class, 'store'])->can('void', 'invoice')->name('invoices.void.store');
         Route::post('invoices/{invoice}/duplicate', [InvoiceDuplicateController::class, 'store'])->can('duplicate', 'invoice')->name('invoices.duplicate.store');
@@ -153,8 +158,15 @@ Route::prefix('{current_organization}')
         Route::get('client-contacts', [ClientContactController::class, 'index'])->can('create', [Ticket::class, 'current_organization'])->name('client-contacts.index');
         Route::post('clients/{client}/restore', RestoreClientController::class)->withTrashed()->can('restore', 'client')->name('clients.restore');
         Route::post('clients/{client}/contacts', [ClientContactController::class, 'store'])->can('update', 'client')->name('clients.contacts.store');
+        Route::get('clients/{client}/contacts/{contact}', [ClientContactController::class, 'show'])->can('view', 'client')->name('clients.contacts.show');
         Route::patch('clients/{client}/contacts/{contact}', [ClientContactController::class, 'update'])->can('update', 'client')->name('clients.contacts.update');
         Route::delete('clients/{client}/contacts/{contact}', [ClientContactController::class, 'destroy'])->can('update', 'client')->name('clients.contacts.destroy');
+        Route::post('clients/{client}/addresses', [ClientAddressController::class, 'store'])->can('update', 'client')->name('clients.addresses.store');
+        Route::patch('clients/{client}/addresses/{address}', [ClientAddressController::class, 'update'])->can('update', 'client')->name('clients.addresses.update');
+        Route::delete('clients/{client}/addresses/{address}', [ClientAddressController::class, 'destroy'])->can('update', 'client')->name('clients.addresses.destroy');
+        Route::post('clients/{client}/contacts/{contact}/addresses', [ClientContactAddressController::class, 'store'])->can('update', 'client')->name('clients.contacts.addresses.store');
+        Route::patch('clients/{client}/contacts/{contact}/addresses/{address}', [ClientContactAddressController::class, 'update'])->can('update', 'client')->name('clients.contacts.addresses.update');
+        Route::delete('clients/{client}/contacts/{contact}/addresses/{address}', [ClientContactAddressController::class, 'destroy'])->can('update', 'client')->name('clients.contacts.addresses.destroy');
         Route::post('clients/{client}/domains', [ClientDomainController::class, 'store'])->can('update', 'client')->name('clients.domains.store');
         Route::delete('clients/{client}/domains/{domain}', [ClientDomainController::class, 'destroy'])->can('update', 'client')->name('clients.domains.destroy');
         Route::resource('teams', TeamController::class)->except(['create', 'show'])
@@ -230,6 +242,12 @@ Route::prefix('{current_organization}/settings')
             Route::post('roles', [OrganizationRoleController::class, 'store'])->can('create', [Role::class, 'current_organization'])->name('roles.store');
             Route::patch('roles/{role}', [OrganizationRoleController::class, 'update'])->can('update', 'role')->name('roles.update');
             Route::delete('roles/{role}', [OrganizationRoleController::class, 'destroy'])->can('delete', 'role')->name('roles.destroy');
+        });
+
+        Route::post('addresses', [OrganizationAddressController::class, 'store'])->can('update', 'current_organization')->name('addresses.store');
+        Route::scopeBindings()->group(function () {
+            Route::patch('addresses/{address}', [OrganizationAddressController::class, 'update'])->can('update', 'current_organization')->name('addresses.update');
+            Route::delete('addresses/{address}', [OrganizationAddressController::class, 'destroy'])->can('update', 'current_organization')->name('addresses.destroy');
         });
 
         Route::get('billing', [BillingSettingController::class, 'edit'])->can('viewAny', [BillingSetting::class, 'current_organization'])->name('billing.edit');

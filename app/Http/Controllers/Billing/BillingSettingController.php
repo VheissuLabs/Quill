@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Billing;
 
+use App\Enums\AddressType;
 use App\Events\BillingChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Billing\BillingSettingRequest;
 use App\Http\Requests\Billing\WorkTypeRequest;
+use App\Http\Resources\AddressResource;
 use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -31,8 +33,9 @@ class BillingSettingController extends Controller
                 'default_rate',
                 'payment_terms_days',
                 'tax_rate',
-                'from_address',
             ]),
+            'addresses' => BillingChanged::live(AddressResource::collection($currentOrganization->addresses()->get())->resolve(), $currentOrganization->id),
+            'addressTypes' => AddressType::options(),
             'workTypes' => BillingChanged::live($currentOrganization->workTypes()
                 ->orderBy('sort_order')
                 ->orderBy('id')

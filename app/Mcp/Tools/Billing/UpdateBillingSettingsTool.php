@@ -28,7 +28,7 @@ class UpdateBillingSettingsTool extends QuillTool
 
             $settings->saveSettings($validated->validated());
 
-            return Response::json($settings->refresh()->only(['invoice_prefix', 'default_rate', 'payment_terms_days', 'tax_rate', 'from_address', 'payment_instructions', 'square_environment', 'square_location_id']));
+            return Response::json($settings->refresh()->only(['invoice_prefix', 'default_rate', 'payment_terms_days', 'tax_rate', 'payment_instructions', 'square_environment', 'square_location_id']));
         });
     }
 
@@ -40,7 +40,6 @@ class UpdateBillingSettingsTool extends QuillTool
             'default_rate' => $schema->number()->description('Hourly rate used when neither the project nor the client sets one.'),
             'payment_terms_days' => $schema->integer()->description('Days from issue until an invoice is due.'),
             'tax_rate' => $schema->number()->description('Default tax percentage for new invoices.'),
-            'from_address' => $schema->string()->description('Your address as printed on invoices.'),
             'payment_instructions' => $schema->string()->description('How clients should pay, shown on invoices.'),
             'square_environment' => $schema->string()->enum(['sandbox', 'production']),
             'square_access_token' => $schema->string()->description('Square access token. Leave out to keep the saved one.'),

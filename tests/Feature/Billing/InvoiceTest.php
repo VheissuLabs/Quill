@@ -40,6 +40,37 @@ test('a manager sees the workspace\'s invoices only', function () {
             ->where('invoices.0.clientSlug', $client->slug));
 });
 
+test('the index summary shows who pays next and what is due this month and next', function () {
+    $this->travelTo('2026-11-25 12:00:00');
+    [$organization, $admin, $client] = invoiceManager();
+    $invoice = fn (array $attributes) => Invoice::factory()->for($organization)->for($client)->create($attributes);
+    $invoice(['due_date' => '2026-11-10', 'total' => 100, 'amount_paid' => 100, 'status' => InvoiceStatus::Paid, 'sent_at' => now()]);
+    $invoice(['due_date' => '2026-11-12', 'total' => 999, 'amount_paid' => 0, 'status' => InvoiceStatus::Void, 'sent_at' => now()]);
+    $invoice(['due_date' => '2026-11-15', 'total' => 0, 'amount_paid' => 0, 'status' => InvoiceStatus::Draft]);
+    $overdue = $invoice(['due_date' => '2026-11-20', 'total' => 200, 'amount_paid' => 50, 'status' => InvoiceStatus::Overdue, 'sent_at' => now()]);
+    $invoice(['due_date' => '2026-12-20', 'total' => 440, 'amount_paid' => 0, 'status' => InvoiceStatus::Draft]);
+    Invoice::factory()->create(['due_date' => '2026-11-01', 'total' => 5000, 'status' => InvoiceStatus::Sent, 'sent_at' => now()]);
+
+    $this->actingAs($admin)
+        ->get(invoiceRoute('invoices.index', $organization))
+        ->assertInertia(fn ($page) => $page
+            ->where('summary.nextPayment.invoiceId', $overdue->id)
+            ->where('summary.nextPayment.amountDue', '150.00')
+            ->where('summary.nextPayment.clientName', $client->name)
+            ->where('summary.nextPayment.isOverdue', true)
+            ->where('summary.thisMonth', ['month' => '2026-11', 'total' => '300.00', 'collected' => '150.00', 'outstanding' => '150.00', 'invoices' => 3])
+            ->where('summary.nextMonth', ['month' => '2026-12', 'total' => '440.00', 'collected' => '0.00', 'outstanding' => '440.00', 'invoices' => 1]));
+});
+
+test('with nothing owed the summary has no next payment', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    Invoice::factory()->for($organization)->for($client)->create(['total' => 0]);
+
+    $this->actingAs($admin)
+        ->get(invoiceRoute('invoices.index', $organization))
+        ->assertInertia(fn ($page) => $page->where('summary.nextPayment', null));
+});
+
 test('the index filters by status and client', function () {
     [$organization, $admin, $client] = invoiceManager();
     $other = Client::factory()->for($organization)->create();
@@ -359,4 +390,39 @@ test('a new invoice takes the client\'s payment terms and CC', function () {
     expect($organization->invoices()->sole())
         ->due_date->toDateString()->toBe('2026-11-23')
         ->cc_emails->toBe(['ap@example.com']);
+});
+
+test('a manager previews a draft exactly as the client will see it', function () {
+    [$organization, $admin, $client] = invoiceManager();
+    $draft = Invoice::factory()->for($organization)->for($client)->create();
+
+    $this->get($draft->publicUrl())->assertNotFound();
+
+    $this->actingAs($admin)
+        ->get(invoiceRoute('invoices.preview', $organization, $draft))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('invoices/Public')
+            ->where('invoice.number', $draft->number)
+            ->where('previewBackUrl', invoiceRoute('invoices.show', $organization, $draft)));
+});
+
+test('invoices from another workspace cannot be previewed', function () {
+    [$organization, $admin] = invoiceManager();
+    $stranger = Invoice::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('invoices.preview', ['current_organization' => $organization, 'invoice' => $stranger]))
+        ->assertNotFound();
+});
+
+test('members without invoice access cannot preview invoices', function () {
+    [$organization, , $client] = invoiceManager();
+    $member = User::factory()->create();
+    $organization->addMember($member, 'Member');
+    $invoice = Invoice::factory()->for($organization)->for($client)->create();
+
+    $this->actingAs($member)
+        ->get(invoiceRoute('invoices.preview', $organization, $invoice))
+        ->assertForbidden();
 });

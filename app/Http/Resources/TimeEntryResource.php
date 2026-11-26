@@ -16,7 +16,7 @@ class TimeEntryResource extends JsonResource
             'id' => $this->id,
             'clientId' => $this->client_id,
             'clientName' => $this->whenLoaded('client', fn () => $this->client->name),
-            'workedOn' => $this->worked_on->toDateString(),
+            'completedAt' => $this->completed_at->toDateString(),
             'hours' => $this->hours,
             'description' => $this->description,
             'referenceUrl' => $this->reference_url,

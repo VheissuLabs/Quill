@@ -8,9 +8,12 @@ use App\Enums\InvoiceStatus;
 use App\Enums\SquareCheckoutStatus;
 use App\Events\InvoicesChanged;
 use App\Observers\InvoiceObserver;
+use Carbon\CarbonImmutable;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -89,7 +92,11 @@ class Invoice extends Model
     /** @return HasMany<InvoiceLine, $this> */
     public function lines(): HasMany
     {
-        return $this->hasMany(InvoiceLine::class)->orderBy('sort_order')->orderBy('id');
+        return $this->hasMany(InvoiceLine::class)
+            ->orderByRaw('completed_at is null')
+            ->orderBy('completed_at')
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     /** @return HasMany<SquareCheckout, $this> */
@@ -196,6 +203,22 @@ class Invoice extends Model
     public function publicUrl(): string
     {
         return route('invoices.public', $this->public_token);
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function owing(Builder $query): void
+    {
+        $query->whereNotIn('status', [InvoiceStatus::Paid, InvoiceStatus::Void])
+            ->whereColumn('total', '>', 'amount_paid');
+    }
+
+    /** @param  Builder<$this>  $query */
+    #[Scope]
+    protected function dueWithin(Builder $query, CarbonImmutable $start, CarbonImmutable $end): void
+    {
+        $query->where('status', '!=', InvoiceStatus::Void)
+            ->whereBetween('due_date', [$start->toDateString(), $end->toDateString()]);
     }
 
     public function getActivitylogOptions(): LogOptions

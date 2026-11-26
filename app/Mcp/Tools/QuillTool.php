@@ -2,6 +2,8 @@
 
 namespace App\Mcp\Tools;
 
+use App\Models\Client;
+use App\Models\ClientContact;
 use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Project;
@@ -72,6 +74,31 @@ abstract class QuillTool extends Tool
         return Issue::query()
             ->whereIn('project_id', $organization->projects()->select('projects.id'))
             ->findOrFail((int) $id);
+    }
+
+    protected function addressOwner(Request $request, Organization $organization): Organization|Client|ClientContact
+    {
+        $owner = match ((string) $request->get('owner')) {
+            'organization' => $organization,
+            'client' => $organization->clients()->identifiedBy((string) $request->get('client'))->firstOrFail(),
+            'contact' => $organization->clients()->identifiedBy((string) $request->get('client'))->firstOrFail()
+                ->contacts()->findOrFail((int) $request->get('contact_id')),
+            default => throw new DomainException(__('Owner must be organization, client or contact.')),
+        };
+
+        $this->authorize($request, 'update', $owner instanceof ClientContact ? $owner->client : $owner);
+
+        return $owner;
+    }
+
+    /** @return array<string, Type> */
+    protected function addressOwnerArguments(JsonSchema $schema): array
+    {
+        return [
+            'owner' => $schema->string()->enum(['organization', 'client', 'contact'])->description('Whose address: your organization (prints as From on invoices), a client (its Billing address prints as Bill to), or a client contact.')->required(),
+            'client' => $schema->string()->description('Client slug or id, for a client or contact owner.'),
+            'contact_id' => $schema->integer()->description('Contact id, for a contact owner; show-client lists them.'),
+        ];
     }
 
     protected function authorize(Request $request, string $ability, mixed $arguments): void

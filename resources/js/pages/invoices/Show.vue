@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { Copy, Link2, Send, Trash2, Ban } from '@lucide/vue';
+import { Copy, Eye, Link2, Send, Trash2, Ban } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import DatePicker from '@/components/DatePicker.vue';
 import ConfirmActionModal from '@/components/ConfirmActionModal.vue';
@@ -21,13 +21,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { show as showClient } from '@/routes/clients';
-import { destroy, index, show, update } from '@/routes/invoices';
+import { destroy, index, preview, show, update } from '@/routes/invoices';
 import { store as duplicate } from '@/routes/invoices/duplicate';
 import { store as send } from '@/routes/invoices/send';
 import { store as voidInvoice } from '@/routes/invoices/void';
 import { edit as editProject } from '@/routes/projects';
 import { formatDate } from '@/lib/dates';
 import type { Invoice, Organization } from '@/types';
+import EmailLink from '@/components/EmailLink.vue';
 
 type Props = {
     currentOrganization: Organization;
@@ -245,6 +246,18 @@ const money = (value: string) =>
                 class="flex flex-wrap items-center gap-2"
                 data-test="invoice-actions"
             >
+                <Button as-child variant="outline">
+                    <a
+                        :href="
+                            preview([currentOrganization.slug, invoice.id]).url
+                        "
+                        target="_blank"
+                        rel="noopener"
+                        data-test="invoice-preview-button"
+                    >
+                        <Eye /> Preview
+                    </a>
+                </Button>
                 <Button
                     v-if="invoice.sentAt"
                     variant="outline"
@@ -638,7 +651,8 @@ const money = (value: string) =>
                                             v-if="contact.name"
                                             class="text-muted-foreground"
                                         >
-                                            · {{ contact.email }}
+                                            ·
+                                            <EmailLink :email="contact.email" />
                                         </span>
                                     </dd>
                                     <dd

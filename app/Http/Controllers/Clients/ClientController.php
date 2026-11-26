@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Clients;
 
+use App\Enums\AddressType;
 use App\Enums\ProjectVisibility;
 use App\Events\ClientsChanged;
 use App\Events\InvoicesChanged;
@@ -59,7 +60,8 @@ class ClientController extends Controller
     public function edit(Organization $currentOrganization, Client $client): Response
     {
         return Inertia::render('clients/Edit', [
-            'client' => ClientResource::make($client->load('domains')),
+            'client' => ClientResource::make($client->load(['domains', 'addresses'])),
+            'addressTypes' => AddressType::options(),
             'billing' => $currentOrganization->allowsInvoiceManagementBy(auth()->user()) ? ClientBillingResource::make($client)->resolve() : null,
         ]);
     }

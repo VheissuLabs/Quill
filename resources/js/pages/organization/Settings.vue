@@ -68,6 +68,7 @@ import type {
     OrganizationPermissions,
     SidebarSectionKey,
 } from '@/types';
+import EmailLink from '@/components/EmailLink.vue';
 
 type Props = {
     organization: Organization;
@@ -965,7 +966,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                 class="text-muted-foreground truncate text-sm"
                                 :title="member.email"
                             >
-                                {{ member.email }}
+                                <EmailLink :email="member.email" />
                             </div>
                         </div>
                     </div>
@@ -1072,7 +1073,7 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                 class="truncate font-medium"
                                 :title="invitation.email"
                             >
-                                {{ invitation.email }}
+                                <EmailLink :email="invitation.email" />
                             </div>
                             <div class="text-muted-foreground truncate text-sm">
                                 {{ invitation.role }}

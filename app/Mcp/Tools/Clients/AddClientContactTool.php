@@ -10,7 +10,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Add a contact person to a client. Contacts can receive invoices and open support tickets; each email belongs to one contact in the organization.')]
+#[Description('Add a contact person to a client, with an optional job title. Contacts can receive invoices and open support tickets; each email belongs to one contact in the organization.')]
 class AddClientContactTool extends QuillTool
 {
     public function handle(Request $request): Response
@@ -21,7 +21,7 @@ class AddClientContactTool extends QuillTool
             $this->authorize($request, 'update', $client);
 
             $validated = $this->formRequest(ClientContactRequest::class, $request, ['current_organization' => $organization, 'client' => $client], 'POST',
-                collect($request->all())->only(['name', 'email'])->all());
+                collect($request->all())->only(['name', 'title', 'email', 'phone'])->all());
 
             $contact = $client->contacts()->create($validated->validated());
 
@@ -35,6 +35,8 @@ class AddClientContactTool extends QuillTool
             'organization' => $this->organizationArgument($schema),
             'client' => $schema->string()->description('Client slug or id.')->required(),
             'name' => $schema->string()->description('Contact name.')->required(),
+            'phone' => $schema->string()->description('Phone number.'),
+            'title' => $schema->string()->description('Job title, e.g. CTO.'),
             'email' => $schema->string()->format('email')->description('Contact email address.')->required(),
         ];
     }

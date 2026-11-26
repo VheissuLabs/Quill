@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BroadcastsChanges;
+use App\Concerns\HasAddresses;
 use App\Events\ClientsChanged;
 use App\Observers\ClientContactObserver;
 use Database\Factories\ClientContactFactory;
@@ -22,7 +23,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[UseFactory(ClientContactFactory::class)]
 class ClientContact extends Model
 {
-    use BroadcastsChanges, HasFactory, LogsActivity;
+    use BroadcastsChanges, HasAddresses, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -61,7 +62,7 @@ class ClientContact extends Model
     {
         return LogOptions::defaults()
             ->useLogName('clients')
-            ->logOnly(['client_id', 'name', 'email'])
+            ->logOnly(['client_id', 'name', 'title', 'email', 'phone'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

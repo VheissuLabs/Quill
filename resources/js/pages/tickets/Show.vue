@@ -43,6 +43,7 @@ import type {
     TicketListItem,
     TicketStatusOption,
 } from '@/types';
+import EmailLink from '@/components/EmailLink.vue';
 
 type Props = {
     currentOrganization: Organization;
@@ -186,7 +187,7 @@ const retry = (comment: FeedbackComment) => {
                 <p class="text-muted-foreground text-sm">
                     From {{ ticket.requesterName ?? ticket.requesterEmail }}
                     <template v-if="ticket.requesterName">
-                        &lt;{{ ticket.requesterEmail }}&gt;
+                        &lt;<EmailLink :email="ticket.requesterEmail" />&gt;
                     </template>
                     · opened {{ formatDate(ticket.createdAt) }}
                     <template v-if="ticket.createdByName">

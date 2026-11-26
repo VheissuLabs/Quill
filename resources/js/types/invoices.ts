@@ -25,6 +25,7 @@ export type InvoiceListItem = {
 
 export type InvoiceLine = {
     id: number;
+    completedAt: string | null;
     description: string;
     quantity: string;
     unit: 'hours' | 'units';
@@ -96,7 +97,8 @@ export type PublicInvoice = {
     isCurrentPeriod: boolean;
     organizationName: string;
     organizationLogoUrl: string | null;
-    fromAddress: string | null;
+    fromAddress: string[];
+    clientAddress: string[];
     clientName: string;
     contactName: string | null;
     contactEmail: string | null;
@@ -105,6 +107,7 @@ export type PublicInvoice = {
     servicePeriodStart: string | null;
     servicePeriodEnd: string | null;
     lines: {
+        completedAt: string | null;
         description: string;
         issueReference: string | null;
         referenceUrl: string | null;
@@ -126,4 +129,26 @@ export type PublicInvoice = {
     canPayOnline: boolean;
     paymentProcessing: boolean;
     paymentInstructions: string | null;
+};
+
+export type InvoiceMonthSummary = {
+    month: string;
+    total: string;
+    collected: string;
+    outstanding: string;
+    invoices: number;
+};
+
+export type InvoiceSummary = {
+    nextPayment: {
+        invoiceId: number;
+        number: string;
+        clientName: string;
+        amountDue: string;
+        dueDate: string;
+        isDraft: boolean;
+        isOverdue: boolean;
+    } | null;
+    thisMonth: InvoiceMonthSummary;
+    nextMonth: InvoiceMonthSummary;
 };

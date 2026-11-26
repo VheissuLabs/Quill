@@ -37,10 +37,10 @@ class ListTimeEntriesTool extends QuillTool
                 ->where('organization_id', $organization->id)
                 ->with(['client:id,name', 'invoiceLine.invoice:id,number'])
                 ->when($client, fn ($query) => $query->where('client_id', $client->id))
-                ->when($filters['from'] ?? null, fn ($query, string $from) => $query->whereDate('worked_on', '>=', $from))
-                ->when($filters['to'] ?? null, fn ($query, string $to) => $query->whereDate('worked_on', '<=', $to))
+                ->when($filters['from'] ?? null, fn ($query, string $from) => $query->whereDate('completed_at', '>=', $from))
+                ->when($filters['to'] ?? null, fn ($query, string $to) => $query->whereDate('completed_at', '<=', $to))
                 ->when($filters['unbilled'] ?? false, fn ($query) => $query->whereNull('invoice_line_id'))
-                ->orderByDesc('worked_on')
+                ->orderByDesc('completed_at')
                 ->orderByDesc('id')
                 ->limit(200)
                 ->get();

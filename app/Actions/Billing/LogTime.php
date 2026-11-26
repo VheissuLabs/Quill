@@ -21,7 +21,7 @@ class LogTime
 
     public function handle(
         Client $client,
-        CarbonImmutable $workedOn,
+        CarbonImmutable $completedAt,
         float $hours,
         ?User $user = null,
         ?Issue $issue = null,
@@ -31,20 +31,20 @@ class LogTime
     ): TimeEntry {
         $billedClient = $client->billedThrough ?? $client;
 
-        return DB::transaction(function () use ($client, $workedOn, $hours, $user, $issue, $description, $referenceUrl, $workTypeId, $billedClient): TimeEntry {
+        return DB::transaction(function () use ($client, $completedAt, $hours, $user, $issue, $description, $referenceUrl, $workTypeId, $billedClient): TimeEntry {
             $entry = TimeEntry::query()->create([
                 'client_id' => $client->id,
                 'organization_id' => $client->organization_id,
                 'user_id' => $user?->id,
                 'issue_id' => $issue?->id,
-                'worked_on' => $workedOn->toDateString(),
+                'completed_at' => $completedAt->toDateString(),
                 'hours' => round($hours, 2),
                 'description' => filled($description) ? $description : $issue?->title,
                 'reference_url' => $referenceUrl,
                 'work_type_id' => $workTypeId,
             ]);
 
-            $invoice = $this->invoiceFor($billedClient, $workedOn);
+            $invoice = $this->invoiceFor($billedClient, $completedAt);
 
             if ($invoice === null) {
                 return $entry;
@@ -94,6 +94,7 @@ class LogTime
     {
         $line = $invoice->lines()
             ->where('unit', LineUnit::Hours)
+            ->whereDate('completed_at', $entry->completed_at->toDateString())
             ->where(fn (Builder $query) => match (true) {
                 $issue !== null => $query->where('issue_id', $issue->id),
                 filled($entry->reference_url) => $query->where('reference_url', $entry->reference_url),
@@ -119,6 +120,7 @@ class LogTime
         }
 
         return $invoice->addLine([
+            'completed_at' => $entry->completed_at->toDateString(),
             'description' => $entry->description,
             'quantity' => $entry->hours,
             'unit' => LineUnit::Hours,

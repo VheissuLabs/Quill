@@ -178,6 +178,30 @@ test('a reply to the ticket address joins that ticket and reopens it', function 
         ->and($ticket->fresh()->status)->toBe(TicketStatus::Open);
 });
 
+test('with an inbound address set, a reply to the ticket address on it joins that ticket', function () {
+    Notification::fake();
+    $organization = inboxOrganization();
+    config(['services.resend.support_inbound_address' => 'support@in.vheissulabs.com']);
+    $ticket = Ticket::factory()->for($organization)->create(['requester_email' => 'jane@acme.test']);
+    fakeReceivedEmail('email-2', ['to' => ["support+t{$ticket->id}@in.vheissulabs.com"]]);
+
+    deliverInboundEmail('email-2');
+
+    expect($organization->tickets()->count())->toBe(1)
+        ->and($ticket->comments()->count())->toBe(1);
+});
+
+test('mail sent from the inbound address itself is dropped', function () {
+    Notification::fake();
+    $organization = inboxOrganization();
+    config(['services.resend.support_inbound_address' => 'support@in.vheissulabs.com']);
+    fakeReceivedEmail('email-1', ['from' => 'support@in.vheissulabs.com', 'headers' => ['from' => 'Support <support@in.vheissulabs.com>']]);
+
+    deliverInboundEmail('email-1');
+
+    expect($organization->tickets()->count())->toBe(0);
+});
+
 test('a reply that quotes an earlier message joins its ticket', function () {
     Notification::fake();
     $organization = inboxOrganization();

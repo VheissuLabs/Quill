@@ -23,7 +23,7 @@ class TimeEntry extends Model
     protected function casts(): array
     {
         return [
-            'worked_on' => 'date',
+            'completed_at' => 'date',
             'hours' => 'decimal:2',
         ];
     }

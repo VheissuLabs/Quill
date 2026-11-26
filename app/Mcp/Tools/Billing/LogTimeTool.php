@@ -35,7 +35,7 @@ class LogTimeTool extends QuillTool
 
             $entry = $logTime->handle(
                 client: $client,
-                workedOn: CarbonImmutable::parse($validated['date'] ?? $this->today($request)),
+                completedAt: CarbonImmutable::parse($validated['date'] ?? $this->today($request)),
                 hours: (float) $validated['hours'],
                 user: $user,
                 issue: $issue,

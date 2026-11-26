@@ -9,13 +9,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /** @mixin ClientContact */
 class ClientContactResource extends JsonResource
 {
-    /** @return array{id: int, name: string|null, email: string, client: array{id: int, name: string}|null} */
+    /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'title' => $this->title,
             'email' => $this->email,
+            'phone' => $this->phone,
+            'addresses' => $this->whenLoaded('addresses', fn () => AddressResource::collection($this->addresses)->resolve()),
             'client' => $this->relationLoaded('client') ? [
                 'id' => $this->client->id,
                 'name' => $this->client->name,

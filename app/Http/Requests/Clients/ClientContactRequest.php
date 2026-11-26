@@ -25,6 +25,8 @@ class ClientContactRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
             'email' => [
                 'required',
                 'email',

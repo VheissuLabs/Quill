@@ -49,6 +49,7 @@ class InvoiceResource extends InvoiceListResource
             'canDuplicate' => $user?->can('duplicate', $this->resource) ?? false,
             'lines' => $this->lines->map(fn (InvoiceLine $line) => [
                 'id' => $line->id,
+                'completedAt' => $line->completed_at?->toDateString(),
                 'description' => $line->description,
                 'quantity' => $line->quantity,
                 'unit' => $line->unit->value,

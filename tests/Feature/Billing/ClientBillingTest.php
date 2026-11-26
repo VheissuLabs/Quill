@@ -407,3 +407,26 @@ test('creating a client with a cycle opens its first draft right away', function
     expect($invoice->service_period_start->toDateString())->toBe('2026-11-16')
         ->and($invoice->service_period_end->toDateString())->toBe('2026-11-22');
 });
+
+test('a new billing contact and cc list reach open drafts that had none or the old ones', function () {
+    [$organization, $admin, $client] = clientBillingManager();
+    [$old, $new, $chosen] = ClientContact::factory()->for($client)->count(3)->create()->all();
+    $client->update(['billing_contact_id' => $old->id, 'billing_cc_emails' => ['old@x.test']]);
+    $empty = Invoice::factory()->for($organization)->for($client)->create(['contact_id' => null, 'cc_emails' => null]);
+    $following = Invoice::factory()->for($organization)->for($client)->create(['contact_id' => $old->id, 'cc_emails' => ['old@x.test']]);
+    $picked = Invoice::factory()->for($organization)->for($client)->create(['contact_id' => $chosen->id, 'cc_emails' => ['picked@x.test']]);
+    $sent = Invoice::factory()->for($organization)->for($client)->sent()->create(['contact_id' => null]);
+
+    $this->actingAs($admin)
+        ->patch(clientBillingRoute($organization, $client), [
+            'name' => $client->name,
+            'billing_contact_id' => $new->id,
+            'billing_cc_emails' => ['new@x.test'],
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($empty->fresh())->contact_id->toBe($new->id)->cc_emails->toBe(['new@x.test'])
+        ->and($following->fresh())->contact_id->toBe($new->id)->cc_emails->toBe(['new@x.test'])
+        ->and($picked->fresh())->contact_id->toBe($chosen->id)->cc_emails->toBe(['picked@x.test'])
+        ->and($sent->fresh()->contact_id)->toBeNull();
+});

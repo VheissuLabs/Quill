@@ -37,6 +37,7 @@ import type {
     RoleCandidate,
     RoleOption,
 } from '@/types';
+import EmailLink from '@/components/EmailLink.vue';
 
 type Props = {
     currentOrganization: Organization;
@@ -202,7 +203,7 @@ const canInvite = computed(
                             {{ member.name }}
                         </div>
                         <div class="text-muted-foreground truncate text-sm">
-                            {{ member.email }}
+                            <EmailLink :email="member.email" />
                         </div>
                     </div>
 

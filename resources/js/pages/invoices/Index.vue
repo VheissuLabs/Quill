@@ -5,6 +5,7 @@ import CreateInvoiceModal from '@/components/CreateInvoiceModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import Heading from '@/components/Heading.vue';
 import InvoiceStatusBadge from '@/components/InvoiceStatusBadge.vue';
+import InvoiceSummaryCards from '@/components/InvoiceSummaryCards.vue';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -18,12 +19,14 @@ import { index, show } from '@/routes/invoices';
 import type {
     InvoiceListItem,
     InvoiceProjectOption,
+    InvoiceSummary,
     Organization,
 } from '@/types';
 
 type Props = {
     currentOrganization: Organization;
     invoices: InvoiceListItem[];
+    summary: InvoiceSummary;
     filters: { status: string | null; client: number | null };
     statuses: { value: string; label: string }[];
     clients: { id: number; name: string }[];
@@ -91,6 +94,11 @@ const money = (value: string) =>
                 </Button>
             </CreateInvoiceModal>
         </div>
+
+        <InvoiceSummaryCards
+            :organization="currentOrganization.slug"
+            :summary="summary"
+        />
 
         <div class="flex flex-wrap gap-3">
             <Select

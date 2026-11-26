@@ -46,7 +46,6 @@ test('a manager updates billing settings', function () {
             'default_rate' => '125.00',
             'payment_terms_days' => 14,
             'tax_rate' => '8.25',
-            'from_address' => "Quill LLC\n1 Main St",
         ])
         ->assertRedirect()
         ->assertSessionHasNoErrors();
@@ -55,8 +54,7 @@ test('a manager updates billing settings', function () {
         ->invoice_prefix->toBe('QL')
         ->default_rate->toBe('125.00')
         ->tax_rate->toBe('8.25')
-        ->payment_terms_days->toBe(14)
-        ->from_address->toBe("Quill LLC\n1 Main St");
+        ->payment_terms_days->toBe(14);
 });
 
 test('billing settings reject an invalid tax rate', function () {

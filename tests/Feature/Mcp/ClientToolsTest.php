@@ -163,14 +163,14 @@ test('members cannot delete or restore clients', function () {
 test('it adds, updates and removes client contacts', function () {
     [$user, , $client] = clientToolMember();
 
-    QuillServer::actingAs($user)->tool(AddClientContactTool::class, ['client' => $client->slug, 'name' => 'Pat', 'email' => ' PAT@Acme.test '])->assertOk();
+    QuillServer::actingAs($user)->tool(AddClientContactTool::class, ['client' => $client->slug, 'name' => 'Pat', 'title' => 'CTO', 'email' => ' PAT@Acme.test '])->assertOk();
 
     $contact = $client->contacts()->sole();
-    expect($contact->email)->toBe('pat@acme.test');
+    expect($contact)->email->toBe('pat@acme.test')->title->toBe('CTO');
 
     QuillServer::actingAs($user)->tool(UpdateClientContactTool::class, ['client' => $client->slug, 'contact_id' => $contact->id, 'name' => 'Patricia'])->assertOk();
 
-    expect($contact->fresh())->name->toBe('Patricia')->email->toBe('pat@acme.test');
+    expect($contact->fresh())->name->toBe('Patricia')->title->toBe('CTO')->email->toBe('pat@acme.test');
 
     QuillServer::actingAs($user)->tool(RemoveClientContactTool::class, ['client' => $client->slug, 'contact_id' => $contact->id])->assertOk();
 

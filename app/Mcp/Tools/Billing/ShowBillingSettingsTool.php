@@ -23,7 +23,7 @@ class ShowBillingSettingsTool extends QuillTool
             $settings = $organization->billingSettings();
 
             return Response::json([
-                ...$settings->only(['invoice_prefix', 'default_rate', 'payment_terms_days', 'tax_rate', 'from_address', 'payment_instructions']),
+                ...$settings->only(['invoice_prefix', 'default_rate', 'payment_terms_days', 'tax_rate', 'payment_instructions']),
                 'square' => [
                     'environment' => $settings->square_environment,
                     'hasAccessToken' => filled($settings->square_access_token),

@@ -14,20 +14,56 @@
 namespace App\Models{
 /**
  * @property int $id
+ * @property string $addressable_type
+ * @property int $addressable_id
+ * @property \App\Enums\AddressType $type
+ * @property string $line1
+ * @property string|null $line2
+ * @property string $city
+ * @property string|null $region
+ * @property string|null $postal_code
+ * @property string|null $country
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Model $addressable
+ * @method static \Database\Factories\AddressFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereAddressableId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereAddressableType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereCity($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereCountry($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereLine1($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereLine2($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address wherePostalCode($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereRegion($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Address whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
+	#[\AllowDynamicProperties]
+	class IdeHelperAddress {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property int $organization_id
  * @property string $invoice_prefix
  * @property numeric|null $default_rate
  * @property int $payment_terms_days
  * @property numeric|null $tax_rate
- * @property string|null $from_address
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property string|null $payment_instructions
  * @property string $square_environment
  * @property string|null $square_access_token
  * @property string|null $square_location_id
  * @property string|null $square_webhook_signature_key
  * @property string|null $square_webhook_token
- * @property string|null $payment_instructions
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Organization|null $organization
@@ -37,7 +73,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereDefaultRate($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereFromAddress($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereInvoicePrefix($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|BillingSetting whereOrganizationId($value)
@@ -59,13 +94,13 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property string|null $owner_type
+ * @property int|null $owner_id
  * @property string $name
  * @property \App\Enums\IssueStatus $status
  * @property int $position
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
- * @property string|null $owner_type
- * @property int|null $owner_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $issues
@@ -95,19 +130,21 @@ namespace App\Models{
  * @property int $organization_id
  * @property string $name
  * @property string $slug
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
- * @property \Carbon\CarbonImmutable|null $deleted_at
  * @property numeric|null $billing_rate
- * @property int|null $billing_contact_id
  * @property int|null $billed_through_client_id
  * @property \App\Enums\BillingCycle|null $billing_cycle
  * @property \Carbon\CarbonImmutable|null $billing_cycle_starts_on
+ * @property \Carbon\CarbonImmutable|null $billing_opened_through
  * @property array<array-key, mixed>|null $billing_cc_emails
  * @property int|null $payment_terms_days
- * @property \Carbon\CarbonImmutable|null $billing_opened_through
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property \Carbon\CarbonImmutable|null $deleted_at
+ * @property int|null $billing_contact_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Address> $addresses
+ * @property-read int|null $addresses_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Client> $billedClients
  * @property-read int|null $billed_clients_count
  * @property-read Client|null $billedThrough
@@ -163,8 +200,12 @@ namespace App\Models{
  * @property string $email
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property string|null $title
+ * @property string|null $phone
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Address> $addresses
+ * @property-read int|null $addresses_count
  * @property-read \App\Models\Client|null $client
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Ticket> $tickets
  * @property-read int|null $tickets_count
@@ -179,6 +220,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereOrganizationId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact wherePhone($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereTitle($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ClientContact whereUpdatedAt($value)
  * @mixin \Eloquent
  */
@@ -431,10 +474,10 @@ namespace App\Models{
  * @property numeric $amount_paid
  * @property \Carbon\CarbonImmutable|null $sent_at
  * @property \Carbon\CarbonImmutable|null $voided_at
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
  * @property \Carbon\CarbonImmutable|null $closes_at
  * @property \Carbon\CarbonImmutable|null $reminded_at
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Client $client
@@ -448,9 +491,11 @@ namespace App\Models{
  * @property-read \App\Models\Sprint|null $sprint
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SquareCheckout> $squareCheckouts
  * @property-read int|null $square_checkouts_count
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice dueWithin(\Carbon\CarbonImmutable $start, \Carbon\CarbonImmutable $end)
  * @method static \Database\Factories\InvoiceFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice owing()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereAmountPaid($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Invoice whereCcEmails($value)
@@ -504,6 +549,7 @@ namespace App\Models{
  * @property int $sort_order
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property \Carbon\CarbonImmutable|null $completed_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Invoice $invoice
@@ -516,6 +562,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereAmount($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereCompletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereDescription($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|InvoiceLine whereId($value)
@@ -543,9 +590,9 @@ namespace App\Models{
  * @property \App\Enums\PaymentMethod $method
  * @property string|null $reference
  * @property string|null $notes
+ * @property string|null $square_payment_id
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
- * @property string|null $square_payment_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Invoice $invoice
@@ -675,6 +722,8 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Address> $addresses
+ * @property-read int|null $addresses_count
  * @property-read \App\Models\BillingSetting|null $billingSettingsRecord
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrganizationModuleSetting> $capabilitySettings
  * @property-read int|null $capability_settings_count
@@ -831,9 +880,9 @@ namespace App\Models{
  * @property string $slug
  * @property string|null $description
  * @property \App\Enums\ProjectVisibility $visibility
+ * @property numeric|null $billing_rate
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
- * @property numeric|null $billing_rate
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Client|null $client
@@ -869,6 +918,8 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property string|null $owner_type
+ * @property int|null $owner_id
  * @property string $name
  * @property \Carbon\CarbonImmutable $starts_at
  * @property \Carbon\CarbonImmutable $ends_at
@@ -876,8 +927,6 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $completed_at
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
- * @property string|null $owner_type
- * @property int|null $owner_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $issues
@@ -1040,7 +1089,6 @@ namespace App\Models{
  * @property int $id
  * @property int $organization_id
  * @property int|null $client_id
- * @property int|null $client_contact_id
  * @property int $number
  * @property string $subject
  * @property \App\Enums\TicketStatus $status
@@ -1054,6 +1102,7 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $last_message_at
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property int|null $client_contact_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \App\Models\Client|null $client
@@ -1102,7 +1151,7 @@ namespace App\Models{
  * @property int|null $invoice_line_id
  * @property int|null $issue_id
  * @property int|null $work_type_id
- * @property \Carbon\CarbonImmutable $worked_on
+ * @property \Carbon\CarbonImmutable $completed_at
  * @property numeric $hours
  * @property string $description
  * @property string|null $reference_url
@@ -1119,6 +1168,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereClientId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereCompletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereDescription($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereHours($value)
@@ -1130,7 +1180,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereWorkTypeId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TimeEntry whereWorkedOn($value)
  * @mixin \Eloquent
  */
 	#[\AllowDynamicProperties]
@@ -1145,14 +1194,14 @@ namespace App\Models{
  * @property \Carbon\CarbonImmutable|null $email_verified_at
  * @property string|null $timezone
  * @property string $password
- * @property int|null $current_organization_id
- * @property int|null $current_team_id
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property \Carbon\CarbonImmutable|null $two_factor_confirmed_at
  * @property string|null $remember_token
  * @property \Carbon\CarbonImmutable|null $created_at
  * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property int|null $current_organization_id
+ * @property int|null $current_team_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
  * @property-read int|null $activities_as_subject_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Issue> $assignedIssues

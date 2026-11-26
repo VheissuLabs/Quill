@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Actions\Billing\RemoveAutomaticBilling;
 use App\Concerns\BroadcastsChanges;
+use App\Concerns\HasAddresses;
 use App\Concerns\RunsABoard;
 use App\Enums\OrganizationCapability;
 use App\Enums\OrganizationModule;
@@ -46,7 +47,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 #[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model
 {
-    use BroadcastsChanges, HasFactory, LogsActivity, RunsABoard, SoftDeletes;
+    use BroadcastsChanges, HasAddresses, HasFactory, LogsActivity, RunsABoard, SoftDeletes;
 
     protected $guarded = [];
 

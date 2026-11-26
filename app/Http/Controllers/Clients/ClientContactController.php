@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Clients;
 
+use App\Enums\AddressType;
+use App\Events\ClientsChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Clients\ClientContactLookupRequest;
 use App\Http\Requests\Clients\ClientContactRequest;
@@ -12,6 +14,7 @@ use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class ClientContactController extends Controller
 {
@@ -22,6 +25,15 @@ class ClientContactController extends Controller
                 ? collect()
                 : $currentOrganization->clientContacts()->matching($request->term())->get()
         );
+    }
+
+    public function show(Organization $currentOrganization, Client $client, ClientContact $contact): Response
+    {
+        return Inertia::render('clients/contacts/Show', [
+            'client' => ['id' => $client->id, 'name' => $client->name, 'slug' => $client->slug],
+            'contact' => ClientsChanged::live(ClientContactResource::make($contact->load('addresses'))->resolve(), $currentOrganization->id),
+            'addressTypes' => AddressType::options(),
+        ]);
     }
 
     public function store(ClientContactRequest $request, Organization $currentOrganization, Client $client): RedirectResponse
@@ -44,6 +56,6 @@ class ClientContactController extends Controller
     {
         $contact->delete();
 
-        return back();
+        return to_route('clients.show', ['current_organization' => $currentOrganization, 'client' => $client]);
     }
 }
