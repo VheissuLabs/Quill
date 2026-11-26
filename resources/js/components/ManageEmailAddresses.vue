@@ -3,7 +3,7 @@ import { Form, Link } from '@inertiajs/vue3';
 import { Mail, X } from '@lucide/vue';
 import { ref } from 'vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
-import Heading from '@/components/Heading.vue';
+import SettingsCard from '@/components/SettingsCard.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,13 +21,10 @@ const addressToRemove = ref<EmailAddress | null>(null);
 </script>
 
 <template>
-    <div class="space-y-6">
-        <Heading
-            variant="small"
-            title="Email addresses"
-            description="Invitations sent to any verified address reach this account, and you can log in with any of them"
-        />
-
+    <SettingsCard
+        title="Email addresses"
+        description="Invitations sent to any verified address reach this account, and you can log in with any of them"
+    >
         <div class="space-y-3">
             <div
                 v-for="emailAddress in emailAddresses"
@@ -110,7 +107,7 @@ const addressToRemove = ref<EmailAddress | null>(null);
                 <InputError :message="errors.email" />
             </div>
         </Form>
-    </div>
+    </SettingsCard>
 
     <ConfirmDeleteModal
         :open="addressToRemove !== null"

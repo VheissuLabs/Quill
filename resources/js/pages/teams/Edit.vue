@@ -7,7 +7,7 @@ import AddTeamMemberModal from '@/components/AddTeamMemberModal.vue';
 import BoardColumnsEditor from '@/components/BoardColumnsEditor.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import DeleteTeamModal from '@/components/DeleteTeamModal.vue';
-import Heading from '@/components/Heading.vue';
+import SettingsCard from '@/components/SettingsCard.vue';
 import InputError from '@/components/InputError.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -104,136 +104,141 @@ const confirmRemoveMember = (member: TeamMember) => {
 <template>
     <Head :title="team.name" />
 
-    <div class="flex flex-col gap-10 p-6">
-        <Collapsible v-model:open="settingsOpen" class="space-y-6">
-            <div class="flex items-start justify-between gap-4">
-                <Heading variant="small" title="Team settings" />
-                <CollapsibleTrigger as-child>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        data-test="team-settings-toggle"
-                        :aria-label="settingsOpen ? 'Collapse' : 'Expand'"
-                    >
-                        <ChevronDown
-                            class="transition-transform"
-                            :class="settingsOpen && 'rotate-180'"
-                        />
-                    </Button>
-                </CollapsibleTrigger>
-            </div>
+    <div class="grid max-w-7xl items-start gap-6 p-6 lg:grid-cols-2">
+        <Collapsible v-model:open="settingsOpen">
+            <SettingsCard title="Team settings">
+                <template #action>
+                    <CollapsibleTrigger as-child>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            data-test="team-settings-toggle"
+                            :aria-label="settingsOpen ? 'Collapse' : 'Expand'"
+                        >
+                            <ChevronDown
+                                class="transition-transform"
+                                :class="settingsOpen && 'rotate-180'"
+                            />
+                        </Button>
+                    </CollapsibleTrigger>
+                </template>
 
-            <CollapsibleContent class="space-y-6">
-                <Form
-                    v-if="permissions.canManageTeams"
-                    v-bind="update.form([currentOrganization.slug, team.slug])"
-                    class="space-y-6"
-                    v-slot="{ errors, processing }"
-                >
-                    <div class="grid gap-2">
-                        <Label for="name">Team name</Label>
-                        <Input
-                            id="name"
-                            name="name"
-                            data-test="team-name-input"
-                            :default-value="team.name"
-                            required
-                        />
-                        <InputError :message="errors.name" />
-                    </div>
-                    <Button
-                        type="submit"
-                        data-test="team-save-button"
-                        :disabled="processing"
+                <CollapsibleContent class="space-y-6">
+                    <Form
+                        v-if="permissions.canManageTeams"
+                        v-bind="
+                            update.form([currentOrganization.slug, team.slug])
+                        "
+                        class="space-y-6"
+                        v-slot="{ errors, processing }"
                     >
-                        Save
-                    </Button>
-                </Form>
-                <p v-else class="font-medium">{{ team.name }}</p>
-            </CollapsibleContent>
+                        <div class="grid gap-2">
+                            <Label for="name">Team name</Label>
+                            <Input
+                                id="name"
+                                name="name"
+                                data-test="team-name-input"
+                                :default-value="team.name"
+                                required
+                            />
+                            <InputError :message="errors.name" />
+                        </div>
+                        <Button
+                            type="submit"
+                            data-test="team-save-button"
+                            :disabled="processing"
+                        >
+                            Save
+                        </Button>
+                    </Form>
+                    <p v-else class="font-medium">{{ team.name }}</p>
+                </CollapsibleContent>
+            </SettingsCard>
         </Collapsible>
 
-        <Collapsible v-model:open="membersOpen" class="space-y-6">
-            <div class="flex items-start justify-between gap-4">
-                <Heading
-                    variant="small"
-                    title="Team members"
-                    description="Organization members who belong to this team"
-                />
-                <CollapsibleTrigger as-child>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        data-test="team-members-toggle"
-                        :aria-label="membersOpen ? 'Collapse' : 'Expand'"
-                    >
-                        <ChevronDown
-                            class="transition-transform"
-                            :class="membersOpen && 'rotate-180'"
-                        />
-                    </Button>
-                </CollapsibleTrigger>
-            </div>
+        <Collapsible v-model:open="membersOpen">
+            <SettingsCard
+                title="Team members"
+                description="Organization members who belong to this team"
+            >
+                <template #action>
+                    <CollapsibleTrigger as-child>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            data-test="team-members-toggle"
+                            :aria-label="membersOpen ? 'Collapse' : 'Expand'"
+                        >
+                            <ChevronDown
+                                class="transition-transform"
+                                :class="membersOpen && 'rotate-180'"
+                            />
+                        </Button>
+                    </CollapsibleTrigger>
+                </template>
 
-            <CollapsibleContent class="space-y-6">
-                <Button
-                    v-if="permissions.canManageTeams"
-                    data-test="add-team-member-button"
-                    @click="addMemberDialogOpen = true"
-                >
-                    <UserPlus /> Add member
-                </Button>
-                <div class="space-y-3">
-                    <div
-                        v-for="member in members"
-                        :key="member.id"
-                        data-test="team-member-row"
-                        class="flex items-center justify-between rounded-lg border p-4"
+                <CollapsibleContent class="space-y-6">
+                    <Button
+                        v-if="permissions.canManageTeams"
+                        data-test="add-team-member-button"
+                        @click="addMemberDialogOpen = true"
                     >
-                        <div class="flex items-center gap-4">
-                            <Avatar class="h-10 w-10">
-                                <AvatarImage
-                                    v-if="member.avatar"
-                                    :src="member.avatar"
-                                    :alt="member.name"
-                                />
-                                <AvatarFallback>{{
-                                    getInitials(member.name)
-                                }}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <div class="font-medium">{{ member.name }}</div>
-                                <div class="text-muted-foreground text-sm">
-                                    <EmailLink :email="member.email" />
+                        <UserPlus /> Add member
+                    </Button>
+                    <div class="space-y-3">
+                        <div
+                            v-for="member in members"
+                            :key="member.id"
+                            data-test="team-member-row"
+                            class="flex items-center justify-between rounded-lg border p-4"
+                        >
+                            <div class="flex items-center gap-4">
+                                <Avatar class="h-10 w-10">
+                                    <AvatarImage
+                                        v-if="member.avatar"
+                                        :src="member.avatar"
+                                        :alt="member.name"
+                                    />
+                                    <AvatarFallback>{{
+                                        getInitials(member.name)
+                                    }}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <div class="font-medium">
+                                        {{ member.name }}
+                                    </div>
+                                    <div class="text-muted-foreground text-sm">
+                                        <EmailLink :email="member.email" />
+                                    </div>
                                 </div>
                             </div>
+                            <TooltipProvider v-if="permissions.canManageTeams">
+                                <Tooltip>
+                                    <TooltipTrigger as-child>
+                                        <Button
+                                            data-test="team-member-remove-button"
+                                            variant="ghost"
+                                            size="sm"
+                                            @click="confirmRemoveMember(member)"
+                                        >
+                                            <X class="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Remove from team</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
-                        <TooltipProvider v-if="permissions.canManageTeams">
-                            <Tooltip>
-                                <TooltipTrigger as-child>
-                                    <Button
-                                        data-test="team-member-remove-button"
-                                        variant="ghost"
-                                        size="sm"
-                                        @click="confirmRemoveMember(member)"
-                                    >
-                                        <X class="h-4 w-4" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Remove from team</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                        <p
+                            v-if="members.length === 0"
+                            class="text-muted-foreground text-sm"
+                        >
+                            This team has no members yet.
+                        </p>
                     </div>
-                    <p
-                        v-if="members.length === 0"
-                        class="text-muted-foreground text-sm"
-                    >
-                        This team has no members yet.
-                    </p>
-                </div>
-            </CollapsibleContent>
+                </CollapsibleContent>
+            </SettingsCard>
         </Collapsible>
 
         <Collapsible
@@ -242,128 +247,129 @@ const confirmRemoveMember = (member: TeamMember) => {
                 currentOrganization.modules.development.capabilities.workflow
             "
             v-model:open="columnsOpen"
-            class="space-y-6"
         >
-            <div class="flex items-start justify-between gap-4">
-                <Heading
-                    variant="small"
-                    title="Board columns"
-                    description="The stages this team moves work through. Each column counts as Todo, In progress or Done."
-                />
-                <CollapsibleTrigger as-child>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        data-test="team-columns-toggle"
-                        :aria-label="columnsOpen ? 'Collapse' : 'Expand'"
-                    >
-                        <ChevronDown
-                            class="transition-transform"
-                            :class="columnsOpen && 'rotate-180'"
-                        />
-                    </Button>
-                </CollapsibleTrigger>
-            </div>
+            <SettingsCard
+                title="Board columns"
+                description="The stages this team moves work through. Each column counts as Todo, In progress or Done."
+            >
+                <template #action>
+                    <CollapsibleTrigger as-child>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            data-test="team-columns-toggle"
+                            :aria-label="columnsOpen ? 'Collapse' : 'Expand'"
+                        >
+                            <ChevronDown
+                                class="transition-transform"
+                                :class="columnsOpen && 'rotate-180'"
+                            />
+                        </Button>
+                    </CollapsibleTrigger>
+                </template>
 
-            <CollapsibleContent class="space-y-6">
-                <BoardColumnsEditor
-                    :organization="currentOrganization.slug"
-                    :team="team"
-                    :columns="columns"
-                    :statuses="columnStatuses"
-                    :can-manage="permissions.canManageTeams"
-                />
-            </CollapsibleContent>
+                <CollapsibleContent class="space-y-6">
+                    <BoardColumnsEditor
+                        :organization="currentOrganization.slug"
+                        :team="team"
+                        :columns="columns"
+                        :statuses="columnStatuses"
+                        :can-manage="permissions.canManageTeams"
+                    />
+                </CollapsibleContent>
+            </SettingsCard>
         </Collapsible>
 
         <Collapsible
             v-if="permissions.canManageTeams && organizationModules.sprints"
             v-model:open="modulesOpen"
-            class="space-y-6"
         >
-            <div class="flex items-start justify-between gap-4">
-                <Heading
-                    variant="small"
-                    title="Modules"
-                    description="Switch off anything this team does not use. The organization's own settings still apply on top."
-                />
-                <CollapsibleTrigger as-child>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        data-test="team-modules-toggle"
-                        :aria-label="modulesOpen ? 'Collapse' : 'Expand'"
-                    >
-                        <ChevronDown
-                            class="transition-transform"
-                            :class="modulesOpen && 'rotate-180'"
-                        />
-                    </Button>
-                </CollapsibleTrigger>
-            </div>
+            <SettingsCard
+                title="Modules"
+                description="Switch off anything this team does not use. The organization's own settings still apply on top."
+            >
+                <template #action>
+                    <CollapsibleTrigger as-child>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            data-test="team-modules-toggle"
+                            :aria-label="modulesOpen ? 'Collapse' : 'Expand'"
+                        >
+                            <ChevronDown
+                                class="transition-transform"
+                                :class="modulesOpen && 'rotate-180'"
+                            />
+                        </Button>
+                    </CollapsibleTrigger>
+                </template>
 
-            <CollapsibleContent class="space-y-6">
-                <div
-                    class="flex items-start justify-between gap-6 rounded-lg border p-4"
-                >
-                    <div class="space-y-1">
-                        <Label for="team-sprints" class="text-sm font-medium">
-                            Sprints
-                        </Label>
-                        <p class="text-muted-foreground text-sm">
-                            Plan this team's work in time-boxed sprints. With
-                            this off, the team keeps its board and backlog.
-                        </p>
+                <CollapsibleContent class="space-y-6">
+                    <div
+                        class="flex items-start justify-between gap-6 rounded-lg border p-4"
+                    >
+                        <div class="space-y-1">
+                            <Label
+                                for="team-sprints"
+                                class="text-sm font-medium"
+                            >
+                                Sprints
+                            </Label>
+                            <p class="text-muted-foreground text-sm">
+                                Plan this team's work in time-boxed sprints.
+                                With this off, the team keeps its board and
+                                backlog.
+                            </p>
+                        </div>
+                        <Switch
+                            id="team-sprints"
+                            data-test="team-sprints-toggle"
+                            :model-value="modules.sprints"
+                            @update:model-value="toggleSprints"
+                        />
                     </div>
-                    <Switch
-                        id="team-sprints"
-                        data-test="team-sprints-toggle"
-                        :model-value="modules.sprints"
-                        @update:model-value="toggleSprints"
-                    />
-                </div>
-            </CollapsibleContent>
+                </CollapsibleContent>
+            </SettingsCard>
         </Collapsible>
 
         <Collapsible
             v-if="permissions.canManageTeams"
             v-model:open="deleteOpen"
-            class="space-y-6"
         >
-            <div class="flex items-start justify-between gap-4">
-                <Heading
-                    variant="small"
-                    title="Delete team"
-                    description="Boards restricted to this team become visible to every organization member"
-                />
-                <CollapsibleTrigger as-child>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        data-test="team-delete-toggle"
-                        :aria-label="deleteOpen ? 'Collapse' : 'Expand'"
-                    >
-                        <ChevronDown
-                            class="transition-transform"
-                            :class="deleteOpen && 'rotate-180'"
-                        />
-                    </Button>
-                </CollapsibleTrigger>
-            </div>
+            <SettingsCard
+                title="Delete team"
+                description="Boards restricted to this team become visible to every organization member"
+            >
+                <template #action>
+                    <CollapsibleTrigger as-child>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            data-test="team-delete-toggle"
+                            :aria-label="deleteOpen ? 'Collapse' : 'Expand'"
+                        >
+                            <ChevronDown
+                                class="transition-transform"
+                                :class="deleteOpen && 'rotate-180'"
+                            />
+                        </Button>
+                    </CollapsibleTrigger>
+                </template>
 
-            <CollapsibleContent class="space-y-6">
-                <div
-                    class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
-                >
-                    <Button
-                        data-test="delete-team-button"
-                        variant="destructive"
-                        @click="deleteDialogOpen = true"
+                <CollapsibleContent class="space-y-6">
+                    <div
+                        class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
                     >
-                        Delete team
-                    </Button>
-                </div>
-            </CollapsibleContent>
+                        <Button
+                            data-test="delete-team-button"
+                            variant="destructive"
+                            @click="deleteDialogOpen = true"
+                        >
+                            Delete team
+                        </Button>
+                    </div>
+                </CollapsibleContent>
+            </SettingsCard>
         </Collapsible>
     </div>
 

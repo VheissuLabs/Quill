@@ -4,7 +4,7 @@ import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/DeleteUser.vue';
-import Heading from '@/components/Heading.vue';
+import SettingsCard from '@/components/SettingsCard.vue';
 import ManageEmailAddresses from '@/components/ManageEmailAddresses.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -38,17 +38,13 @@ const user = computed(() => page.props.auth.user);
 
     <h1 class="sr-only">Profile settings</h1>
 
-    <div class="flex flex-col space-y-6">
-        <Heading
-            variant="small"
+    <Form
+        v-bind="ProfileController.update.form()"
+        v-slot="{ errors, processing }"
+    >
+        <SettingsCard
             title="Profile"
             description="Update your name and email address"
-        />
-
-        <Form
-            v-bind="ProfileController.update.form()"
-            class="space-y-6"
-            v-slot="{ errors, processing }"
         >
             <div class="grid gap-2">
                 <Label for="name">Name</Label>
@@ -99,13 +95,13 @@ const user = computed(() => page.props.auth.user);
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
+            <template #footer>
                 <Button :disabled="processing" data-test="update-profile-button"
                     >Save</Button
                 >
-            </div>
-        </Form>
-    </div>
+            </template>
+        </SettingsCard>
+    </Form>
 
     <ManageEmailAddresses :email-addresses="emailAddresses" />
 

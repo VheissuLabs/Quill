@@ -4,9 +4,16 @@ import { Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import AddressList from '@/components/AddressList.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
-import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -102,74 +109,92 @@ const confirmDelete = (workType: WorkType) => {
 <template>
     <Head title="Billing" />
 
-    <div class="flex flex-col gap-10 p-6">
-        <div class="max-w-xl space-y-6">
-            <Heading variant="small" title="Billing settings" />
+    <div class="grid max-w-7xl items-start gap-6 p-6 lg:grid-cols-2">
+        <Form
+            v-bind="update.form(currentOrganization.slug)"
+            class="flex flex-col gap-6"
+            v-slot="{ errors, processing }"
+        >
+            <Card>
+                <CardHeader>
+                    <CardTitle>Invoicing</CardTitle>
+                    <CardDescription>
+                        Defaults for every client unless the client overrides
+                        them
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                    <div class="grid gap-2">
+                        <Label for="invoice_prefix">Invoice prefix</Label>
+                        <Input
+                            id="invoice_prefix"
+                            name="invoice_prefix"
+                            data-test="billing-prefix-input"
+                            :default-value="settings.invoice_prefix"
+                            required
+                        />
+                        <InputError :message="errors.invoice_prefix" />
+                    </div>
 
-            <Form
-                v-bind="update.form(currentOrganization.slug)"
-                class="space-y-6"
-                v-slot="{ errors, processing }"
-            >
-                <div class="grid gap-2">
-                    <Label for="invoice_prefix">Invoice prefix</Label>
-                    <Input
-                        id="invoice_prefix"
-                        name="invoice_prefix"
-                        data-test="billing-prefix-input"
-                        :default-value="settings.invoice_prefix"
-                        required
-                    />
-                    <InputError :message="errors.invoice_prefix" />
-                </div>
+                    <div class="grid gap-2">
+                        <Label for="default_rate">Default hourly rate</Label>
+                        <Input
+                            id="default_rate"
+                            name="default_rate"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            data-test="billing-rate-input"
+                            :default-value="settings.default_rate ?? ''"
+                        />
+                        <InputError :message="errors.default_rate" />
+                    </div>
 
-                <div class="grid gap-2">
-                    <Label for="default_rate">Default hourly rate</Label>
-                    <Input
-                        id="default_rate"
-                        name="default_rate"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        data-test="billing-rate-input"
-                        :default-value="settings.default_rate ?? ''"
-                    />
-                    <InputError :message="errors.default_rate" />
-                </div>
+                    <div class="grid gap-2">
+                        <Label for="payment_terms_days"
+                            >Payment terms (days)</Label
+                        >
+                        <Input
+                            id="payment_terms_days"
+                            name="payment_terms_days"
+                            type="number"
+                            min="0"
+                            max="365"
+                            data-test="billing-terms-days-input"
+                            :default-value="settings.payment_terms_days"
+                            required
+                        />
+                        <InputError :message="errors.payment_terms_days" />
+                    </div>
 
-                <div class="grid gap-2">
-                    <Label for="payment_terms_days">Payment terms (days)</Label>
-                    <Input
-                        id="payment_terms_days"
-                        name="payment_terms_days"
-                        type="number"
-                        min="0"
-                        max="365"
-                        data-test="billing-terms-days-input"
-                        :default-value="settings.payment_terms_days"
-                        required
-                    />
-                    <InputError :message="errors.payment_terms_days" />
-                </div>
+                    <div class="grid gap-2">
+                        <Label for="tax_rate">Tax rate (%)</Label>
+                        <Input
+                            id="tax_rate"
+                            name="tax_rate"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            data-test="billing-tax-input"
+                            :default-value="settings.tax_rate ?? ''"
+                        />
+                        <InputError :message="errors.tax_rate" />
+                    </div>
+                </CardContent>
+                <CardFooter class="justify-end">
+                    <Button type="submit" :disabled="processing">Save</Button>
+                </CardFooter>
+            </Card>
 
-                <div class="grid gap-2">
-                    <Label for="tax_rate">Tax rate (%)</Label>
-                    <Input
-                        id="tax_rate"
-                        name="tax_rate"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        data-test="billing-tax-input"
-                        :default-value="settings.tax_rate ?? ''"
-                    />
-                    <InputError :message="errors.tax_rate" />
-                </div>
-
-                <div class="space-y-6 border-t pt-6">
-                    <Heading variant="small" title="Online payments (Square)" />
-
+            <Card>
+                <CardHeader>
+                    <CardTitle>Online payments</CardTitle>
+                    <CardDescription>
+                        Clients pay invoices by card through Square
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="grid gap-x-4 gap-y-5 sm:grid-cols-2">
                     <div class="grid gap-2">
                         <Label for="square_environment">Environment</Label>
                         <Select
@@ -197,7 +222,7 @@ const confirmDelete = (workType: WorkType) => {
                         <InputError :message="errors.square_environment" />
                     </div>
 
-                    <div class="grid gap-2">
+                    <div class="grid gap-2 sm:col-span-2">
                         <Label for="square_access_token">Access token</Label>
                         <Input
                             id="square_access_token"
@@ -226,7 +251,7 @@ const confirmDelete = (workType: WorkType) => {
                         <InputError :message="errors.square_location_id" />
                     </div>
 
-                    <div class="grid gap-2">
+                    <div class="grid gap-2 sm:col-span-2">
                         <Label for="square_webhook_signature_key">
                             Webhook signature key
                         </Label>
@@ -248,7 +273,7 @@ const confirmDelete = (workType: WorkType) => {
                         />
                     </div>
 
-                    <div class="grid gap-2">
+                    <div class="grid gap-2 sm:col-span-2">
                         <Label for="square_webhook_url">Webhook URL</Label>
                         <div class="flex gap-2">
                             <Input
@@ -267,7 +292,7 @@ const confirmDelete = (workType: WorkType) => {
                         </div>
                     </div>
 
-                    <div class="grid gap-2">
+                    <div class="grid gap-2 sm:col-span-2">
                         <Label for="payment_instructions">
                             Other ways to pay
                         </Label>
@@ -279,59 +304,142 @@ const confirmDelete = (workType: WorkType) => {
                         />
                         <InputError :message="errors.payment_instructions" />
                     </div>
-                </div>
+                </CardContent>
+                <CardFooter class="justify-end">
+                    <Button
+                        type="submit"
+                        data-test="billing-save-button"
+                        :disabled="processing"
+                    >
+                        Save
+                    </Button>
+                </CardFooter>
+            </Card>
+        </Form>
 
-                <Button
-                    type="submit"
-                    data-test="billing-save-button"
-                    :disabled="processing"
-                >
-                    Save
-                </Button>
-            </Form>
-        </div>
-
-        <div class="max-w-xl space-y-6">
-            <Heading
-                variant="small"
-                title="Addresses"
-                description="Your Billing address prints at the top of every invoice"
-            />
-            <AddressList
-                :addresses="addresses"
-                :types="addressTypes"
-                :can-manage="permissions.canUpdateOrganization"
-                :store="storeAddress.form(currentOrganization.slug)"
-                :update="
-                    (id) => updateAddress.form([currentOrganization.slug, id])
-                "
-                :destroy="
-                    (id) => destroyAddress([currentOrganization.slug, id])
-                "
-            />
-        </div>
-
-        <div class="max-w-xl space-y-6">
-            <Heading variant="small" title="Work types" />
-
-            <ul v-if="workTypes.length" class="space-y-2">
-                <li v-for="workType in workTypes" :key="workType.id">
-                    <Form
-                        v-bind="
-                            updateWorkType.form([
-                                currentOrganization.slug,
-                                workType.id,
-                            ])
+        <div class="flex flex-col gap-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Addresses</CardTitle>
+                    <CardDescription>
+                        Your Billing address prints at the top of every invoice
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <AddressList
+                        :addresses="addresses"
+                        :types="addressTypes"
+                        :can-manage="permissions.canUpdateOrganization"
+                        :store="storeAddress.form(currentOrganization.slug)"
+                        :update="
+                            (id) =>
+                                updateAddress.form([
+                                    currentOrganization.slug,
+                                    id,
+                                ])
                         "
+                        :destroy="
+                            (id) =>
+                                destroyAddress([currentOrganization.slug, id])
+                        "
+                    />
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Work types</CardTitle>
+                    <CardDescription>
+                        Tag time and invoice lines with the kind of work
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="space-y-4">
+                    <ul v-if="workTypes.length" class="space-y-2">
+                        <li v-for="workType in workTypes" :key="workType.id">
+                            <Form
+                                v-bind="
+                                    updateWorkType.form([
+                                        currentOrganization.slug,
+                                        workType.id,
+                                    ])
+                                "
+                                class="flex items-start gap-2"
+                                v-slot="{ errors, processing }"
+                                data-test="work-type-row"
+                            >
+                                <div class="grid flex-1 gap-1">
+                                    <Input
+                                        name="name"
+                                        aria-label="Name"
+                                        :default-value="workType.name"
+                                        required
+                                    />
+                                    <InputError :message="errors.name" />
+                                </div>
+                                <select
+                                    name="color"
+                                    aria-label="Color"
+                                    :class="selectClass"
+                                    :value="workType.color"
+                                >
+                                    <option
+                                        v-for="color in colors"
+                                        :key="color"
+                                        :value="color"
+                                    >
+                                        {{ color }}
+                                    </option>
+                                </select>
+                                <label
+                                    class="flex h-9 items-center gap-2 text-sm"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="is_active"
+                                        value="0"
+                                    />
+                                    <input
+                                        type="checkbox"
+                                        name="is_active"
+                                        value="1"
+                                        :checked="workType.is_active"
+                                    />
+                                    Active
+                                </label>
+                                <Button
+                                    type="submit"
+                                    variant="secondary"
+                                    :disabled="processing"
+                                >
+                                    Save
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    :aria-label="`Delete ${workType.name}`"
+                                    @click="confirmDelete(workType)"
+                                >
+                                    <Trash2 />
+                                </Button>
+                            </Form>
+                        </li>
+                    </ul>
+                    <p v-else class="text-muted-foreground text-sm">
+                        No work types yet.
+                    </p>
+
+                    <Form
+                        v-bind="storeWorkType.form(currentOrganization.slug)"
                         class="flex items-start gap-2"
+                        reset-on-success
                         v-slot="{ errors, processing }"
-                        data-test="work-type-row"
                     >
                         <div class="grid flex-1 gap-1">
                             <Input
                                 name="name"
-                                aria-label="Name"
-                                :default-value="workType.name"
+                                aria-label="New work type"
+                                data-test="work-type-input"
                                 required
                             />
                             <InputError :message="errors.name" />
@@ -340,7 +448,7 @@ const confirmDelete = (workType: WorkType) => {
                             name="color"
                             aria-label="Color"
                             :class="selectClass"
-                            :value="workType.color"
+                            value="gray"
                         >
                             <option
                                 v-for="color in colors"
@@ -350,72 +458,16 @@ const confirmDelete = (workType: WorkType) => {
                                 {{ color }}
                             </option>
                         </select>
-                        <label class="flex h-9 items-center gap-2 text-sm">
-                            <input type="hidden" name="is_active" value="0" />
-                            <input
-                                type="checkbox"
-                                name="is_active"
-                                value="1"
-                                :checked="workType.is_active"
-                            />
-                            Active
-                        </label>
                         <Button
                             type="submit"
-                            variant="secondary"
+                            data-test="work-type-add-button"
                             :disabled="processing"
                         >
-                            Save
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            :aria-label="`Delete ${workType.name}`"
-                            @click="confirmDelete(workType)"
-                        >
-                            <Trash2 />
+                            Add
                         </Button>
                     </Form>
-                </li>
-            </ul>
-            <p v-else class="text-muted-foreground text-sm">
-                No work types yet.
-            </p>
-
-            <Form
-                v-bind="storeWorkType.form(currentOrganization.slug)"
-                class="flex items-start gap-2"
-                reset-on-success
-                v-slot="{ errors, processing }"
-            >
-                <div class="grid flex-1 gap-1">
-                    <Input
-                        name="name"
-                        aria-label="New work type"
-                        data-test="work-type-input"
-                        required
-                    />
-                    <InputError :message="errors.name" />
-                </div>
-                <select
-                    name="color"
-                    aria-label="Color"
-                    :class="selectClass"
-                    value="gray"
-                >
-                    <option v-for="color in colors" :key="color" :value="color">
-                        {{ color }}
-                    </option>
-                </select>
-                <Button
-                    type="submit"
-                    data-test="work-type-add-button"
-                    :disabled="processing"
-                >
-                    Add
-                </Button>
-            </Form>
+                </CardContent>
+            </Card>
         </div>
     </div>
 

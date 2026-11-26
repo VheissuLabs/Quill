@@ -6,7 +6,7 @@ import ClientContacts from '@/components/ClientContacts.vue';
 import CreateContactModal from '@/components/CreateContactModal.vue';
 import CreateInvoiceModal from '@/components/CreateInvoiceModal.vue';
 import CreateProjectModal from '@/components/CreateProjectModal.vue';
-import Heading from '@/components/Heading.vue';
+import SettingsCard from '@/components/SettingsCard.vue';
 import InvoiceStatusBadge from '@/components/InvoiceStatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,8 +72,8 @@ defineOptions({
 <template>
     <Head :title="client.name" />
 
-    <div class="flex flex-col gap-10 p-6">
-        <div class="flex items-center justify-between gap-4">
+    <div class="grid max-w-7xl items-start gap-6 p-6 lg:grid-cols-2">
+        <div class="flex items-center justify-between gap-4 lg:col-span-2">
             <div class="flex items-center gap-3">
                 <h1 class="text-xl font-semibold" data-test="client-name">
                     {{ client.name }}
@@ -111,88 +111,73 @@ defineOptions({
             </Button>
         </div>
 
-        <div class="grid gap-10">
-            <section class="space-y-6">
-                <div class="flex items-start justify-between gap-4">
-                    <Heading
-                        variant="small"
-                        title="Contacts"
-                        description="People at this client you open tickets for"
-                    />
-                    <CreateContactModal
-                        v-if="!isDeleted && permissions.canManageClients"
-                        :organization="currentOrganization.slug"
-                        :client="client.slug"
-                    >
-                        <Button size="sm" data-test="client-new-contact-button">
-                            <Plus /> Add contact
-                        </Button>
-                    </CreateContactModal>
-                </div>
-                <ClientContacts
+        <SettingsCard
+            title="Contacts"
+            description="People at this client you open tickets for"
+        >
+            <template #action>
+                <CreateContactModal
+                    v-if="!isDeleted && permissions.canManageClients"
                     :organization="currentOrganization.slug"
                     :client="client.slug"
-                    :contacts="client.contacts ?? []"
-                    :can-manage="!isDeleted && permissions.canManageClients"
-                />
-            </section>
-
-            <section class="space-y-6">
-                <div class="flex items-start justify-between gap-4">
-                    <Heading
-                        variant="small"
-                        title="Projects"
-                        description="Projects run for this client"
-                    />
-                    <CreateProjectModal
-                        v-if="!isDeleted && permissions.canManageProjects"
-                        :organization="currentOrganization.slug"
-                        :visibilities="visibilities"
-                        :client-id="client.id"
-                    >
-                        <Button size="sm" data-test="client-new-project-button">
-                            <Plus /> New project
-                        </Button>
-                    </CreateProjectModal>
-                </div>
-                <ul
-                    v-if="projects.length > 0"
-                    class="divide-y rounded-lg border"
                 >
-                    <li
-                        v-for="project in projects"
-                        :key="project.id"
-                        class="flex items-center justify-between gap-4 px-4 py-3"
-                        data-test="client-project"
-                    >
-                        <Link
-                            :href="
-                                showBoard([
-                                    currentOrganization.slug,
-                                    project.slug,
-                                ])
-                            "
-                            class="font-medium hover:underline"
-                        >
-                            {{ project.name }}
-                        </Link>
-                        <Badge variant="secondary">{{
-                            project.visibility
-                        }}</Badge>
-                    </li>
-                </ul>
-                <p v-else class="text-muted-foreground text-sm">
-                    No projects are assigned to this client.
-                </p>
-            </section>
-        </div>
-
-        <section v-if="tickets.length > 0" class="space-y-6">
-            <Heading
-                variant="small"
-                title="Recent tickets"
-                description="The latest support conversations with this client"
+                    <Button size="sm" data-test="client-new-contact-button">
+                        <Plus /> Add contact
+                    </Button>
+                </CreateContactModal>
+            </template>
+            <ClientContacts
+                :organization="currentOrganization.slug"
+                :client="client.slug"
+                :contacts="client.contacts ?? []"
+                :can-manage="!isDeleted && permissions.canManageClients"
             />
+        </SettingsCard>
+
+        <SettingsCard
+            title="Projects"
+            description="Projects run for this client"
+        >
+            <template #action>
+                <CreateProjectModal
+                    v-if="!isDeleted && permissions.canManageProjects"
+                    :organization="currentOrganization.slug"
+                    :visibilities="visibilities"
+                    :client-id="client.id"
+                >
+                    <Button size="sm" data-test="client-new-project-button">
+                        <Plus /> New project
+                    </Button>
+                </CreateProjectModal>
+            </template>
+            <ul v-if="projects.length > 0" class="divide-y rounded-lg border">
+                <li
+                    v-for="project in projects"
+                    :key="project.id"
+                    class="flex items-center justify-between gap-4 px-4 py-3"
+                    data-test="client-project"
+                >
+                    <Link
+                        :href="
+                            showBoard([currentOrganization.slug, project.slug])
+                        "
+                        class="font-medium hover:underline"
+                    >
+                        {{ project.name }}
+                    </Link>
+                    <Badge variant="secondary">{{ project.visibility }}</Badge>
+                </li>
+            </ul>
+            <p v-else class="text-muted-foreground text-sm">
+                No projects are assigned to this client.
+            </p>
+        </SettingsCard>
+
+        <SettingsCard
+            v-if="tickets.length > 0"
+            title="Recent tickets"
+            description="The latest support conversations with this client"
+        >
             <ul class="divide-y rounded-lg border">
                 <li v-for="ticket in tickets" :key="ticket.id">
                     <Link
@@ -224,10 +209,9 @@ defineOptions({
                     </Link>
                 </li>
             </ul>
-        </section>
-        <section v-if="invoices !== null" class="space-y-6">
-            <div class="flex items-start justify-between gap-4">
-                <Heading variant="small" title="Invoices" />
+        </SettingsCard>
+        <SettingsCard v-if="invoices !== null" title="Invoices">
+            <template #action>
                 <CreateInvoiceModal
                     v-if="!isDeleted"
                     :organization="currentOrganization.slug"
@@ -239,7 +223,7 @@ defineOptions({
                         <Plus /> New invoice
                     </Button>
                 </CreateInvoiceModal>
-            </div>
+            </template>
             <ul v-if="invoices.length > 0" class="divide-y rounded-lg border">
                 <li v-for="invoice in invoices" :key="invoice.id">
                     <Link
@@ -287,6 +271,6 @@ defineOptions({
             <p v-else class="text-muted-foreground text-sm">
                 No invoices for this client yet.
             </p>
-        </section>
+        </SettingsCard>
     </div>
 </template>

@@ -4,7 +4,7 @@ import { Trash2 } from '@lucide/vue';
 import { computed } from 'vue';
 import AddressList from '@/components/AddressList.vue';
 import EmailLink from '@/components/EmailLink.vue';
-import Heading from '@/components/Heading.vue';
+import SettingsCard from '@/components/SettingsCard.vue';
 import InputError from '@/components/InputError.vue';
 import PhoneLink from '@/components/PhoneLink.vue';
 import { Button } from '@/components/ui/button';
@@ -76,7 +76,10 @@ defineOptions({
 <template>
     <Head :title="contact.name ?? contact.email" />
 
-    <div class="flex flex-col gap-10 p-6" data-test="client-contact-page">
+    <div
+        class="flex max-w-7xl flex-col gap-6 p-6"
+        data-test="client-contact-page"
+    >
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
                 <h1 class="truncate text-2xl font-semibold tracking-tight">
@@ -106,91 +109,89 @@ defineOptions({
             </Button>
         </div>
 
-        <section class="space-y-6">
-            <Heading variant="small" title="Details" />
+        <div class="grid items-start gap-6 lg:grid-cols-2">
             <Form
                 v-bind="update.form(contactArgs())"
-                class="grid max-w-2xl gap-4 sm:grid-cols-2"
                 :options="{ preserveScroll: true }"
                 v-slot="{ errors, processing, recentlySuccessful }"
             >
-                <div class="grid gap-2">
-                    <Label for="contact-name">Name</Label>
-                    <Input
-                        id="contact-name"
-                        name="name"
-                        :default-value="contact.name ?? ''"
-                        :disabled="!canManage"
-                        required
-                    />
-                    <InputError :message="errors.name" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="contact-title">Title</Label>
-                    <Input
-                        id="contact-title"
-                        name="title"
-                        :default-value="contact.title ?? ''"
-                        :disabled="!canManage"
-                        placeholder="CTO"
-                    />
-                    <InputError :message="errors.title" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="contact-email">Email</Label>
-                    <Input
-                        id="contact-email"
-                        name="email"
-                        type="email"
-                        :default-value="contact.email"
-                        :disabled="!canManage"
-                        required
-                    />
-                    <InputError :message="errors.email" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="contact-phone">Phone</Label>
-                    <Input
-                        id="contact-phone"
-                        name="phone"
-                        type="tel"
-                        :default-value="contact.phone ?? ''"
-                        :disabled="!canManage"
-                        placeholder="+1 555 123 4567"
-                    />
-                    <InputError :message="errors.phone" />
-                </div>
-                <div
-                    v-if="canManage"
-                    class="flex items-center gap-3 sm:col-span-2"
-                >
-                    <Button
-                        type="submit"
-                        :disabled="processing"
-                        data-test="client-contact-save"
-                    >
-                        Save
-                    </Button>
-                    <span
-                        v-if="recentlySuccessful"
-                        class="text-muted-foreground text-sm"
-                    >
-                        Saved.
-                    </span>
-                </div>
+                <SettingsCard title="Details">
+                    <div class="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                        <div class="grid gap-2">
+                            <Label for="contact-name">Name</Label>
+                            <Input
+                                id="contact-name"
+                                name="name"
+                                :default-value="contact.name ?? ''"
+                                :disabled="!canManage"
+                                required
+                            />
+                            <InputError :message="errors.name" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="contact-title">Title</Label>
+                            <Input
+                                id="contact-title"
+                                name="title"
+                                :default-value="contact.title ?? ''"
+                                :disabled="!canManage"
+                                placeholder="CTO"
+                            />
+                            <InputError :message="errors.title" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="contact-email">Email</Label>
+                            <Input
+                                id="contact-email"
+                                name="email"
+                                type="email"
+                                :default-value="contact.email"
+                                :disabled="!canManage"
+                                required
+                            />
+                            <InputError :message="errors.email" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="contact-phone">Phone</Label>
+                            <Input
+                                id="contact-phone"
+                                name="phone"
+                                type="tel"
+                                :default-value="contact.phone ?? ''"
+                                :disabled="!canManage"
+                                placeholder="+1 555 123 4567"
+                            />
+                            <InputError :message="errors.phone" />
+                        </div>
+                    </div>
+                    <template v-if="canManage" #footer>
+                        <Button
+                            type="submit"
+                            :disabled="processing"
+                            data-test="client-contact-save"
+                        >
+                            Save
+                        </Button>
+                        <span
+                            v-if="recentlySuccessful"
+                            class="text-muted-foreground text-sm"
+                        >
+                            Saved.
+                        </span>
+                    </template>
+                </SettingsCard>
             </Form>
-        </section>
 
-        <section class="space-y-6">
-            <Heading variant="small" title="Addresses" />
-            <AddressList
-                :addresses="contact.addresses"
-                :types="addressTypes"
-                :can-manage="canManage"
-                :store="storeAddress.form(contactArgs())"
-                :update="(id) => updateAddress.form([...contactArgs(), id])"
-                :destroy="(id) => destroyAddress([...contactArgs(), id])"
-            />
-        </section>
+            <SettingsCard title="Addresses">
+                <AddressList
+                    :addresses="contact.addresses"
+                    :types="addressTypes"
+                    :can-manage="canManage"
+                    :store="storeAddress.form(contactArgs())"
+                    :update="(id) => updateAddress.form([...contactArgs(), id])"
+                    :destroy="(id) => destroyAddress([...contactArgs(), id])"
+                />
+            </SettingsCard>
+        </div>
     </div>
 </template>

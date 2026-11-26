@@ -13,7 +13,7 @@ import {
 import { computed, ref } from 'vue';
 import AssignRoleModal from '@/components/AssignRoleModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import Heading from '@/components/Heading.vue';
+import SettingsCard from '@/components/SettingsCard.vue';
 import InviteMemberModal from '@/components/InviteMemberModal.vue';
 import RemoveMemberModal from '@/components/RemoveMemberModal.vue';
 import RoleFormModal from '@/components/RoleFormModal.vue';
@@ -122,8 +122,10 @@ const canInvite = computed(
 <template>
     <Head :title="role.name" />
 
-    <div class="flex flex-col gap-10 p-6">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="grid max-w-7xl items-start gap-6 p-6 lg:grid-cols-2">
+        <div
+            class="flex flex-wrap items-start justify-between gap-4 lg:col-span-2"
+        >
             <div>
                 <div class="flex items-center gap-2">
                     <h2 class="text-xl font-semibold tracking-tight">
@@ -170,13 +172,10 @@ const canInvite = computed(
             </div>
         </div>
 
-        <section class="space-y-4">
-            <Heading
-                variant="small"
-                title="Members"
-                description="People who hold this role in the organization."
-            />
-
+        <SettingsCard
+            title="Members"
+            description="People who hold this role in the organization."
+        >
             <p
                 v-if="role.isOwner && members.length === 1"
                 class="text-muted-foreground text-sm"
@@ -263,19 +262,16 @@ const canInvite = computed(
                     <UserPlus /> Add member
                 </Button>
             </EmptyState>
-        </section>
+        </SettingsCard>
 
-        <section class="space-y-4">
-            <Heading
-                variant="small"
-                title="Permissions"
-                :description="
-                    role.isOwner
-                        ? 'The owner role always grants every permission.'
-                        : 'What members holding this role can do.'
-                "
-            />
-
+        <SettingsCard
+            title="Permissions"
+            :description="
+                role.isOwner
+                    ? 'The owner role always grants every permission.'
+                    : 'What members holding this role can do.'
+            "
+        >
             <div class="grid gap-6 sm:grid-cols-2">
                 <div
                     v-for="group in permissionGroups"
@@ -305,7 +301,7 @@ const canInvite = computed(
                     </ul>
                 </div>
             </div>
-        </section>
+        </SettingsCard>
     </div>
 
     <RoleFormModal
