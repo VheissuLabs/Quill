@@ -751,13 +751,15 @@ const updateModule = (field: ModuleField, value: boolean) => {
                                                 </div>
                                             </template>
                                             <template
-                                                v-else-if="element === 'crm'"
+                                                v-else-if="
+                                                    element === 'relationships'
+                                                "
                                             >
                                                 <div>
                                                     <span
                                                         class="block font-medium"
                                                     >
-                                                        CRM
+                                                        Relationships
                                                     </span>
                                                     <span
                                                         class="text-muted-foreground mt-1 block text-sm"

@@ -7,7 +7,7 @@ enum SidebarSection: string
     case Feedback = 'feedback';
     case Development = 'development';
     case Support = 'support';
-    case Crm = 'crm';
+    case Relationships = 'relationships';
     case Billing = 'billing';
 
     /** @return array<int, string> */

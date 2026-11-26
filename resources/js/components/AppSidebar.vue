@@ -84,7 +84,7 @@ const moduleOrder = computed<SidebarSectionKey[]>(
             'feedback',
             'development',
             'support',
-            'crm',
+            'relationships',
             'billing',
         ],
 );
@@ -137,8 +137,8 @@ const navGroups = computed<NavGroup[]>(() => {
                           ],
                       }
                     : null,
-            crm: {
-                label: 'CRM',
+            relationships: {
+                label: 'Relationships',
                 items: [
                     { title: 'Clients', href: clients(slug), icon: Briefcase },
                     { title: 'Contacts', href: contacts(slug), icon: Contact },

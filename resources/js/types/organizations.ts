@@ -30,7 +30,7 @@ export type SidebarSectionKey =
     | 'feedback'
     | 'development'
     | 'support'
-    | 'crm'
+    | 'relationships'
     | 'billing';
 
 export type Organization = {
