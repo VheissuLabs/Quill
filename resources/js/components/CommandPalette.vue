@@ -2,7 +2,7 @@
 import { router, useHttp, usePage } from '@inertiajs/vue3';
 import { useDebounceFn, useEventListener } from '@vueuse/core';
 import { VisuallyHidden } from 'reka-ui';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, useTemplateRef, watch } from 'vue';
 import CreateClientModal from '@/components/CreateClientModal.vue';
 import CreateContactModal from '@/components/CreateContactModal.vue';
 import CreateInvoiceModal from '@/components/CreateInvoiceModal.vue';
@@ -122,6 +122,10 @@ const runSearch = useDebounceFn(async () => {
     }
 }, 250);
 
+const command = useTemplateRef<InstanceType<typeof Command>>('command');
+
+watch(results, () => command.value?.highlightFirstItem(), { flush: 'post' });
+
 watch(query, () => {
     pendingSearch.value = query.value.trim().length >= MINIMUM_TERM;
     void runSearch();
@@ -212,7 +216,7 @@ useEventListener('keydown', (event: KeyboardEvent) => {
                     </DialogDescription>
                 </VisuallyHidden>
 
-                <Command>
+                <Command ref="command">
                     <CommandInput
                         v-model="query"
                         placeholder="Search issues, projects, contacts…"
