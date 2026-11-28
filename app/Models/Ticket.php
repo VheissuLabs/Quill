@@ -217,6 +217,31 @@ class Ticket extends Model
         ]);
     }
 
+    /** @param  array<int, int>  $ids */
+    public static function deleteMany(Organization $organization, array $ids): int
+    {
+        $tickets = $organization->tickets()->whereKey($ids)->get();
+
+        static::withoutBroadcastingChanges(fn () => $tickets->each(fn (Ticket $ticket) => $ticket->delete()));
+
+        if ($tickets->isNotEmpty()) {
+            broadcast(new TicketsChanged($organization->id))->toOthers();
+        }
+
+        return $tickets->count();
+    }
+
+    /**
+     * @param  array{status: string|null, client: string|null, view: string|null}  $filters
+     * @return array<string, int>
+     */
+    public static function countsByView(Organization $organization, User $viewer, array $filters): array
+    {
+        return collect(['inbox' => null, 'unassigned' => 'unassigned', 'ready' => 'ready', 'mine' => 'mine'])
+            ->map(fn (?string $view) => $organization->tickets()->inInbox($viewer, [...$filters, 'view' => $view])->count())
+            ->all();
+    }
+
     /**
      * @param  Builder<$this>  $query
      * @param  array{status: string|null, client: string|null, view: string|null}  $filters

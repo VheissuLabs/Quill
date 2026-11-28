@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\TicketStatus;
+use App\Events\TicketsChanged;
 use App\Models\Client;
 use App\Models\ClientContact;
 use App\Models\Comment;
@@ -11,6 +12,7 @@ use App\Models\Organization;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Notifications\TicketReply;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -294,4 +296,48 @@ test('deleting a ticket removes its messages and attachment files but keeps its 
     $this->assertModelMissing($attachment);
     Storage::assertMissing($attachment->path);
     $this->assertModelExists($issue);
+});
+
+test('every view counts the tickets it would show', function () {
+    [$organization, $agent] = ticketDesk();
+    $client = Client::factory()->for($organization)->create();
+    Ticket::factory()->for($organization)->create();
+    Ticket::factory()->forClient($client)->create(['reporter_id' => $agent->id, 'issue_resolved_at' => now()]);
+    Ticket::factory()->forClient($client)->create(['status' => TicketStatus::Closed, 'issue_resolved_at' => now()]);
+
+    $this->actingAs($agent)
+        ->get(route('tickets.index', ['current_organization' => $organization]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('counts', ['inbox' => 2, 'unassigned' => 1, 'ready' => 1, 'mine' => 1]));
+});
+
+test('ticket managers delete several tickets at once, announcing it once', function () {
+    [$organization, $agent] = ticketDesk();
+    [$first, $second, $kept] = Ticket::factory()->for($organization)->count(3)->create();
+    $elsewhere = Ticket::factory()->create();
+
+    Event::fake([TicketsChanged::class]);
+
+    $this->actingAs($agent)
+        ->delete(route('tickets.destroy-many', ['current_organization' => $organization, 'ids' => [$first->id, $second->id, $elsewhere->id]]))
+        ->assertRedirect();
+
+    $this->assertModelMissing($first);
+    $this->assertModelMissing($second);
+    $this->assertModelExists($kept);
+    $this->assertModelExists($elsewhere);
+    Event::assertDispatchedTimes(TicketsChanged::class, 1);
+});
+
+test('members without ticket management cannot delete tickets in bulk', function () {
+    [$organization] = ticketDesk();
+    $member = User::factory()->create();
+    $organization->addMember($member, 'Member');
+    $ticket = Ticket::factory()->for($organization)->create();
+
+    $this->actingAs($member)
+        ->delete(route('tickets.destroy-many', ['current_organization' => $organization, 'ids' => [$ticket->id]]))
+        ->assertForbidden();
+
+    $this->assertModelExists($ticket);
 });

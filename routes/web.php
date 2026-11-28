@@ -64,6 +64,7 @@ use App\Http\Controllers\Teams\TeamMemberController;
 use App\Http\Controllers\Teams\TeamModuleController;
 use App\Http\Controllers\Tickets\TicketAttachmentController;
 use App\Http\Controllers\Tickets\TicketController;
+use App\Http\Controllers\Tickets\TicketDeletionController;
 use App\Http\Controllers\Tickets\TicketIssueController;
 use App\Http\Controllers\Tickets\TicketReplyController;
 use App\Http\Controllers\Tickets\TicketReplyDeliveryController;
@@ -197,6 +198,7 @@ Route::prefix('{current_organization}')
         Route::post('issues/{issue}/comments', [IssueCommentController::class, 'store'])->can('comment', 'issue')->name('issues.comments.store');
         Route::delete('issues/{issue}/comments/{comment}', [IssueCommentController::class, 'destroy'])->can('delete', 'comment')->name('issues.comments.destroy');
 
+        Route::delete('tickets', [TicketDeletionController::class, 'destroy'])->can('deleteAny', [Ticket::class, 'current_organization'])->name('tickets.destroy-many');
         Route::resource('tickets', TicketController::class)->only(['index', 'store', 'show', 'update', 'destroy'])
             ->middlewareFor('index', 'can:viewAny,'.Ticket::class.',current_organization')
             ->middlewareFor('store', 'can:create,'.Ticket::class.',current_organization')

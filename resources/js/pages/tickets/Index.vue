@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { CircleCheck, Inbox, Plus } from '@lucide/vue';
-import { computed } from 'vue';
+import { CircleCheck, Inbox, Plus, Trash2 } from '@lucide/vue';
+import { computed, ref, watch } from 'vue';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import CreateTicketModal from '@/components/CreateTicketModal.vue';
 import Heading from '@/components/Heading.vue';
 import ShowMore from '@/components/ShowMore.vue';
 import TicketStatusBadge from '@/components/TicketStatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Select,
     SelectContent,
@@ -16,7 +18,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { formatDate } from '@/lib/dates';
-import { index, show } from '@/routes/tickets';
+import { destroyMany, index, show } from '@/routes/tickets';
 import type {
     Organization,
     TicketClientOption,
@@ -31,7 +33,7 @@ type Props = {
     filters: TicketFilters;
     statuses: TicketStatusOption[];
     clients: TicketClientOption[];
-    counts: { unassigned: number; ready: number };
+    counts: { inbox: number; unassigned: number; ready: number; mine: number };
 };
 
 const props = defineProps<Props>();
@@ -49,10 +51,39 @@ defineOptions({
 
 const all = 'all';
 
+const selected = ref<number[]>([]);
+const bulkDeleteOpen = ref(false);
+
+watch(
+    () => props.tickets.data,
+    (tickets) => {
+        const shown = new Set(tickets.map((ticket) => ticket.id));
+        selected.value = selected.value.filter((id) => shown.has(id));
+    },
+);
+
+const allSelected = computed(
+    () =>
+        props.tickets.data.length > 0 &&
+        selected.value.length === props.tickets.data.length,
+);
+
+const selectAll = (checked: boolean | 'indeterminate') => {
+    selected.value =
+        checked === true ? props.tickets.data.map((ticket) => ticket.id) : [];
+};
+
+const select = (id: number, checked: boolean | 'indeterminate') => {
+    selected.value =
+        checked === true
+            ? [...selected.value, id]
+            : selected.value.filter((selectedId) => selectedId !== id);
+};
+
 const views = computed(
     () =>
         [
-            { value: null, label: 'Inbox' },
+            { value: null, label: 'Inbox', count: props.counts.inbox },
             {
                 value: 'unassigned',
                 label: 'Unassigned',
@@ -63,7 +94,11 @@ const views = computed(
                 label: 'Ready to reply',
                 count: props.counts.ready,
             },
-            { value: 'mine', label: 'Reported by me' },
+            {
+                value: 'mine',
+                label: 'Reported by me',
+                count: props.counts.mine,
+            },
         ] as const,
 );
 
@@ -128,11 +163,7 @@ const clientFilter = computed({
                 @click="applyFilters({ view: view.value })"
             >
                 {{ view.label }}
-                <Badge
-                    v-if="'count' in view && view.count > 0"
-                    variant="outline"
-                    class="tabular-nums"
-                >
+                <Badge variant="outline" class="tabular-nums">
                     {{ view.count }}
                 </Badge>
             </Button>
@@ -174,66 +205,115 @@ const clientFilter = computed({
         </div>
 
         <div v-if="tickets.data.length > 0" class="space-y-4">
-            <ul class="divide-y rounded-xl border">
-                <li v-for="ticket in tickets.data" :key="ticket.id">
-                    <Link
-                        :href="show([currentOrganization.slug, ticket.id])"
-                        class="hover:bg-muted/50 flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3"
-                        data-test="ticket-row"
+            <div class="rounded-xl border">
+                <div
+                    class="text-muted-foreground flex h-11 items-center gap-3 border-b px-4 text-sm"
+                >
+                    <Checkbox
+                        aria-label="Select all tickets"
+                        data-test="select-all-tickets"
+                        :model-value="
+                            allSelected
+                                ? true
+                                : selected.length > 0
+                                  ? 'indeterminate'
+                                  : false
+                        "
+                        @update:model-value="selectAll"
+                    />
+                    <span v-if="selected.length > 0" class="tabular-nums">
+                        {{ selected.length }} selected
+                    </span>
+                    <span v-else>Select tickets</span>
+                    <Button
+                        v-if="selected.length > 0"
+                        variant="ghost"
+                        size="sm"
+                        class="text-destructive ml-auto"
+                        data-test="delete-selected-tickets"
+                        @click="bulkDeleteOpen = true"
                     >
-                        <span
-                            class="text-muted-foreground w-14 text-sm tabular-nums"
+                        <Trash2 />
+                        Delete
+                    </Button>
+                </div>
+                <ul class="divide-y">
+                    <li
+                        v-for="ticket in tickets.data"
+                        :key="ticket.id"
+                        class="hover:bg-muted/50 flex items-center"
+                    >
+                        <div class="flex items-center self-stretch pl-4">
+                            <Checkbox
+                                :aria-label="`Select ${ticket.reference}`"
+                                data-test="select-ticket"
+                                :model-value="selected.includes(ticket.id)"
+                                @update:model-value="select(ticket.id, $event)"
+                            />
+                        </div>
+                        <Link
+                            :href="show([currentOrganization.slug, ticket.id])"
+                            class="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3"
+                            data-test="ticket-row"
                         >
-                            {{ ticket.reference }}
-                        </span>
-                        <span class="min-w-0 flex-1">
-                            <span class="block truncate font-medium">
-                                {{ ticket.subject }}
+                            <span
+                                class="text-muted-foreground w-14 text-sm tabular-nums"
+                            >
+                                {{ ticket.reference }}
+                            </span>
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate font-medium">
+                                    {{ ticket.subject }}
+                                </span>
+                                <span
+                                    class="text-muted-foreground block truncate text-sm"
+                                >
+                                    {{
+                                        ticket.requesterName ??
+                                        ticket.requesterEmail
+                                    }}
+                                    <template v-if="ticket.requesterName">
+                                        · {{ ticket.requesterEmail }}
+                                    </template>
+                                </span>
                             </span>
                             <span
-                                class="text-muted-foreground block truncate text-sm"
+                                v-if="ticket.readyToReply"
+                                class="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 dark:text-emerald-400"
+                            >
+                                <CircleCheck class="size-4" />
+                                Ready to reply
+                            </span>
+                            <Badge v-if="ticket.issue" variant="outline">
+                                {{ ticket.issue.reference }}
+                            </Badge>
+                            <Badge v-if="ticket.client" variant="secondary">
+                                {{ ticket.client.name }}
+                            </Badge>
+                            <Badge
+                                v-else
+                                variant="outline"
+                                class="border-dashed"
+                            >
+                                Unassigned
+                            </Badge>
+                            <TicketStatusBadge
+                                :status="ticket.status"
+                                :label="ticket.statusLabel"
+                            />
+                            <span
+                                class="text-muted-foreground w-28 text-right text-xs"
                             >
                                 {{
-                                    ticket.requesterName ??
-                                    ticket.requesterEmail
+                                    ticket.lastMessageAt
+                                        ? formatDate(ticket.lastMessageAt)
+                                        : ''
                                 }}
-                                <template v-if="ticket.requesterName">
-                                    · {{ ticket.requesterEmail }}
-                                </template>
                             </span>
-                        </span>
-                        <span
-                            v-if="ticket.readyToReply"
-                            class="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 dark:text-emerald-400"
-                        >
-                            <CircleCheck class="size-4" />
-                            Ready to reply
-                        </span>
-                        <Badge v-if="ticket.issue" variant="outline">
-                            {{ ticket.issue.reference }}
-                        </Badge>
-                        <Badge v-if="ticket.client" variant="secondary">
-                            {{ ticket.client.name }}
-                        </Badge>
-                        <Badge v-else variant="outline" class="border-dashed">
-                            Unassigned
-                        </Badge>
-                        <TicketStatusBadge
-                            :status="ticket.status"
-                            :label="ticket.statusLabel"
-                        />
-                        <span
-                            class="text-muted-foreground w-28 text-right text-xs"
-                        >
-                            {{
-                                ticket.lastMessageAt
-                                    ? formatDate(ticket.lastMessageAt)
-                                    : ''
-                            }}
-                        </span>
-                    </Link>
-                </li>
-            </ul>
+                        </Link>
+                    </li>
+                </ul>
+            </div>
             <ShowMore
                 prop="tickets"
                 :shown="tickets.data.length"
@@ -248,5 +328,27 @@ const clientFilter = computed({
             <Inbox class="size-6" />
             Nothing here. Mail sent to support shows up in this list.
         </div>
+
+        <ConfirmDeleteModal
+            v-model:open="bulkDeleteOpen"
+            :title="
+                selected.length === 1
+                    ? 'Delete ticket'
+                    : `Delete ${selected.length} tickets`
+            "
+            :confirm-label="
+                selected.length === 1
+                    ? 'Delete ticket'
+                    : `Delete ${selected.length} tickets`
+            "
+            :href="
+                destroyMany(currentOrganization.slug, {
+                    query: { ids: selected },
+                })
+            "
+        >
+            This permanently deletes the selected tickets with their messages
+            and attachments. Linked issues are kept.
+        </ConfirmDeleteModal>
     </div>
 </template>

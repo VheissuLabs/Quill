@@ -35,10 +35,7 @@ class TicketController extends Controller
             'filters' => $request->filters(),
             'statuses' => TicketStatus::options(),
             'clients' => ClientsChanged::live($currentOrganization->clients()->orderBy('name')->get(['id', 'name', 'slug']), $currentOrganization->id),
-            'counts' => TicketsChanged::live([
-                'unassigned' => $currentOrganization->tickets()->whereNull('client_id')->whereIn('status', [TicketStatus::Open, TicketStatus::AwaitingCustomer])->count(),
-                'ready' => $currentOrganization->tickets()->whereNotNull('issue_resolved_at')->count(),
-            ], $currentOrganization->id, IssuesChanged::class),
+            'counts' => TicketsChanged::live(fn () => Ticket::countsByView($currentOrganization, $request->user(), $request->filters()), $currentOrganization->id, IssuesChanged::class),
         ]);
     }
 
