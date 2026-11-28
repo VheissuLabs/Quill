@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, InfiniteScroll, Link, router } from '@inertiajs/vue3';
+import { useEcho } from '@laravel/echo-vue';
 import { CircleCheck, Inbox, Plus } from '@lucide/vue';
 import { computed } from 'vue';
 import CreateTicketModal from '@/components/CreateTicketModal.vue';
@@ -14,6 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { broadcastingEnabled, organizationChannel } from '@/lib/broadcasting';
 import { formatDate } from '@/lib/dates';
 import { index, show } from '@/routes/tickets';
 import type {
@@ -34,6 +36,19 @@ type Props = {
 };
 
 const props = defineProps<Props>();
+
+if (!import.meta.env.SSR && broadcastingEnabled) {
+    useEcho(
+        organizationChannel(props.currentOrganization.id),
+        '.tickets.changed',
+        () =>
+            router.reload({
+                only: ['tickets'],
+                reset: ['tickets'],
+                showProgress: false,
+            }),
+    );
+}
 
 defineOptions({
     layout: (props: { currentOrganization: Organization }) => ({
@@ -172,67 +187,73 @@ const clientFilter = computed({
             </Select>
         </div>
 
-        <InfiniteScroll
-            v-if="tickets.data.length > 0"
-            data="tickets"
-            as="ul"
-            class="divide-y rounded-xl border"
-            only-next
-        >
-            <li v-for="ticket in tickets.data" :key="ticket.id">
-                <Link
-                    :href="show([currentOrganization.slug, ticket.id])"
-                    class="hover:bg-muted/50 flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3"
-                    data-test="ticket-row"
-                >
-                    <span
-                        class="text-muted-foreground w-14 text-sm tabular-nums"
+        <div v-if="tickets.data.length > 0">
+            <InfiniteScroll
+                data="tickets"
+                as="ul"
+                class="divide-y rounded-xl border"
+                only-next
+            >
+                <li v-for="ticket in tickets.data" :key="ticket.id">
+                    <Link
+                        :href="show([currentOrganization.slug, ticket.id])"
+                        class="hover:bg-muted/50 flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3"
+                        data-test="ticket-row"
                     >
-                        {{ ticket.reference }}
-                    </span>
-                    <span class="min-w-0 flex-1">
-                        <span class="block truncate font-medium">
-                            {{ ticket.subject }}
+                        <span
+                            class="text-muted-foreground w-14 text-sm tabular-nums"
+                        >
+                            {{ ticket.reference }}
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate font-medium">
+                                {{ ticket.subject }}
+                            </span>
+                            <span
+                                class="text-muted-foreground block truncate text-sm"
+                            >
+                                {{
+                                    ticket.requesterName ??
+                                    ticket.requesterEmail
+                                }}
+                                <template v-if="ticket.requesterName">
+                                    · {{ ticket.requesterEmail }}
+                                </template>
+                            </span>
                         </span>
                         <span
-                            class="text-muted-foreground block truncate text-sm"
+                            v-if="ticket.readyToReply"
+                            class="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 dark:text-emerald-400"
                         >
-                            {{ ticket.requesterName ?? ticket.requesterEmail }}
-                            <template v-if="ticket.requesterName">
-                                · {{ ticket.requesterEmail }}
-                            </template>
+                            <CircleCheck class="size-4" />
+                            Ready to reply
                         </span>
-                    </span>
-                    <span
-                        v-if="ticket.readyToReply"
-                        class="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 dark:text-emerald-400"
-                    >
-                        <CircleCheck class="size-4" />
-                        Ready to reply
-                    </span>
-                    <Badge v-if="ticket.issue" variant="outline">
-                        {{ ticket.issue.reference }}
-                    </Badge>
-                    <Badge v-if="ticket.client" variant="secondary">
-                        {{ ticket.client.name }}
-                    </Badge>
-                    <Badge v-else variant="outline" class="border-dashed">
-                        Unassigned
-                    </Badge>
-                    <TicketStatusBadge
-                        :status="ticket.status"
-                        :label="ticket.statusLabel"
-                    />
-                    <span class="text-muted-foreground w-28 text-right text-xs">
-                        {{
-                            ticket.lastMessageAt
-                                ? formatDate(ticket.lastMessageAt)
-                                : ''
-                        }}
-                    </span>
-                </Link>
-            </li>
-        </InfiniteScroll>
+                        <Badge v-if="ticket.issue" variant="outline">
+                            {{ ticket.issue.reference }}
+                        </Badge>
+                        <Badge v-if="ticket.client" variant="secondary">
+                            {{ ticket.client.name }}
+                        </Badge>
+                        <Badge v-else variant="outline" class="border-dashed">
+                            Unassigned
+                        </Badge>
+                        <TicketStatusBadge
+                            :status="ticket.status"
+                            :label="ticket.statusLabel"
+                        />
+                        <span
+                            class="text-muted-foreground w-28 text-right text-xs"
+                        >
+                            {{
+                                ticket.lastMessageAt
+                                    ? formatDate(ticket.lastMessageAt)
+                                    : ''
+                            }}
+                        </span>
+                    </Link>
+                </li>
+            </InfiniteScroll>
+        </div>
 
         <div
             v-else
