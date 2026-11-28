@@ -2,7 +2,7 @@
 import { Head, Link, router, useHttp } from '@inertiajs/vue3';
 import { CircleCheck, Link2, Trash2, Unlink } from '@lucide/vue';
 import { useDebounceFn } from '@vueuse/core';
-import { ref } from 'vue';
+import { nextTick, ref } from 'vue';
 import CommentForm from '@/components/CommentForm.vue';
 import CommentThread from '@/components/CommentThread.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
@@ -104,6 +104,42 @@ const patch = (data: Record<string, string | number | boolean | null>) => {
 
 const internal = 'internal';
 
+const editingSubject = ref(false);
+const subjectDraft = ref(props.ticket.subject);
+
+const startEditingSubject = () => {
+    subjectDraft.value = props.ticket.subject;
+    editingSubject.value = true;
+
+    void nextTick(() => document.getElementById('ticket-subject')?.focus());
+};
+
+const cancelSubject = () => {
+    subjectDraft.value = props.ticket.subject;
+    editingSubject.value = false;
+};
+
+const saveSubject = () => {
+    if (!editingSubject.value) {
+        return;
+    }
+
+    const subject = subjectDraft.value.trim();
+    editingSubject.value = false;
+
+    if (subject === '' || subject === props.ticket.subject) {
+        return;
+    }
+
+    mutate(update(routeArgs()), {
+        data: { subject },
+        optimistic: (current) => ({
+            ticket: { ...(current.ticket as TicketDetail), subject },
+        }),
+        errorMessage: 'The subject could not be saved.',
+    });
+};
+
 const changeClient = (value: string) =>
     patch(
         value === internal
@@ -191,9 +227,32 @@ const retry = (comment: FeedbackComment) => {
                     />
                 </p>
                 <div class="flex items-start justify-between gap-4">
+                    <form
+                        v-if="editingSubject"
+                        class="flex-1"
+                        @submit.prevent="saveSubject"
+                    >
+                        <Input
+                            id="ticket-subject"
+                            v-model="subjectDraft"
+                            class="text-xl font-semibold"
+                            aria-label="Subject"
+                            maxlength="250"
+                            required
+                            data-test="edit-ticket-subject"
+                            @blur="saveSubject"
+                            @keydown.esc="cancelSubject"
+                        />
+                    </form>
                     <h1
-                        class="text-xl font-semibold"
+                        v-else
+                        class="hover:bg-muted/60 -mx-2 cursor-text rounded-md px-2 text-xl font-semibold"
+                        role="button"
+                        tabindex="0"
+                        title="Click to rename"
                         data-test="ticket-subject"
+                        @click="startEditingSubject"
+                        @keydown.enter.prevent="startEditingSubject"
                     >
                         {{ ticket.subject }}
                     </h1>

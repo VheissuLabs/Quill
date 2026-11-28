@@ -11,6 +11,7 @@ class TicketObserver
     {
         $ticket->number ??= (Ticket::query()->where('organization_id', $ticket->organization_id)->max('number') ?? 0) + 1;
         $ticket->last_message_at ??= now();
+        $ticket->email_subject ??= $ticket->subject;
     }
 
     public function deleting(Ticket $ticket): void

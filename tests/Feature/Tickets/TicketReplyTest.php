@@ -134,3 +134,33 @@ test('members without ticket management cannot reply', function () {
 
     Notification::assertNothingSent();
 });
+
+test('renaming a ticket keeps replies in the customer\'s original email thread', function () {
+    [$organization, $agent] = replyingAgent();
+    $ticket = Ticket::factory()->for($organization)->create(['subject' => 'help!!!', 'requester_email' => 'jane@acme.test']);
+
+    $this->actingAs($agent)
+        ->patch(route('tickets.update', ['current_organization' => $organization, 'ticket' => $ticket]), ['subject' => 'Export button does nothing'])
+        ->assertRedirect();
+
+    $this->actingAs($agent)
+        ->post(route('tickets.replies.store', ['current_organization' => $organization, 'ticket' => $ticket]), ['body' => '<p>On it.</p>'])
+        ->assertRedirect();
+
+    $sent = collect(app('mailer')->getSymfonyTransport()->messages())->sole()->getOriginalMessage();
+
+    expect($ticket->fresh()->subject)->toBe('Export button does nothing')
+        ->and($sent)->toBeInstanceOf(Email::class)
+        ->and($sent->getSubject())->toBe("Re: help!!! [T-{$ticket->number}]");
+});
+
+test('a ticket subject cannot be renamed to nothing', function () {
+    [$organization, $agent] = replyingAgent();
+    $ticket = Ticket::factory()->for($organization)->create(['subject' => 'Export broken']);
+
+    $this->actingAs($agent)
+        ->patch(route('tickets.update', ['current_organization' => $organization, 'ticket' => $ticket]), ['subject' => ''])
+        ->assertSessionHasErrors('subject');
+
+    expect($ticket->fresh()->subject)->toBe('Export broken');
+});

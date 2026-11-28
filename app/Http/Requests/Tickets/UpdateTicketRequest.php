@@ -18,6 +18,7 @@ class UpdateTicketRequest extends FormRequest
         abort_if(! $organization instanceof Organization, 404);
 
         return [
+            'subject' => ['sometimes', 'required', 'string', 'max:250'],
             'status' => ['sometimes', 'required', Rule::enum(TicketStatus::class)],
             'client_id' => ['sometimes', 'nullable', 'integer', Rule::exists('clients', 'id')->where('organization_id', $organization->id)],
             'internal' => ['sometimes', 'boolean'],

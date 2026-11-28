@@ -202,9 +202,13 @@ class Ticket extends Model
         $this->update(['issue_id' => null, 'issue_resolved_at' => null]);
     }
 
-    /** @param  array{status?: string, client_id?: int|null, internal?: bool}  $changes */
+    /** @param  array{subject?: string, status?: string, client_id?: int|null, internal?: bool}  $changes */
     public function applyChanges(array $changes): void
     {
+        if (array_key_exists('subject', $changes)) {
+            $this->update(['subject' => $changes['subject']]);
+        }
+
         if ($changes['internal'] ?? false) {
             $this->assignToOrganization();
         } elseif (array_key_exists('client_id', $changes)) {

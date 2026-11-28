@@ -42,7 +42,7 @@ class TicketReply extends Notification implements ShouldQueue
         return (new MailMessage)
             ->from(config('services.resend.support_address'), config('services.resend.support_name'))
             ->replyTo($ticket->replyAddress(), config('services.resend.support_name'))
-            ->subject(__('Re: :subject [:reference]', ['subject' => $ticket->subject, 'reference' => $ticket->reference()]))
+            ->subject(__('Re: :subject [:reference]', ['subject' => $ticket->email_subject ?? $ticket->subject, 'reference' => $ticket->reference()]))
             ->view('mail.ticket-reply', ['body' => $this->comment->body, 'author' => $this->comment->author?->name])
             ->text('mail.ticket-reply-text', ['body' => $this->comment->body_text, 'author' => $this->comment->author?->name])
             ->withSymfonyMessage(function (Email $email) use ($message): void {
