@@ -80,4 +80,13 @@ class TicketController extends Controller
 
         return back();
     }
+
+    public function destroy(Organization $currentOrganization, Ticket $ticket): RedirectResponse
+    {
+        $ticket->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __(':reference deleted.', ['reference' => $ticket->reference()])]);
+
+        return to_route('tickets.index');
+    }
 }

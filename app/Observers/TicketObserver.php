@@ -15,11 +15,9 @@ class TicketObserver
 
     public function deleting(Ticket $ticket): void
     {
-        Comment::withoutEvents(
-            fn () => $ticket->comments()->with('emailMessage')->lazy()->each(function (Comment $comment): void {
-                $comment->emailMessage?->delete();
-                $comment->delete();
-            })
-        );
+        $ticket->comments()->with('emailMessage')->lazy()->each(function (Comment $comment): void {
+            $comment->emailMessage?->delete();
+            Comment::withoutEvents(fn () => $comment->delete());
+        });
     }
 }

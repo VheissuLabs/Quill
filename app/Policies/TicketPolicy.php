@@ -30,6 +30,11 @@ class TicketPolicy
         return $this->manages($user, $ticket->organization);
     }
 
+    public function delete(User $user, Ticket $ticket): bool
+    {
+        return $this->manages($user, $ticket->organization);
+    }
+
     public function reply(User $user, Ticket $ticket): bool
     {
         return $this->manages($user, $ticket->organization);

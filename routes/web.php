@@ -197,11 +197,12 @@ Route::prefix('{current_organization}')
         Route::post('issues/{issue}/comments', [IssueCommentController::class, 'store'])->can('comment', 'issue')->name('issues.comments.store');
         Route::delete('issues/{issue}/comments/{comment}', [IssueCommentController::class, 'destroy'])->can('delete', 'comment')->name('issues.comments.destroy');
 
-        Route::resource('tickets', TicketController::class)->only(['index', 'store', 'show', 'update'])
+        Route::resource('tickets', TicketController::class)->only(['index', 'store', 'show', 'update', 'destroy'])
             ->middlewareFor('index', 'can:viewAny,'.Ticket::class.',current_organization')
             ->middlewareFor('store', 'can:create,'.Ticket::class.',current_organization')
             ->middlewareFor('show', 'can:view,ticket')
-            ->middlewareFor('update', 'can:update,ticket');
+            ->middlewareFor('update', 'can:update,ticket')
+            ->middlewareFor('destroy', 'can:delete,ticket');
         Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->can('reply', 'ticket')->name('tickets.replies.store');
         Route::delete('tickets/{ticket}/replies/{comment}', [TicketReplyController::class, 'destroy'])->can('delete', 'comment')->name('tickets.replies.destroy');
         Route::post('tickets/{ticket}/replies/{comment}/delivery', [TicketReplyDeliveryController::class, 'store'])->can('reply', 'ticket')->name('tickets.replies.delivery.store');

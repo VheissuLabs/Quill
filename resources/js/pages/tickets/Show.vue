@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, InfiniteScroll, Link, router, useHttp } from '@inertiajs/vue3';
-import { CircleCheck, Link2, Unlink } from '@lucide/vue';
+import { CircleCheck, Link2, Trash2, Unlink } from '@lucide/vue';
 import { useDebounceFn } from '@vueuse/core';
 import { ref } from 'vue';
 import CommentForm from '@/components/CommentForm.vue';
@@ -22,7 +22,7 @@ import { formatDate } from '@/lib/dates';
 import { mutate } from '@/lib/optimistic';
 import { store as storeDomain } from '@/routes/clients/domains';
 import { lookup as issueLookup, show as showIssue } from '@/routes/issues';
-import { index, show, update } from '@/routes/tickets';
+import { destroy, index, show, update } from '@/routes/tickets';
 import { show as showAttachment } from '@/routes/tickets/attachments';
 import {
     destroy as unlinkIssue,
@@ -82,6 +82,7 @@ const routeArgs = (): [string, number] => [
     props.ticket.id,
 ];
 const commentToDelete = ref<FeedbackComment | null>(null);
+const deleteDialogOpen = ref(false);
 const projectId = ref<string>(none);
 const issueQuery = ref('');
 const issueResults = ref<
@@ -181,9 +182,24 @@ const retry = (comment: FeedbackComment) => {
                         :label="ticket.statusLabel"
                     />
                 </p>
-                <h1 class="text-xl font-semibold" data-test="ticket-subject">
-                    {{ ticket.subject }}
-                </h1>
+                <div class="flex items-start justify-between gap-4">
+                    <h1
+                        class="text-xl font-semibold"
+                        data-test="ticket-subject"
+                    >
+                        {{ ticket.subject }}
+                    </h1>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        class="shrink-0"
+                        data-test="delete-ticket-button"
+                        aria-label="Delete ticket"
+                        @click="deleteDialogOpen = true"
+                    >
+                        <Trash2 />
+                    </Button>
+                </div>
                 <p class="text-muted-foreground text-sm">
                     From {{ ticket.requesterName ?? ticket.requesterEmail }}
                     <template v-if="ticket.requesterName">
@@ -492,5 +508,15 @@ const retry = (comment: FeedbackComment) => {
         @update:open="commentToDelete = null"
     >
         This internal note will be permanently removed.
+    </ConfirmDeleteModal>
+
+    <ConfirmDeleteModal
+        v-model:open="deleteDialogOpen"
+        title="Delete ticket"
+        confirm-label="Delete ticket"
+        :href="destroy(routeArgs())"
+    >
+        This permanently deletes <strong>{{ ticket.reference }}</strong> with
+        its messages and attachments. A linked issue is kept.
     </ConfirmDeleteModal>
 </template>

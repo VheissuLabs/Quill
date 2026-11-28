@@ -3,11 +3,16 @@
 use App\Enums\TicketStatus;
 use App\Models\Client;
 use App\Models\ClientContact;
+use App\Models\Comment;
+use App\Models\EmailAttachment;
+use App\Models\EmailMessage;
+use App\Models\Issue;
 use App\Models\Organization;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Notifications\TicketReply;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function ticketDesk(): array
@@ -251,4 +256,42 @@ test('a new customer whose email is already a contact is sent back to pick them'
         ->assertSessionHasErrors(['requester_email' => 'That email already belongs to a contact. Pick them from the list.']);
 
     expect($organization->tickets()->count())->toBe(0);
+});
+
+test('ticket managers delete a ticket, but members cannot', function () {
+    [$organization, $agent] = ticketDesk();
+    $member = User::factory()->create();
+    $organization->addMember($member, 'Member');
+    $ticket = Ticket::factory()->for($organization)->create();
+
+    $this->actingAs($member)
+        ->delete(route('tickets.destroy', ['current_organization' => $organization, 'ticket' => $ticket]))
+        ->assertForbidden();
+
+    $this->actingAs($agent)
+        ->delete(route('tickets.destroy', ['current_organization' => $organization, 'ticket' => $ticket]))
+        ->assertRedirect(route('tickets.index', ['current_organization' => $organization]));
+
+    $this->assertModelMissing($ticket);
+});
+
+test('deleting a ticket removes its messages and attachment files but keeps its issue', function () {
+    Storage::fake();
+    [$organization, $agent] = ticketDesk();
+    $issue = Issue::factory()->create();
+    $ticket = Ticket::factory()->for($organization)->create(['issue_id' => $issue->id]);
+    $comment = Comment::factory()->for($ticket, 'commentable')->create();
+    $message = EmailMessage::factory()->for($comment)->create();
+    $attachment = EmailAttachment::factory()->for($message)->create();
+    Storage::put($attachment->path, 'image');
+
+    $this->actingAs($agent)
+        ->delete(route('tickets.destroy', ['current_organization' => $organization, 'ticket' => $ticket]))
+        ->assertRedirect();
+
+    $this->assertModelMissing($comment);
+    $this->assertModelMissing($message);
+    $this->assertModelMissing($attachment);
+    Storage::assertMissing($attachment->path);
+    $this->assertModelExists($issue);
 });
