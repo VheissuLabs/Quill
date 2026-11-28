@@ -14,6 +14,7 @@ import {
     Select,
     SelectContent,
     SelectItem,
+    SelectSeparator,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
@@ -193,6 +194,10 @@ const clientFilter = computed({
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem :value="all">All clients</SelectItem>
+                    <SelectItem value="internal">
+                        {{ currentOrganization.name }}
+                    </SelectItem>
+                    <SelectSeparator />
                     <SelectItem
                         v-for="client in clients"
                         :key="client.id"
@@ -289,6 +294,12 @@ const clientFilter = computed({
                             </Badge>
                             <Badge v-if="ticket.client" variant="secondary">
                                 {{ ticket.client.name }}
+                            </Badge>
+                            <Badge
+                                v-else-if="ticket.isInternal"
+                                variant="secondary"
+                            >
+                                {{ currentOrganization.name }}
                             </Badge>
                             <Badge
                                 v-else

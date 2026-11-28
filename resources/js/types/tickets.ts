@@ -11,6 +11,7 @@ export type TicketListItem = {
     statusLabel: string;
     requesterName: string | null;
     requesterEmail: string;
+    isInternal: boolean;
     client: { id: number; name: string; slug: string } | null;
     issue: {
         id: number;

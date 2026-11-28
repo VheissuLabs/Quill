@@ -42,7 +42,7 @@ class ListTicketsTool extends QuillTool
         return [
             'organization' => $this->organizationArgument($schema),
             'status' => $schema->string()->enum(array_column(TicketStatus::cases(), 'value'))->description('Only tickets in this status.'),
-            'client' => $schema->string()->description('Client slug, to show only that client\'s tickets.'),
+            'client' => $schema->string()->description('Client slug, to show only that client\'s tickets, or "internal" for tickets assigned to your own organization.'),
             'view' => $schema->string()->enum(['unassigned', 'ready', 'mine']),
             'limit' => $schema->integer()->description('How many to return, 30 by default and at most 100.'),
         ];

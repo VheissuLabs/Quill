@@ -17,6 +17,7 @@ use App\Http\Resources\CommentResource;
 use App\Http\Resources\TicketDetailResource;
 use App\Http\Resources\TicketResource;
 use App\Models\Organization;
+use App\Models\Project;
 use App\Models\Ticket;
 use App\Support\Window;
 use Illuminate\Http\RedirectResponse;
@@ -52,7 +53,7 @@ class TicketController extends Controller
     {
         $user = auth()->user();
 
-        $ticket->load(['client.projects', 'issue.project', 'reporter', 'creator']);
+        $ticket->load(['client', 'issue.project', 'reporter', 'creator']);
 
         return Inertia::render('tickets/Show', [
             'ticket' => TicketsChanged::live(TicketDetailResource::make($ticket, $user)->resolve(), $currentOrganization->id, IssuesChanged::class, ClientsChanged::class),
@@ -60,7 +61,7 @@ class TicketController extends Controller
             'mentionables' => MembersChanged::live($ticket->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]), $currentOrganization->id),
             'statuses' => TicketStatus::options(),
             'clients' => ClientsChanged::live($currentOrganization->clients()->orderBy('name')->get(['id', 'name']), $currentOrganization->id),
-            'projects' => ProjectsChanged::live($ticket->client?->projects->sortBy('name')->values()->map(fn ($project) => ['id' => $project->id, 'name' => $project->name]) ?? [], $currentOrganization->id, TicketsChanged::class),
+            'projects' => ProjectsChanged::live(fn () => $ticket->projectsForIssues()->map(fn (Project $project) => ['id' => $project->id, 'name' => $project->name]), $currentOrganization->id, TicketsChanged::class),
             'otherTickets' => TicketsChanged::live(TicketResource::collection(
                 $currentOrganization->tickets()
                     ->where('requester_email', $ticket->requester_email)

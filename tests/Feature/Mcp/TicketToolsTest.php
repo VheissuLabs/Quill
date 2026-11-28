@@ -297,7 +297,7 @@ test('a ticket without a client cannot be converted, nor linked to another organ
     $assigned = Ticket::factory()->forClient(Client::factory()->for($organization)->create())->create();
 
     QuillServer::actingAs($agent)->tool(ConvertTicketToIssueTool::class, ['ticket_id' => $unassigned->id, 'issue_id' => $issue->id])
-        ->assertHasErrors(['Assign this ticket to a client first.']);
+        ->assertHasErrors(["Assign this ticket to a client or to {$organization->name} first."]);
     QuillServer::actingAs($agent)->tool(ConvertTicketToIssueTool::class, ['ticket_id' => $assigned->id, 'issue_id' => Issue::factory()->create()->id])
         ->assertHasErrors(['issue id']);
 

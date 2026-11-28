@@ -20,6 +20,7 @@ class UpdateTicketRequest extends FormRequest
         return [
             'status' => ['sometimes', 'required', Rule::enum(TicketStatus::class)],
             'client_id' => ['sometimes', 'nullable', 'integer', Rule::exists('clients', 'id')->where('organization_id', $organization->id)],
+            'internal' => ['sometimes', 'boolean'],
         ];
     }
 }

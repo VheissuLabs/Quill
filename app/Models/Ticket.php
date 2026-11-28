@@ -31,6 +31,8 @@ class Ticket extends Model
 {
     use BroadcastsChanges, HasFactory, LogsActivity;
 
+    public const INTERNAL_FILTER = 'internal';
+
     protected $guarded = [];
 
     public static function inboundAddress(): string
@@ -153,13 +155,33 @@ class Ticket extends Model
             throw new DomainException(__('That client belongs to another organization.'));
         }
 
-        $this->update(['client_id' => $client?->getKey()]);
+        $this->update(['client_id' => $client?->getKey(), 'is_internal' => false]);
+    }
+
+    public function assignToOrganization(): void
+    {
+        $this->update(['client_id' => null, 'is_internal' => true]);
+    }
+
+    public function isAssigned(): bool
+    {
+        return $this->client_id !== null || $this->is_internal;
+    }
+
+    /** @return Collection<int, Project> */
+    public function projectsForIssues(): Collection
+    {
+        return match (true) {
+            $this->is_internal => $this->organization->projects()->whereNull('client_id')->orderBy('name')->get(),
+            $this->client_id !== null => $this->client->projects()->orderBy('name')->get(),
+            default => new Collection,
+        };
     }
 
     public function linkTo(Issue $issue, User $reporter): void
     {
-        if ($this->client_id === null) {
-            throw new DomainException(__('Assign this ticket to a client first.'));
+        if (! $this->isAssigned()) {
+            throw new DomainException(__('Assign this ticket to a client or to :organization first.', ['organization' => $this->organization->name]));
         }
 
         $issue->loadMissing('project');
@@ -180,10 +202,12 @@ class Ticket extends Model
         $this->update(['issue_id' => null, 'issue_resolved_at' => null]);
     }
 
-    /** @param  array{status?: string, client_id?: int|null}  $changes */
+    /** @param  array{status?: string, client_id?: int|null, internal?: bool}  $changes */
     public function applyChanges(array $changes): void
     {
-        if (array_key_exists('client_id', $changes)) {
+        if ($changes['internal'] ?? false) {
+            $this->assignToOrganization();
+        } elseif (array_key_exists('client_id', $changes)) {
             $this->assignTo($changes['client_id'] !== null ? $this->organization->clients()->find($changes['client_id']) : null);
         }
 
@@ -252,8 +276,9 @@ class Ticket extends Model
         $query->with(['client', 'issue.project', 'reporter'])
             ->when($filters['status'], fn (Builder $query, string $status) => $query->where('status', $status))
             ->when(! $filters['status'], fn (Builder $query) => $query->whereIn('status', [TicketStatus::Open, TicketStatus::AwaitingCustomer]))
-            ->when($filters['client'], fn (Builder $query, string $slug) => $query->whereHas('client', fn (Builder $query) => $query->where('slug', $slug)))
-            ->when($filters['view'] === 'unassigned', fn (Builder $query) => $query->whereNull('client_id'))
+            ->when($filters['client'] === self::INTERNAL_FILTER, fn (Builder $query) => $query->where('is_internal', true))
+            ->when($filters['client'] && $filters['client'] !== self::INTERNAL_FILTER, fn (Builder $query) => $query->whereHas('client', fn (Builder $query) => $query->where('slug', $filters['client'])))
+            ->when($filters['view'] === 'unassigned', fn (Builder $query) => $query->whereNull('client_id')->where('is_internal', false))
             ->when($filters['view'] === 'ready', fn (Builder $query) => $query->whereNotNull('issue_resolved_at'))
             ->when($filters['view'] === 'mine', fn (Builder $query) => $query->where('reporter_id', $viewer->getKey()))
             ->latest('last_message_at')
@@ -264,7 +289,7 @@ class Ticket extends Model
     {
         return LogOptions::defaults()
             ->useLogName('tickets')
-            ->logOnly(['subject', 'status', 'client_id', 'issue_id', 'reporter_id'])
+            ->logOnly(['subject', 'status', 'client_id', 'is_internal', 'issue_id', 'reporter_id'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
@@ -274,6 +299,7 @@ class Ticket extends Model
     {
         return [
             'status' => TicketStatus::class,
+            'is_internal' => 'boolean',
             'issue_resolved_at' => 'datetime',
             'last_message_at' => 'datetime',
         ];

@@ -9,6 +9,7 @@ use App\Models\EmailAttachment;
 use App\Models\EmailMessage;
 use App\Models\Issue;
 use App\Models\Organization;
+use App\Models\Project;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Notifications\TicketReply;
@@ -340,4 +341,34 @@ test('members without ticket management cannot delete tickets in bulk', function
         ->assertForbidden();
 
     $this->assertModelExists($ticket);
+});
+
+test('an agent assigns a ticket to the organization itself, filing it out of unassigned', function () {
+    [$organization, $agent] = ticketDesk();
+    $client = Client::factory()->for($organization)->create();
+    $ticket = Ticket::factory()->forClient($client)->create();
+    Project::factory()->for($organization)->create(['client_id' => null, 'name' => 'Internal tool']);
+
+    $this->actingAs($agent)
+        ->patch(route('tickets.update', ['current_organization' => $organization, 'ticket' => $ticket]), ['internal' => true])
+        ->assertRedirect();
+
+    expect($ticket->fresh())->is_internal->toBeTrue()->client_id->toBeNull();
+
+    $this->actingAs($agent)
+        ->get(route('tickets.index', ['current_organization' => $organization, 'client' => 'internal']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets.data', 1)
+            ->where('tickets.data.0.isInternal', true)
+            ->where('counts.unassigned', 0));
+
+    $this->actingAs($agent)
+        ->get(route('tickets.show', ['current_organization' => $organization, 'ticket' => $ticket]))
+        ->assertInertia(fn (Assert $page) => $page->where('projects.0.name', 'Internal tool'));
+
+    $this->actingAs($agent)
+        ->patch(route('tickets.update', ['current_organization' => $organization, 'ticket' => $ticket]), ['client_id' => $client->id])
+        ->assertRedirect();
+
+    expect($ticket->fresh())->is_internal->toBeFalse()->client_id->toBe($client->id);
 });

@@ -56,14 +56,14 @@ test('several tickets link to one existing issue', function () {
     expect($issue->tickets()->count())->toBe(2);
 });
 
-test('a ticket without a client cannot be converted or linked', function () {
+test('a ticket assigned to neither a client nor the organization cannot be converted or linked', function () {
     [$organization, $agent] = issueDesk();
     $issue = Issue::factory()->for(Project::factory()->for($organization))->create();
     $ticket = Ticket::factory()->for($organization)->create();
 
     $this->actingAs($agent)
         ->post(route('tickets.issue.store', ['current_organization' => $organization, 'ticket' => $ticket]), ['issue_id' => $issue->id])
-        ->assertSessionHasErrors(['client_id' => 'Assign this ticket to a client first.']);
+        ->assertSessionHasErrors(['client_id' => "Assign this ticket to a client or to {$organization->name} first."]);
 
     expect($ticket->fresh()->issue_id)->toBeNull();
 });
@@ -123,4 +123,21 @@ test('the issue page lists the tickets linked to it for ticket managers', functi
     $this->actingAs($member)
         ->get(route('issues.show', ['current_organization' => $organization, 'issue' => $issue]))
         ->assertInertia(fn ($page) => $page->has('tickets', 0));
+});
+
+test('a ticket assigned to the organization converts into a project that has no client', function () {
+    [$organization, $agent, $client] = issueDesk();
+    $internalProject = Project::factory()->for($organization)->create(['client_id' => null]);
+    $clientProject = Project::factory()->for($organization)->create(['client_id' => $client->id]);
+    $ticket = Ticket::factory()->for($organization)->create(['is_internal' => true]);
+
+    $this->actingAs($agent)
+        ->post(route('tickets.issue.store', ['current_organization' => $organization, 'ticket' => $ticket]), ['project_id' => $clientProject->id])
+        ->assertSessionHasErrors('project_id');
+
+    $this->actingAs($agent)
+        ->post(route('tickets.issue.store', ['current_organization' => $organization, 'ticket' => $ticket]), ['project_id' => $internalProject->id])
+        ->assertRedirect();
+
+    expect($ticket->fresh()->issue_id)->toBe($internalProject->issues()->sole()->id);
 });

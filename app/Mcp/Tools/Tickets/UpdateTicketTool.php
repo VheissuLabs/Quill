@@ -11,7 +11,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Change a ticket\'s status, or assign it to a client (client_id null unassigns it). Send only the fields to change.')]
+#[Description('Change a ticket\'s status, assign it to a client (client_id null unassigns it), or assign it to your own organization with internal true. Send only the fields to change.')]
 class UpdateTicketTool extends QuillTool
 {
     public function handle(Request $request): Response
@@ -23,7 +23,7 @@ class UpdateTicketTool extends QuillTool
             $this->authorize($request, 'update', $ticket);
 
             $validated = $this->formRequest(UpdateTicketRequest::class, $request, ['current_organization' => $organization, 'ticket' => $ticket], 'PATCH',
-                collect($request->all())->only(['status', 'client_id'])->all());
+                collect($request->all())->only(['status', 'client_id', 'internal'])->all());
 
             $ticket->applyChanges($validated->validated());
 
@@ -38,6 +38,7 @@ class UpdateTicketTool extends QuillTool
             'ticket_id' => $schema->integer()->description('Ticket id.')->required(),
             'status' => $schema->string()->enum(array_column(TicketStatus::cases(), 'value')),
             'client_id' => $schema->integer()->nullable()->description('Client id, or null to unassign.'),
+            'internal' => $schema->boolean()->description('True to assign the ticket to your own organization instead of a client.'),
         ];
     }
 }

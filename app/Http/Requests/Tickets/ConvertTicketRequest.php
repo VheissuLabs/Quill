@@ -34,8 +34,8 @@ class ConvertTicketRequest extends FormRequest
             function (Validator $validator): void {
                 $ticket = $this->route('ticket');
 
-                if ($ticket instanceof Ticket && $ticket->client_id === null) {
-                    $validator->errors()->add('client_id', __('Assign this ticket to a client first.'));
+                if ($ticket instanceof Ticket && ! $ticket->isAssigned()) {
+                    $validator->errors()->add('client_id', __('Assign this ticket to a client or to :organization first.', ['organization' => $ticket->organization->name]));
                 }
             },
         ];

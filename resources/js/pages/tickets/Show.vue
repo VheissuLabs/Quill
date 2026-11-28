@@ -16,6 +16,7 @@ import {
     Select,
     SelectContent,
     SelectItem,
+    SelectSeparator,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
@@ -94,15 +95,21 @@ const issueRequest = useHttp<
     typeof issueResults.value
 >();
 
-const patch = (data: Record<string, string | number | null>) => {
+const patch = (data: Record<string, string | number | boolean | null>) => {
     mutate(update(routeArgs()), {
         data,
         errorMessage: 'That change could not be saved.',
     });
 };
 
+const internal = 'internal';
+
 const changeClient = (value: string) =>
-    patch({ client_id: value === none ? null : Number(value) });
+    patch(
+        value === internal
+            ? { internal: true }
+            : { client_id: value === none ? null : Number(value) },
+    );
 
 const routeDomain = () => {
     if (!props.ticket.client || !props.ticket.suggestedDomain) {
@@ -304,7 +311,11 @@ const retry = (comment: FeedbackComment) => {
                 </p>
                 <Select
                     :model-value="
-                        ticket.client ? String(ticket.client.id) : none
+                        ticket.client
+                            ? String(ticket.client.id)
+                            : ticket.isInternal
+                              ? internal
+                              : none
                     "
                     @update:model-value="changeClient(String($event))"
                 >
@@ -316,6 +327,10 @@ const retry = (comment: FeedbackComment) => {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem :value="none">Unassigned</SelectItem>
+                        <SelectItem :value="internal">
+                            {{ currentOrganization.name }}
+                        </SelectItem>
+                        <SelectSeparator />
                         <SelectItem
                             v-for="client in clients"
                             :key="client.id"
@@ -384,8 +399,12 @@ const retry = (comment: FeedbackComment) => {
                     </Button>
                 </div>
 
-                <p v-else-if="!ticket.client" class="text-muted-foreground">
-                    Assign a client before turning this into an issue.
+                <p
+                    v-else-if="!ticket.client && !ticket.isInternal"
+                    class="text-muted-foreground"
+                >
+                    Assign a client or {{ currentOrganization.name }} before
+                    turning this into an issue.
                 </p>
 
                 <div v-else-if="ticket.canConvert" class="space-y-4">
@@ -427,7 +446,10 @@ const retry = (comment: FeedbackComment) => {
                             v-if="projects.length === 0"
                             class="text-muted-foreground text-xs"
                         >
-                            {{ ticket.client.name }} has no projects yet.
+                            {{
+                                ticket.client?.name ?? currentOrganization.name
+                            }}
+                            has no projects yet.
                         </p>
                     </div>
 

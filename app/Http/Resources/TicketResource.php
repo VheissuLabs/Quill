@@ -23,6 +23,7 @@ class TicketResource extends JsonResource
             'requesterName' => $this->requester_name,
             'requesterEmail' => $this->requester_email,
             'contactId' => $this->client_contact_id,
+            'isInternal' => $this->is_internal,
             'client' => $this->client ? [
                 'id' => $this->client->id,
                 'name' => $this->client->name,

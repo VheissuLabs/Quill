@@ -20,7 +20,7 @@ class LinkedTicketResource extends JsonResource
         }
 
         return $issue->tickets()
-            ->with('client')
+            ->with(['client', 'organization'])
             ->latest('last_message_at')
             ->get()
             ->map(fn (Ticket $ticket) => self::make($ticket)->resolve())
@@ -52,7 +52,7 @@ class LinkedTicketResource extends JsonResource
             'subject' => $this->subject,
             'statusLabel' => $this->status->label(),
             'requester' => $this->requester_name ?? $this->requester_email,
-            'clientName' => $this->client?->name,
+            'clientName' => $this->is_internal ? $this->organization->name : $this->client?->name,
             'readyToReply' => $this->issue_resolved_at !== null,
         ];
     }
