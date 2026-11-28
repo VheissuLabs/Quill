@@ -8,10 +8,12 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Queue\Attributes\DeleteWhenMissingModels;
 use RuntimeException;
 use Symfony\Component\Mime\Email;
 use Throwable;
 
+#[DeleteWhenMissingModels]
 class TicketReply extends Notification implements ShouldQueue
 {
     use Queueable;

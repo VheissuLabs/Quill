@@ -6,8 +6,10 @@ use App\Models\Comment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use Illuminate\Queue\Attributes\DeleteWhenMissingModels;
 use Illuminate\Support\Str;
 
+#[DeleteWhenMissingModels]
 class TicketReceived extends Notification implements ShouldQueue
 {
     use Queueable;
