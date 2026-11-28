@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
-        $middleware->validateCsrfTokens(except: ['webhooks/square/*']);
+        $middleware->preventRequestForgery(except: ['webhooks/resend', 'webhooks/square/*']);
 
         $middleware->web(append: [
             HandleAppearance::class,

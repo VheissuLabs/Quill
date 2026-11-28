@@ -85,7 +85,6 @@ use App\Models\Sprint;
 use App\Models\Team;
 use App\Models\Ticket;
 use App\Models\WorkType;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 
@@ -96,7 +95,6 @@ Route::post('invoice/{invoice:public_token}/pay', [PublicInvoicePaymentControlle
 
 Route::post('webhooks/resend', ResendWebhookController::class)
     ->middleware(VerifyResendSignature::class)
-    ->withoutMiddleware(ValidateCsrfToken::class)
     ->name('webhooks.resend');
 
 Route::post('webhooks/square/{billingSetting:square_webhook_token}', SquareWebhookController::class)->name('webhooks.square');
