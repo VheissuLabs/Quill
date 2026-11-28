@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Head, InfiniteScroll, Link, router } from '@inertiajs/vue3';
-import { useEcho } from '@laravel/echo-vue';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { CircleCheck, Inbox, Plus } from '@lucide/vue';
 import { computed } from 'vue';
 import CreateTicketModal from '@/components/CreateTicketModal.vue';
 import Heading from '@/components/Heading.vue';
+import ShowMore from '@/components/ShowMore.vue';
 import TicketStatusBadge from '@/components/TicketStatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { broadcastingEnabled, organizationChannel } from '@/lib/broadcasting';
 import { formatDate } from '@/lib/dates';
 import { index, show } from '@/routes/tickets';
 import type {
@@ -28,7 +27,7 @@ import type {
 
 type Props = {
     currentOrganization: Organization;
-    tickets: { data: TicketListItem[] };
+    tickets: { data: TicketListItem[]; hasMore: boolean };
     filters: TicketFilters;
     statuses: TicketStatusOption[];
     clients: TicketClientOption[];
@@ -36,19 +35,6 @@ type Props = {
 };
 
 const props = defineProps<Props>();
-
-if (!import.meta.env.SSR && broadcastingEnabled) {
-    useEcho(
-        organizationChannel(props.currentOrganization.id),
-        '.tickets.changed',
-        () =>
-            router.reload({
-                only: ['tickets'],
-                reset: ['tickets'],
-                showProgress: false,
-            }),
-    );
-}
 
 defineOptions({
     layout: (props: { currentOrganization: Organization }) => ({
@@ -187,13 +173,8 @@ const clientFilter = computed({
             </Select>
         </div>
 
-        <div v-if="tickets.data.length > 0">
-            <InfiniteScroll
-                data="tickets"
-                as="ul"
-                class="divide-y rounded-xl border"
-                only-next
-            >
+        <div v-if="tickets.data.length > 0" class="space-y-4">
+            <ul class="divide-y rounded-xl border">
                 <li v-for="ticket in tickets.data" :key="ticket.id">
                     <Link
                         :href="show([currentOrganization.slug, ticket.id])"
@@ -252,7 +233,12 @@ const clientFilter = computed({
                         </span>
                     </Link>
                 </li>
-            </InfiniteScroll>
+            </ul>
+            <ShowMore
+                prop="tickets"
+                :shown="tickets.data.length"
+                :has-more="tickets.hasMore"
+            />
         </div>
 
         <div

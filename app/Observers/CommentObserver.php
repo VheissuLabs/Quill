@@ -3,8 +3,11 @@
 namespace App\Observers;
 
 use App\Events\FeedbackCommented;
+use App\Events\IssuesChanged;
 use App\Models\Comment;
 use App\Models\Feedback;
+use App\Models\Issue;
+use App\Models\Ticket;
 use App\Support\RichText;
 
 class CommentObserver
@@ -62,20 +65,15 @@ class CommentObserver
             ->log('comment_deleted');
     }
 
-    /**
-     * A board shows how many comments a request has, so the count moves for everyone watching
-     * either the board or the request itself.
-     */
     private function announce(Comment $comment): void
     {
-        if ($comment->commentable_type !== (new Feedback)->getMorphClass()) {
-            return;
-        }
+        $commentable = $comment->commentable;
 
-        $projectId = Feedback::query()->whereKey($comment->commentable_id)->value('project_id');
-
-        if ($projectId !== null) {
-            broadcast(new FeedbackCommented((int) $projectId, (int) $comment->commentable_id))->toOthers();
-        }
+        match (true) {
+            $commentable instanceof Feedback => broadcast(new FeedbackCommented((int) $commentable->project_id, (int) $commentable->getKey()))->toOthers(),
+            $commentable instanceof Issue => broadcast(new IssuesChanged((int) $commentable->project()->value('organization_id'), [(int) $commentable->getKey()]))->toOthers(),
+            $commentable instanceof Ticket => $commentable->broadcastChange(),
+            default => null,
+        };
     }
 }

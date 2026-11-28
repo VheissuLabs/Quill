@@ -79,6 +79,7 @@ export type BoardStatusOption = {
 
 export type CommentPage = {
     data: FeedbackComment[];
+    hasMore: boolean;
 };
 
 export type BoardTypeOption = {

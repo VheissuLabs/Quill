@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, InfiniteScroll, Link, router, useHttp } from '@inertiajs/vue3';
+import { Head, Link, router, useHttp } from '@inertiajs/vue3';
 import { CircleCheck, Link2, Trash2, Unlink } from '@lucide/vue';
 import { useDebounceFn } from '@vueuse/core';
 import { ref } from 'vue';
@@ -7,6 +7,7 @@ import CommentForm from '@/components/CommentForm.vue';
 import CommentThread from '@/components/CommentThread.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import Heading from '@/components/Heading.vue';
+import ShowMore from '@/components/ShowMore.vue';
 import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
 import TicketStatusBadge from '@/components/TicketStatusBadge.vue';
 import { Button } from '@/components/ui/button';
@@ -235,29 +236,32 @@ const retry = (comment: FeedbackComment) => {
                     submit-label="Send"
                 />
 
-                <InfiniteScroll
-                    v-if="comments.data.length > 0"
-                    data="comments"
-                    as="ol"
-                    class="block space-y-6"
-                    only-next
-                >
-                    <CommentThread
-                        v-for="comment in comments.data"
-                        :key="comment.id"
-                        :comment="comment"
-                        :action="storeReply(routeArgs()).url"
-                        :can-comment="false"
-                        :mentionable="mentionables"
-                        :attachment-href="
-                            (id: number) =>
-                                showAttachment([currentOrganization.slug, id])
-                                    .url
-                        "
-                        @delete="commentToDelete = $event"
-                        @retry="retry"
+                <template v-if="comments.data.length > 0">
+                    <ol class="space-y-6">
+                        <CommentThread
+                            v-for="comment in comments.data"
+                            :key="comment.id"
+                            :comment="comment"
+                            :action="storeReply(routeArgs()).url"
+                            :can-comment="false"
+                            :mentionable="mentionables"
+                            :attachment-href="
+                                (id: number) =>
+                                    showAttachment([
+                                        currentOrganization.slug,
+                                        id,
+                                    ]).url
+                            "
+                            @delete="commentToDelete = $event"
+                            @retry="retry"
+                        />
+                    </ol>
+                    <ShowMore
+                        prop="comments"
+                        :shown="comments.data.length"
+                        :has-more="comments.hasMore"
                     />
-                </InfiniteScroll>
+                </template>
             </section>
         </div>
 

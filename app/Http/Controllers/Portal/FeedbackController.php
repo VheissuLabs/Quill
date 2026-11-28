@@ -45,7 +45,7 @@ class FeedbackController extends Controller
             'project' => ['id' => $project->id, 'name' => $project->name, 'slug' => $project->slug],
             'feedback' => FeedbackChanged::live($summary = FeedbackResource::make($feedback)->withIssue($isMember)->resolve(), $project->id, FeedbackVoted::class, FeedbackCommented::class),
             'issue' => $isMember ? IssuesChanged::live($summary['issue'], $organization->id) : $summary['issue'],
-            'comments' => Inertia::scroll(fn () => CommentResource::page($feedback->comments(), $user, $isMember, $newestFirst)),
+            'comments' => FeedbackCommented::live(fn () => CommentResource::window($feedback->comments(), $user, $isMember, $newestFirst), $project->id),
             'commentOrder' => $newestFirst ? 'newest' : 'oldest',
             'activity' => FeedbackChanged::live($viewer['canViewActivity']
                 ? ActivityResource::collection($feedback->activitiesAsSubject()->with('causer')->latest('id')->limit(20)->get())

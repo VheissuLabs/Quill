@@ -18,6 +18,7 @@ use App\Http\Resources\TicketDetailResource;
 use App\Http\Resources\TicketResource;
 use App\Models\Organization;
 use App\Models\Ticket;
+use App\Support\Window;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,9 +28,10 @@ class TicketController extends Controller
     public function index(TicketIndexRequest $request, Organization $currentOrganization): Response
     {
         return Inertia::render('tickets/Index', [
-            'tickets' => Inertia::scroll(fn () => TicketResource::collection(
-                $currentOrganization->tickets()->inInbox($request->user(), $request->filters())->paginate(30)
-            )),
+            'tickets' => TicketsChanged::live(fn () => Window::fromRequest($request, TicketResource::WINDOW_STEP)->of(
+                $currentOrganization->tickets()->inInbox($request->user(), $request->filters()),
+                fn (Ticket $ticket) => TicketResource::make($ticket)->resolve(),
+            ), $currentOrganization->id, IssuesChanged::class),
             'filters' => $request->filters(),
             'statuses' => TicketStatus::options(),
             'clients' => ClientsChanged::live($currentOrganization->clients()->orderBy('name')->get(['id', 'name', 'slug']), $currentOrganization->id),
@@ -57,7 +59,7 @@ class TicketController extends Controller
 
         return Inertia::render('tickets/Show', [
             'ticket' => TicketsChanged::live(TicketDetailResource::make($ticket, $user)->resolve(), $currentOrganization->id, IssuesChanged::class, ClientsChanged::class),
-            'comments' => Inertia::scroll(fn () => CommentResource::page($ticket->comments(), $user, true, true)),
+            'comments' => TicketsChanged::live(fn () => CommentResource::window($ticket->comments(), $user, true, true), $currentOrganization->id),
             'mentionables' => MembersChanged::live($ticket->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]), $currentOrganization->id),
             'statuses' => TicketStatus::options(),
             'clients' => ClientsChanged::live($currentOrganization->clients()->orderBy('name')->get(['id', 'name']), $currentOrganization->id),

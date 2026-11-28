@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, InfiniteScroll, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import {
     Check,
     ChevronDown,
@@ -17,6 +17,7 @@ import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import DocumentList from '@/components/DocumentList.vue';
 import FeedbackStatusBadge from '@/components/FeedbackStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
+import ShowMore from '@/components/ShowMore.vue';
 import InputError from '@/components/InputError.vue';
 import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
 import { Button } from '@/components/ui/button';
@@ -584,23 +585,24 @@ const currentSprint = computed(() =>
                     :statuses="commandStatuses"
                 />
 
-                <InfiniteScroll
-                    v-if="comments.data.length > 0"
-                    data="comments"
-                    as="ol"
-                    class="block space-y-6"
-                    only-next
-                >
-                    <CommentThread
-                        v-for="comment in comments.data"
-                        :key="comment.id"
-                        :comment="comment"
-                        :action="storeComment(routeArgs).url"
-                        :can-comment="true"
-                        :mentionable="mentionables"
-                        @delete="commentToDelete = $event"
+                <template v-if="comments.data.length > 0">
+                    <ol class="space-y-6">
+                        <CommentThread
+                            v-for="comment in comments.data"
+                            :key="comment.id"
+                            :comment="comment"
+                            :action="storeComment(routeArgs).url"
+                            :can-comment="true"
+                            :mentionable="mentionables"
+                            @delete="commentToDelete = $event"
+                        />
+                    </ol>
+                    <ShowMore
+                        prop="comments"
+                        :shown="comments.data.length"
+                        :has-more="comments.hasMore"
                     />
-                </InfiniteScroll>
+                </template>
                 <p v-else class="text-muted-foreground text-sm italic">
                     Nothing here yet. Start the conversation.
                 </p>

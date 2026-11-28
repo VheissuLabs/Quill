@@ -71,7 +71,7 @@ class IssueController extends Controller
             'issue' => IssuesChanged::live(fn () => IssueDetailResource::make($issue, $user)->resolve(), $currentOrganization->getKey()),
             'links' => IssuesChanged::live(fn () => IssueLinkResource::collection($issue->relatedIssues()), $currentOrganization->getKey()),
             'linkTypes' => IssueLinkType::perspectives(),
-            'comments' => Inertia::scroll(fn () => CommentResource::page($issue->comments(), $user, true)),
+            'comments' => IssuesChanged::live(fn () => CommentResource::window($issue->comments(), $user, true), $currentOrganization->getKey()),
             'commands' => app(IssueCommentCommands::class)->availableTo($user, $issue),
             'mentionables' => MembersChanged::live($issue->mentionableUsers()->map(fn ($member) => ['id' => $member->id, 'name' => $member->name]), $currentOrganization->getKey(), TeamsChanged::class, ProjectsChanged::class),
             'feedback' => FeedbackResource::liveForIssue($issue),

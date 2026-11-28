@@ -1,17 +1,11 @@
 <script setup lang="ts">
-import {
-    Form,
-    Head,
-    InfiniteScroll,
-    Link,
-    router,
-    usePage,
-} from '@inertiajs/vue3';
+import { Form, Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, ListTodo, Pencil, Trash2 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ActivityFeed from '@/components/ActivityFeed.vue';
 import CommentForm from '@/components/CommentForm.vue';
 import CommentThread from '@/components/CommentThread.vue';
+import ShowMore from '@/components/ShowMore.vue';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal.vue';
 import IssueStatusBadge from '@/components/IssueStatusBadge.vue';
 import FeedbackStatusBadge from '@/components/FeedbackStatusBadge.vue';
@@ -47,7 +41,6 @@ import { update as updateStatus } from '@/routes/portal/feedback/status';
 import { show as showBoard } from '@/routes/portal/projects';
 import { useLocalStorage } from '@vueuse/core';
 import { useCommentPresence } from '@/composables/useCommentPresence';
-import { useLiveFeedback } from '@/composables/useLiveFeedback';
 import type {
     ActivityEntry,
     CommentCommand,
@@ -77,19 +70,6 @@ type Props = {
 };
 
 const props = defineProps<Props>();
-
-const arrived = ref(0);
-
-useLiveFeedback(props.project.id, props.feedback.id, () => arrived.value++);
-
-const showArrived = () => {
-    arrived.value = 0;
-    router.reload({
-        only: ['comments'],
-        reset: ['comments'],
-        showProgress: false,
-    });
-};
 
 const currentUser = usePage().props.auth.user;
 
@@ -344,39 +324,29 @@ const commentCount = computed(() => props.feedback.commentsCount);
                         to join the discussion.
                     </p>
 
-                    <button
-                        v-if="arrived > 0"
-                        type="button"
-                        data-test="new-comments"
-                        class="border-input hover:bg-accent w-full cursor-pointer rounded-md border border-dashed px-3 py-2 text-sm"
-                        @click="showArrived"
-                    >
-                        {{ arrived }}
-                        {{ arrived === 1 ? 'new comment' : 'new comments' }}
-                    </button>
-
-                    <InfiniteScroll
-                        v-if="comments.data.length > 0"
-                        data="comments"
-                        as="ol"
-                        class="block space-y-6"
-                        only-next
-                    >
-                        <CommentThread
-                            v-for="comment in comments.data"
-                            :key="comment.id"
-                            :comment="comment"
-                            @typing="reportTyping"
-                            :action="storeComment(routeArgs).url"
-                            :organization-name="organization.name"
-                            :can-comment="viewer.canComment"
-                            :can-comment-internally="
-                                viewer.canCommentInternally
-                            "
-                            :mentionable="mentionableUsers"
-                            @delete="commentToDelete = $event"
+                    <template v-if="comments.data.length > 0">
+                        <ol class="space-y-6">
+                            <CommentThread
+                                v-for="comment in comments.data"
+                                :key="comment.id"
+                                :comment="comment"
+                                @typing="reportTyping"
+                                :action="storeComment(routeArgs).url"
+                                :organization-name="organization.name"
+                                :can-comment="viewer.canComment"
+                                :can-comment-internally="
+                                    viewer.canCommentInternally
+                                "
+                                :mentionable="mentionableUsers"
+                                @delete="commentToDelete = $event"
+                            />
+                        </ol>
+                        <ShowMore
+                            prop="comments"
+                            :shown="comments.data.length"
+                            :has-more="comments.hasMore"
                         />
-                    </InfiniteScroll>
+                    </template>
                 </section>
             </div>
 

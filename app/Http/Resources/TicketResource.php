@@ -9,6 +9,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /** @mixin Ticket */
 class TicketResource extends JsonResource
 {
+    public const WINDOW_STEP = 30;
+
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
